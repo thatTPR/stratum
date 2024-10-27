@@ -1,0 +1,15 @@
+{
+    "name":"projectName",
+    "author":"authorName",
+    "type":"Game",
+    "XR":false ,
+    "plugins":[
+        "Hair",
+        "Accessories"
+    ],
+    "nodes":[
+        "Sys",
+        "Hair"
+    ]
+
+}

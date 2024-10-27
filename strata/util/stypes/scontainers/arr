@@ -1,0 +1,14 @@
+#include <array>
+#include <vector>
+#include <concepts>
+namespace stt {
+    template<typename T , size_t s>
+    class arr {
+
+
+        void operator+();
+        begin();
+        end();
+
+    };
+};

@@ -1,0 +1,7 @@
+namespace stt {
+    template <typename T>
+    class tree {
+        std::vector<std::pair<T  , stree<T>> tree ; 
+    }
+
+};
