@@ -25,25 +25,25 @@ Engine provides a node editor that integrates with the c++ code it generates for
 [ ] Water
 [ ] Smoke, steam
 [ ] Face
-# Formats
+## Formats
 .splugin - plugin format , probably going to use python 
 .s
 
-# Plugin structure
+## Plugin structure
 
 |-plugin.json
 |-main.cpp
 
 In plugin.json
 
-# Libraries
+## Libraries
 SMat - mathematics library
 SG
 
 
 
 ## Dir Structure
---assets
+---assets
 |   |-images
 |   |-fonts
 |   |-materials
@@ -80,7 +80,7 @@ SG
 |-settings.json
 
 
-[ ] Fork sdl and strip native renderer, audio and camera 
+
     [ ] vk
     [ ] dx
     [ ] gles
