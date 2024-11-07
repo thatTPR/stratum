@@ -2,6 +2,10 @@
 #include <cwctype>
 #include <fstream>
 template <typename _Char  >
+
+
+
+
 class parser {
     public:    
     virtual void write();

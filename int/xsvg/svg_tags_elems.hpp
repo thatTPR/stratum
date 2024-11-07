@@ -1,83 +1,109 @@
 
+class elems {
+   
+#include "svg_tags_elems.defs"
+
+/** @} */
+
 // Elements
 
-class elems::_elem_;
-class elems::_a_;
-class elems::_animate_;
-class elems::_animateMotion_;
-class elems::_animateTransform_;
-class elems::_circle_;
-class elems::_clipPath_;
-class elems::_cursor_; 
-class elems::_defs_;
-class elems::_desc_;
-class elems::_ellipse_;
-class elems::_feBlend_;
-class elems::_feColorMatrix_;
-class elems::_feComponentTransfer_;
-class elems::_feComposite_;
-class elems::_feConvolveMatrix_;
-class elems::_feDiffuseLighting_;
-class elems::_feDisplacementMap_;
-class elems::_feDistantLight_;
-class elems::_feDropShadow_;
-class elems::_feFlood_;
-class elems::_feFuncA_;
-class elems::_feFuncB_;
-class elems::_feFuncG_;
-class elems::_feFuncR_;
-class elems::_feGaussianBlur_;
-class elems::_feImage_;
-class elems::_feMerge_;
-class elems::_feMergeNode_;
-class elems::_feMorphology_;
-class elems::_feOffset_;
-class elems::_fePointLight_;
-class elems::_feSpecularLighting_;
-class elems::_feSpotLight_;
-class elems::_feTile_;
-class elems::_feTurbulence_;
-class elems::_filter_;
-class elems::_font_face_format_;
-class elems::_font_face_name_;
-class elems::_font_face_src_;
-class elems::_font_face_uri_;
-class elems::_font_face_;
-class elems::__font_face_;
-class elems::_font_;
-class elems::_foreignObject_;
-class elems::_g_;
-class elems::_glyph_; 
-class elems::_glyphRef_; 
-class elems::_hkern_; 
-class elems::_image_;
-class elems::_line_;
-class elems::_linearGradient_;
-class elems::_marker_;
-class elems::_mask_;
-class elems::_metadata_;
-class elems::_missing_glyph_> 
-class elems::_mpath_;
-class elems::_path_;
-class elems::__path__ ;
-class elems::_pattern_;
-class elems::_polygon_;
-class elems::_polyline_;
-class elems::_radialGradient_;
-class elems::_rect_;
-class elems::_script_;
-class elems::_set_;
-class elems::_s_top_;
-class elems::_style_;
-class elems::_svg_;
-class elems::__svg__ ;
-class elems::_switch_;
-class elems::_symbol_;
-class elems::_text_;
-class elems::_textPath_;
-class elems::_title_;
-class elems::_tref_; 
-class elems::_tspan_;
-class elems::_use_;
-class elems::_view_;
-class elems::_vkern_;
+
+std::vector<size_t> _elem ; 
+// <a> [ ]
+class _a_ : _elem {
+    using _elem:: ; 
+    elem_p_vec[] = {}
+};
+// <animate> [ ]
+// <animateMotion> [ ]
+// <animateTransform> [ ]
+// <circle> [ ]
+// <clipPath> [ ]
+// <cursor> Deprecated [ ]
+// <defs> [ ]
+// <desc> [ ]
+// <ellipse> [ ]
+// <feBlend> [ ]
+// <feColorMatrix> [ ]
+// <feComponentTransfer> [ ]
+// <feComposite> [ ]
+// <feConvolveMatrix> [ ]
+// <feDiffuseLighting> [ ]
+// <feDisplacementMap> [ ]
+// <feDistantLight> [ ]
+// <feDropShadow> [ ]
+// <feFlood> [ ]
+// <feFuncA> [ ]
+// <feFuncB> [ ]
+// <feFuncG> [ ]
+// <feFuncR> [ ]
+// <feGaussianBlur> [ ]
+// <feImage> [ ]
+// <feMerge> [ ]
+// <feMergeNode> [ ]
+// <feMorphology> [ ]
+// <feOffset> [ ]
+// <fePointLight> [ ]
+// <feSpecularLighting> [ ]
+// <feSpotLight> [ ]
+// <feTile> [ ]
+// <feTurbulence> [ ]
+// <filter> [ ]
+// <font-face-format> Deprecated [ ]
+// <font-face-name> Deprecated [ ]
+// <font-face-src> Deprecated [ ]
+// <font-face-uri> Deprecated [ ]
+// <font-face> Deprecated [ ]
+class _font_face_{};
+// <font> Deprecated [ ]
+// <foreignObject> [ ]
+// <g> [ ]
+// <glyph> Deprecated [ ]
+// <glyphRef> Deprecated [ ]
+// <hkern> Deprecated [ ]
+// <image> [ ]
+// <line> [ ]
+// <linearGradient> [ ]
+// <marker> [ ]
+// <mask> [ ]
+// <metadata> [ ]
+// <missing-glyph> Deprecated [ ]
+// <mpath> [ ]
+// <path> [ ]
+
+class _path_ : elem{
+    using _elem:: ;
+    std::vector<string_type> attribs = {"d", "pathLength"};
+    std::vector<string_type> elems ={};
+    elem_p_vec  = {} ;
+    attrib_p_vec = {&_d , &_path_length};
+};
+std::vector<_path_> _path ; 
+// <pattern> [ ]
+// <polygon> [ ]
+// <polyline> [ ]
+// <radialGradient> [ ]
+// <rect> [ ]
+// <script> [ ]
+// <set> [ ]
+// <s_top> [ ]
+// <style> [ ]
+// <svg> [ ]
+class _svg_ {
+        _elem* elem_p_vec[] = {&_a, &_clipPath, &_cursor, &_filter, &_font, &_font&_face, &_foreignObject, &_image, &_marker, &_mask, &_pattern, &_script, &_style, &_switch, &_text, &_view} ; // One Instance of each element accepted 
+        attribs::_attrib* attrib_p_vec[]={&_baseProfile, &_height, &_preserveAspectRatio, &_version, &_viewBox, &_width, &_x, &_y}; 
+};
+std::vector<_svg_> _svg ; 
+// <switch> [ ]
+// <symbol> [ ]
+// <text> [ ]
+// <textPath> [ ]
+// <title> — the SVG accessible name element  [ ]
+// <tref> Deprecated [ ]
+// <tspan> [ ]
+// <use> [ ]
+// <view> [ ]
+// <vkern> Deprecated [ ]
+};
+
+// // Elements

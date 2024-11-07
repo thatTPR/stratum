@@ -135,6 +135,7 @@
         "sdl_events.h": "c",
         "__availability": "cpp",
         "vec2.hpp": "c",
-        "vector_uint2.hpp": "c"
+        "vector_uint2.hpp": "c",
+        "*.defs": "cpp"
     }
 }
