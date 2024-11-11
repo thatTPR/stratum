@@ -5,60 +5,6 @@
 # // Animatable: yes | no
 
 
-events= [ 'afterscriptexecute','animationcancel','animationend','animationiteration','animationstart','auxclick','beforeinput',
-'beforematch','beforescriptexecute','beforexrselect','blur','click','compositionend','compositionstart',
-'compositionupdate','contentvisibilityautostatechange','contextmenu','copy','cut','dblclick','DOMActivate','DOMMouseScroll',
-'focus','focusin','focusout','fullscreenchange','fullscreenerror','gesturechange','gestureend','gesturestart',
-'gotpointercapture','input','keydown','keypress','keyup','lostpointercapture','mousedown','mouseenter','mouseleave','mousemove',
-'mouseout','mouseover','mouseup','mousewheel','MozMousePixelScroll','paste','pointercancel','pointerdown',
-'pointerenter','pointerleave','pointermove','pointerout','pointerover','pointerrawupdate','pointerup','scroll',
-'scrollend','scrollsnapchange','scrollsnapchanging','securitypolicyviolation','touchcancel','touchend','touchmove','touchstart',
-'transitioncancel','transitionend','transitionrun','transitionstart','webkitmouseforcechanged','webkitmouseforcedown',
-'webkitmouseforceup','webkitmouseforcewillbegin','wheel']
-
-
-# To find all occurrences of a specific string in all files within a directory using Python, you can use the os module to walk through the directory and the open() function to read each file. Here’s a Python script that demonstrates this process:
-
-# Python Script to Search for String References in Files
-# python
-# Copy code
-
-# target_dir = 'C:\\Users\\Alexandru.Popp\\src\\xavirtg\\int\\xsvg\\SVGdocmozilla\\attrib'
-# def find_string_in_files(directory, search_string):
-#     # Walk through all files in the given directory
-#     for root, dirs, files in os.walk(directory):
-#         for file in files:
-#             # Only open files with specific extensions (optional, e.g., .txt, .py)
-#             file_path = os.path.join(root, file)
-#             try:
-#                 with open(file_path, 'r', encoding='utf-8') as f:
-#                     # Read file line by line
-#                     for line_num, line in enumerate(f, start=1):
-#                         flag = 0
-#                         if search_string in line:
-#                             # flag = flag + 1
-#                             # if flag < 2 :
-#                             with open( os.path.join(target_dir, file), 'a') as f :
-#                                 f.write(f"\n{search_string} on line {line_num}: {line}\n")
-#                         else:
-#                             break
-#             except Exception as e:
-#                 print(f"Could not open {file_path}: {e}")
-
-# Example Usage
-# directory = 'C:\\Users\\Alexandru.Popp\\src\\xavirtg\\int\\xsvg\\SVGdocmozilla\\Attribute'  # Specify the directory to search in
-# def create_files(directory):
-#     for root, dirs, files in os.walk(directory):
-#         for file in files:
-#             file_path = os.path.join(target_dir, file)
-            
-            
-# create_files(directory) 
-    
-# for search_string in  events: 
-#     find_string_in_files(directory, search_string)
-
-
 import os
 import shutil
 
@@ -128,8 +74,8 @@ src_dir_elem = 'C:\\Users\\Alexandru.Popp\\src\\xavirtg\\int\\xsvg\\SVGdocmozill
 target_file_elem = 'C:\\Users\\Alexandru.Popp\\src\\xavirtg\\int\\xsvg\\SVGdocmozilla\\elem.hpp'  # Directory to write results to (use \\ or raw string literals in Windows paths)
  
 
-src_dir = 'C:\\Users\\Alexandru.Popp\\src\\xavirtg\\int\\xsvg\\SVGdocmozilla\\Attribute'  # Directory to search for files (use \\ or raw string literals in Windows paths)
-target_file = 'C:\\Users\\Alexandru.Popp\\src\\xavirtg\\int\\xsvg\\SVGdocmozilla\\attrib.hpp'  # Directory to write results to (use \\ or raw string literals in Windows paths)
+src_dir_attrib = 'C:\\Users\\Alexandru.Popp\\src\\xavirtg\\int\\xsvg\\SVGdocmozilla\\Attribute'  # Directory to search for files (use \\ or raw string literals in Windows paths)
+target_file_attrib = 'C:\\Users\\Alexandru.Popp\\src\\xavirtg\\int\\xsvg\\SVGdocmozilla\\attrib.hpp'  # Directory to write results to (use \\ or raw string literals in Windows paths)
 nevent = [ 'afterscriptexecute','animationcancel','animationend','animationiteration','animationstart','auxclick','beforeinput',
 'beforematch','beforescriptexecute','beforexrselect','blur','click','compositionend','compositionstart',
 'compositionupdate','contentvisibilityautostatechange','contextmenu','copy','cut','dblclick','DOMActivate','DOMMouseScroll',
@@ -143,7 +89,7 @@ nevent = [ 'afterscriptexecute','animationcancel','animationend','animationitera
 
 # first_sec = [ 'blur','click','contextmenu','dblclick','focus','input','keydown','keypress','keyup','mousedown','mouseenter','mouseleave','mousemove','mouseout','mouseover','mouseup','mousewheel','scroll','wheel']
 target_file_elem_ev = target_file_elem+'ev' 
-target_file_ev = target_file+'ev'
+# target_file_ev = target_file+'ev'
 html_event = ['onabort', 'onautocomplete', 'onautocompleteerror', 'onblur', 'oncancel', 'oncanplay', 'oncanplaythrough', 
 'onchange', 'onclick', 'onclose', 'oncontextmenu', 'oncuechange', 'ondblclick', 'ondrag', 'ondragend', 'ondragenter',
 'ondragleave', 'ondragover', 'ondragstart', 'ondrop', 'ondurationchange', 'onemptied', 'onended', 'onerror', 'onfocus',
@@ -173,3 +119,82 @@ for i in nevent :
             print(f" {i }") 
 
 # in_last_two ['onabort','oncancel','oncanplay','oncanplay','oncanplaythrough','onchange','onchange','onclick','onclose','oncuechange','ondblclick','ondrag','ondrag','ondrag','ondrag','ondrag','ondrag','ondragend','ondragenter','ondragleave','ondragover','ondragstart','ondrop','ondurationchange','onemptied','onended','onerror','onerror','onfocus','onfocus','onfocus','oninput','oninvalid','onkeydown','onkeypress','onkeyup','onload','onload','onload','onload','onloadeddata','onloadedmetadata','onloadstart','onmousedown','onmouseenter','onmouseleave','onmousemove','onmouseout','onmouseover','onmouseup','onmousewheel','onpause','onplay','onplay','onplaying','onprogress','onratechange','onreset','onresize','onresize','onscroll','onscroll','onseeked','onseeking','onselect','onshow','onstalled','onsubmit','onsuspend','ontimeupdate','ontoggle','onvolumechange','onwaiting']
+# Elements
+Animation_elements = ['animate', 'animateMotion', 'animateTransform', 'mpath', 'set']
+Basic_shapes = ['circle', 'ellipse', 'line', 'polygon', 'polyline', 'rect']
+Container_elements = ['a', 'defs', 'g', 'marker', 'mask', 'missing-glyph', 'pattern', 'svg', 'switch', 'symbol']
+Descriptive_elements = ['desc', 'metadata', 'title']
+Filter_primitive_elements = ['feBlend', 'feColorMatrix', 'feComponentTransfer', 'feComposite', 'feConvolveMatrix', 'feDiffuseLighting', 'feDisplacementMap', 'feDropShadow', 'feFlood', 'feFuncA', 'feFuncB', 'feFuncG', 'feFuncR', 'feGaussianBlur', 'feImage', 'feMerge', 'feMergeNode', 'feMorphology', 'feOffset', 'feSpecularLighting', 'feTile', 'feTurbulence']
+Font_elements = ['font', 'font-face', 'font-face-format', 'font-face-name', 'font-face-src', 'font-face-uri', 'hkern', 'vkern']
+Gradient_elements = ['linearGradient', 'radialGradient', 'stop']
+Graphics_elements = ['circle', 'ellipse', 'image', 'line', 'path', 'polygon', 'polyline', 'rect', 'text', 'use']
+Graphics_referencing_elements = ['use']
+Light_source_elements = ['feDistantLight', 'fePointLight', 'feSpotLight']
+Never_rendered_elements = ['clipPath', 'defs', 'linearGradient', 'marker', 'mask', 'metadata', 'pattern', 'radialGradient', 'script', 'style', 'symbol', 'title']
+Paint_server_elements = ['linearGradient', 'pattern', 'radialGradient']
+Renderable_elements = ['a', 'circle', 'ellipse', 'foreignObject', 'g', 'image', 'line', 'path', 'polygon', 'polyline', 'rect', 'svg', 'switch', 'symbol', 'text', 'textPath', 'tspan', 'use']
+Shape_elements = ['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect']
+Structural_elements = ['defs', 'g', 'svg', 'symbol', 'use']
+Text_content_elements = ['glyph', 'glyphRef', 'textPath', 'text', 'tref', 'tspan']
+Text_content_child_elements = ['textPath', 'tref', 'tspan']
+Uncategorized_elements = ['clipPath', 'cursor', 'filter', 'foreignObject', 'script', 'style', 'view']
+
+# Attrs
+elem_cat = ['Animation elements',
+'Basic shapes',
+'Container elements',
+'Descriptive elements',
+'Filter primitive elements',
+'Font elements',
+'Gradient elements',
+'Graphics elements',
+'Graphics referencing elements',
+'Light source elements',
+'Never-rendered elements',
+'Paint server elements',
+'Renderable elements',
+'Shape elements',
+'Structural elements',
+'Text content elements',
+'Text content child elements',
+'Uncategorized element']
+
+def check_tags_in_files(src_dir, target_file, res_dir):
+    # Open the output file for writing
+    with open(target_file, 'w', encoding='utf-8') as output_file:
+        # Get all files in the source directory
+        for root, dirs, files in os.walk(src_dir):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                strings_found_in_file = []
+
+                try:
+                    # Open and read the file using utf-8-sig encoding (handles BOM in files)
+                    with open(file_path, 'r', encoding='utf-8-sig') as file:
+                        file_contents = file.read()
+
+                        # Check for each string in the string list
+                        for string in string_list:
+                            if string in file_contents:
+                                strings_found_in_file.append(string)
+
+                    # If we found any string, write to the output file
+                    if strings_found_in_file:
+                        output_file.write(f"Filename: {file_path}\n")
+                        output_file.write(f"[{', '.join(strings_found_in_file)}]\n\n")
+
+                except Exception as e:
+                    output_file.write(f"Could not process file {file_path}: {e}\n\n")
+
+    print(f"Results written to {target_file}")
+
+# def get_attrs_value(src_dir , target_file) :
+
+
+_elem_attribs = target_file_elem + "attrs"
+_elem_elems = target_file_elem + "elems"
+_attrib_attribs = target_file_attrib + "attrs"
+_attrib_elems = target_file_attrib + "elems"
+
+# Get _ele
+check_tags_in_files(src_dir_elem, _elem_attribs , src_dir_attrib)

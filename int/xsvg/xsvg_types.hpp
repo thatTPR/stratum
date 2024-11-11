@@ -9,54 +9,45 @@
 // template <>
 // void is_alpha()
 
+namespace svg_types {
+
+
+
 template <typename num>
 class value_t{
+    class d ;
+    d def
+    virtual num def();
     virtual void r(std::string& str,  size_t& pos,  num& no);
     virtual void w(std::string& str,  size_t& pos,  num& no);
+    value_t(def d) :def(d){};
 } ;
 
 
-template <typename def_t  , typename f_value_t , typename... value_t >
-class value_t_variant {
-    public:
-    using variant = std::tuple<f_value_t , value_t...> ;
-    using type = std::conditional_t<std::is_same_v<std::decay_t<def_t>, f_value_t>, f_value_t, typename value_t_variant<def_t, value_t...>::type>;
-
-    def_t def ;
-    value_t_variant(def_t val) : def(val) {};
-};
-
-template <typename def_t   , typename... value_t >
-class value_t_variant_t {
-    public:
-    using variant = std::tuple<value_t...>
-    using type = value_t_variant<def_t, value_t...> ;
-    static const def_t def ; 
-    value_t_variant_t (def_t val) : def(val) {};
-};
-
-
+// 
 
 template <typename num>
-class number {
+class number : value_t{
     //   number ::= integer
     //             | [+-]? [0-9]* "." [0-9]+
     // number ::= integer ([Ee] integer)?
     //         | [+-]? [0-9]* "." [0-9]+ ([Ee] integer)?
+    num def ;
     void r(std::string& str, size_t& pos , num& no){
         while(iswdigit(str[pos])){
             if(iswdigit(str[pos])){                        
                     no = no*10 + (str[pos] - '0') ;
                     continue ;
             };
-                if(str[pos]=='.'){
+            if(str[pos]=='.'){
                     int digit_ord = 1; 
                         pos++;
                     while(iswdigit(str[pos])){
                         no = no*10 + (str[pos] - '0'); digit_ord=10*digit_ord;
                         pos++ ;
-                    };
-                    if(str[pos] == 'e' || str[pos] == 'E'){
+                    };        
+            };
+            if(str[pos] == 'e' || str[pos] == 'E'){
                         pos++;
                         num sign=1  ;
                         if(str[pos] == '+'){sign = 1};
@@ -69,8 +60,9 @@ class number {
                         digit_ord=digit_ord * pow(10,n*sign);
                     } ;
                     no = no / digit_ord;
-        
-    };
+            };
+            
+        }
     std::string get_scientific(num& no){
         int p = log10(no) ; 
         num n = no / pow(10,p);
@@ -82,10 +74,14 @@ class number {
         str.insert(pos , s );
         pos+= s.size();         
     };
+    operator()(num n) {this->def = n};
+    number(num n) :def(n){};
 };
 template <typename num>
-class angle {
+class angle : value_t {
+    
     // angle ::= number (~"deg" | ~"grad" | ~"rad")?
+    num n ; 
     typedef enum  {
         deg=0, //90
         grad=1, // 100
@@ -101,12 +97,15 @@ class angle {
     void w(std::string& str,  size_t& pos , num& no){
         inline number<num>::w(str,pos,no);
     };
+    class def
 };
-class anything {
+template <typename num>
+class anything : value_t<num>{
+    
     // anything ::= Char*
 };
 template <typename num>
-class time {
+class time : value_t{
    // time s, or ms
    enum {
     ms=0,
@@ -194,36 +193,50 @@ class clock_value {
 };
 
 template <typename num>
-class color {
+class color : value_t{
 //     color    ::= "#" hexdigit hexdigit hexdigit (hexdigit hexdigit hexdigit)?
 //               | "rgb("integer integer integer")"
 //               | "rgb("integer "%" integer "%" integer "%)"
 //               | color-keyword
 // hexdigit ::= [0-9A-Fa-f]
+
+
     void r();
     void w()
 };
 template <typename num>
-class frequency {
+class frequency : value_t {
     // number Hz | KHz
 };
 
 template <typename num>
-class percentage {
+class percentage : value_t {
    // Number % 
 };
 
 
 
-// Binary types
-template <typename T>
-class _d_bin : _d {
-    struct _d_prim_bin {
-        using struct _d_prim_pt<T>:: ;
-
-    };
     
-    _d_bin match_parse(std::vector<char> , size_t& pos){
-
-    }
 };
+
+
+
+// template <typename def_t  , typename f_value_t , typename... value_t >
+// // class value_t_variant {
+// //     public:
+// //     using variant = std::tuple<f_value_t , value_t...> ;
+// //     using type = std::conditional_t<std::is_same_v<std::decay_t<def_t>, f_value_t>, f_value_t, typename value_t_variant<def_t, value_t...>::type>;
+
+// //     def_t def ;
+// //     value_t_variant(def_t val) : def(val) {};
+// // };
+
+// // template <typename def_t   , typename... value_t >
+// // class value_t_variant_t {
+// //     public:
+// //     using variant = std::tuple<value_t...>
+// //     using type = value_t_variant<def_t, value_t...> ;
+// //     static const def_t def ; 
+// //     value_t_variant_t (def_t val) : def(val) {};
+// // };
+
