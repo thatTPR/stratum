@@ -121,9 +121,9 @@ class XMLp:
                 values.append( f"{c.val if c.val else ''}"  )
         return values 
     def get_values_rec_incl(element, should_incl ) :
-        if (should_incl(element) == True and (element.ats["visited"] != "visited")):
+        
+        if ((should_incl(element) )   and (element.ats["visited"] != "visited")):
             element.ats["visited"] = "visited"
-            print("Include true")
             values = []
             if element.val :
                 values.append(element.val)
@@ -131,7 +131,7 @@ class XMLp:
             v  = XMLp.get_val_rec(element)
             if v:
                 values.append(''.join(v))
-                
+                print("values appended")
             # Recurse through child elements and collect their values
             for child in element.els:
                 child_value = XMLp.get_values_rec_incl(child,should_incl)
@@ -144,7 +144,7 @@ class XMLp:
     def get_values_rec_tree_incl(element,should_incl):
         values = []
         element.ats["visited"] = "v"
-        if should_incl(element):
+        if should_incl(element) :
             values.append(''.join( XMLp.get_values_rec_incl(element, should_incl)))
         else:
             for i in element.els :
@@ -438,8 +438,8 @@ def check_attrs_elem_with_values(attr_dir, target_file, elems , attrs  ):
                         xl = XMLp(soup.find("article"))
                         elems = []
                         # elems=XMLp.get_values_rec(child , lambda e: (("elements" or "example" or"code-example" in e.ats.values()) or (e.name ==  "p")) )
-                        try :                                                                                                                                                #( e.ats.get("class")=="table-container") and (e.name =="figure"))   ((e.ats.get("class")=="properties") and (e.name =="table") )   
-                            elems=XMLp.get_values_rec_tree_incl(xl , lambda e:  ( ( any("/en-US/docs/Web/SVG/Element/" in s for s in e.ats.values()) and (e.name =="a")) or  ( e.ats.get("class")=="table-container") and (e.name =="figure"))  )
+                        try :                                                               # ( any("/en-US/docs/Web/SVG/Element/" in s for s in e.ats.values()) or and (e.name =="a") )  ( e.ats.get("class")=="table-container") and (e.name =="figure"))   ((e.ats.get("class")=="properties") and (e.name =="table") )   
+                            elems=XMLp.get_values_rec_tree_incl(xl , lambda e:  (  ((e.ats.get("class")=="properties") )  ) ) # Make lambda list
 #                         elems=XMLp.get_values_rec_incl(xl , lambda e:  ( ("/en-US/docs/Web/SVG/Element/" in s for s in e.ats.values()) or (e.val ==  "Value" or "Default Value" or "Animatable")) )
                         except Exception as e :
                             print(f"exception:{e}")
