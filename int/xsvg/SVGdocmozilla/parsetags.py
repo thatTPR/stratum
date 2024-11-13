@@ -111,44 +111,43 @@ class XMLp:
         return False
     
     def get_val_rec(element ):
-        values = []
+        values = ""
         # values.append(s)
         for c in element.els:
             t = XMLp.get_val_rec(c)
             if t:
-                values.append( f"{c.val if c.val else ' '}" + ''.join(t)  )
+                values+=( f"{c.val if c.val else ' '}" + t  )
             else :
-                values.append( f"{c.val if c.val else ''}"  )
+                values+=( f"{c.val if c.val else ''}"  )
         return values 
     def get_values_rec_incl(element, should_incl ) :
         
         if ((should_incl(element) )   and (element.ats["visited"] != "visited")):
             element.ats["visited"] = "visited"
-            values = []
+            values = ""
             if element.val :
-                values.append(element.val)
+                values+=(element.val)
 
             v  = XMLp.get_val_rec(element)
-            if v:
-                values.append(''.join(v))
-                print("values appended")
+            values+=(v)           
+           
             # Recurse through child elements and collect their values
             for child in element.els:
                 child_value = XMLp.get_values_rec_incl(child,should_incl)
 
                 if child_value:
-                    values.append(' '.join(child_value))
+                    values+=(child_value)
 
-            return ''.join(values)
+            return values
         return ''
     def get_values_rec_tree_incl(element,should_incl):
-        values = []
+        values = ""
         element.ats["visited"] = "v"
         if should_incl(element) :
-            values.append(''.join( XMLp.get_values_rec_incl(element, should_incl)))
+            values +=( XMLp.get_values_rec_incl(element, should_incl))
         else:
             for i in element.els :
-                values.append( ''.join(XMLp.get_values_rec_tree_incl(i,should_incl)))
+                values+=( XMLp.get_values_rec_tree_incl(i,should_incl))
         return values
     def get_values_recursively(self, exclusions):
         """Recursively collect values (text) from element and its children, excluding certain elements."""
@@ -157,15 +156,15 @@ class XMLp:
             return ''  # Skip this element
 
         # Collect the element's text if it has any
-        values = []
+        values = ""
         if self.val :
-            values.append(self.val)
+            values+=(self.val)
 
         # Recurse through child elements and collect their values
         for child in self.els:
             child_value = child.get_values_recursively(exclusions)
             if child_value:
-                values.append(child_value)
+                values+=(child_value)
 
         return ''.join(values)
     def from_str( str):
@@ -436,10 +435,10 @@ def check_attrs_elem_with_values(attr_dir, target_file, elems , attrs  ):
                         # print(s)
                         soup = BeautifulSoup(s, "html.parser")
                         xl = XMLp(soup.find("article"))
-                        elems = []
+                        vals = ""
                         # elems=XMLp.get_values_rec(child , lambda e: (("elements" or "example" or"code-example" in e.ats.values()) or (e.name ==  "p")) )
                         try :                                                               # ( any("/en-US/docs/Web/SVG/Element/" in s for s in e.ats.values()) or and (e.name =="a") )  ( e.ats.get("class")=="table-container") and (e.name =="figure"))   ((e.ats.get("class")=="properties") and (e.name =="table") )   
-                            elems=XMLp.get_values_rec_tree_incl(xl , lambda e:  (  ((e.ats.get("class")=="properties") )  ) ) # Make lambda list
+                            vals=XMLp.get_values_rec_incl(xl , lambda e:  ( any("/en-US/docs/Web/SVG/Element/" in s for s in e.ats.values()) or  ((e.ats.get("class")=="properties") )   )  )# Make lambda list
 #                         elems=XMLp.get_values_rec_incl(xl , lambda e:  ( ("/en-US/docs/Web/SVG/Element/" in s for s in e.ats.values()) or (e.val ==  "Value" or "Default Value" or "Animatable")) )
                         except Exception as e :
                             print(f"exception:{e}")
@@ -455,8 +454,8 @@ def check_attrs_elem_with_values(attr_dir, target_file, elems , attrs  ):
 
                         output_file.write(f"Filename: {file_name}\n")
                         print(f"Filename: {file_name}\n")
-                        output_file.write(f"[{''.join(elems)}]\n")
-                        print(f"[{''.join(elems)}]\n")
+                        output_file.write(f"{vals}\n")
+                        print(f"{vals}\n")
 
                 except Exception as e:
                     print(f"{file_name}: {e}\n\n")

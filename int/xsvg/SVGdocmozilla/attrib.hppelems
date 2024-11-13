@@ -1,476 +1,476 @@
 ﻿Filename: accent-height
-[]
+
 Filename: accumulate
-[]
+
 Filename: additive
-[]
+
 Filename: alignment-baseline
-[]
+
 Filename: alphabetic
-[]
+
 Filename: amplitude
-[]
+
 Filename: arabic-form
-[]
+
 Filename: ascent
-[]
+
 Filename: attributeName
-[]
+
 Filename: attributeType
-[]
+
 Filename: azimuth
-[]
+
 Filename: baseFrequency
-[]
+
 Filename: baseline-shift
-[]
+
 Filename: baseProfile
-[]
+
 Filename: bbox
-[]
+
 Filename: begin
-[]
+
 Filename: bias
-[]
+
 Filename: by
-[]
+
 Filename: calcMode
-[]
+
 Filename: cap-height
-[]
+
 Filename: class
-[]
+
 Filename: clip
-[]
+
 Filename: clip-path
-[]
+
 Filename: clip-rule
-[]
+
 Filename: clipPathUnits
-[]
+
 Filename: color
-[]
+
 Filename: color-interpolation
-[]
+
 Filename: color-interpolation-filters
-[]
+
 Filename: crossorigin
-[]
+
 Filename: cursor
-[]
+
 Filename: cx
-[]
+
 Filename: cy
-[]
+
 Filename: d
-[]
+
 Filename: data-%2A
-[]
+
 Filename: decoding
-[]
+
 Filename: descent
-[]
+
 Filename: diffuseConstant
-[]
+
 Filename: direction
-[]
+
 Filename: display
-[]
+
 Filename: divisor
-[]
+
 Filename: dominant-baseline
-[]
+
 Filename: dur
-[]
+
 Filename: dx
-[]
+
 Filename: dy
-[]
+
 Filename: edgeMode
-[]
+
 Filename: elevation
-[]
+
 Filename: end
-[]
+
 Filename: exponent
-[]
+
 Filename: fill
-[]
+
 Filename: fill-opacity
-[]
+
 Filename: fill-rule
-[]
+
 Filename: filter
-[]
+
 Filename: filterUnits
-[]
+
 Filename: flood-color
-[]
+
 Filename: flood-opacity
-[]
+
 Filename: font-family
-[]
+
 Filename: font-size
-[]
+
 Filename: font-size-adjust
-[]
+
 Filename: font-stretch
-[]
+
 Filename: font-style
-[]
+
 Filename: font-variant
-[]
+
 Filename: font-weight
-[]
+
 Filename: fr
-[]
+
 Filename: From
-[]
+
 Filename: fx
-[]
+
 Filename: fy
-[]
+
 Filename: g1
-[]
+
 Filename: g2
-[]
+
 Filename: glyph-name
-[]
+
 Filename: glyph-orientation-horizontal
-[]
+
 Filename: glyph-orientation-vertical
-[]
+
 Filename: gradientTransform
-[]
+
 Filename: gradientUnits
-[]
+
 Filename: hanging
-[]
+
 Filename: height
-[]
+
 Filename: horiz-adv-x
-[]
+
 Filename: horiz-origin-x
-[]
+
 Filename: horiz-origin-y
-[]
+
 Filename: href
-[]
+
 Filename: id
-[]
+
 Filename: ideographic
-[]
+
 Filename: image-rendering
-[]
+
 Filename: in
-[]
+
 Filename: in2
-[]
+
 Filename: intercept
-[]
+
 Filename: k
-[]
+
 Filename: k1
-[]
+
 Filename: k2
-[]
+
 Filename: k3
-[]
+
 Filename: k4
-[]
+
 Filename: kernelMatrix
-[]
+
 Filename: kernelUnitLength
-[]
+
 Filename: keyPoints
-[]
+
 Filename: keySplines
-[]
+
 Filename: keyTimes
-[]
+
 Filename: lang
-[]
+
 Filename: lengthAdjust
-[]
+
 Filename: letter-spacing
-[]
+
 Filename: lighting-color
-[]
+
 Filename: limitingConeAngle
-[]
+
 Filename: marker-end
-[]
+
 Filename: marker-mid
-[]
+
 Filename: marker-start
-[]
+
 Filename: markerHeight
-[]
+
 Filename: markerUnits
-[]
+
 Filename: markerWidth
-[]
+
 Filename: mask
-[]
+
 Filename: maskContentUnits
-[]
+
 Filename: maskUnits
-[]
+
 Filename: mathematical
-[]
+
 Filename: max
-[]
+
 Filename: media
-[]
+
 Filename: method
-[]
+
 Filename: min
-[]
+
 Filename: mode
-[]
+
 Filename: name
-[]
+
 Filename: numOctaves
-[]
+
 Filename: opacity
-[]
+
 Filename: operator
-[]
+
 Filename: order
-[]
+
 Filename: orient
-[]
+
 Filename: orientation
-[]
+
 Filename: origin
-[]
+
 Filename: overflow
-[]
+
 Filename: overline-position
-[]
+
 Filename: overline-thickness
-[]
+
 Filename: paint-order
-[]
+
 Filename: panose-1
-[]
+
 Filename: path
-[]
+
 Filename: pathLength
-[]
+
 Filename: patternContentUnits
-[]
+
 Filename: patternTransform
-[]
+
 Filename: patternUnits
-[]
+
 Filename: pointer-events
-[]
+
 Filename: points
-[]
+
 Filename: pointsAtX
-[]
+
 Filename: pointsAtY
-[]
+
 Filename: pointsAtZ
-[]
+
 Filename: preserveAlpha
-[]
+
 Filename: preserveAspectRatio
-[]
+
 Filename: primitiveUnits
-[]
+
 Filename: r
-[]
+
 Filename: radius
-[]
+
 Filename: refX
-[]
+
 Filename: refY
-[]
+
 Filename: repeatCount
-[]
+
 Filename: repeatDur
-[]
+
 Filename: requiredFeatures
-[]
+
 Filename: restart
-[]
+
 Filename: result
-[]
+
 Filename: rotate
-[]
+
 Filename: rx
-[]
+
 Filename: ry
-[]
+
 Filename: scale
-[]
+
 Filename: seed
-[]
+
 Filename: shape-rendering
-[]
+
 Filename: side
-[]
+
 Filename: slope
-[]
+
 Filename: spacing
-[]
+
 Filename: specularConstant
-[]
+
 Filename: specularExponent
-[]
+
 Filename: spreadMethod
-[]
+
 Filename: startOffset
-[]
+
 Filename: stdDeviation
-[]
+
 Filename: stemh
-[]
+
 Filename: stemv
-[]
+
 Filename: stitchTiles
-[]
+
 Filename: stop-color
-[]
+
 Filename: stop-opacity
-[]
+
 Filename: strikethrough-position
-[]
+
 Filename: strikethrough-thickness
-[]
+
 Filename: string
-[]
+
 Filename: stroke
-[]
+
 Filename: stroke-dasharray
-[]
+
 Filename: stroke-dashoffset
-[]
+
 Filename: stroke-linecap
-[]
+
 Filename: stroke-linejoin
-[]
+
 Filename: stroke-miterlimit
-[]
+
 Filename: stroke-opacity
-[]
+
 Filename: stroke-width
-[]
+
 Filename: style
-[]
+
 Filename: surfaceScale
-[]
+
 Filename: systemLanguage
-[]
+
 Filename: tabindex
-[]
+
 Filename: tableValues
-[]
+
 Filename: target
-[]
+
 Filename: targetX
-[]
+
 Filename: targetY
-[]
+
 Filename: text-anchor
-[]
+
 Filename: text-decoration
-[]
+
 Filename: text-rendering
-[]
+
 Filename: textLength
-[]
+
 Filename: To
-[]
+
 Filename: transform
-[]
+
 Filename: transform-origin
-[]
+
 Filename: type
-[]
+
 Filename: u1
-[]
+
 Filename: u2
-[]
+
 Filename: underline-position
-[]
+
 Filename: underline-thickness
-[]
+
 Filename: unicode
-[]
+
 Filename: unicode-bidi
-[]
+
 Filename: unicode-range
-[]
+
 Filename: units-per-em
-[]
+
 Filename: v-alphabetic
-[]
+
 Filename: v-hanging
-[]
+
 Filename: v-ideographic
-[]
+
 Filename: v-mathematical
-[]
+
 Filename: values
-[]
+
 Filename: vector-effect
-[]
+
 Filename: version
-[]
+
 Filename: vert-adv-y
-[]
+
 Filename: vert-origin-x
-[]
+
 Filename: vert-origin-y
-[]
+
 Filename: viewBox
-[]
+
 Filename: visibility
-[]
+
 Filename: width
-[]
+
 Filename: widths
-[]
+
 Filename: word-spacing
-[]
+
 Filename: writing-mode
-[]
+
 Filename: x
-[]
+
 Filename: x-height
-[]
+
 Filename: x1
-[]
+
 Filename: x2
-[]
+
 Filename: xChannelSelector
-[]
+
 Filename: xlink%3Aarcrole
-[]
+
 Filename: xlink%3Ahref
-[]
+
 Filename: xlink%3Ashow
-[]
+
 Filename: xlink%3Atitle
-[]
+
 Filename: xlink%3Atype
-[]
+
 Filename: xml%3Alang
-[]
+
 Filename: xml%3Aspace
-[]
+
 Filename: y
-[]
+
 Filename: y1
-[]
+
 Filename: y2
-[]
+
 Filename: yChannelSelector
-[]
+
 Filename: z
-[]
+
 Filename: zoomAndPan
-[]
+
