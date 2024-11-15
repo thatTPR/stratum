@@ -286,3 +286,5 @@ static const std::array<event*> ev={&el_copy, &el_focus, &el_input, paste};
 static const std::array<event*> ev={&el_copy, &el_focus , _&input};        
 static const std::array<event*> ev={&el_copy, &el_focus , _&input};        
 */
+
+

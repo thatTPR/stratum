@@ -113,10 +113,7 @@ svg_event_attr = ['onabort','onactivate','onbegin','oncancel','oncanplay','oncan
 # check_strings_in_files(src_dir_elem, target_file_elem_ev, event)
 # check_strings_in_files(src_dir_elem, target_file_ev, event)
 
-for i in nevent :
-    for j  in svg_event_attr  :
-        if i in j :
-            print(f" {i }") 
+
 
 # in_last_two ['onabort','oncancel','oncanplay','oncanplay','oncanplaythrough','onchange','onchange','onclick','onclose','oncuechange','ondblclick','ondrag','ondrag','ondrag','ondrag','ondrag','ondrag','ondragend','ondragenter','ondragleave','ondragover','ondragstart','ondrop','ondurationchange','onemptied','onended','onerror','onerror','onfocus','onfocus','onfocus','oninput','oninvalid','onkeydown','onkeypress','onkeyup','onload','onload','onload','onload','onloadeddata','onloadedmetadata','onloadstart','onmousedown','onmouseenter','onmouseleave','onmousemove','onmouseout','onmouseover','onmouseup','onmousewheel','onpause','onplay','onplay','onplaying','onprogress','onratechange','onreset','onresize','onresize','onscroll','onscroll','onseeked','onseeking','onselect','onshow','onstalled','onsubmit','onsuspend','ontimeupdate','ontoggle','onvolumechange','onwaiting']
 # Elements
@@ -197,4 +194,4 @@ _attrib_attribs = target_file_attrib + "attrs"
 _attrib_elems = target_file_attrib + "elems"
 
 # Get _ele
-check_tags_in_files(src_dir_elem, _elem_attribs , src_dir_attrib)
+check_tags_in_files(src_dir_attrib, _elem_attribs , src_dir_attrib)

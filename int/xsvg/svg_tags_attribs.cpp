@@ -11,12 +11,6 @@ class _attrib { static const char c[] ="-attrib"
  } ;
 
 class _accent_height_ { static const char c[] ="accent-height";     std::vector<std::tuple<value_t/*with default*/  , bool/*animatable*/> values = {value_t::number()};  
-
-font-face
-For <font-face>, accent-height defines the distance from the origin to the top of accent characters, measured by a distance within the font coordinate system.
-Value	<number>
-Default value	Value of ascent
-Animatable	No
 };  
 class _accumulate_ { static const char c[] ="accumulate" 
 };   

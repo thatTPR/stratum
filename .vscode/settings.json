@@ -136,6 +136,8 @@
         "__availability": "cpp",
         "vec2.hpp": "c",
         "vector_uint2.hpp": "c",
-        "*.defs": "cpp"
+        "*.defs": "cpp",
+        "text_encoding": "cpp",
+        "bimap": "cpp"
     }
 }

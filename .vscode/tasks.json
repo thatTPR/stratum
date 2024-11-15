@@ -32,6 +32,8 @@
             "type": "cppdebug",
             "label: "C/C++ gcc debug",
             "command": "gdb",
+            
+            "group": "cppdebug"
         }
     ],
     "version": "2.0.0"
