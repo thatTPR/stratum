@@ -169,6 +169,8 @@ std::vector<std::string> getVendors(){ //
 #define SIZE_OPTIM "-Os"
 #define SUPER_SIZE_OPTIM "-Oz"
 
+
+
 #define DEFAULT_OPT O3_OPTIM
 #define BEST_OPT FAST_OPTIM
 /*

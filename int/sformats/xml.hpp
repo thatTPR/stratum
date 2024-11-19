@@ -6,12 +6,15 @@
 #include <map>
 #include <cctype>
 #include <queue>
+#include <stack>
 namespace xml {
 using namespace std;
 class xml_parse;
     class xmln{
     public:
     size_t depth ;
+    size_t el_size ; // Number of 
+    size_t at_size;
 
     string name ;
     string val ;
@@ -58,7 +61,7 @@ class xml_parse;
         this->name = _name ;
         this->ats= _ats ; 
     };
-    xmln(std::string _name) :name(_name){};
+    xmln(std::string _name) {this->name = _name;};
     // xmln(std::string& s_){
     //     xml_parse prs = new xml_parse(0x1);
     //     xmln x = new xmln();
@@ -82,99 +85,6 @@ class xml_parse;
         if (this->name == ob.name) {return true;};
         return false ;
     };
-    // void soft_neq_name_ats(xmln& _ob, xmln& ob){
-    //     bool b_name = true;
-    //     bool b_ats = true;
-    //     try{
-    //         b_name =ob.name == _ob.name;
-    //         for (const auto std::pair<std::string,std::string >& t : ob.ats  ){
-    //                 b_ats = _ob.ats[k] == t. }
-    //     }
-    //     catch (std::excpetion& e)  {
-    //         std::cout<<"softneq excpetion:"<<e<<std::endl;
-    //     }
-    //     return ((not b_name) and (not b_ats))
-    // };
-    
-    // void should_exclude(xmln element,std::map<std::string,std::string> exclusions){
-    //     //Check if an element should be excluded based on name and attributes.//
-    //     if (exclusions.size == 0)
-    //         return false
-    //     for (auto const exclusion : exclusions){
-    //         name_b = true
-    //         attributes_b = true
-    //         try:
-    //             if isinstance(exclusion, dict):  // Ensure exclusions are dicts
-    //                 name_b = exclusion.get("name") == element.name
-    //                 attributes_b = all(element.ats.get(attr) == value for attr, value in exclusion.get("attributes", {}).items())
-    //             if name_b and attributes_b:
-    //                 return true
-    //         except Exception as e : 
-    //             print(f"Keynot found:{e}");};
-    //     return false
-    // }
-    // std::string get_val_rec( xmln& element){
-    //     std::vector<std::string> vec ;  
-    //     // values.append(s)
-    //     for (const auto c : element.els ){
-    //         t = c.get_val_rec(c)
-    //         if (t) {values+=return c.val?c.val:"" + t;}
-    //         else values+=return c.val?c.val:"" + t;};
-    //     return values 
-    // };
-    // std::string get_values_rec_incl(xmln& element, bool(*should_incl)(xmln&) ){
-        
-    //     if ((should_incl(element) )   and (element.ats["visited"] != "visited")){
-    //         element.ats["visited"] = "visited"
-    //         std::string values="";
-    //         if(element.val){
-    //             values+=element.val;
-    //         };
-    //         std::string v  = element.get_val_rec(element)
-    //         if (v){
-    //             values+=" " +v;
-    //             std::cout<<"values appended";
-    //         };
-    //         // Recurse through child elements and collect their values
-    //         for (const auto child : element.els ){
-    //             std::string child_value = child.get_values_rec_incl(&child,should_incl);
-    //             if (child_value){values+=child_value;}
-    //         };
-    //         return values
-    //     };
-    //     return ""
-    // };
-    // void get_values_rec_tree_incl(xmln& element,bool(*should_incl)(xmln&)){
-    //     std::string values ="";
-    //     element.ats["visited"] = "v";
-    //     if (should_incl(element)){
-    //         values+= " "+ this->get_values_rec_incl(element, should_incl);
-    //     }
-    //     else{
-    //         for (const xmln& i : element.els  )
-    //             values+=i.get_values_rec_tree_incl(i,should_incl);
-    //         };
-    //     return values
-    // };
-    // void get_values_recursively(exclusions):
-    //     // //Recursively collect values (text) from element and its children, excluding certain elements.//
-    //     // Skip this element if it matches any exclusion criteria
-    //     if (this->should_exclude(exclusions))
-    //         return ""  // Skip this element
-
-    //     // Collect the element's text if it has any
-    //     std::string values;
-    //     if (this->val) 
-    //         values.append(this->val)
-
-    //     // Recurse through child elements and collect their values
-    //     for (const auto child : this->els ){
-    //         child_value = child.get_values_recursively(exclusions)
-    //         if child_value:
-    //             values.append(child_value)
-    //     };
-    //     return values
-    // };
     bool lt_eq(std::map<std::string,std::string>& mlhs, std::map<std::string,std::string>& mrhs){
         bool t = true ;
         for(std::pair<std::string,std::string> p : mlhs){
@@ -255,13 +165,24 @@ class xml_parse;
             if (el.name==name) {return &el;}
         };
     };
+    // void print(std::ostream& os , const xmln& n, size_t depth){
+    //     auto lambda = [&os](xmln* el}{}
+    //     os<<  "name:" << n.name << ";val=" <<n.val << ";ats={"  ;
+    //     for (const std::pair<std::string,std::string>& s : n.ats){os<< s.first <<":"<<s.second<<",";};
+    //     os<<"}; els{ ";
+    //     for (int i ; i<n.els.size(); i++ ) {
+    //         os<<n.els[i].name<<", ";
+    //     };
+    //     return os<<"}" ;
+    // };
     friend std::ostream& operator<<(std::ostream& os,const xmln& n){
-        std::string ats = "" ;
-        for (const std::pair<std::string,std::string>& s : n.ats){ats+= s.first +":"+ s.second+",";};
-        os<<  "name:" << n.name << ";val=" <<n.val << ";ats={" << ats <<"},els={"<<"\n " ;
-          for (const auto& s : n.els) {os<<s<<"} ";};
-        return os ;
+        os<<  "name:" << n.name << ";val=" <<n.val << ";ats={"  ;
+        for (const std::pair<std::string,std::string>& s : n.ats){os<< s.first <<":"<<s.second<<",";};
+        os<<"}; els{ ";
+        for (int i ; i<n.els.size(); i++ ) {os<<n.els[i].name<<", ";};
+        return os<<"}" ;
     };
+    
 };
     
     
@@ -350,21 +271,6 @@ class xml_parse : xmln{
     //  value_parse() TODO
    
     // xmln lax_from_str()// same as from str but tags need be closed only for valued tags or root  
-    inline void pop_cur_el_vec(std::vector<xmln>* _cur ,xmln& n){
-        if(_cur->size()==1){n.els.emplace_back(_cur->front() ); return;}
-        (*_cur)[_cur->size()-2].els.emplace_back(_cur->back());
-        _cur->pop_back();
-    };
-#ifdef XML_NO_POP_MACRO    
-#define pop_el_vec pop_cur_el_vec(&curn_vec, n);
-#endif
-#ifndef XML_NO_POP_MACRO
-#define pop_el_vec \
-if(curn_vec.size()==1){n.els.emplace_back(curn_vec.front() ); } \
-else {curn_vec[curn_vec.size()-2].els.emplace_back(curn_vec.back()); \
-curn_vec.pop_back();} \
-
-#endif
 
     // inline void pop_cur_el_vec(std::vector<xmln> _cur ,xmln& n){
     //     if(_cur->size()==1){n.els.push_back((*_cur)[0] ); return;}
@@ -375,6 +281,21 @@ curn_vec.pop_back();} \
     std::string get_str(){
         return get_str_with_escape();
     };
+    inline void pop_cur_el_vec(std::vector<xmln>* _cur ,xmln& n){
+        if(_cur->size()==1){n.els.emplace_back(_cur->front() ); return;}
+        (*_cur)[_cur->size()-2].els.emplace_back(_cur->back());
+        _cur->pop_back();
+    };
+#ifdef XML_NO_POP_MACRO    
+#define pop_el_vec pop_cur_el_vec(&curn_vec, n);
+#endif
+#ifndef XML_NO_POP_MACRO
+#define pop_el_vec \
+if(curn_vec.size()==1){n.els.push_back(curn_vec.front() ); } \
+else {curn_vec[curn_vec.size()-2].els.push_back(curn_vec.back()); \
+curn_vec.pop_back();}; \
+
+#endif
     xmln from_str(std::string& str){
         
         std::vector<std::pair<int,int>> dbq = {} ;

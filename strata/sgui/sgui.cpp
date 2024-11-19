@@ -9,36 +9,11 @@
 using namespace std; 
 
 
-class widget {
-    
-    std::vector<widget> childs; 
-    virtual glm::vec4 rect  ;
-    virtual void add(widget w)  {
-        
-    };
-    virtual inline void insert(widget w , ){
-
-    };
-    virtual void operator+(widget w) final{
-        this->add(w) ;
-    };
-    virtual void operator<<(widget w) final {
-        this->insert(w) ;
-    };
-
-};
 
 enum boxPrimitive {
     TRIANGLE_FAN,
     TRIANGLE_STRIP,
     
-};
-template <enum topologyPrimitive TP>
-class nonRectWidget : widget {
-
-    using topologyPrimitive = ;  
-    std::vector<widget> childs ; 
-    virtual void addWidget
 };
 
 template <senv_c ec , sren_c rc>
@@ -46,12 +21,7 @@ class sgui {
     ec env ;
     rc ren ;
     map<> map ; 
-    virtual void begin(){
 
-    };
-    virtual void end(){
-
-    };
     void run(){
 
     };
