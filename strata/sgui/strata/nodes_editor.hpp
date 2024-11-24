@@ -2,6 +2,15 @@
 #include "../sgui_widgets.hpp"
 #include "../../../lib/glm/common.hpp"
 #include <cstring>
+#include "../../petri/all.hpp"
+#include <type_traits>
+#include <memory>
+template< typename T>
+struct reftype{
+    static constexpr bool ref = std::is_reference_v<T>;
+    static constexpr bool ptr = std::is_pointer_v<T>;
+    static constexpr bool val = !(ref || ptr);
+};
 
 enum pintypes { // Icons for each // Ref,ptr, each
     event=1,
@@ -10,64 +19,141 @@ enum pintypes { // Icons for each // Ref,ptr, each
     exec=4,
 }
 class node : private widget_base ;
-template<typename type>
-class pin : public code{
+template<typename T >
+class pin : public widget,public code{
     public:
-    T* data;
-    char name[20] ;
+    T type;
+    
+    using arrmeta = arrtype<T>;
+    char* name ; size_t namesize;
     uint color[4];
-    enum datatype {
-        bvec2,bvec3,bvec4,dvec2,dvec3,dvec4,uvec2,uvec3,uvec4,ivec2,ivec3,ivec4,vec2,vec3,vec4,
-
-
-    };
-    int type;
+    unsigned short int o; // order of array
+    unsigned short int o2; // order of data
+    
+    int pintype;
     int* pixel_shader_ptr;
+    virtual T& get_data_ref(){return *(this->data);};
+    virtual T* get_data_ptr(){return *(this->data);};
+    virtual T get_data(){return this->data;};
+    virtual void handle();
     void draw();
     void calc();
     virtual void _set_ref(pin* p){
         this->ref = p;
+    pin(char* name, T* data){
+        this->name = name ; this->namesize = sizeof(name)/sizeof(name[0]);
     };
-   
-    
+    pin(char* name, T& data){
+        this = new pin(name,&data);
+    };
+    pin(char* name, T data){
+        this->data = data;this->name =  name; this->namesize = sizeof(name);
+    };
+    pin(T data){
+        this->data = data;
+    };
+    };
 };
-template <typename T>
-class event_pin : public pin<T> {
+template <typename T >
+class pinptr :public pin<T*> {
+    virtual T& get_data_ref() override {return this->data;};
+    virtual T* get_data_ptr() override {return this->data;};
+    virtual T get_data() override  {return *(this->data);};
+    virtual void handle() override {inline pin::handle();};
+};
+template <typename T> 
+class pinref : public pin<T&>{
+    virtual  T& get_data_ref() override {return this->data;};
+    virtual T* get_data_ptr() override {return *(this->data);};
+    virtual T get_data() override {T s = this->data; return s;};
+};
 
-};
+class event_pin = pin<events::event> {
+    public:
+    virtual void handle(){
+
+    };
+} ;
+
+class event_pinptr :public pinptr<events::event>{
+
+} ;
+class event_pinref : public pinptr<events::event>;
+
 template <typename T>
 class function_pin : public pin<T>{
 
 };
+template <typename T>
+using func_pinptr = pin<T*> ;
+template <typename T> 
+using func_pinref = pin<T&>;
+
 template <typeame T>
 class res_pin : public pin<T> {
 
 };
+template <typename T>
+using res_pinptr = pin<T*> ;
+template <typename T> 
+using res_pinref = pin<T&>;
 
-
+using rt_pin = pin<void>;
+using rt_pinref = pinref<void>;
+using rt_pinptr = pinptr<void>;
 class node_widget : public widget {
     node_widget(pin* left[], pin* right[]){
         this->left = left; this->right= right;
     }
 } ;
 
-
-class node :public widget,public pin { // Has mainexec
+class node :public widget_base,public pin { // Has mainexec
     private:
     static constexpr const char* name = "node";
     public:
     node* nodes;
-    pin left[20]; 
-    size_t left_size=0;
+    pin** left;  size_t left_size=0;
     uint left_pin_index[20] ;  // Points to nodes;
-    pin right[20];
+    pin** right; size_t right_size=0;
     uint right_pin_index[20];
     size_t right_size=0;
     virtual void exec(){
 
     };
-    node(node_canvas* c,pin left[] , pin right[]){
+    protected:
+    static inline void _add_pin(pin*** member, size_t* member_s, pin& s){
+        pin** p = *(member);
+        *member = new pin*[*(member_s)+1];
+        for(int i = 0 ;i<*(member_s);i++){
+            (*member)[i] = p[i];  
+        };
+        (*member)[*(member_s)] = new pin(s);
+        *(member_s)++;
+        delete s;
+    };
+    static inline void _insert_pin(pin*** member, size_t* member_s,size_t pos, pin& s){
+        pin** p = *(member);
+        *member = new pin*[*(member_s)+1];
+        for(int i =0; i <pos ; i++){
+            (*member)[i] = p[i];
+        };
+        *member_s++;
+        (*member)[pos] = new pin(s);
+        for(int i = pos+1 ;i<*(member_s);i++){
+            (*member)[i] = p[i-1];  
+        };
+        delete s;
+    };
+public:
+    void add_pin_left(pin& s){
+        this->_add_pin(&(this->left),&(this->left_size),s);
+    };
 
+    void add_pin_right(pin& s){
+        this->_add_pin(&(this->right),&(this->right_size),s);
+    };
+    node(node_canvas* c,pin left[] , pin right[]){
+        
     };
     
 };
@@ -96,8 +182,8 @@ class node_expression : public node, public w_code {
          // dot.nxyzw n is index to name 
         int iparen[20][3];int parensize; int pmax;// begin close depth
     };
-    struct expr expression;
-     enum operators {
+    expr expression;
+    enum operators {
             plus=1,
             minus=2,
             multiply=3,//*
@@ -113,7 +199,7 @@ class node_expression : public node, public w_code {
             question=14,
             colon=15,
             semicolon=16,
-        }; // support swizzle
+    }; // support swizzle
     static bool eval_expr(struct expr x){
         auto val ;
 
@@ -327,10 +413,7 @@ class node_expression : public node, public w_code {
                 case '%':{iop[indop][0]=operators::mod;      iop[indop][1]=names_s ;iop[indop][2]=indparen; indop++; pins[names_s] = name_handle(); continue;} ;
             };
         };
-        this->expression = {
-            pins,names_s,iop,indop,iparen,indparen
-        };
-
+        this->expression = {pins,names_s,iop,indop,iparen,indparen};
     };
 
     virtual void exec(){
@@ -344,7 +427,32 @@ class node_expression : public node, public w_code {
 class node_canvas : private canvas{
     node** childs ;
     string file_path;
-    string* dep_paths;
+    string global_namespace;
+    string* includes;
+    enum fence_type {
+        class=0,struct=1,namespace=2,function=3,;
+    };
+    class fence : widget {
+        public:
+        uint coord[4];
+        node** nodes;
+        size_t nodes_count;
+        fence_type type;
+        std::string name ;
+        void resize_fit(){
+            uint mindist[4]={10,10,10,10};
+            
+            for(int i=0; i < nodes_cound; i++){
+                mindist[0]=mindist[0]< this->nodes[i]->coord[0]-this->coord
+            };
+        };
+        fence(std::string name, uint coord[4] ){
+
+        };
+    };
+
+    fence* fences;
+    size_t fence_size;
     SGUI_DECL void add_child(widget* w, uint[2] coord){
             w->coord=coord;
             this->_add_child(w);
@@ -361,6 +469,9 @@ class node_canvas : private canvas{
     };
 };
 
+class object_fence : public canvas, public node,widget {
+
+};
 
 class branch : public node {
     bool s;
@@ -368,4 +479,11 @@ class branch : public node {
     void exec(){
 
     } ;
+};
+/***
+ *  One canvas , each object fence may be a class or struct depeneding on requirements . 
+ *  @translate_unit 
+ */
+class translate_unit { 
+
 };

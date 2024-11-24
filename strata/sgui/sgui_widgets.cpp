@@ -1,6 +1,7 @@
 #pragma once
 #include "sgui.cpp"
 #include <cstdarg>
+#include <type_info>
 #ifndef uint 
 #define uint unsigned int
 #endif
@@ -11,7 +12,8 @@ using namespace std ;
 #define SGUI_DOCKING
 #endif
 #define NO_SIZE 1000000000
-#define MAX_WIDGET_CHILDS 500
+#define MAX_WIDGET 500
+#define MAX_CHILDS 
 // [SECTION] Forward Declarations
 // [SECTION] Widgets: Text, etc.
 // [SECTION] Widgets: Main (Button, Image, Checkbox, RadioButton, ProgressBar, Bullet, etc.)
@@ -36,15 +38,16 @@ using namespace std ;
 // [SECTION] Widgets: Columns, BeginColumns, EndColumns, etc.
 namespace sgui {
 // Text arrsize()
-    class canvas;
+    
     SGUI_DECL void canvas::update();
     SGUI_DECL void canvas::update_move();
     SGUI_DECL void canvas::update_insert();
     class widget_base {
         
         public:
-        static const char[] name = ""; 
-        static const int[] shader_bin = {};
+        static const char name[30] ; 
+        char* shader_bin ;
+        size_t shader_bin_size;
         short int alignment=0;
         bool dockable = true; // Means a widget can be moved to a different widget, including an auto-constructed new canvas outside the current window; 
         bool leaf = false; // Leafs can't move child widgets
@@ -97,13 +100,16 @@ namespace sgui {
        #define align_cenv         0b1100
        #define align_cen          0b1111
     */
+   class widget: public wiget_base;
+   class canvas : public widget ;
     class widget : public widget_base{
         public:
         bool calced;
         bool childs_calced = false;
         widget* parent ;
+        // size_t pos; // position in canvas hierarchy
         widget** childs;
-        static auto* canvas; 
+        canvas* canvas; 
         size_t childs_length=0;
         static struct d {
             uint coord[4];
@@ -255,14 +261,16 @@ namespace sgui {
             this->draw();
         };
     };*/
-    template <typename font>
+    
     class canvas : public widget {
         public:
         font f;
-        uint c[4];
+     
         // widget* last_opened;//TODO
-        widget* childs[MAX_WIDGETS]; // Direct children
+        widget* childs[MAX_WIDGETS] ; 
+        size_t child_pos[MAX_WIDGETS]; // Direct children
         int opened[MAX_WIDGETS]; // Currently opened widget so that begin() and close() makes sense
+        widget* w_cur;
         struct ext {
             uint bg_col[3];
             uint fg_col[3];
@@ -274,8 +282,13 @@ namespace sgui {
             this->opened =  this->last_opened;
         };
         
-        canvas(){
-        canvas(font f, uint x, uint y, uint x_size , uint y_size);
+        canvas(font f, uint x, uint y, uint width , uint height){
+            this->f = f; this->d.coord[0] =x; this->d.coord[1] = y; this->d.coord[2] = x+width;this->d.coord[3] = y+height ;
+            this->d.wh_size[0] = width; this->d.wh_size[1] = height;
+        };
+        canvas(font f,uint x, uint y, uint xsec,uint ysec){
+            this=new canvas(f,x,y,xsec-x,ysec-y);
+        };
     };
     #ifndef CANVAS_LIMIT
     #define CANVAS_LIMIT 10
@@ -318,6 +331,7 @@ namespace sgui {
         va_end(args);
 
     };
+    
     #define SCROLL_HORI  0b01
     #define SCROLL_VERTI 0b10
     #define SCROLL_ALL   0b11

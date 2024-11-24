@@ -138,6 +138,7 @@
         "vector_uint2.hpp": "c",
         "*.defs": "cpp",
         "text_encoding": "cpp",
-        "bimap": "cpp"
+        "bimap": "cpp",
+        "cassert": "cpp"
     }
 }
