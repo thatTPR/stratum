@@ -16,3 +16,10 @@
 
 
 // PDF extract // 
+
+#include "ttf.hpp"
+
+class font {
+    std::string name; 
+    
+};

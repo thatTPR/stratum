@@ -6,7 +6,8 @@
 #include <fstream>
 #include <windows.h>
 #include <string.h>
-// using fs = std::filesystem;
+using namespace std;
+using fs = std::filesystem;
 
 void write_dir_file(std::filesystem::path dir, char* com ){
     std::string files[1000] ;
@@ -22,13 +23,12 @@ void write_dir_file(std::filesystem::path dir, char* com ){
                 system(command.c_str());
                 files[j] = entry.stem().string() ; j++;     
                 std::ifstream in(entry);
-                out<<"int"<<" "<<entry.stem()<<"[]= {";
-                int i;in>>i;
-                out<<std::hex<<i;
+                out<<"char"<<" "<<entry.stem()<<"[]= \"";
+                char i;
                 while(in>>i){
-                    out<<","<<std::hex<<i;
-                }
-                out<<"};\n";
+                    out<<i;
+                };
+                out<<"\";\n";
             };
         }
     };

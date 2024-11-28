@@ -1,7 +1,12 @@
 #pragma once
+
 #include "sgui.cpp"
 #include <cstdarg>
 #include <type_info>
+#include "../petri/vects.hpp"
+#include "sgui_internal.hpp"
+#include <memory>
+#include <thread>
 #ifndef uint 
 #define uint unsigned int
 #endif
@@ -106,67 +111,97 @@ namespace sgui {
         public:
         bool calced;
         bool childs_calced = false;
-        widget* parent ;
+        size_t canvas_pos;
+        widget* parent ; size_t parent_pos;
         // size_t pos; // position in canvas hierarchy
-        widget** childs;
-        canvas* canvas; 
         size_t childs_length=0;
+        canvas* canvas; 
         static struct d {
-            uint coord[4];
+            uint coord[4]; //nw->se
             uint wh_size[2];
             
         } data;
         
-        SGUI_DECL void _add_child(widget* w){
-            if(this->childs_length < sizeof(this->nodes)/sizeof(this->nodes[0]) ){
-            this->childs[this->childs_length] = n; return;
-            };
-            this->childs_length++;
-            node** s = new node*[this->childs_length ] ;
-            for(int i =0 ; i < this->childs_length-- ;i++ ){
-                s[i] = this->childs[i];
-            };
-            s[this->childs_length] = n;
-            return s;
+        bool is_pt_of(uint pt[2] ){return (pt[0] > coord[0]) and (pt[0]<coord[3]) and (pt[1]<coord[1]) and (pt[2]>coord[4])  ;}
+        std::shared_ptr<vect<widget*>> childs;
+        
+        SGUI_DECL void _push_child(widget* w){
+                // this->childs.store(this->childs.load()->push(w));
+                this->childs->push(w);
         };
         
-        SGUI_DECL void _insert_child(widget* w , size_t pos){
-            this->childs_length++;
-            widget* chi[this->childs_length] ;
-            for(int i=0 ; i<pos;i++){
-                chi[i] = this->childs[o]    
-            };
-            chi[pos] = w;
-            for(int i = pos+1;i<this->childs_length; i++){
-                chi[i] = this->childs[i-1];
-            };
-            this->childs = chi;
-        };
+        SGUI_DECL void _insert_child(size_t pos,widget* w ){w->parent = this;this->childs->insert(pos,w); };
         SGUI_DECL void _erase_child(size_t pos){
-            this->childs_length-- ;
-            for(int i = dynamic_cast<int>(pos); i<this->childs_length ; i++){   
-                this->childs[i] = this->childs[i+1]; 
-            };
+            this->childs->erase(pos);
         };
         SGUI_DECL void _move_push_child(size_t pos, widget* parent_dest){
-            if constexpr(this->leaf == false){return;};
-            this->childs[i]; size_t ns = sizeof(parent_dest->childs)/sizeof(parent_dest->childs[0]);
-            widget** n= new widget*[ns+1];
-            parent_dest->childs[]=;
+            parent_dest->push((this->childs->get(pos));
+            this->childs->erase(pos);
         };
         SGUI_DECL void _move_insert_child(size_t possrc, size_t dest, widget* parent_dest){
-            if constexpr(this->leaf == false){return;};
-            _parent_dest->insert_child(this->childs[possrc],dest);
-            this->_erase_child(possrc);
+            parent_dest->_insert_child(dest,this->childs->get(possrc));
+            this->childs->erase(possrc);
         };
+        SGUI_DECL void _move_push(widget* parent){
+            this->parent= parent;
+            parent->_add_child(this);
+
+        };
+        SGUI_DECL void _move_insert(size_t pos,widget* parent ){
+            this->parent= parent;
+            parent->_insert_child(pos,this);
+        };
+        SGUI_DECL void _move_canvas_push(widget* parent, canvas* c){
+            this->parent = parent;
+            this->canvas = c;
+            this->parent->push(this);
+        };
+        SGUI_DECL void _move_push(widget* parent){
+            parent->_push_child(this);
+        };
+        SGUI_DECL void _move_insert(size_t pos,widget* parent){
+            parent->_insert_child(pos,this);
+        };
+        // SGUI_DECL void _copy_push(widget* parent);
+        // SGUI_DECL void _copy_insert(widget* parent);
+        SGUI_DECL void _move_canvas_insert(size_t pos, widget* parent, canvas* c){
+            this->parent = parent;
+            this->canvas = c;
+            this->parent->insert(pos,this);
+        };
+
+#ifdef SGUI_CANVAS_MAT
+        SGUI_DECL void _add_child(widget* w){
+            this->canvas->mat[this->canvas_pos]->push(w);
+        };
+        SGUI_DECL void _insert_child(size_t pos,widget* w){
+            this->canvas->mat[this->canvas_pos]->insert(pos,w);
+        };  
+        SGUI_DECL void _erase_child(size_t pos){
+            this->canvas->mat[this->canvas_pos]->erase(pos);
+        };
+        SGUI_DECL void _move(size_t parent_pos){
+            this->parent = this->canvas->parent()
+        };
+        SGUI_DECL void _move_canvas_push(size_t canvas_pos, size_t widget_pos);
+        SGUI_DECL void _move_canvas_insert(size_t canvas_pos, size_t widget_pos, size_t pos);
+        SGUI_DECL void _move_push_child(size_t pos, size_t parent_pos){
+            this->canvas->mat[parent_pos]->push( (*(this->canvas->mat[this->canvas_pos]))[pos]);
         
+            this->erase_child(pos);
+        };
+        SGUI_DECL void _move_insert_child( size_t dest, size_t pos){
+
+        };
+#endif
+
         widget* get_child(size_t pos){
-            return this->childs[pos];
+            return this->childs->get(pos);
         };
         size_t get_child(widget* w){
-            for(int i = 0 ; i < sizeof(this->childs)/sizeof(this->childs[0])){
+            for(size_t i = 0 ; i < this->childs->size(); i++){
                 if(w==this->childs[i]){
-                    return dynamic_cast<size_t>(i);
+                    return i;
                 }
             };
         };
@@ -174,26 +209,23 @@ namespace sgui {
         
         SGUI_DECL void move_child(widget* w, widget* parent_dest){
             this->_move_child(w, parent_dest);
-            this->canvas->update(parent_src,parent_dest,this);
+          
         };
         SGUI_DECL void move_insert_child(widget* w, size_t dstpos ,widget* dest ){
             this->_move_insert_child(w,dstpos,dest);
-            this->canvas->update(this,parent_dest,this);
         };
         SGUI_DECL void move_push_child(widget* w, size_t dstpos ,widget* dest ){
             this->_move_push_child(w,dest);
-            this->canvas->update(parent_src,parent_dest,this);
         };
         
-        SGUI_DECL void add_child(widget* w, uint[2] coord){
+        SGUI_DECL void add_child(widget* w, uint[4] coord){
             this->_add_child(w);
-            this->canvas->update_add(this, w);
         };
         SGUI_DECL void insert_child(widget* w, size_t pos,uint[4] coord){
             w->coord = coord ;
             insert_child(w,pos);
-            this->canvas->update();
         };
+
 
         virtual SGUI_DECL void _draw(){ 
         };
@@ -219,7 +251,7 @@ namespace sgui {
         }; 
         SGUI_DECL virtual void calc_childs(){ // TODO + gpu
             for(int i = 0  ; i<this->size_childs ; i++){
-                this->childs[i]->calc()
+                this->childs[i]->calc();
             };
             this->childs_calced = true;
         };
@@ -250,27 +282,27 @@ namespace sgui {
         bool ret();
         
     };
-    /*
-    class widget_leaf : public widget_base{ // Even though sgui::widget supports leaf behaviour this interface is better for widgets with truly no children 
-        public:
-        static const bool leaf = false ;
-        constexpr bool is_leaf(){return this->leaf;}        
-        widget* parent ;
-        SGUI_DECL void draw();
-        SGUI_DECL void handle(){
-            this->draw();
-        };
-    };*/
-    
-    class canvas : public widget {
+    class canvas : public widget_base {
         public:
         font f;
-     
-        // widget* last_opened;//TODO
-        widget* childs[MAX_WIDGETS] ; 
-        size_t child_pos[MAX_WIDGETS]; // Direct children
-        int opened[MAX_WIDGETS]; // Currently opened widget so that begin() and close() makes sense
+        widget** childs ; size_t sizechils;
+        int* opened; // Currently opened widget so that begin() and close() makes sense
         widget* w_cur;
+        vect<vect<<widget*>*> mat; // 0 is canvas direct children
+        size_t get_pos_from_widget(widget* w){
+            for(size_t i = 0 ; i < this->mat.size(); i++){
+                if(w==(*(this->mat[0]))[0]){
+                    return i;
+                };
+            };
+        };
+        void _add_widget(size_t paren_pos ,widget* w){
+            this->mat[0]->push(w);
+        };
+        void _insert_widget(size_t paren_pos,size_t pos, widget* w){
+            this->mat[paren_pos]->insert(pos,w);
+        };
+
         struct ext {
             uint bg_col[3];
             uint fg_col[3];

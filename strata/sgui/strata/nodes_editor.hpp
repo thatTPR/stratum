@@ -17,12 +17,12 @@ enum pintypes { // Icons for each // Ref,ptr, each
     function=2,
     res=3, 
     exec=4,
-}
+};
 class node : private widget_base ;
 template<typename T >
-class pin : public widget,public code{
+class pin : public widget{
     public:
-    T type;
+    T d;
     
     using arrmeta = arrtype<T>;
     char* name ; size_t namesize;
@@ -35,9 +35,8 @@ class pin : public widget,public code{
     virtual T& get_data_ref(){return *(this->data);};
     virtual T* get_data_ptr(){return *(this->data);};
     virtual T get_data(){return this->data;};
-    virtual void handle();
-    void draw();
-    void calc();
+
+    virtual void handle(){return this->d};
     virtual void _set_ref(pin* p){
         this->ref = p;
     pin(char* name, T* data){
@@ -53,6 +52,18 @@ class pin : public widget,public code{
         this->data = data;
     };
     };
+};
+template <typename T>
+class pin_scalar :public pin , public sgui::drag_scalar ;
+
+class pin_full_color : public pin, public sgui::full_color{
+
+};
+class pin_entity {
+
+};
+class pin_tesselation {
+
 };
 template <typename T >
 class pinptr :public pin<T*> {
@@ -78,85 +89,68 @@ class event_pin = pin<events::event> {
 class event_pinptr :public pinptr<events::event>{
 
 } ;
-class event_pinref : public pinptr<events::event>;
+class event_pinref : public pinref<events::event>;
 
-template <typename T>
-class function_pin : public pin<T>{
+class func_pin : public pin<void T()>{
 
+    d = T;
+    virtual handle(){this->d();}
 };
 template <typename T>
 using func_pinptr = pin<T*> ;
 template <typename T> 
-using func_pinref = pin<T&>;
+using func_pinref = func_pin<T&>;
 
 template <typeame T>
 class res_pin : public pin<T> {
 
 };
 template <typename T>
-using res_pinptr = pin<T*> ;
+using res_pinptr = res_pin<T*> ;
 template <typename T> 
-using res_pinref = pin<T&>;
+using res_pinref = res_pin<T&>;
 
-using rt_pin = pin<void>;
-using rt_pinref = pinref<void>;
-using rt_pinptr = pinptr<void>;
-class node_widget : public widget {
-    node_widget(pin* left[], pin* right[]){
-        this->left = left; this->right= right;
-    }
+
+
+class node_canvas : public sgui::wi_canvas {
+
 } ;
-
-class node :public widget_base,public pin { // Has mainexec
+template <typename T>
+class node :public widget,public pin<T> { // Has mainexec
     private:
-    static constexpr const char* name = "node";
+    char name[] = "node";
     public:
-    node* nodes;
-    pin** left;  size_t left_size=0;
+
+    std::shared_ptr<vect<node*>> nodes_exec;
+    std::shared_ptr<vect<pin*>> left; 
     uint left_pin_index[20] ;  // Points to nodes;
-    pin** right; size_t right_size=0;
+    std::shard_ptr<vect<pin*>> right; 
     uint right_pin_index[20];
     size_t right_size=0;
-    virtual void exec(){
-
+    virtual void handle(){
+        for(int i = )
+    };
+    private:
+    void exec() {
+        this->handle();
+        for(int i = 0; i <this->nodes_exec->size() ; i++ ){
+            (*(this->nodes_exec[i]))->exec();
+        };
     };
     protected:
-    static inline void _add_pin(pin*** member, size_t* member_s, pin& s){
-        pin** p = *(member);
-        *member = new pin*[*(member_s)+1];
-        for(int i = 0 ;i<*(member_s);i++){
-            (*member)[i] = p[i];  
-        };
-        (*member)[*(member_s)] = new pin(s);
-        *(member_s)++;
-        delete s;
-    };
-    static inline void _insert_pin(pin*** member, size_t* member_s,size_t pos, pin& s){
-        pin** p = *(member);
-        *member = new pin*[*(member_s)+1];
-        for(int i =0; i <pos ; i++){
-            (*member)[i] = p[i];
-        };
-        *member_s++;
-        (*member)[pos] = new pin(s);
-        for(int i = pos+1 ;i<*(member_s);i++){
-            (*member)[i] = p[i-1];  
-        };
-        delete s;
-    };
+    static inline void _push_pin_left( pin* s){this->left->push(s);};
+    static inline void _push_pin_right(pin* s){this->right->push(s);};
+    static inline void _insert_pin_left(size_t pos, pin* s){this->left->insert(pos,s);};
+    static inline void _insert_pin_right(size_t pos, pin* s){this->right->insert(pos,s);};
 public:
-    void add_pin_left(pin& s){
-        this->_add_pin(&(this->left),&(this->left_size),s);
-    };
-
-    void add_pin_right(pin& s){
-        this->_add_pin(&(this->right),&(this->right_size),s);
-    };
-    node(node_canvas* c,pin left[] , pin right[]){
-        
+    node(node_canvas* c,vect<pin*> left, vect<pin*> right){
+        this->node_canvas = c;
+        this->left = std::make_shared<vect<pin*>> left ;
+        this->right = std::make_shared<vect<pin*>> right ;
     };
     
 };
+using node_ref = 
 class node_expression : public node, public w_code {
     public:
     #define MAX_EXPR_SIZE 256
@@ -183,6 +177,7 @@ class node_expression : public node, public w_code {
         int iparen[20][3];int parensize; int pmax;// begin close depth
     };
     expr expression;
+    
     enum operators {
             plus=1,
             minus=2,

@@ -1,0 +1,7 @@
+<svg width=20 height=20>
+    <ellipse  rx=4 ry=6  opacity=0.7 fill=000 stroke-width=4 stroke=#F10  >
+        <animateTransform attributeName=fill from=#000  to=#FF4 begin=mouseover/>
+        <animateTransform attributeName=stroke from=#F10 to=#F40 begin=mouseover/> -->
+        <animateTransform attributeName="opacity" from=0.7 to=1  ></animateTransform>
+    </circle>
+</svg>

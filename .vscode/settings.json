@@ -140,5 +140,6 @@
         "text_encoding": "cpp",
         "bimap": "cpp",
         "cassert": "cpp"
-    }
+    },
+    "svg.preview.background": "custom"
 }

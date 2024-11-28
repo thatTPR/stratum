@@ -99,6 +99,35 @@ using limat4x2=long int[4][2] ;
 using limat4x3=long int[4][3] ;
 using limat4x4=long int[4][4] ;
 
+template <size_t size>
+struct swizzle {
+    static constexpr size_t s = size; 
+};
+using x = swizzle<0>; 
+using y = swizzle<1>; 
+using z = swizzle<2>; 
+using w = swizzle<3>; 
+
+template<typename T,size_t size,size_t s>
+T[s] operator^(T el[size] , swizzle swi[s]){
+    T  m[s];
+    for( size_t i = 0 ; i < s;i++){
+        m[i] = el[swi[i]];
+    }   ; 
+    return m;
+};
+
+swizzle[2] operator*(swizzle a, swizzle b){
+    swizzle n[2] = {a.s,b.s};
+    return n;
+};
+swizzle[3] operator*(swizzle a[2],swizzle b)
+{
+    swizzle n[3] = {a[0].s,a[1].s,b.s}; return n;
+}
+swizzle[4] operator*(swizzle a[3], swizzle b){
+    swizzle n[4] = {a[0].s, a[1].s , a[2].s , b.s}; return n;
+};
  template <typename T >
  struct arrdepth {
      using _ty = std::remove_extent_t<T>;
@@ -143,15 +172,111 @@ class vec {
     };
     arr(size_t _r){this->row = _r; this->col = _c; this->d =new T[r]}
 };
+
+template <typename T , size_t size_buffer=0b1000 >
+class vect {
+    private:
+    size_t size_buf = size_buffer;
+    size_t tsize=size_buf;
+    T* data;
+    size_t s;// Current size
+    public:
+    T* get_data(){
+        return this->data;
+    };
+    size_t get_size(){return this->s;};
+    
+    size_t get_tsize(){return this->tsize;};
+    T& get(size_t pos){return this->data[pos];}
+    void resize(size_t a){ // Resizes tsize to a + size_buf and vect to a;
+        T* n = new T[a+size_buf];
+        if(a<this->s){
+            for(int i = 0 ; i< a;i++){n[i] = this->data[i];};
+        }
+        else{
+            for(int i=0 ; i < this->s ; i++ ){
+                n[i] = this->data[i]; 
+            };
+        };
+        this->data= new T[a+size_buf] ;this->data=n;
+        this->s= a;
+    };
+   
+    void insert(size_t pos, T elem){
+        if(!(this->s+1 < this->tsize)){
+        this->resize(this->s+1);};
+        T cur; 
+        cur = this->data[pos];
+        this->data[pos] = elem;
+        for(int i = pos+1 ; i < this->s;i++){
+            T current = this->data[i];
+            this->data[i]=cur;
+            cur= current;
+    };
+    void erase(size_t pos){
+        this->s--;
+        for (int i = pos ; i < this->s ; i++){
+            this->data[i] = this->data[i+1];
+        };     
+    };
+
+    #ifdef CXX23
+    vect operator[](size_t a, size_t b){
+        vect<T> res ;
+        for(int i =a ; i<=b ; i++){
+            res[i-a] = this->data[i];
+        };
+        return res;
+    };
+    #endif
+    
+    T& operator[](size_t pos){
+        if(pos >= this->s){
+            this->resize(pos+1);
+            return this->data[pos];
+        };
+        return this->data[pos];
+    };
+    vect& operator=(std::initializer_list<T> list){
+        T* n = new T[list.size()];
+        int i = 0 ;
+        for(T val : list) {
+            n[i] = val; i++;
+        };
+        this->data=n;
+        this->s = list.size();
+    };
+     void push(T& elem){
+        if (this->s < this->tsize){
+            this->data[s]= elem;
+            this->s++; return;
+        };
+        this->resize(this->tsize);
+        this->data[this->s] = elem;
+        this->s++;
+    };
+        
+    vect(size_t size){
+        this->s = size; 
+        this->tsize = size+size_buf;
+        this->data = new T[this->tsize];
+    };  
+    vect(){vect(0);}
+    vect(size_t s, size_t tsize){
+        this->s = s; this->tsize = tsize ; this->data= new T[this->tsize];
+    };
+
+}; 
+
 template <typename T,size_t r=0, size_t c =0>
 class mat {
     public:
     vec<T,c>[r] d;
-     size_t row, col;
+    size_t row = row ; size_t col;
     vec<T>& operator[](size_t s){
         return d[s];
     };
-    mat(T** n){this->row = sizeof(n)/sizeof(n[0]); this->d = new[this->row] vec<T>(sizeof(n[0])/sizeof(n[0][0]))}
+    mat(T** n){this->row = si,this[2],eof(n)/sizeof(n[0]); this->d = new[this->row] vec<T>(sizeof(n[0])/sizeof(n[0][0]))}
     operator=()(T** n){
         this = new mat(n); 
     };
@@ -231,70 +356,3 @@ class ten{
 };
 
 #endif
-
-template <typename T  >
-class vect {
-    public:
-    T* data;
-    size_t s;// Current size
-    size_t tsize;
-    T* data(){
-        return this->data;
-    };
-    T& operator[](size_t s){
-        return this->data[s];
-    };
-    void resize(size_t a){
-        T* n = new T[a];
-        if(a<this->s){
-            for(int i = 0 ; i< a;i++){n = this->data[i];};
-        }
-        else{
-            for(int i ; i < this->s ; i++ ){
-                n[i] = this->data[i]; 
-            };
-        } ;
-        this->data=n;
-        this->s= a;
-    };
-    void push(){
-
-    };
-    void pop(){
-
-    };
-    
-    T& insert(size_t pos, T elem){
-        T* n = new T[this->s + 1];
-        for(int i = 0 ; i < pos ; i++){
-            n[i] = this->data[i];
-        };
-        n[pos] = elem;
-        for(int i = pos+1 ; i < this->s;i+=2){
-            n[i]=this->data[i-1];
-        };
-        this->data=  n ; 
-        this->s +=1;
-    };
-    vect operator[](size_t a, size_t b){
-        vect<T> res ;
-        for(int i =a , i<=b ; i++){
-            res[i-a] = this->data[i];
-        };
-        return res;
-    };
-    T& operator[](size_t pos){
-        assert(pos<this->s, "Pos bigger than size");
-        return this->data[pos];
-    };
-    vect& operator=(std::initializer_list<T> list){
-        T* n = new T[list.size()];
-        n=list;
-        this->data=n;
-        this->size = list.size();
-    };
-    operator(size_t size){
-        this->s = size;
-        this->data = new T[size];
-    };  
-};  
