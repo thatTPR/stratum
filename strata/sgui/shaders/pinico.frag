@@ -1,25 +1,21 @@
 #version 450
 
-in vec2 icoCoord
-in vec2 
+in bvec2 state;
+in uvec4 stroke; // Last one is width
+in uvec4 fill;
+in uvec4 more;
+in vec2 icoCoord;
+in vec2 icoVert
 out vec4 outColor;
 
-#define STROKE_WIDTH 4
-uint ps = resx/(monptx/(PT_SIZE));
-uint stroke_width = STROKE_WIDTH * ps ; 
 
-uint p= ps * textSizept;
-int p_pix = 
-void handle_state()
 #ifdef EVENT 
 // Square    
-uvec4[p][p] pin_event(bool connected, bool triggered){
+vec2 pin_event(bool connected, bool triggered){
     uvec4 st[p][p] ;
-    // Fill
-    uvec4 stroke={200,50,25,200}; ;
-    uvec4 fill = {0,0,200,100} ;
-    uvec2 more = {100,20};
-    leng
+        
+    
+    
     if(connected){
         stroke.zw += more;
         fill.zw += more;
@@ -48,12 +44,9 @@ uvec4[p][p] pin_event(bool connected, bool triggered){
 #endif
 #ifdef RES
 // circle
-uvec4[p][p] pin_res(bool connected, bool triggered , uvec4& stroke, uvec4& fill ){ 
+vec2 pin_res(bool connected, bool triggered , uvec4 stroke, uvec4 fill, uvec4 more ){ 
         uvec4 st[p][p] ;
     // Fill
-    uvec4 stroke={200,50,25,100}; ;
-    uvec4 fill = {80,80,80,100} ;
-    ivec2 more = {0,0,80,75};
     if(connected){
         stroke.xyzw += more;
         fill.xyzw += more;
@@ -173,31 +166,19 @@ uvec4[p][p] pin_func(bool connected, bool triggered){
     };
 }; 
 #endif 
+uint ps = resx/(monptx/(PT_SIZE));
+uint stroke_width = STROKE_WIDTH * ps ; 
 
+uint p= ps * textSizept;
+int p_pix = 
+bool handle_state(bool connected , bool triggered){
 
-#ifndef ALL_PIN
-vec4[10][10] pin_ico(bool connected , bool triggered){
-#ifdef EVENT 
-// Square        
-#endif
-#ifdef RES
-// circle 
-#endif 
-#ifdef FUNC
-//two squares
-
-#endif 
-
-#ifdef exec
-// triangle
-
-#endif
 };
-#endif
-#ifdef ALL_PIN
-uvec4[10][10] pin_ico(bool connected, bool triggered) 
-#endif
+
+
+
+
 
 void main(){
-
+    outColor = 
 };

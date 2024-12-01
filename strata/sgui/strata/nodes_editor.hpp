@@ -11,6 +11,21 @@ struct reftype{
     static constexpr bool ptr = std::is_pointer_v<T>;
     static constexpr bool val = !(ref || ptr);
 };
+uvec4 exec_stroke={200,50,25,200}; ;
+uvec4 exec_fill = {0,0,200,100} ;
+uvec2 exec_more = {100,20};
+
+uvec4 event_stroke={200,50,25,100}; ;
+uvec4 event_fill = {80,80,80,100} ;
+ivec2 event_more = {0,0,80,75};
+
+uvec4 res_stroke={200,50,25,200}; ;
+uvec4 res_fill = {0,0,200,100} ;
+uvec2 res_more = {100,20};
+
+uvec4 func_stroke={200,50,25,200}; ;
+uvec4 func_fill = {0,0,200,100} ;
+uvec2 func_more = {100,20};
 
 enum pintypes { // Icons for each // Ref,ptr, each
     event=1,

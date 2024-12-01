@@ -29,7 +29,6 @@
 #define HEX_C_ESC "\x1B"
 #define HEX_C_DEL "\x7F"
 
-typedef enum ANSICODE { // all suffixed 
     #define cursor_up "A",//	Cursor Up	(n=1)	Move cursor up by n
     #define cursor_down "B", //	Cursor Down	(n=1)	Move cursor down by n
     #define cursor_forward "C", //	Cursor Forward	(n=1)	Move cursor forward by n
@@ -58,13 +57,26 @@ typedef enum ANSICODE { // all suffixed
     #define cursor_restore_dec 8//	Restore Cursor Position	()	Set cursor back to position last saved by s
     #define cursor_horizontal_abso "f", //	…	…	(same as G)
     #define SGR "m", //	SGR	(*)	Set graphics mode. More below
-}ANSICODE;
 
+#define _cursor_up 65
+#define _cursor_down 66
+#define _cursor_forward 67
+#define _cursor_back 68
+#define _cursor_next_line 69
+#define _cursor_prev_line 70
+#define _cursor_horizontal_abs 71
+#define _cursor_pos 72
+#define _erase_in_disp 74
+#define _erase_in_line 75
+#define _scroll_up  83
+#define _scroll_down 84
+#define _cursor_save 115
+#define _cursor_restore 117
+#define _cursor_horizontal_abso 102 
+#define _SGR 109
 
-
-
-    #define TABLE=5,
-    #define RGB=2
+    #define TABLE 5
+    #define RGB 2
 
     #define FG_BLACK 30
     #define FG_RED 31
@@ -106,7 +118,7 @@ typedef enum ANSICODE { // all suffixed
     #define BG_BRIGHT_CYAN 106
     #define BG_BRIGHT_WHITE 107
 
-    void fg(int s){return s-10; };
+    int fg(int s){return s-10; };
 
  
 #define SG_reset 0 //	Reset / Normal	all attributes off

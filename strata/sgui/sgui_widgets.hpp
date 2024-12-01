@@ -7,6 +7,8 @@
 #include "sgui_internal.hpp"
 #include <memory>
 #include <thread>
+#include "../../../../int/ansicode.hpp"
+#include "./shaders/shaders.hpp"
 #ifndef uint 
 #define uint unsigned int
 #endif
@@ -22,7 +24,6 @@ using namespace std ;
 // [SECTION] Forward Declarations
 // [SECTION] Widgets: Text, etc.
 // [SECTION] Widgets: Main (Button, Image, Checkbox, RadioButton, ProgressBar, Bullet, etc.)
-// [SECTION] Widgets: Low-level Layout helpers (Spacing, Dummy, NewLine, Separator, )
 // [SECTION] Widgets: ComboBox
 // [SECTION] Data Type and Data Formatting Helpers
 // [SECTION] Widgets: DragScalar, DragFloat, DragInt, etc.
@@ -525,13 +526,13 @@ namespace sgui {
     class toggle_button : widget{
 
     };
-    class slider_calar : widget {
-      
-    };
+    
     template <typename no>
     class slider_no : widget {
+        public:
         no val ;
-        virtual SGUI_DECL void normalize();
+        no min;
+        no max;
     };
     using slider_int = slider_no<int>;
     using slider_uint = slider_no<uint>;
