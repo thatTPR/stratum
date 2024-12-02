@@ -5,10 +5,10 @@ image2D sample;
 };
 
 in widget ws[] ;
-in float element_size ; // Zoom 
+in ivec element_size ; // Zoom 
 
-out vec4 widget_box ; // Where 
-out vec4 childs_bounds; // Where children can be rendered
+out ivec4 widget_box ; // Where 
+out ivec4 childs_bounds; // Where children can be rendered
 
 
 // lower

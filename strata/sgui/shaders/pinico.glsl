@@ -1,13 +1,10 @@
 #version 450
-
-in bvec2 state;
-in uvec4 stroke; // Last one is width
-in uvec4 fill;
-in uvec4 more;
-in vec2 icoCoord;
-in vec2 icoVert
-out vec4 outColor;
-
+layout(location=0)in vec4 bounds;
+layout(location=1)in bvec2 state; // Pinned triggered
+layout(location=2)in uvec4 stroke; // Last one is width
+layout(location=3)in ivec4 fill;
+layout(location=4)in ivec4 more_col;
+layout(locaiton=7)out image2D im;
 
 #ifdef EVENT 
 // Square    

@@ -21,27 +21,7 @@ using namespace std ;
 #define NO_SIZE 1000000000
 #define MAX_WIDGET 500
 #define MAX_CHILDS 
-// [SECTION] Forward Declarations
-// [SECTION] Widgets: Text, etc.
-// [SECTION] Widgets: Main (Button, Image, Checkbox, RadioButton, ProgressBar, Bullet, etc.)
-// [SECTION] Widgets: ComboBox
-// [SECTION] Data Type and Data Formatting Helpers
-// [SECTION] Widgets: DragScalar, DragFloat, DragInt, etc.
-// [SECTION] Widgets: SliderScalar, SliderFloat, SliderInt, etc.
-// [SECTION] Widgets: InputScalar, InputFloat, InputInt, etc. // TODO 
-// [SECTION] Widgets: InputText, InputTextMultiline // TODO
-// [SECTION] Widgets: ColorEdit, ColorPicker, ColorButton, etc. // TODO
-// [SECTION] Widgets: TreeNode, CollapsingHeader, etc.
-// [SECTION] Widgets: Selectable
-// [SECTION] Widgets: Typing-Select support
-// [SECTION] Widgets: Multi-Select support
-// [SECTION] Widgets: ListBox
-// [SECTION] Widgets: PlotLines, PlotHistogram
-// [SECTION] Widgets: Value helpers
-// [SECTION] Widgets: MenuItem, BeginMenu, EndMenu, etc.
-// [SECTION] Widgets: BeginTabBar, EndTabBar, etc.
-// [SECTION] Widgets: BeginTabItem, EndTabItem, etc.
-// [SECTION] Widgets: Columns, BeginColumns, EndColumns, etc.
+
 namespace sgui {
 // Text arrsize()
     
@@ -465,7 +445,7 @@ namespace sgui {
     // };
     
     
-    class w_text : widget_leaf {
+    class w_text : widget {
         char* text;
         void draw(){
 
@@ -479,7 +459,9 @@ namespace sgui {
     class w_code : widget_leaf{
         
     };
-    
+    class w_code : widget_leaf {
+
+    };
     class hori_bar : public  widget {
         public:
         using widget_node::widget_node ;
@@ -505,11 +487,11 @@ namespace sgui {
        
         };
     };
-    class tree {
+    class tree : public widget {
 
     };
     class text : widget {
-        static const char[] name = "text_widget"
+        static const char[] name = "text_widget";
         canvas* _canvas
         std::string name ;
         
@@ -549,7 +531,9 @@ namespace sgui {
         gizmos* gs; 
     };
 
-};
+    class combo_box : widget {
+
+    }
 };
 // How is usage : Widget(args);
                 //   Widget(args);

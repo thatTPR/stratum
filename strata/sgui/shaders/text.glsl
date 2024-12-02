@@ -1,4 +1,7 @@
 #version 450
+#ifdef MULTI_CURSOR
+#define CURSOR
+#endif
 precision mediump float;
 #ifdef ANSICODE
 #define BEL	  7 //       | 007   |  0x07      \a	^G	Terminal bell ,
@@ -215,23 +218,35 @@ struct glyph {
     #endif  VERTI_BEARING
 };
 
-uniform in bool word_wrap;
-uniform in int n;
-layout(location=0)uniform in bvec4 options; // scrollable,kerning,word,wrap
-layout(location=1) in glyph range[n];
-layout(location=2) in int text_length;
-layout(location=3) in int text[text_length];
-layout(location=4) in vec3 text_size ; // w,h,space;
-layout(location=5) vec2 bounds;
-layout(location=6)out image2D im ;
-#ifdef CURSOR
-layout(location=7) in vec2 cursor;
-#endif
+layout(location=0) uniform bool word_wrap;
+layout(location=1) uniform bvec4 options; // scrollable,kerning,word,wrap
+layout(location=2) uniform glyph range[n];
+layout(location=3) uniform int text_length;
+layout(location=4) uniform int text[text_length];
+layout(location=5) uniform ivec4 text_size ; // w,h,space,line;
+layout(location=6) uniform ivec2 bounds;
+layout(location=7) uniform int scroll;
+layout(location=0) out image2D im ;
+layout(location=1) out text_s;
+#define LOC  8
 #ifdef ANSICODE
-layout(location=8) ivec4 fg_bg_col[2];
+layout(location=LOC) uniform ivec4 fg_bg_col[2];
+#define LOC  LOC +1 
+#endif
+#ifdef CURSOR
+
+#ifdef MULTI_CURSOR
+layout(location=LOC) uniform uint size;
+#define LOC LOC+1
+layout(location=LOC) uniform vec2 cursor[size]; //line col;
+#define LOC  LOC +1 
+#else
+#define (location=LOC) uniform vec2 cursor;
+#endif
+layout(location=1) out image2D index; // position of each glyph xy pos; zw state;
+#define LOC  LOC +1 
 #endif
 
-laout image1D index; // position of each glyph xy pos; zw state;
 int i;
 vec2 pos_cur;
 int space;
@@ -358,7 +373,7 @@ void process(){
     imageStore(im,pt,glyfim);
 };
 #ifdef ANSICODE
-void new_line(int s=1){pos_cur.y-= s*text_size.z;};
+void new_line(int s=1){pos_cur.xy=vec2( (bounds.x + text_size.z),(pos_cur.y-(text_size.y+text_size.w));};
 void space(int s=1){pos_cur.x+= s*(text_size.x);};
 uvec3 color128(){
     vec3 col;i++; int ansiCode ; int size=0;
@@ -544,7 +559,8 @@ void pro_ind(){
 };
 #ifndef NO_MAIN
 void main(){
-    pos_cur = bounds.xy - vec2(0,text_size);
+    text_s = text_size;
+    pos_cur = bounds.xy - vec2(-text_size.z,(text_size.y+text_size.w));
     line_height = (bounds.y-bounds.w)/text_size;
     space++;
     for(i =0 ; i<text_length; i++){
