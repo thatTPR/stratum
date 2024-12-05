@@ -1,18 +1,8 @@
 #include "../sys.hpp"
+#include "../../sgui/strata/nodes_editor.hpp"
 namespace node {
-    class field {
-        virtual glm::vec4 color;
-        virtual std::string name ;
-        virtual void value ;
-    };
-    class node {
-        virtual glm::vec4 color;
-        virtual std::string name ;
-        
-        virtual std::vector<field*> ins ;
-        virtual std::vector<field*> outs ;  
-    };
-    class event_node {
+  
+    class event: public node {
         virtual glm::vec4 color;
         virtual std::string name ;
         
@@ -20,6 +10,7 @@ namespace node {
         virtual field eventOut; 
         virtual std::vector<field*> ins
         virtual std::vector<field*> outs ;
+        event()
     };
     
     class graph {

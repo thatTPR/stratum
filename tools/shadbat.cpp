@@ -156,12 +156,13 @@ void write_dirs_spvs_to_file(std::vector<std::string> dirs ){
 #ifndef STRATA_NO_MAIN
 int main( int argc, char* argv[]){
     if(argc==1){
-    if(argc == 1){std::cout<<"shadbat -Iinc... -Ddir... file.. -\"command\"";}
+    if(argc == 1){std::cout<<"shadbat -Iinc... -Ddir... file.. -ddir_file_incls -\"command\" :\n -I : include folders\n -D : compile shaders and include in dir fild\n -d include spv.s in source file.hpp";}
         return 1;
     };
     std::vector<std::string> incpath ; /*incpath=get_STRA_PATH()*/
     std::vector<std::string> directories ;
     std::vector<std::string> files;
+    std::vector<std::string> incldir;
     command = "";
     for ( int i = 1 ; i < argc ; i++){
         if(argv[i][0] == '-'){
@@ -196,6 +197,14 @@ int main( int argc, char* argv[]){
                     if(c=='\"'){command+=c;break;}
                     command =+c; j++;
                 };
+            }
+            else if(argv[i][1] == 'd'){
+                std::string com;
+                int j=2;
+                while (char c = argv[i][j]){
+                    com =+c; j++;
+                };
+                com[j]=argv[i][j];incldir.push_back(com);
             };
         }
         else {
@@ -207,6 +216,7 @@ int main( int argc, char* argv[]){
         comp_dirs_files(directories,incpath);
         write_dirs_spvs_to_file(directories);
         file_comp(files,incpath);
+        write_dirs_spvs_to_file(incldir);
         
     return 1;
     };

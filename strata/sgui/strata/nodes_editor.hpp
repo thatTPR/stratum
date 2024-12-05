@@ -1,10 +1,13 @@
 // Node editor 
+#include <typeinfo>
 #include "../sgui_widgets.hpp"
 #include "../../../lib/glm/common.hpp"
 #include <cstring>
 #include "../../petri/all.hpp"
 #include <type_traits>
 #include <memory>
+#include "../backend/impl.hpp"
+using namespace events;
 template< typename T>
 struct reftype{
     static constexpr bool ref = std::is_reference_v<T>;
@@ -29,57 +32,46 @@ uvec2 func_more = {100,20};
 
 enum pintypes { // Icons for each // Ref,ptr, each
     event=1,
-    function=2,
     res=3, 
-    exec=4,
 };
 class node : private widget_base ;
-template<typename T >
+template<typename T , int _pintype>
 class pin : public widget{
     public:
     T d;
-    
+    ivec4 bounds;
     using arrmeta = arrtype<T>;
-    char* name ; size_t namesize;
+    std::string name = typeid(T).name() ; 
     uint color[4];
-    unsigned short int o; // order of array
-    unsigned short int o2; // order of data
-    
-    int pintype;
-    int* pixel_shader_ptr;
-    virtual T& get_data_ref(){return *(this->data);};
-    virtual T* get_data_ptr(){return *(this->data);};
-    virtual T get_data(){return this->data;};
+    vect<uint> connects;
+    const int pintype = _pintype;
+    ivec4 data ; // h,w,pintype,pinned;
+    int32_t[0] pixel_shader_ptr;
+    virtual T& get_data_ref(){return *(this->d);};
+    virtual T* get_data_ptr(){return *(this->d);};
+    virtual T get_data(){return this->d;};
 
-    virtual void handle(){return this->d};
+    virtual void handle(){return this->d;};
     virtual void _set_ref(pin* p){
         this->ref = p;
-    pin(char* name, T* data){
-        this->name = name ; this->namesize = sizeof(name)/sizeof(name[0]);
+    pin(std::string name, T data)  {this->name =name;this->d =data;}
+    pin(std::string name, T* data) {
+        this->name = name ; this->d = *(data);
     };
-    pin(char* name, T& data){
+    pin(std::string name, T& data){
         this = new pin(name,&data);
     };
-    pin(char* name, T data){
-        this->data = data;this->name =  name; this->namesize = sizeof(name);
+    pin(std::string name, T data){
+        this->data = data;this->name =  name; 
     };
-    pin(T data){
+    pin(T data): default{
         this->data = data;
     };
+    pin(std::string name){this->name = name;};
+
     };
 };
-template <typename T>
-class pin_scalar :public pin , public sgui::drag_scalar ;
 
-class pin_full_color : public pin, public sgui::full_color{
-
-};
-class pin_entity {
-
-};
-class pin_tesselation {
-
-};
 template <typename T >
 class pinptr :public pin<T*> {
     virtual T& get_data_ref() override {return this->data;};
@@ -94,37 +86,37 @@ class pinref : public pin<T&>{
     virtual T get_data() override {T s = this->data; return s;};
 };
 
-class event_pin = pin<events::event> {
+class event_pin : public pin<events::event,pintype::res> {
     public:
     virtual void handle(){
 
     };
 } ;
 
-class event_pinptr :public pinptr<events::event>{
+class event_pinptr :public pinptr<events::event,pintype::event>{
 
 } ;
-class event_pinref : public pinref<events::event>;
+class event_pinref : public pinref<events::event,pintype::event>;
 
-class func_pin : public pin<void T()>{
-
-    d = T;
-    virtual handle(){this->d();}
-};
-template <typename T>
-using func_pinptr = pin<T*> ;
-template <typename T> 
-using func_pinref = func_pin<T&>;
 
 template <typeame T>
-class res_pin : public pin<T> {
-
-};
+class res_pin : public pin<T,pintype::res> ;
 template <typename T>
-using res_pinptr = res_pin<T*> ;
+using res_pinptr = res_pin<T*,pintype::res> ;
 template <typename T> 
-using res_pinref = res_pin<T&>;
+using res_pinref = res_pin<T&,pintype::res>;
+#define res(T,name) \
+  using ##name_ptr res_pin_ptr<T>; \
+  using ##name_rer res_pin_ref<T>; \
+  using ##name res_pin<T> ; \
 
+#define ev(T,name) \
+  using ##name_ptr =event_pin_ptr<T>; \
+  using ##name_ref =event_pin_ref<T>; \
+  using ##name =event_pin<T> ; \
+
+#define ptr(name) ##name_ptr
+#define ref(name) ##name_ref
 
 
 class node_canvas : public sgui::wi_canvas {
@@ -135,21 +127,39 @@ class node :public widget,public pin<T> { // Has mainexec
     private:
     char name[] = "node";
     public:
-
-    std::shared_ptr<vect<node*>> nodes_exec;
-    std::shared_ptr<vect<pin*>> left; 
+    ivec4 bounds;
+    vect<node*> left_nodes_link;
+    vect<node*> right_nodes_link;
+    vect<node*> exec_left, exec_right;
+    bool exec;
     uint left_pin_index[20] ;  // Points to nodes;
-    std::shard_ptr<vect<pin*>> right; 
+    vect<pin*> left; 
+    vect<pin*> right;
     uint right_pin_index[20];
     size_t right_size=0;
     virtual void handle(){
-        for(int i = )
+
+    };
+    struct node_uni {
+        ivec4 text_size;//h,w,space,line
+        bool exec;
+        ivec4 bounds;
+        ivec4 bounds_top;// top_bar_exec_pin
+        uint left_size;
+        ivec4 pin_left[left_size];// h,w,type,(pinned) 
+        uint right_size;
+        ivec4 pin_right[right_size];// h,w,type,pinned
+        
+    };
+    void draw()final {
+        for(int i = 0 ; i<left.size;)
     };
     private:
+
     void exec() {
         this->handle();
-        for(int i = 0; i <this->nodes_exec->size() ; i++ ){
-            (*(this->nodes_exec[i]))->exec();
+        for(int i = 0; i <this->exec_right->size() ; i++ ){
+            (*(this->exec_right[i]))->exec();
         };
     };
     protected:
@@ -158,20 +168,30 @@ class node :public widget,public pin<T> { // Has mainexec
     static inline void _insert_pin_left(size_t pos, pin* s){this->left->insert(pos,s);};
     static inline void _insert_pin_right(size_t pos, pin* s){this->right->insert(pos,s);};
 public:
+    node(){
+        // Set events
+
+        // 
+    }
     node(node_canvas* c,vect<pin*> left, vect<pin*> right){
+        this = new node();
         this->node_canvas = c;
         this->left = std::make_shared<vect<pin*>> left ;
         this->right = std::make_shared<vect<pin*>> right ;
     };
-    
+    node(ivec2 pos){
+        this = new node(/*canvas,left,right*/);
+    };
 };
-using node_ref = 
+
 class node_expression : public node, public w_code {
     public:
     #define MAX_EXPR_SIZE 256
     char name = "expression";
     char expr[MAX_EXPR_SIZE] ;
-    
+    virtual void handle(){
+
+    };
     static bool get_pin_from_name(char* name, pin* left_right, pin* p  ){
         size_t t;
         if(this->left == left_right){t= this->left_size;}
@@ -327,8 +347,6 @@ class node_expression : public node, public w_code {
 
                 if(iop[opit]<i){opit++;};
                 if(iop[opit]>i){opit--;};
-                
-                
                 
             };
         };

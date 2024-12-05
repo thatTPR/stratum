@@ -24,6 +24,8 @@ VK_LIBx64 :=
 VK_LIBx86 :=
 VK_Ox64 := 
 VK_Ox86 := 
+D3D_SRC := C:\Program Files (x86)\Windows Kits\10\Include\10.0.22000.0\um
+D3D_LIB := C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22000.0\um\x86
 # Libraries
 SDL_LIB := $()/libmodule1.a
  := $(MODULE2_DIR)/libmodule2.a
@@ -33,7 +35,6 @@ TARGET := strata
 
 # Object Files
 OBJS := $(BUILD_DIR)/strata.exe \
-		$(BUILD_DIR)/strata.
 
 # Rules
 all: $(TARGET)

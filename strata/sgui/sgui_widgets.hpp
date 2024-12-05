@@ -208,7 +208,10 @@ namespace sgui {
         };
 
 
-        virtual SGUI_DECL void _draw(){ 
+        SGUI_DECL void _draw(){ 
+        };
+        SGUI_DECL virtual void draw(){
+
         };
         SGUI_DECL void move(widget* _parent_dest){
             this->parent->move_child(this,_parent_dest) ;                
@@ -262,6 +265,7 @@ namespace sgui {
         };
         bool ret();
         
+
     };
     class canvas : public widget_base {
         public:
@@ -435,7 +439,7 @@ namespace sgui {
 
     };
     
-    class sw_vlist : public widget {
+    class vlist : public widget {
         bool resizable_borders = true;
 
     };
@@ -445,22 +449,36 @@ namespace sgui {
     // };
     
     
-    class w_text : widget {
+    class text : widget {
+        struct s {
+bool word_wrap,
+bvec4* options; // scrollable,kerning,word,wrap
+glyph* range[n],
+int* text_length,
+int* text[text_length],
+vec4* text_size, // w,h,space,line;
+vec2* bounds,
+image2D* im 
+        }
+        public:
+        void _uniform ()override{
+
+        };
+        void _ssbo() override;
+        void _
         char* text;
+        
         void draw(){
 
         };
     };
-    class w_text_input : w_text {
+    class text_input : w_text {
         void handle(){
 
         };
     };
-    class w_code : widget_leaf{
+    class code : widget_leaf{
         
-    };
-    class w_code : widget_leaf {
-
     };
     class hori_bar : public  widget {
         public:
@@ -496,6 +514,11 @@ namespace sgui {
         std::string name ;
         
 
+    };
+    class drag_quad : public widget {
+        void calc(vec2 mouse_pos, vec2 mouse_move){
+
+        }
     };
     class input_text : widget {
         bool widget() override {

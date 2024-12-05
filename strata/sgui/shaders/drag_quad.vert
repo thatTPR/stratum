@@ -1,17 +1,17 @@
-in vec4 bounds; // nw se
-in float element_size ; // Zoom (text height)
+loyout(location=0)uniform ivec4 bounds; // nw se
+loyout(location=1)uniform int element_size ; // Zoom (text height)
 
-out vec4 widget_box ; // Where 
 
-in vec2 mouse_pos;
-in vec2 mouse_move; // Get mouse motion
+layout(location=2)uniform vec2 mouse_pos;
+layout(location=3)uniform vec2 mouse_move; // Get mouse motion
 
-in vec2 lastval;
-out vec2 newval;
+layout(location=4)uniform ivec2 lastval;
+layout(location=5)uniform vec4 normalval; // Norm range nw se
+layout(location=6)uniform vec2 val_in;
+layout(location=0)out ivec4 widget_box ; // Where 
+layout(location=1)out ivec2 newval;
+layout(location=2)out ivec2 val_out;
 
-in vec4 normalval; // Norm range nw se
-in vec2 val_in;
-out vec2 val_out;
 
 
 void main(){

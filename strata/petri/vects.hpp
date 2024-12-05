@@ -2,6 +2,20 @@
 #include <assert>
 #include <memory>
 #include <initializer_list>
+
+typedef uint64 unsigned long long int;
+typedef uint32 unsigned int;
+typedef uint16 unsigned short int;
+typedef int64 long long int;
+typedef int32 int;
+typedef int16 short int;
+
+typedef double128  long double;
+typedef double64     double;
+typedef float32 float;
+
+
+
 using bvec2=bool[2] ; 
 using bvec3=bool[3] ;
 using bvec4=bool[4] ;
@@ -98,6 +112,28 @@ using limat3x4=long int[3][4] ;
 using limat4x2=long int[4][2] ;
 using limat4x3=long int[4][3] ;
 using limat4x4=long int[4][4] ;
+
+template <typename t,size_t r> bool[r] operator<(t[r]& lhs, t[r]& rhs){bool s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]<rhs[i]);};return s;};
+template <typename t,size_t r> bool[r] operator>(t[r]& lhs, t[r]& rhs){bool s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]>rhs[i]);};return s;};
+template <typename t,size_t r> bool[r] operator<=(t[r]& lhs, t[r]& rhs){bool s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]<=rhs[i]);};return s;};
+template <typename t,size_t r> bool[r] operator>=(t[r]& lhs, t[r]& rhs){bool s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]>=rhs[i]);};return s;};
+template <typename t,size_t r> bool[r] operator==(t[r]& lhs, t[r]& rhs){bool s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]==rhs[i]);};return s;};
+template <typename t,size_t r> bool[r] operator!=(t[r]& lhs, t[r]& rhs){bool s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]!=rhs[i]);};return s;};
+template <typename t,size_t r> t[r] operator+(t[r]& lhs, t[r]& rhs){t s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]+rhs[i]);};return s;};
+template <typename t,size_t r> t[r] operator-(t[r]& lhs, t[r]& rhs){t s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]-rhs[i]);};return s;};
+template <typename t,size_t r> t[r] operator/(t[r]& lhs, t[r]& rhs){t s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]/rhs[i]);};return s;};
+template <typename t,size_t r> t[r] operator*(t[r]& lhs, t[r]& rhs){t s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]*rhs[i]);};return s;};
+
+template <typename t,size_t r,size_t c> bool[r][c] operator<( t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]< rhs[i][j]);};};return s;};
+template <typename t,size_t r,size_t c> bool[r][c] operator>( t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]> rhs[i][j]);};};return s;};
+template <typename t,size_t r,size_t c> bool[r][c] operator<=(t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]<=rhs[i][j]);};};return s;};
+template <typename t,size_t r,size_t c> bool[r][c] operator>=(t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]>=rhs[i][j]);};};return s;};
+template <typename t,size_t r,size_t c> bool[r][c] operator==(t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]==rhs[i][j]);};};return s;};
+template <typename t,size_t r,size_t c> bool[r][c] operator!=(t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]!=rhs[i][j]);};};return s;};
+template <typename t,size_t r,size_t c> t[r][c]    operator+( t[r][c]& lhs, t[r][c]& rhs){t s[r][c];    for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]+ rhs[i][j]);};};return s;};
+template <typename t,size_t r,size_t c> t[r][c]    operator-( t[r][c]& lhs, t[r][c]& rhs){t s[r][c];    for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]- rhs[i][j]);};};return s;};
+template <typename t,size_t r,size_t c> t[r][c]    operator/( t[r][c]& lhs, t[r][c]& rhs){t s[r][c];    for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]/ rhs[i][j]);};};return s;};
+template <typename t,size_t r,size_t c> t[r][c]    operator*( t[r][c]& lhs, t[r][c]& rhs){t s[r][c];    for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]* rhs[i][j]);};};return s;};
 
 template <size_t size>
 struct swizzle {

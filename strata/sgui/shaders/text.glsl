@@ -227,7 +227,7 @@ layout(location=5) uniform ivec4 text_size ; // w,h,space,line;
 layout(location=6) uniform ivec2 bounds;
 layout(location=7) uniform int scroll;
 layout(location=0) out image2D im ;
-layout(location=1) out text_s;
+layout(location=1) out ivec4 text_s;
 #define LOC  8
 #ifdef ANSICODE
 layout(location=LOC) uniform ivec4 fg_bg_col[2];

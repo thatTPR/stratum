@@ -1,6 +1,7 @@
 // Text
+#include "../../petri/vects.hpp"
 #include "../sgui_widgets.hpp"
-void text(
+void sgui::text::uniform override(
 bool word_wrap
  bvec4* options, // scrollable,kerning,word,wrap
  glyph* range[n],
@@ -71,7 +72,7 @@ void text_ansi_multi_cursor(
  /*in*/ uint* cursor_size,
  /*in*/ vec2* cursor[cursor_size];
 );
-void combo_box(){
+void combo_box(
  ivec4 bounds,
  vec4 linesep_color,
  vec4 col_add; // Add colo,
@@ -79,5 +80,12 @@ void combo_box(){
  int no_hovered ,
  int scroll,
  ivec2 mouse_pos
+);
+void check_box(){
+ ivec4 bounds,
+ ivec4 fg_col,
+ ivec4 bg_col,
+ bool set,
 };
-void 
+void drag_scalar()
+col_picker_line_intensity();
