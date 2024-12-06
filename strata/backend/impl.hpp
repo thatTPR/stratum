@@ -2,7 +2,7 @@
 #include <strata/petri/vects.hpp>
 #include <queue>
 #include <filesystem>
-#include <functional>
+#include <atomic>
 #include <future>
 #define fs std::filesystem
 template<typename device,typename _shader, typename _stage>
@@ -203,7 +203,7 @@ static const std::map<int , std::string> ev_map = {
     template <typename T , uint type =0>
     class event {
         public:
-        using ty = T;
+        const uint ty = T;
         T d;
         uint32 ms;
         uint index;
@@ -236,8 +236,7 @@ static const std::map<int , std::string> ev_map = {
             this->data = data; this->ms = ms;
         };
         event(event<T,type> s) = default {this = s;}
-        bool operator^(this& ev,event_main& m){return m.poll()::ty ^ ty;}
-        
+       
     };
     template <typname d>
     class ev_filter {
@@ -360,13 +359,16 @@ class touch_move             :public event<vect<vec4>,_touch_move>; //xy last zw
 class touch_tap              :public event<vect<vec2>,_touch_tap>;// tap
 class touch_zoom             :public event<mat<vec2>,_touch_gesture>; // xy move,z rotate,w zoom
 class touch_gesture          :public event<vect<vec4>,_touch_zoom>{ // rotate
-    void clear(){
-        this->d.clear();
-    };
+    void clear() final {this->d.clear();};
+    private:
+    bool exit=false;
+    public: 
+    void exit(){this->exit=true;};  
     touch_gesture record(){
         // Wait for tap
+        this->exit=false;
         touch_tap tc_tp;
-        while(!tc_tp[event_main]){
+        while(!tc_tp^event_main){
             if(exit ){return NULL;}
         };
         while(touch[event_main])
@@ -441,66 +443,55 @@ class events  : public vect<event*>{
 
 
 };
-template <typename t,size_t max = 10000>
-class ev_queue {
-    public:
-    std::array<t,max> q;
-    cur_pos;
-    void push(t el){}
-};
-class event_main {
-    private:
-    std::queue<event*> during;
-    void during(){
-        // End 
-    };
-    public:
-    std::queue<event*> events;
-    int evs;
-    long int ms;
-    void tick(){this->ms++;}
-    void tick(short int timems){this->ms+=timems;};
-    long int sec(){return this->ms/1000;};
-    void push(event* ev) final {this->events.push(ev)};
-    event* poll() final { return (this->events.first());};
-    void clear_events() final {while(!(this->events.empty())){this->events.pop();};};
-    void resolve(event* ev){
 
-            if(*(ev)<=>clicktypeid)            {return _click}           
-            if(*(ev)<=>mousedown)              {return _mousedown}               
-            if(*(ev)<=>mouseup)                {return _mouseup}             
-            if(*(ev)<=>mouse_move)             {return _mouse_move}                
-            if(*(ev)<=>mouse_wheel)            {return _mouse_wheel}                 
-            if(*(ev)<=>MOUSE)                  {return _MOUSE}           
-            if(*(ev)<=>keyup)                  {return _keyup}           
-            if(*(ev)<=>keydown)                {return _keydown}             
-            if(*(ev)<=>keypress)               {return _keypress}              
-            if(*(ev)<=>KEY)                    {return _KEY}         
-            if(*(ev)<=>joy_axis)               {return _joy_axis}              
-            if(*(ev)<=>joy_up)                 {return _joy_up}            
-            if(*(ev)<=>joy_down)               {return _joy_down}              
-            if(*(ev)<=>joy_press)              {return _joy_press}               
-            if(*(ev)<=>controller_button_press){return _controller_button_press}                             
-            if(*(ev)<=>controller_button_down) {return _controller_button_down}                            
-            if(*(ev)<=>controller_button_up)   {return _controller_button_up}                          
-            if(*(ev)<=>controller_axis)        {return _controller_axis}                     
-            if(*(ev)<=>CONTROLLER)             {return _CONTROLLER}                
-        };
+template <size_t max=8192>
+class event_main {
+    public:
+    int flags;
+    vect<event*> events;
+    vect<event*> during;
+    void resolve_flags(){
+
     };
+    ev_q<event*> events;
+    int evs;
+    
+    long int ms;
+    long int sec;
+    void tick ()final{this->ms++;}
+    void tick (short int timems)final{this->ms+=timems;};
+    void sec ()final{this->sec++;}
+    void sec (short int times)final{this->sec+=times;};
+    long int sec_ms(){return this->ms/1000;};
+    void push(event* ev) final {this->events.push(ev)};
+    bool poll(event* e) final {this->during.cur_pos++; e= &(this->events.first);};
+    event* peep(size_t s) final{return this->events[s];};
+    void clear_events() final {while(!(this->events.empty())){this->events.pop();};};
+    void during_add(event* e)final{this->during.push(e);};
+    void during_end() final { 
+    this->events.pop(cur_pos); cur_pos=0; ;this->events.push(during); std::async(this->during.clear());};
     void operator bool(){
         this->during();
     };
-    virtual event* peep_event(int s);
+    bool _during = true;
+    void during_loop() final {
+        while(_during){
+            get_event();
+        };
+        this->during_end();
+    };
+    bool operator^(event* e){return this->peep(0).ty ^ e.ty ;}
+    operator bool () const {return this->poll()};
     this& operator=(vect<event*> evs){
         events_main s;
         for(int i=0;i<evs.size();i++){
             s.evs.push(evs[i]);
         };
         this&=s;
-    }
-    event resolve(int flag)
-    events_main(vect<event*> evs){
-        this=evs;
+    };
+    event resolve(int flag);
+    events_main(int flags){
+        
     };
     
     };
