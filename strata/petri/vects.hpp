@@ -244,9 +244,9 @@ class vect {
     T* get_data(){
         return this->data;
     };
-    size_t get_size(){return this->s;};
+    size_t size(){return this->s;};
     
-    size_t get_tsize(){return this->tsize;};
+    size_t tsize(){return this->tsize;};
     T& get(size_t pos){return this->data[pos];}
     void resize(size_t a){ // Resizes tsize to a + size_buf and vect to a;
         T* n = new T[a+size_buf];
@@ -315,7 +315,11 @@ class vect {
         this->data[this->s] = elem;
         this->s++;
     };
-        
+    void clear(){
+        this->s=0;
+        this->tsize=sizebuf;
+        this->data = new T[sizebuf];
+    };
     vect(size_t size){
         this->s = size; 
         this->tsize = size+size_buf;

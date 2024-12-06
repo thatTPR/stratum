@@ -13,7 +13,36 @@
 #include <dxgi.h>
 #endif
 namespace win_events {
-
+    using events::event;
+    using events::event_filter;
+   class MOUSE                   :public events::MOUSE                   { 
+    
+   }         
+   class click                   :public events::click                   { }          
+   class mousedown               :public events::mousedown               { }             
+   class mouseup                 :public events::mouseup                 { }           
+   class mouse_press             :public events::mouse_press             { }               
+   class mouse_move              :public events::mouse_move              { }              
+   class mouse_wheel             :public events::mouse_wheel             { }               
+   class KEY                     :public events::KEY                     { }       
+   class keyup                   :public events::keyup                   { }         
+   class keydown                 :public events::keydown                 { }           
+   class keypress                :public events::keypress                { }            
+   class JOY                     :public events::JOY                     { }
+   class joy_axis                :public events::joy_axis                { }            
+   class joy_up                  :public events::joy_up                  { }          
+   class joy_down                :public events::joy_down                { }            
+   class joy_press               :public events::joy_press               { }             
+   class CONTROLLER              :public events::CONTROLLER              { }              
+   class controller_button_press :public events::controller_button_press { }                           
+   class controller_button_down  :public events::controller_button_down  { }                          
+   class controller_button_up    :public events::controller_button_up    { }                        
+   class controller_axis         :public events::controller_axis         { }                   
+   class TOUCH                   :public events::TOUCH                   { }         
+   class touch_move              :public events::touch_move              { }              
+   class touch_tap               :public events::touch_tap               { }             
+   class touch_zoom              :public events::touch_zoom              { }              
+   class touch_gesture           :public events::touch_gesture           { }                 
 };
 class win_env : public strata_env<HWND,HMODULE,HINSTANCE>{
  /*   

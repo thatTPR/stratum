@@ -3,6 +3,7 @@
 #include <queue>
 #include <filesystem>
 #include <functional>
+#include <future>
 #define fs std::filesystem
 template<typename device,typename _shader, typename _stage>
 class strata_impl {
@@ -93,67 +94,71 @@ class strata_gr {
 
 namespace events {
     
-#define _click                    0            
-#define _mousedown                1                  
-#define _mouseup                  2 
-#define _mousepress               3             
-#define _mouse_move               4  
-#define _mouse_wheel              5
-#define _MOUSE                    6                 
-#define _keyup                    7              
-#define _keydown                  8                
-#define _keypress                 9
-#define _KEY                     10                 
-#define _joy_axis                11
-#define _joy_up                  12      
-#define _joy_down                13        
-#define _joy_press               14
-#define _JOY                     15                               
-#define _controller_axis         16                    
-#define _controller_button_up    17
-#define _controller_button_down  18                               
-#define _controller_button_press 19                                
-#define _CONTROLLER              20
-#define _touch_move              21      
-#define _touch_tap               22     
-#define _touch_gesture           23
-#define _touch_zoom              25                    
-#define _TOUCH                   26 
+#define _click                    1            
+#define _mousedown                2                  
+#define _mouseup                  3 
+#define _mousepress               4             
+#define _mouse_move               5  
+#define _mouse_wheel              6
+#define _MOUSE                    _click|_mousedown |_mouseup |_mousepress|_mouse_move |_mouse_wheel                                     
+#define _keyup                    8              
+#define _keydown                  9                
+#define _keypress                10 
+#define _KEY                     _keyup|_keydown|_keypress                                      
+#define _joy_axis                13
+#define _joy_up                  14      
+#define _joy_down                15        
+#define _joy_press               16
+#define _JOY                     _joy_axis|_joy_up|_joy_down|_joy_press                               
+#define _controller_axis         22                    
+#define _controller_button_up    23
+#define _controller_button_down  24                              
+#define _controller_button_press 25                                
+#define _CONTROLLER               _controller_axis|_controller_button_up|_controller_button_down|_controller_button_press
+#define _touch_move              30    
+#define _touch_tap               31   
+#define _touch_gesture           32
+#define _touch_zoom              33                  
+#define _TOUCH                    _touch_move|_touch_tap|_touch_gesture|_touch_zoom
  
 #define IDEV_ALL
 
-#define ACC               
-#define MOVE              
-#define _up              30 
-#define _down            31   
-#define _left            32  
-#define _right           33   
-#define _forward         34      
-#define _back            35   
-#define _accup           36
-#define _accdown         37  
-#define _accleft         38      
-#define _accright        39            
-#define _accforward      40
-#define _accback         41  
-#define _yawleft         42  
-#define _yawright        43   
-#define _pitchdown       44  
-#define _pitchup         45
-#define _accyawleft      46  
-#define _accyawright     47  
-#define _accpitchdown    48
-#define _accpitchup      49 
-#define _rotate2d        50
-#define _translate2d     51
-#define _rotate3d        52
-#define _translate3d     53
-#define _accrotate2d     54
-#define _acctranslate2d  55
-#define _accrotate3d     56
-#define _acctranslate3d  57 
+#define MOVE                0x0100000000000000              
+#define ACC                 0x1000000000000000
+#define _up                 0x0000000000000001                 
+#define _down               0x0000000000000010                   
+#define _left               0x0000000000000100                  
+#define _right              0x0000000000001000                   
+#define _forward            0x0000000000010000                      
+#define _back               0x0000000000100000                   
+#define _accup              0x1000000000000001                
+#define _accdown            0x1000000000000010                  
+#define _accleft            0x1000000000000100                      
+#define _accright           0x1000000000001000                            
+#define _accforward         0x1000000000010000                
+#define _accback            0x1000000000100000                  
+#define _yawleft            0x0100000001000000                  
+#define _yawright           0x0100000010000000                   
+#define _pitchdown          0x0100000100000000                  
+#define _pitchup            0x0100001000000000                
+#define _accyawleft         0x1000000001000000                  
+#define _accyawright        0x1000000010000000                  
+#define _accpitchdown       0x1000000100000000                
+#define _accpitchup         0x1000001000000000                 
+#define _rotate2d           0x0100010000000000                
+#define _translate2d        0x0100100000000000                
+#define _rotate3d           0x0101000000000000                
+#define _translate3d        0x0110000000000000                
+#define _accrotate2d        0x1000010000000000                
+#define _acctranslate2d     0x1000100000000000                
+#define _accrotate3d        0x1001000000000000                
+#define _acctranslate3d     0x1010000000000000                 
 
-#define CONTROLL_ALL
+#define CONTROL_NAV _up|_down|_left|_right|_forward|_back
+#define CONTROL_GAME _up|_down|_left|_right|_forward|_back|_accup|_accdown|_accleft|_accright|_accforward|_accback
+#define CONTROL_SIM _yawleft|_yawright|_pitchdown|_pitchup|_accyawleft|_accyawright|_accpitchdown|_accpitchup
+#define CONTROL_EDIT _rotate2d|_translate2d|_rotate3d|_translate3d|_accrotate2d|_acctranslate2d|_accrotate3d|_acctranslate3d
+#define CONTROLL_ALL CONTROL_NAV|CONTROL_GAME| CONTROL_SIM | CONTROL_EDIT 
 
 #define _enter      61
 #define _leave      62
@@ -169,14 +174,33 @@ namespace events {
 #define _text_edit  72
 #define _clipboard  73
 
-#define UI_ALL
+#define UI_ALL  _enter|_leave|_focus|_drag|_dragstart|_dragend|_keycombo|_dbclick|_click|_combo|_text_in|_text_edit|_clipboard
+
+#define POWER_DOWN 128
+#define POWER_UP   129
+#define SLEEP      130
+#define MINIMIZE   131
+#define MAXIMIZE   132
+#define FULLSCREEN 133
+#define CLOSE      134
+
+#define SYS_EV POWER_DOWN|POWER_UP|SLEEP|MIN|MAX|FULLSCREEN|CLOSE
+
+#define CONTROLL_ALL
+#define IDEV_ALL
+#define MOUSE
+#define JOY
+#define CON
+#define TOUCH
+
 #define DEFAULT_EVENT_ALL
 
 static const std::map<int , std::string> ev_map = {
 {    _click,"click"},{_mousedown,"mousedown"},{_mouseup,"mouseup"},{_mouseup,"mousepress"}{_mouse_move,"mouse_move"},{_mouse_wheel,"mouse_wheel"},{_MOUSE,"MOUSE"},{_keyup,"keyup"},{_keydown,"keydown"},{_keypress,"keypress"},{_KEY,"KEY"},{_joy_axis,"joy_axis"},{_joy_up,"joy_up"},{_joy_down,"joy_down"},{_joy_press,"joy_press"},{_JOY,"JOY"},{_controller_axis,"controller_axis"},{_controller_button_up,"controller_button_up"},{_controller_button_down,"controller_button_down"},{_controller_button_press,"controller_button_press"},{_CONTROLLER,"CONTROLLER"},{_touch_move,"touch_move"},{_touch_tap,"touch_tap"},{_touch_gesture,"touch_gesture"},{_touch_zoom,"touch_zoom"},{_TOUCH,"TOUCH"},{_up,"up"},{_down,"down"},{_left,"left"},{_right,"right"},{_forward,"forward"},{_back,"back"},{_accup,"accup"},{_accdown,"accdown"},{_accleft,"accleft"},{_accright,"accright"},{_accforward,"accforward"},{_accback,"accback"},{_yawleft,"yawleft"},{_yawright,"yawright"},{_pitchdown,"pitchdown"},{_pitchup,"pitchup"},{_accyawleft,"accyawleft"},{_accyawright,"accyawright"},{_accpitchdown,"accpitchdown"},{_accpitchup,"accpitchup"},{_rotate2d,"rotate2d"},{_translate2d,"translate2d"},{_rotate3d,"rotate3d"},{_translate3d,"translate3d"},{_accrotate2d,"accrotate2d"},{_acctranslate2d,"acctranslate2d"},{_accrotate3d,"accrotate3d"},{_acctranslate3d,"acctranslate3d"},{_enter,"enter"},{_leave,"leave"},{_focus,"focus"},{_drag,"drag"},{_dragstart,"dragstart"},{_dragend,"dragend"},{_keycombo,"keycombo"},{_dbclick,"dbclick"},{_click,"click"},{_combo,"combo"},{_text_in,"text_in"},{_text_edit,"text_edit"},{_clipboard,"clipboard"}
 };
-    
-    template <typename T , uint32 type =0>
+    class event_main;
+    event& event_main::poll();
+    template <typename T , uint type =0>
     class event {
         public:
         using ty = T;
@@ -199,6 +223,7 @@ static const std::map<int , std::string> ev_map = {
         inline bool operator==(event<d>& lhs,event<d>& rhs){return lhs.data==rhs.data};
         inline bool operator!=(event<d>& lhs,event<d>& rhs){return lhs.data!=rhs.data};
         inline bool operator<=>(event<d>& lhs,event<d>& rhs){return lhs.data<=>rhs.data};
+
         std::string parser_cls_inst(){
             std::string ret;
             ret+=map[ty]+"("+ ;
@@ -206,12 +231,13 @@ static const std::map<int , std::string> ev_map = {
         d get(){return this->data;};
         int get_index(){return this->index;};
         uint32 get_time(){return this->ms;};
-        
         event(d data,uint32 ms){
             this=default;
             this->data = data; this->ms = ms;
         };
-
+        event(event<T,type> s) = default {this = s;}
+        bool operator^(this& ev,event_main& m){return m.poll()::ty ^ ty;}
+        
     };
     template <typname d>
     class ev_filter {
@@ -236,6 +262,13 @@ static const std::map<int , std::string> ev_map = {
 
 
     };
+    template <uint ty=0>
+    class event_sys : public event<void,ty>{
+        public:
+        virtual void init();
+        virtual short int resolve();
+        virtual bool filter();
+    };
     typedef struct joy_axis {
         float pos;
         uint16 axis_no;
@@ -249,37 +282,121 @@ class mouseup                :public event<int,_mouseup>;
 class mouse_press            :public event<int,_mousepress>; // 0 left 1 right 2 wheel, 3 forward ,4 back
 class mouse_move             :public event<vec2,_mouse_move>;//xy
 class mouse_wheel            :public event<float,_mouse_wheel>; //x          
-class MOUSE                  :public event<mat2x4,_MOUSE>; // 0:xy pos, zw last_pos,1:x theta,y abs,z press,w wheel 
+class MOUSE                  :public event{
+    virtual vec2 get_pos();
+    virtual bool get_state(short int bt);
+    virtual 
+    virtual short int resolve(event ev) {
+        return ev::ty;
+    };
+    bool filter(short int type_flag){
+        switch(type_flag){
+            case _click :{return true;};
+            case _mousedown :{return true;};
+            case _mouseup :{return true;};
+            case _mousepress :{return true;};
+            case _mouse_move :{return true;};
+            case _mouse_wheel :{return true;};
+        }
+        return false;
+    };
+}; 
 class keyup                  :public event<int,_keyup>; // x button, y index    
 class keydown                :public event<int,_keydown>; // x button, y index      
 class keypress               :public event<int,_keypress>; // x button, y index       
-class KEY                    :public event<void,_KEY>; // index 
+class KEY                    :public event<vect<short unsigned int>,_KEY>{
+    virtual bool get_state(int key);
+      bool filter(short int type_flag){
+        switch(type_flag){
+            case _keyup :{return true;};
+            case _keydown :{return true;};
+            case _keypress :{return true;};
+        };
+        return false;
+    };
+}; // index 
 class joy_axis               :public event<int16,_joy_axis>; // x axis y index       
 class joy_up                 :public event<int,_joy_up>;    
 class joy_down               :public event<int,_joy_down>;      
 class joy_press              :public event<int,_joy_press>;       
+class JOY                    :public event<void,_JOY>{
+    virtual bool get_btn_state(int btn);
+    virtual bool get_axis_state(int axis);
+    virtual bool get_state(int key);
+      bool filter(short int type_flag){
+        switch(type_flag){
+            case _joy_axis: {return true;};
+            case _joy_up: {return true;};
+            case _joy_down: {return true;};
+            case _joy_press: {return true;};
+        };
+        return false;
+    };
+};
 class controller_button_press:public event<int,_controller_button_press>;                    
 class controller_button_down :public event<int,_controller_button_down>; 
 class controller_button_up   :public event<int,_controller_button_up>; 
 class controller_axis        :public event<float,_controller_axis>; 
-class CONTROLLER             :public event<void,_CONTROLLER>;  // index        
+class CONTROLLER             :public event<void,_CONTROLLER>{
+    virtual bool get_btn_state(int btn);
+    virtual int get_axis_state(int axis );
+    virtual bool get_dpad_up();
+    virtual bool get_dpad_down();
+    virtual bool get_dpad_left();
+    virtual bool get_dpad_right();
+    bool filter(short int type_flag){
+        switch(type_flag){
+            case _controller_button_press: {return true;};
+            case _controller_button_down: {return true;};
+            case _controller_button_up: {return true;};
+            case _controller_axis: {return true;};
+        };
+        return false;
+    };
+
+
+};  // index        
 class touch_move             :public event<vect<vec4>,_touch_move>; //xy last zw move
 class touch_tap              :public event<vect<vec2>,_touch_tap>;// tap
 class touch_zoom             :public event<mat<vec2>,_touch_gesture>; // xy move,z rotate,w zoom
-class touch_gesture          :public event<vec4,_touch_zoom>; // rotate
+class touch_gesture          :public event<vect<vec4>,_touch_zoom>{ // rotate
+    void clear(){
+        this->d.clear();
+    };
+    touch_gesture record(){
+        // Wait for tap
+        touch_tap tc_tp;
+        while(!tc_tp[event_main]){
+            if(exit ){return NULL;}
+        };
+        while(touch[event_main])
+    };
+};
 class TOUCH                  :public event<void,_TOUCH>{
-    virtual 
-    virtual TOUCH::record(){}
+    suvec2 get_pos();
+    vect<suvec2> get_multi_pos();
+    bool filter(short int type_flag){
+        switch(type_flag){
+            case _touch_move: {return true;};
+            case _touch_tap: {return true;};
+            case _touch_gesture: {return true;};
+            case _touch_zoom: {return true;};
+        };
+        return false;
+    };
+
 };
 float mouse_move::get_theta()final{return (this->d[0])/(this->d[1]);}
 class up                     :public event<float,_up>;
 class down                   :public event<float,_down>;
-class accup                  :public event<float,_accup>;
-class accdown                :public event<float,_accdown>;
 class left                   :public event<float,_left>;
 class right                  :public event<float,_right>;
 class forward                :public event<float,_forward>;
 class back                   :public event<float,_back>;
+class accup                  :public event<float,_accup>;
+class accdown                :public event<float,_accdown>;
+class accleft                :public event<float,_accleft>;
+class accright               :public event<float,_accright>;
 class accforward             :public event<float,_accforward>;
 class accback                :public event<float,_accback>;
 class yawleft                :public event<float,_yawleft>;
@@ -310,7 +427,7 @@ class drag      :public event<bool,_drag> ;
 class dragstart :public event<bool,_dragstart> ;
 class dragend   :public event<bool,_dragend> ;
 class keycombo  :public event<ivec4,_keycombo> ; //-1 is 
-class dbclick   :public event<ivec2,_dbclick> ;
+class dbclick   :public event<ivec2,_dbclick>{public: virtual int get_ms(int _ms=200){this->ms=_ms}; int16 ms_cur;} ;
 class click     :public event<int,_click> ;
 class combo     :public event<imat2x4,_combo> ; //r0 keys, r1 mouse
 class textedit  :public event<text_edit,_textedit>;
@@ -324,17 +441,32 @@ class events  : public vect<event*>{
 
 
 };
-class events_main {
+template <typename t,size_t max = 10000>
+class ev_queue {
+    public:
+    std::array<t,max> q;
+    cur_pos;
+    void push(t el){}
+};
+class event_main {
+    private:
+    std::queue<event*> during;
+    void during(){
+        // End 
+    };
     public:
     std::queue<event*> events;
-    vect<event*> evs;
-    public:
-    void push_event(event* ev) final {this->events.push(ev)};
-    event* poll_event(event* ev) final {event* res = this->events.first();this->events.pop();return res;};
+    int evs;
+    long int ms;
+    void tick(){this->ms++;}
+    void tick(short int timems){this->ms+=timems;};
+    long int sec(){return this->ms/1000;};
+    void push(event* ev) final {this->events.push(ev)};
+    event* poll() final { return (this->events.first());};
     void clear_events() final {while(!(this->events.empty())){this->events.pop();};};
     void resolve(event* ev){
 
-            if(*(ev)<=>clicktypeid)                   {return _click}           
+            if(*(ev)<=>clicktypeid)            {return _click}           
             if(*(ev)<=>mousedown)              {return _mousedown}               
             if(*(ev)<=>mouseup)                {return _mouseup}             
             if(*(ev)<=>mouse_move)             {return _mouse_move}                
@@ -354,6 +486,9 @@ class events_main {
             if(*(ev)<=>controller_axis)        {return _controller_axis}                     
             if(*(ev)<=>CONTROLLER)             {return _CONTROLLER}                
         };
+    };
+    void operator bool(){
+        this->during();
     };
     virtual event* peep_event(int s);
     this& operator=(vect<event*> evs){
