@@ -139,7 +139,8 @@
         "*.defs": "cpp",
         "text_encoding": "cpp",
         "bimap": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "*.rh": "cpp"
     },
     "svg.preview.background": "custom"
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include "impl.hpp"
-#include "SDL2/SDL.h"
+#include <SDL2/SDL.h>
 void SGUIloadWidget();
 void SGUIDrawWidget();
 
@@ -26,7 +26,6 @@ SDL_SetEventFilter
 SDL_WaitEvent
 SDL_WaitEventTimeout
 //Datatypes
-SDL_EventFilter
 // Structs
 SDL_AudioDeviceEvent
 SDL_CameraDeviceEvent
@@ -74,7 +73,7 @@ using sgui_sdl_sdl = sgui<sgui_sdl,sgui_sdl_sdl>;
 
 namespace SDL_events {
     class event : public events::event {
-        
+
     }
 class click: public events::click , SDL_MouseButtonEvent {
     void get(){
