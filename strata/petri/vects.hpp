@@ -9,7 +9,16 @@ typedef uint16 unsigned short int;
 typedef int64 long long int;
 typedef int32 int;
 typedef int16 short int;
-
+typedef  lluint   unsigned long long int;
+typedef  luint    unsigned long int;
+typedef uint    unsigned int;
+typedef  suint    unsigned short int;
+typedef  ssuint   unsigned short short int;    
+typedef llint    long long int;   
+typedef lint     long int;  
+//typedef int int;
+typedef sint     short int;  
+typedef ssint    short short int;   
 typedef double128  long double;
 typedef double64     double;
 typedef float32 float;
@@ -43,6 +52,12 @@ using luvec4=long unsigned int[4] ;
 using livec2=long int[2] ;
 using livec3=long int[3] ;
 using livec4=long int[4] ;//
+using lluvec2=long long unsigned int[2] ;
+using lluvec3=long long unsigned int[3] ;
+using lluvec4=long long unsigned int[4] ;
+using llivec2=long long int[2] ;
+using llivec3=long long int[3] ;
+using llivec4=long long int[4] ;//
 using vec2=float[2] ;
 using vec3=float[3] ;
 using vec4=float[4] ;//
@@ -136,6 +151,24 @@ using limat3x4=long int[3][4] ;
 using limat4x2=long int[4][2] ;
 using limat4x3=long int[4][3] ;
 using limat4x4=long int[4][4] ;
+using llumat2x2=long long unsigned int[2][2] ;
+using llumat2x3=long long unsigned int[2][3] ;
+using llumat2x4=long long unsigned int[2][4] ;
+using llumat3x2=long long unsigned int[3][2] ;
+using llumat3x3=long long unsigned int[3][3] ;
+using llumat3x4=long long unsigned int[3][4] ;
+using llumat4x2=long long unsigned int[4][2] ;
+using llumat4x3=long long unsigned int[4][3] ;
+using llumat4x4=long long unsigned int[4][4] ;
+using llimat2x2=long long int[2][2] ;
+using llimat2x3=long long int[2][3] ;
+using llimat2x4=long long int[2][4] ;
+using llimat3x2=long long int[3][2] ;
+using llimat3x3=long long int[3][3] ;
+using llimat3x4=long long int[3][4] ;
+using llimat4x2=long long int[4][2] ;
+using llimat4x3=long long int[4][3] ;
+using llimat4x4=long long int[4][4] ;
 
 template <typename t,size_t r> bool[r] operator<(t[r]& lhs, t[r]& rhs){bool s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]<rhs[i]);};return s;};
 template <typename t,size_t r> bool[r] operator>(t[r]& lhs, t[r]& rhs){bool s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]>rhs[i]);};return s;};
@@ -147,6 +180,7 @@ template <typename t,size_t r> t[r] operator+(t[r]& lhs, t[r]& rhs){t s[r]; for(
 template <typename t,size_t r> t[r] operator-(t[r]& lhs, t[r]& rhs){t s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]-rhs[i]);};return s;};
 template <typename t,size_t r> t[r] operator/(t[r]& lhs, t[r]& rhs){t s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]/rhs[i]);};return s;};
 template <typename t,size_t r> t[r] operator*(t[r]& lhs, t[r]& rhs){t s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]*rhs[i]);};return s;};
+template <typename t,size_t r> t[r] operator()(t[r]& lhs,t val){t s[r]; for(int i = 0; i<r;i++){s[i] =val;};return s;};
 
 template <typename t,size_t r,size_t c> bool[r][c] operator<( t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]< rhs[i][j]);};};return s;};
 template <typename t,size_t r,size_t c> bool[r][c] operator>( t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]> rhs[i][j]);};};return s;};
@@ -158,7 +192,7 @@ template <typename t,size_t r,size_t c> t[r][c]    operator+( t[r][c]& lhs, t[r]
 template <typename t,size_t r,size_t c> t[r][c]    operator-( t[r][c]& lhs, t[r][c]& rhs){t s[r][c];    for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]- rhs[i][j]);};};return s;};
 template <typename t,size_t r,size_t c> t[r][c]    operator/( t[r][c]& lhs, t[r][c]& rhs){t s[r][c];    for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]/ rhs[i][j]);};};return s;};
 template <typename t,size_t r,size_t c> t[r][c]    operator*( t[r][c]& lhs, t[r][c]& rhs){t s[r][c];    for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]* rhs[i][j]);};};return s;};
-
+template <typename t,size_t r,size_t c> t[r][c]    operator()( t[r][c]& lhs, t val){t s[r][c];    for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = val*(i==j);};};return s;};
 template <size_t size>
 struct swizzle {
     static constexpr size_t s = size; 

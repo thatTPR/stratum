@@ -7,11 +7,10 @@
                 "${workspaceFolder}",
                 "${workspaceFolder}/lib",
                 "C:/llvm-project/libcxx/include",
-                "C:/vcpkg/packages/**",
+                // "C:/vcpkg/packages/**",
                 "C:/VulkanSDK/1.3.250.1/Include/**",
-                "C:/src/StrataEngine/lib/",
-                "C:/src/StrataEngine/lib/boost/",
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/um",
+                "C:/Users/Alexandru.Popp/src/strata/lib/emsdk/upstream/emscripten/system/include/",
 
                 "${workspaceFolder}/lib/SDL/include/SDL3"
             ],

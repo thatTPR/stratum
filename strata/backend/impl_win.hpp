@@ -15,37 +15,22 @@
 namespace win_events {
     using events::event;
     using events::event_filter;
-   class MOUSE                   :public events::MOUSE                   { 
-    
-   }         
-   class click                   :public events::click                   { }          
-   class mousedown               :public events::mousedown               { }             
-   class mouseup                 :public events::mouseup                 { }           
-   class mouse_press             :public events::mouse_press             { }               
-   class mouse_move              :public events::mouse_move              { }              
-   class mouse_wheel             :public events::mouse_wheel             { }               
-   class KEY                     :public events::KEY                     { }       
-   class keyup                   :public events::keyup                   { }         
-   class keydown                 :public events::keydown                 { }           
-   class keypress                :public events::keypress                { }            
-   class JOY                     :public events::JOY                     { }
-   class joy_axis                :public events::joy_axis                { }            
-   class joy_up                  :public events::joy_up                  { }          
-   class joy_down                :public events::joy_down                { }            
-   class joy_press               :public events::joy_press               { }             
-   class CONTROLLER              :public events::CONTROLLER              { }              
-   class controller_button_press :public events::controller_button_press { }                           
-   class controller_button_down  :public events::controller_button_down  { }                          
-   class controller_button_up    :public events::controller_button_up    { }                        
-   class controller_axis         :public events::controller_axis         { }                   
-   class TOUCH                   :public events::TOUCH                   { }         
-   class touch_move              :public events::touch_move              { }              
-   class touch_tap               :public events::touch_tap               { }             
-   class touch_zoom              :public events::touch_zoom              { }              
-   class touch_gesture           :public events::touch_gesture           { }                 
-};
-class win_env : public strata_env<HWND,HMODULE,HINSTANCE>{
- /*   
+    class MOUSE                   :public events::MOUSE                   { 
+        virtual void init();
+    };         
+    class KEY                     :public events::KEY                     {
+        virtual void init();
+    };
+    class JOY                     :public events::JOY                     {
+    virtual void init();
+    }
+    class CONTROLLER              :public events::CONTROLLER              {
+    virtual void init();
+    }              
+    class TOUCH                   :public events::TOUCH                   { }         
+
+    class SYS : public events::SYS{
+        /*   
 using OVERLAPPED= WS_OVERLAPPED; 
 using POPUP= WS_POPUP; 
 using CHILD= WS_CHILD; 
@@ -94,32 +79,15 @@ using RIGHTSCROLLBAR = WS_EX_RIGHTSCROLLBAR ;
 using CONTROLPARENT = WS_EX_CONTROLPARENT ;  
 using STATICEDGE = WS_EX_STATICEDGE ;  
 using APPWINDOW = WS_EX_APPWINDOW ;  */
-    public:
-    using 
+
     using MIN = strate_env::MIN; 
     using MAX = strate_env::MAX; 
     using HIDE = strate_env::HIDE; 
     using NORMAL = strate_env::NORMAL;
     vect<HWND> wins ;
-    
-    void init(int flags){
+    void init(){
 
     };
-    void initVk(HWND win, VkInstance inst, VKSurfaceKHR* surface, HINSTANCE hInstance=GetModuleHandle(NULL)){ 
-        #ifdef STA_IMPL_VK
-    VkWin32SurfaceCreateInfoKHR info;
-    info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    info.hinstance = hInstance;
-    info.hwnd = win;
-         if (vkCreateWin32SurfaceKHR(vkInstance, &info, nullptr, surface) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create Vulkan surface.");
-    }
-        #endif
-    };
-     void initDx(){
-        #ifdef STA_IMPL_DX
-    };
-
     HWND create_win (ivec2 size,ivec2 pos,HWND parent=NULL,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) override {
         DWORD style = (transparent?WS_EX_TRANSPARENT:0) | (always_on_top?WS_EX_TOPMOST:0)|  (tool?WS_EX_TOOLWINDOW:0) | (custom_tabbar?0:WS_CAPTION) ; 
         HWND winh = CreateWindowEx(
@@ -156,11 +124,38 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
      wp.showCmd =  ((state&MIN)?SW_SHOWMINIMIZED:0)|((state&MAX)?SW_SHOWMAXIMIZED:0)|((state&HIDDEN)?SW_HIDE:0)|((state&NORMAL)?SW_SHOW:0);
     return  SetWindowPlacement(w,const WINDOWPLACEMENT *wp);
     };
+    void sleep(int mstime=2000){Sleep(mstime);}
+
+};
+
+class win_env : public strata_env<HMODULE,HINSTANCE>{
+ 
+    public:
+    
+    void init(int flags){
+
+    };
+    void initVk(HWND win, VkInstance inst, VKSurfaceKHR* surface, HINSTANCE hInstance=GetModuleHandle(NULL)){ 
+        #ifdef STA_IMPL_VK
+    VkWin32SurfaceCreateInfoKHR info;
+    info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    info.hinstance = hInstance;
+    info.hwnd = win;
+         if (vkCreateWin32SurfaceKHR(vkInstance, &info, nullptr, surface) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create Vulkan surface.");
+    }
+        #endif
+    };
+     void initDx(){
+        #ifdef STA_IMPL_DX
+    };
+
      void load_shared(fs::path p){HMODULE LoadLibrary(p.name(););};
     
     template <typename func>
     func get_func(const char* funcname; HMODULE m){return (func)GetProcAddress(m,name); };
     void unload_shared(HMODULE m){FreeLibrary(m);};
 };
+
 
 

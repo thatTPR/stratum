@@ -1,14 +1,9 @@
-struct widget{
-uvec4 bounds; // nw se
-image2D sample;
+#version 450
+layout(location=0)in widget ws[] ;
+layout(location=1)in ivec element_size ; // Zoom 
 
-};
-
-in widget ws[] ;
-in ivec element_size ; // Zoom 
-
-out ivec4 widget_box ; // Where 
-out ivec4 childs_bounds; // Where children can be rendered
+layout(location=0)out ivec4 widget_box ; // Where 
+layout(location=1)out ivec4 childs_bounds; // Where children can be rendered
 
 
 // lower
