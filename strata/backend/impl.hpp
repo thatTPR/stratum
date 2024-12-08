@@ -1,5 +1,6 @@
 #pragma once
 #include <strata/petri/vects.hpp>
+#include <memory>
 #include <queue>
 #include <filesystem>
 #include <atomic>
@@ -86,10 +87,11 @@ enum
 #define _joy_press               16
 #define _JOY                     (_joy_axis|_joy_up|_joy_down|_joy_press)                               
 #define _controller_axis         22                    
-#define _controller_button_up    23
-#define _controller_button_down  24                              
-#define _controller_button_press 25                                
-#define _CONTROLLER              ( _controller_axis|_controller_button_up|_controller_button_down|_controller_button_press)
+#define _controller_up    23
+#define _controller_down  24                              
+#define _controller_press 25
+#define _controller_dpad         26                                
+#define _CONTROLLER              ( _controller_axis|_controller_up|_controller_down|_controller_press)
 #define _touch_move              30    
 #define _touch_tap               31   
 #define _touch_gesture           32
@@ -153,7 +155,7 @@ enum
 #define DEFAULT_EVENT_ALL
 
 static const std::map<int , std::string> ev_map = {
-{    _click,"click"},{_mousedown,"mousedown"},{_mouseup,"mouseup"},{_mouseup,"mousepress"}{_mouse_move,"mouse_move"},{_mouse_wheel,"mouse_wheel"},{_MOUSE,"MOUSE"},{_keyup,"keyup"},{_keydown,"keydown"},{_keypress,"keypress"},{_KEY,"KEY"},{_joy_axis,"joy_axis"},{_joy_up,"joy_up"},{_joy_down,"joy_down"},{_joy_press,"joy_press"},{_JOY,"JOY"},{_controller_axis,"controller_axis"},{_controller_button_up,"controller_button_up"},{_controller_button_down,"controller_button_down"},{_controller_button_press,"controller_button_press"},{_CONTROLLER,"CONTROLLER"},{_touch_move,"touch_move"},{_touch_tap,"touch_tap"},{_touch_gesture,"touch_gesture"},{_touch_zoom,"touch_zoom"},{_TOUCH,"TOUCH"},{_up,"up"},{_down,"down"},{_left,"left"},{_right,"right"},{_forward,"forward"},{_back,"back"},{_accup,"accup"},{_accdown,"accdown"},{_accleft,"accleft"},{_accright,"accright"},{_accforward,"accforward"},{_accback,"accback"},{_yawleft,"yawleft"},{_yawright,"yawright"},{_pitchdown,"pitchdown"},{_pitchup,"pitchup"},{_accyawleft,"accyawleft"},{_accyawright,"accyawright"},{_accpitchdown,"accpitchdown"},{_accpitchup,"accpitchup"},{_rotate2d,"rotate2d"},{_translate2d,"translate2d"},{_rotate3d,"rotate3d"},{_translate3d,"translate3d"},{_accrotate2d,"accrotate2d"},{_acctranslate2d,"acctranslate2d"},{_accrotate3d,"accrotate3d"},{_acctranslate3d,"acctranslate3d"},{_enter,"enter"},{_leave,"leave"},{_focus,"focus"},{_drag,"drag"},{_dragstart,"dragstart"},{_dragend,"dragend"},{_keycombo,"keycombo"},{_dbclick,"dbclick"},{_click,"click"},{_combo,"combo"},{_text_in,"text_in"},{_text_edit,"text_edit"},{_clipboard,"clipboard"}
+{    _click,"click"},{_mousedown,"mousedown"},{_mouseup,"mouseup"},{_mouseup,"mousepress"}{_mouse_move,"mouse_move"},{_mouse_wheel,"mouse_wheel"},{_MOUSE,"MOUSE"},{_keyup,"keyup"},{_keydown,"keydown"},{_keypress,"keypress"},{_KEY,"KEY"},{_joy_axis,"joy_axis"},{_joy_up,"joy_up"},{_joy_down,"joy_down"},{_joy_press,"joy_press"},{_JOY,"JOY"},{_controller_axis,"controller_axis"},{_controller_up,"controller_up"},{_controller_down,"controller_down"},{_controller_press,"controller_press"},{_CONTROLLER,"CONTROLLER"},{_touch_move,"touch_move"},{_touch_tap,"touch_tap"},{_touch_gesture,"touch_gesture"},{_touch_zoom,"touch_zoom"},{_TOUCH,"TOUCH"},{_up,"up"},{_down,"down"},{_left,"left"},{_right,"right"},{_forward,"forward"},{_back,"back"},{_accup,"accup"},{_accdown,"accdown"},{_accleft,"accleft"},{_accright,"accright"},{_accforward,"accforward"},{_accback,"accback"},{_yawleft,"yawleft"},{_yawright,"yawright"},{_pitchdown,"pitchdown"},{_pitchup,"pitchup"},{_accyawleft,"accyawleft"},{_accyawright,"accyawright"},{_accpitchdown,"accpitchdown"},{_accpitchup,"accpitchup"},{_rotate2d,"rotate2d"},{_translate2d,"translate2d"},{_rotate3d,"rotate3d"},{_translate3d,"translate3d"},{_accrotate2d,"accrotate2d"},{_acctranslate2d,"acctranslate2d"},{_accrotate3d,"accrotate3d"},{_acctranslate3d,"acctranslate3d"},{_enter,"enter"},{_leave,"leave"},{_focus,"focus"},{_drag,"drag"},{_dragstart,"dragstart"},{_dragend,"dragend"},{_keycombo,"keycombo"},{_dbclick,"dbclick"},{_click,"click"},{_combo,"combo"},{_text_in,"text_in"},{_text_edit,"text_edit"},{_clipboard,"clipboard"}
 };
 
     template <typename T , uint _type =0>
@@ -221,31 +223,37 @@ static const std::map<int , std::string> ev_map = {
     template <uint ty=0>
     class event_sys : public event<void,ty>{
         public:
-        virtual void init(); // Initialize the subsystem
+        void _init(); // Initialize the subsystem
+        void init() {this->_init()}; 
         virtual event* resolve();
         virtual event* handle();
         virtual void listen();// Checks if there was an event;
         virtual event filter(event* ev);
     };
-template <size_t max=8192>
+template <bool events=true >
 class event_main {
     public:
-    vect<flags>;
+    using ev_sys=events;
+    vect<int> flags;
     vect<event*> events;
     vect<event*> during;
+
+    vect<shared_ptr<event_sys>> evsys; // Priority
     void resolve_flags(){
 
     };
     
-    long int ms;
-    long int sec;
+    long unsigned int ms;
+    long unsigned int sec;
     size_t cur_pos;
     void tick ()final{this->ms++;}
     void tick (short int timems)final{this->ms+=timems;};
     void sec ()final{this->sec++;}
     void sec (short int times)final{this->sec+=times;};
     long int sec_ms(){return this->ms/1000;};
-    void push(event* ev) final {this->events.push(ev)};
+    virtual long unsigned int _get_time_ms();
+    int get_time_ms(){this->ms= ; return this->ms;};
+    void push(event* ev) final {if constexpr(ev_sys) {ev->ms = this->get_time_ms(); this->events.push(ev);};};
     bool poll(event* e) final {this->during.cur_pos++; e= &(this->events.first);};
     event* peep(size_t s) final{return this->events[s];};
     void clear_events() final {while(!(this->events.empty())){this->events.pop();};};
@@ -298,16 +306,23 @@ class event_main {
         bool operator>(joy_axis& lhs, joy_axis& rhs){return lhs.pos<rhs.pos;}
 
      }joy_axis;
-class click                  :public event<int,_click>;    
-class mousedown              :public event<int,_mousedown>;        
-class mouseup                :public event<int,_mouseup>;      
-class mouse_press            :public event<int,_mousepress>; // 0 left 1 right 2 wheel, 3 forward ,4 back
-class mouse_move             :public event<vec2,_mouse_move>;//xy
-class mouse_wheel            :public event<float,_mouse_wheel>; //x          
+using click = event<int,_click>;    
+using mousedown = event<int,_mousedown>;        
+using mouseup = event<int,_mouseup>;      
+using mouse_press = event<int,_mousepress>; // 0 left 1 right 2 wheel, 3 forward ,4 back
+using mouse_move = event<vec2,_mouse_move>;//xy
+using mouse_wheel = event<float,_mouse_wheel>; //x          
 class MOUSE                  :public event_sys<_MOUSE>{
+    event_main* evmain;
     virtual vec2 get_pos();
     virtual bool get_state(short int bt);
-    virtual 
+     void move_cb(vec2 mv,int index=0) final {this->ev_main.push(mouse_move(mv,index));};
+     void press_cb(int press,int index=0) final {this->ev_main.push(mouse_press(press,index));};
+     void down_cb(int down,int index=0) final {this->ev_main.push(mouse_down(down,index));};
+     void up_cb(int up,int index=0) final {this->ev_main.push(mouse_up(up,index));};
+     void wheel_cb(float wheel,int index=0) final {this->ev_main.push(mouse_wheel(wheel,index));};
+    virtual void init();
+    void init()override{this->_init();};
     virtual short int resolve(event ev) {
         return ev::ty;
     };
@@ -323,10 +338,14 @@ class MOUSE                  :public event_sys<_MOUSE>{
         return false;
     };
 }; 
-class keyup                  :public event<int,_keyup>; // x button, y index    
-class keydown                :public event<int,_keydown>; // x button, y index      
-class keypress               :public event<int,_keypress>; // x button, y index       
+using keyup = event<int,_keyup>; // x button, y index    
+using keydown = event<int,_keydown>; // x button, y index      
+using keypress = event<int,_keypress>; // x button, y index       
 class KEY                    :public event_sys<_KEY>{
+    
+    void up_cb(int key,int index) final {this->evmain.push(keyup(key,index));};
+    void down_cb(int key,int index) final {this->evmain.push(keydown(key,index));};    
+    void press_cb(int key,int index) final {this->evmain.push(keypress(key,index));};    
     virtual bool get_state(int key);
       bool filter(short int type_flag){
         switch(type_flag){
@@ -337,14 +356,21 @@ class KEY                    :public event_sys<_KEY>{
         return false;
     };
 }; // index 
-class joy_axis               :public event<int16,_joy_axis>; // x axis y index       
-class joy_up                 :public event<int,_joy_up>;    
-class joy_down               :public event<int,_joy_down>;      
-class joy_press              :public event<int,_joy_press>;       
+using joy_axis = event<int16,_joy_axis>; // x axis y index       
+using joy_up = event<int,_joy_up>;    
+using joy_down = event<int,_joy_down>;      
+using joy_press = event<int,_joy_press>;       
 class JOY                    :public event_sys<_JOY>{
+    void up_cb(int btn,int index) final {this->evmain.push(joy_up(btn,index));};
+    void down_cb(int btn,int index) final {this->evmain.push(joy_down(btn,index));};    
+    void press_cb(int btn,int index) final {this->evmain.push(joy_press(btn,index));};    
+    void axis_cb(int16 axis,int index) final {this->evmain.push(joy_axis(axis,index));};    
+
     virtual bool get_btn_state(int btn);
     virtual bool get_axis_state(int axis);
     virtual bool get_state(int key);
+    virtual void _init()
+    virtual void init(){this->_init();};
       bool filter(short int type_flag){
         switch(type_flag){
             case _joy_axis: {return true;};
@@ -355,22 +381,28 @@ class JOY                    :public event_sys<_JOY>{
         return false;
     };
 };
-class controller_button_press:public event<int,_controller_button_press>;                    
-class controller_button_down :public event<int,_controller_button_down>; 
-class controller_button_up   :public event<int,_controller_button_up>; 
-class controller_axis        :public event<float,_controller_axis>; 
+class controller_press:public event<int,_controller_press>;                    
+using controller_down = event<int,_controller_down>; 
+using controller_up = event<int,_controller_up>; 
+using controller_dpad = event<int,_controller_dpad>;
+using controller_axis = event<float,_controller_axis>; 
 class CONTROLLER             :public event_sys<_CONTROLLER>{
-    virtual bool get_btn_state(int btn);
-    virtual int get_axis_state(int axis );
-    virtual bool get_dpad_up();
-    virtual bool get_dpad_down();
-    virtual bool get_dpad_left();
-    virtual bool get_dpad_right();
+
+    void up_cb(int btn,int index) final {this->evmain.push(controller_up(btn,index));};
+    void down_cb(int btn,int index) final {this->evmain.push(controller_down(btn,index));};    
+    void press_cb(int btn,int index) final {this->evmain.push(controller_press(btn,index));};    
+    void axis_cb(int16 axis,int index) final {this->evmain.push(controller_axis(axis,index));};    
+    void dpad_cb(int16 axis,int index) final {this->evmain.push(controller_dpad(axis,index));};    
+    virtual bool get_btn(int btn,  int index=0);
+    virtual int get_axis(int axis,  int index=0 );
+    virtual int get_dpad(int index =0);
+    virtual void _init();
+    void init(){event_sys::init();};
     bool filter(short int type_flag){
         switch(type_flag){
-            case _controller_button_press: {return true;};
-            case _controller_button_down: {return true;};
-            case _controller_button_up: {return true;};
+            case _controller_press: {return true;};
+            case _controller_down: {return true;};
+            case _controller_up: {return true;};
             case _controller_axis: {return true;};
         };
         return false;
@@ -378,28 +410,21 @@ class CONTROLLER             :public event_sys<_CONTROLLER>{
 
 
 };  // index        
-class touch_move             :public event<vect<vec4>,_touch_move>; //xy last zw move
-class touch_tap              :public event<vect<vec2>,_touch_tap>;// tap
-class touch_zoom             :public event<mat<vec2>,_touch_gesture>; // xy move,z rotate,w zoom
-class touch_gesture          :public event<vect<vec4>,_touch_zoom>{ // rotate
-    void clear() final {this->d.clear();};
-    private:
-    bool exit=false;
-    public: 
-    void exit(){this->exit=true;};  
-    touch_gesture record(){
-        // Wait for tap
-        this->exit=false;
-        touch_tap tc_tp;
-        while(!tc_tp^event_main){
-            if(exit ){return NULL;}
-        };
-        while(touch[event_main])
-    };
-};
+using touch_move = event<vect<vec4>,_touch_move>; //xy last zw move
+using class touch_tap              :public =  event<vect<vec2>,_touch_tap>;// tap
+using touch_zoom =  event<mat<vec2>,_touch_gesture>; // xy move,z rotate,w zoom
+using touch_gesture =  event<vect<vec4>,_touch_zoom>; // rotate
 class TOUCH                  :public event_sys<_TOUCH>{
     suvec2 get_pos();
     vect<suvec2> get_multi_pos();
+    void move_cb(vect<vec4> mv);
+    void tap_cb(vect<vec4> mv);
+    void zoom_cb(vect<vec4> mv);
+    void gesture_cb(vect<vec4> mv);
+
+    virtual void get_touch();
+    void init(){event_sys::init();};
+    virtual touch_gesture record_gesture(){}
     bool filter(short int type_flag){
         switch(type_flag){
             case _touch_move: {return true;};
@@ -412,38 +437,46 @@ class TOUCH                  :public event_sys<_TOUCH>{
 
 };
 float mouse_move::get_theta()final{return (this->d[0])/(this->d[1]);}
-class motion                     :public event<vec3,_motion>;
-class accmotion                  :public event<vec4,_accmotion>;
-class rotate2d               :public event<vec2,_rotate2d>;
-class translate2d            :public event<vec2,_translate2d>;
-class rotate3d               :public event<vec3,_rotate3d>;
-class translate3d            :public event<vec3,_translate3d>;
-class accrotate2d            :public event<vec2,_accrotate2d>;
-class acctranslate2d         :public event<vec2,_acctranslate2d>;
-class accrotate3d            :public event<vec3,_accrotate3d>;
-class acctranslate3d         :public event<vec3,_acctranslate3d>;
+using motion = event<vec3,_motion>;
+using accmotion = event<vec4,_accmotion>;
+using rotate2d = event<vec2,_rotate2d>;
+using translate2d = event<vec2,_translate2d>;
+using rotate3d = event<vec3,_rotate3d>;
+using translate3d = event<vec3,_translate3d>;
+using accrotate2d = event<vec2,_accrotate2d>;
+using acctranslate2d = event<vec2,_acctranslate2d>;
+using accrotate3d = event<vec3,_accrotate3d>;
+using acctranslate3d = event<vec3,_acctranslate3d>;
 
 class CONTROL_NAV : public event_sys<_CONTROL_NAV>;
 class CONTROL_GAME : public event_sys<_CONTROL_GAME>;
 class CONTROL_SIM : public event_sys<_CONTROL_SIM>;
 class CONTROL_EDIT : public event_sys<_CONTROL_EDIT>;
-class CONTROL_ALL : public event_sys<_CONTROL_ALL>;
+class CONTROL : public event_sys<_CONTROL_ALL>{
+
+};
 typedef struct text_edit {
     ivec2 range; // ln,col
     std::string text;
 }text_edit; 
-class enter     :public event<bool,_enter> ;
-class leave     :public event<bool,_leave> ;
-class focus     :public event<bool,_focus> ;
-class drag      :public event<bool,_drag> ;
-class dragstart :public event<bool,_dragstart> ;
-class dragend   :public event<bool,_dragend> ;
-class keycombo  :public event<ivec4,_keycombo> ; //-1 is 
-class dbclick   :public event<ivec2,_dbclick>{public: virtual int get_ms(int _ms=200){this->ms=_ms}; int16 ms_cur;} ;
-class click     :public event<int,_click> ;
-class combo     :public event<imat2x4,_combo> ; //r0 keys, r1 mouse
-class textedit  :public event<text_edit,_textedit>;
-class UI        :public event_sys<_UI>;
+using enter = event<bool,_enter> ;
+using leave = event<bool,_leave> ;
+using focus = event<bool,_focus> ;
+using drag = event<bool,_drag> ;
+using dragstart = event<bool,_dragstart> ;
+using dragend = event<bool,_dragend> ;
+using keycombo = event<ivec4,_keycombo> ; //-1 is 
+using dbclick = event<ivec2,_dbclick> ;
+using click = event<int,_click> ;
+using combo = event<imat2x4,_combo> ; //r0 keys, r1 mouse
+using textedit = event<text_edit,_textedit>;
+class UI        :public event_sys<_UI>{
+    public: 
+    int ms_dbclick ;
+    
+    virtual void set_db_click_ms(int per);
+    int get_ms(int _ms=200) final{this->ms=_ms}; int16 ms_cur;}
+};
 
 class  wake         : public wake<bool,_wake>;
 class  sleep        : public event<bool,_sleep>;        
@@ -461,7 +494,7 @@ class  display_conn : public event<bool,_display_conn>{
     bool get_connected()final{this->d=_get_connected();};
     bool get_disconnected()final{this->d=_get_disconnected();};
 };  
-class display_mode   :public event<bool,_display_mode>{
+using display_mode = event<bool,_display_mode>{
     public:
     bool landscape(){this->d==true;};
     bool portrait(){this->d==false;};
@@ -472,15 +505,28 @@ class display_mode   :public event<bool,_display_mode>{
 };  
 class DISPLAY : public event_sys<_DISPLAY>{
     vect<ivec3> disp; // xy=wh ; z=index;
-    void get_data(size_t pos=0){return this->disp[pos];};
-    void get_width(size_t pos=0){return this->disp[pos][0];};
-    void get_height(size_t pos=0){return this->disp[pos][1];};
-    void get_index(size_t pos=0){return this->disp[pos][2];};
-    virtual display_conn _get_connected(int* index);
-    bool push_connected(){
-        bool res=_get_connected(int* index);
-        evmain.push(display_conn(res,*(index));
-    };
+    vec2 get_data(size_t pos=0){return this->disp[pos];}; // hw(pixels) ,hw(cm)
+    int get_width(size_t pos=0){return this->disp[pos][0];};
+    int get_height(size_t pos=0){return this->disp[pos][1];};
+    int get_index(size_t pos=0){return this->disp[pos][2];};
+
+    virtual vec2 _get_data(size_t pos=0); // hw(pixels) ,hw(cm)
+    virtual int _get_width(size_t pos=0);
+    virtual int _get_height(size_t pos=0);
+    virtual int _get_index(size_t pos=0);
+
+    virtual vec2 get_data(size_t pos=0){this->_get_data this->disp[pos];}; // hw(pixels) ,hw(cm)
+    virtual int get_width(size_t pos=0){this->_get_width this->disp[pos][0];};
+    virtual int get_height(size_t pos=0){this->_get_height this->disp[pos][1];};
+    virtual int get_index(size_t pos=0){this->_get_index this->disp[pos][2];};
+ 
+
+    bool conn_callback(bool val = true){this->evmain->push(display_conn::display_conn(val);)};
+    bool mode_callback(bool val = true){this->evmain->push(display_mode::display_mode(val);)};
+    virtual void handle();
+    virtual void _init();
+    void init(){this->_init();};
+    virtual void close();
     virtual bool _get_mode();
     void get_mode(){
         bool res=_get
@@ -490,6 +536,7 @@ class DISPLAY : public event_sys<_DISPLAY>{
 template <typename win>
 class SYS : public event_sys<_SYS>{
     public:
+    command_sys* commsys;
     event_main evmain;
     public:
     using winty = win;
@@ -509,9 +556,7 @@ void (*const close_app_win_func)();
     void fullscreen_callback(bool val=true)final{this->evmain->push(fullscreen::fullscreen(val));};
     void close_callback()final{this->evmain->push(close::close(true));this->close_app_win_func();}
     
-    virtual void init(){
-
-    };
+    void handle();
     void set_close(void (*const close_app)()){this->close_app_win_func= close_app;};
     virtual void _init()
     void init(void (*const close_app)() ){set_close(close_app);this->_init();};// Set callbacks

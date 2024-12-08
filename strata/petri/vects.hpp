@@ -3,25 +3,24 @@
 #include <memory>
 #include <initializer_list>
 
-typedef uint64 unsigned long long int;
-typedef uint32 unsigned int;
-typedef uint16 unsigned short int;
-typedef int64 long long int;
-typedef int32 int;
-typedef int16 short int;
-typedef  lluint   unsigned long long int;
-typedef  luint    unsigned long int;
-typedef uint    unsigned int;
-typedef  suint    unsigned short int;
-typedef  ssuint   unsigned short short int;    
-typedef llint    long long int;   
-typedef lint     long int;  
-//typedef int int;
-typedef sint     short int;  
-typedef ssint    short short int;   
-typedef double128  long double;
-typedef double64     double;
-typedef float32 float;
+typedef    unsigned long long int    uint64;
+typedef    unsigned int              uint32;
+typedef    unsigned short int        uint16;
+typedef    long long int             int64;
+typedef    int                       int32;
+typedef    short int                 int16;
+typedef    unsigned long long int    lluint;
+typedef    unsigned long int         luint;
+typedef    unsigned int              uint;
+typedef    unsigned short int        suint;
+typedef    unsigned short short int  ssuint;    
+typedef    long long int             llint;   
+typedef    long int                  lint;  
+typedef    short int                 sint;  
+typedef    short short int           ssint;   
+typedef    long double               double128;
+typedef    double                    double64;
+typedef    float                     float32;
 
 
 
@@ -181,6 +180,77 @@ template <typename t,size_t r> t[r] operator-(t[r]& lhs, t[r]& rhs){t s[r]; for(
 template <typename t,size_t r> t[r] operator/(t[r]& lhs, t[r]& rhs){t s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]/rhs[i]);};return s;};
 template <typename t,size_t r> t[r] operator*(t[r]& lhs, t[r]& rhs){t s[r]; for(int i = 0; i<r;i++){s[i] = (lhs[i]*rhs[i]);};return s;};
 template <typename t,size_t r> t[r] operator()(t[r]& lhs,t val){t s[r]; for(int i = 0; i<r;i++){s[i] =val;};return s;};
+
+template <typename t, size_t r , size_t rs >
+t[r] operator()(t[r]& lhs, t val[rs] ){ for(int i =0 ; i <r ; i++){lhs[i]=val[i];};};
+template <typename t, size_t r , size_t rs >
+t[r] operator()(t[r]& lhs,t v, t val[rs] ){lhs[0]=v; for(int i =1 ; i <r ; i++){lhs[i]=val[i-1];};};
+template <typename t, size_t r , size_t rs  >
+t[r] operator(t[r]& lhs,t v, t vs,t val[rs] ){lhs[0]=v;lhs[1]=vs; for(int i =2 ; i <r ; i++){lhs[i]=val[i-2];};};
+template <typename t, size_t r , size_t rs ,size_t rv >
+t[r] operator()(t[r]& lhs,t vs[rs],t val[rv] ){for(int i=0;i<rs;i++){lhs[i]=vs[i];}; for(int i =rs ; i <r ; i++){lhs[i]=val[i-rs];};};
+template <typename t, size_t r , size_t rs  >
+t[r] operator()(t[r]& lhs,t vs[rs],t val ){for(int i=0;i<rs;i++){lhs[i]=vs[i];}; lhs[rs]=val;};
+template <typename t, size_t r , size_t rs  >
+t[r] operator()(t[r]& lhs,t vs[rs],t val , t vals){for(int i=0;i<rs;i++){lhs[i]=vs[i];}; lhs[rs]=val;lhs[rs+1]=vals;};
+
+
+template <typename t, size_t r , size_t rs >
+t[r] vcon( t val[rs] ){ for(int i =0 ; i <r ; i++){lhs[i]=val[i];};};
+template <typename t, size_t r , size_t rs >
+t[r] vcon(t v, t val[rs] ){lhs[0]=v; for(int i =1 ; i <r ; i++){lhs[i]=val[i-1];};};
+template <typename t, size_t r , size_t rs  >
+t[r] vcon(t v, t vs,t val[rs] ){lhs[0]=v;lhs[1]=vs; for(int i =2 ; i <r ; i++){lhs[i]=val[i-2];};};
+template <typename t, size_t r , size_t rs ,size_t rv >
+t[r] vcon(t vs[rs],t val[rv] ){for(int i=0;i<rs;i++){lhs[i]=vs[i];}; for(int i =rs ; i <r ; i++){lhs[i]=val[i-rs];};};
+template <typename t, size_t r , size_t rs  >
+t[r] vcon(t vs[rs],t val ){for(int i=0;i<rs;i++){lhs[i]=vs[i];}; lhs[rs]=val;};
+template <typename t, size_t r , size_t rs  >
+t[r] vcon(t vs[rs],t val , t vals){for(int i=0;i<rs;i++){lhs[i]=vs[i];}; lhs[rs]=val;lhs[rs+1]=vals;};
+
+
+
+template <typename t,size_t rs>
+t[2] vec2(t val[rs]) { return vcon<t,2,rs>(t val);};
+template <typename t,size_t rs>
+t[2] vec2(t v,t val[rs]) { return vcon<t,2,rs>(v, val);};
+template <typename t,size_t rs>
+t[2] vec2(t v, t vs,t val[rs]) { return vcon<t,2,rs>(v,vs, val);};
+template <typename t,size_t rs,size_t rv>
+t[2] vec2(t vs[rs],t val[rv]) { return vcon<t,2,rs,rv>(vs,val);};
+template <typename t,size_t rs>
+t[2] vec2(t vs[rs],t val) { return vcon<t,2,rs>(vs,val);};
+template <typename t,size_t rs>
+t[2] vec2(t vs[rs],t val), tvals { return vcon<t,2,rs>(vs,val,vals);};
+
+
+
+template <typename t,size_t rs>
+t[3] vec3(t val[rs]) { return vcon<t,3,rs>(t val);};
+template <typename t,size_t rs>
+t[3] vec3(t v,t val[rs]) { return vcon<t,3,rs>(v, val);};
+template <typename t,size_t rs>
+t[3] vec3(t v, t vs,t val[rs]) { return vcon<t,3,rs>(v,vs, val);};
+template <typename t,size_t rs,size_t rv>
+t[3] vec3(t vs[rs],t val[rv]) { return vcon<t,3,rs,rv>(vs,val);};
+template <typename t,size_t rs>
+t[3] vec3(t vs[rs],t val) { return vcon<t,3,rs>(vs,val);};
+template <typename t,size_t rs>
+t[3] vec3(t vs[rs],t val), tvals { return vcon<t,3,rs>(vs,val,vals);};
+
+template <typename t,size_t rs>
+t[4] vec4(t val[rs]) { return vcon<t,4,rs>(t val);};
+template <typename t,size_t rs>
+t[4] vec4(t v,t val[rs]) { return vcon<t,4,rs>(v, val);};
+template <typename t,size_t rs>
+t[4] vec4(t v, t vs,t val[rs]) { return vcon<t,4,rs>(v,vs, val);};
+template <typename t,size_t rs,size_t rv>
+t[4] vec4(t vs[rs],t val[rv]) { return vcon<t,4,rs,rv>(vs,val);};
+template <typename t,size_t rs>
+t[2] vec4(t vs[rs],t val) { return vcon<t,4,rs>(vs,val);};
+template <typename t,size_t rs>
+t[2] vec4(t vs[rs],t val), tvals { return vcon<t,4,rs>(vs,val,vals);};
+
 
 template <typename t,size_t r,size_t c> bool[r][c] operator<( t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]< rhs[i][j]);};};return s;};
 template <typename t,size_t r,size_t c> bool[r][c] operator>( t[r][c]& lhs, t[r][c]& rhs){bool s[r][c]; for(int i = 0; i<r;i++){for(int j=0;j<c;j++){ s[i][j] = (lhs[i][j]> rhs[i][j]);};};return s;};
@@ -353,6 +423,20 @@ class vect {
         this->s=0;
         this->tsize=sizebuf;
         this->data = new T[sizebuf];
+    };
+    void swap(size_t pos1 ,size_t pos2){
+        T temp = this->data[pos1];
+        this->data[pos1] = this->data[pos2] ;
+        this->data[pos2] = temp;
+        delete temp;
+    };
+    void move(size_t pos1 , size_t pos2){
+        this->swap(pos1,pos2); int add=0;
+        if(pos1<pos2){add=1;}
+        else {add=-1}
+        for( int i = pos1 + add ; i != pos2 ; i+=add )
+            this->swap(i-add,i);
+        };
     };
     vect(size_t size){
         this->s = size; 

@@ -15,6 +15,12 @@
 namespace win_events {
     using events::event;
     using events::event_filter;
+    using events::event_main;
+
+    class click : public events::click {
+        public:
+        click();
+    };
     class MOUSE                   :public events::MOUSE                   { 
         virtual void init();
     };         
@@ -24,11 +30,78 @@ namespace win_events {
     class JOY                     :public events::JOY                     {
     virtual void init();
     }
-    class CONTROLLER              :public events::CONTROLLER              {
+    class TOUCH                   :public events::TOUCH                   { }         
+    class CONTROL              :public events::CONTROL            {
     virtual void init();
     }              
-    class TOUCH                   :public events::TOUCH                   { }         
+    class UI            : public events::UI{
 
+    };
+    class DISPLAY   : public events::UI {
+        bool gotten;
+//         typedef struct _DISPLAY_DEVICEW {
+//     DWORD  cb;
+//     WCHAR  DeviceName[32];
+//     WCHAR  DeviceString[128];
+//     DWORD  StateFlags;
+//     WCHAR  DeviceID[128];
+//     WCHAR  DeviceKey[128];
+// } DISPLAY_DEVICEW, *PDISPLAY_DEVICEW, *LPDISPLAY_DEVICEW;
+    ivec3 get_display_data(size_t pos=0)final {
+        DISPLAY_DEVICE displayDevice;
+        displayDevice.cb = sizeof(DISPLAY_DEVICE);
+        ivec3 res;
+    // Enumerate the monitor by index
+        if (EnumDisplayDevices(NULL, monitorIndex, &displayDevice, 0)) {
+        DEVMODE devMode;
+        devMode.dmSize = sizeof(DEVMODE);
+        // Get the current display settings for this monitor
+        if (EnumDisplaySettings(displayDevice.DeviceName, ENUM_CURRENT_SETTINGS, &devMode)) {
+             res[0] = devMode.dmPelsWidht;
+             res[1] = devMode.dmPelsHeight;
+             res[2]=devMode.dmDisplayFrequency ; this->disp[pos] = res; return res;
+        } else {
+            std::cerr << "  Failed to retrieve display settings." << std::endl;
+        }
+        } else {
+        std::cerr << "Monitor index " << monitorIndex << " is invalid." << std::endl;
+    }
+        
+    }
+        ivec3 get_monitor_data(size_t pos=0) final {
+ MONITORINFOEX monitorInfo;
+    monitorInfo.cbSize = sizeof(MONITORINFOEX);
+
+    if (GetMonitorInfo(hMonitor, &monitorInfo)) {
+        // Get device context for the monitor
+        HDC hdcMonitor = CreateDC(NULL, monitorInfo.szDevice, NULL, NULL);
+
+        // Get physical width and height in millimeters
+        int widthMM = GetDeviceCaps(hdcMonitor, HORZSIZE);
+        int heightMM = GetDeviceCaps(hdcMonitor, VERTSIZE);
+        int hz = GetDeviceCaps(hdcMonitor,VREFRESH);
+        return ivec4(widthMM,heightMM);
+        DeleteDC(hdcMonitor);
+        this->mon[pos] = ivec3(widthMM,heightMM,hz);
+        return this->mon[pos];
+    };
+    else std::cerr<<"Could not get_monitor_data(size_t pos= "<<pos<<")"; 
+    delete monitorInfo;
+    };
+    int get_nummon(){
+        this->nummon = GetSystemMonitors(SMCMONITORS);
+    };
+    void get_all(){
+        this->get_nummon();
+        this->disp.clear();
+        this->mon.clear();
+        for(size_t i =0; i <this->nummon;i++){
+            this->get_display_data(i);
+            this->get_monitor_data(i);
+        };
+    };
+};
+    }
     class SYS : public events::SYS{
         /*   
 using OVERLAPPED= WS_OVERLAPPED; 
@@ -88,6 +161,7 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
     void init(){
 
     };
+
     HWND create_win (ivec2 size,ivec2 pos,HWND parent=NULL,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) override {
         DWORD style = (transparent?WS_EX_TRANSPARENT:0) | (always_on_top?WS_EX_TOPMOST:0)|  (tool?WS_EX_TOOLWINDOW:0) | (custom_tabbar?0:WS_CAPTION) ; 
         HWND winh = CreateWindowEx(
@@ -127,7 +201,7 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
     void sleep(int mstime=2000){Sleep(mstime);}
 
 };
-
+};
 class win_env : public strata_env<HMODULE,HINSTANCE>{
  
     public:
@@ -156,6 +230,3 @@ class win_env : public strata_env<HMODULE,HINSTANCE>{
     func get_func(const char* funcname; HMODULE m){return (func)GetProcAddress(m,name); };
     void unload_shared(HMODULE m){FreeLibrary(m);};
 };
-
-
-
