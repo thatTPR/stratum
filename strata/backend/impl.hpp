@@ -143,12 +143,13 @@ enum
 #define _sleep        357
 #define _min          358
 #define _max          359
-#define _move         360
-#define _resize       361
-#define _fullscreen   362
-#define _close        363
-#define _display_conn 364
-#define _display_mode 365
+#define _hide         360
+#define _move         361
+#define _resize       362
+#define _fullscreen   363
+#define _close        364
+#define _display_conn 365
+#define _display_mode 366
 #define _SYS ( _sleep|_min|_max|_move|_resize|_fullscreen|_close)
 
 
@@ -196,8 +197,9 @@ static const std::map<int , std::string> ev_map = {
         event(event<T,type> s) = default {this = s;}
         event(T data){this->d = data;}
         event(T data, int index);{this->d = data;this->index=index;}
+        
     };
-    template <typname d>
+    template <typename d>
     class ev_filter {
         public:
         event<d>* ev;
@@ -223,6 +225,7 @@ static const std::map<int , std::string> ev_map = {
     template <uint ty=0>
     class event_sys : public event<void,ty>{
         public:
+        using flag=ty
         void _init(); // Initialize the subsystem
         void init() {this->_init()}; 
         virtual event* resolve();
@@ -311,7 +314,8 @@ using mousedown = event<int,_mousedown>;
 using mouseup = event<int,_mouseup>;      
 using mouse_press = event<int,_mousepress>; // 0 left 1 right 2 wheel, 3 forward ,4 back
 using mouse_move = event<vec2,_mouse_move>;//xy
-using mouse_wheel = event<float,_mouse_wheel>; //x          
+using mouse_wheel = event<float,_mouse_wheel>; //x       
+   
 class MOUSE                  :public event_sys<_MOUSE>{
     event_main* evmain;
     virtual vec2 get_pos();
@@ -472,9 +476,8 @@ using combo = event<imat2x4,_combo> ; //r0 keys, r1 mouse
 using textedit = event<text_edit,_textedit>;
 class UI        :public event_sys<_UI>{
     public: 
-    int ms_dbclick ;
     
-    virtual void set_db_click_ms(int per);
+    virtual void get_db_click_ms(int per);
     int get_ms(int _ms=200) final{this->ms=_ms}; int16 ms_cur;}
 };
 
@@ -482,6 +485,7 @@ class  wake         : public wake<bool,_wake>;
 class  sleep        : public event<bool,_sleep>;        
 class  min          : public event<bool,_min>;      
 class  max          : public event<bool,_max>;      
+class  hide          : public event<bool,_max>;
 class  resize       : public event<ivec2,_resize>;
 class  move         : public event<ivec2,_move>;         
 class  fullscreen   : public event<bool,_fullscreen>;             
@@ -504,17 +508,17 @@ using display_mode = event<bool,_display_mode>{
     bool get_portrait()final{this->d=_get_portrait();};
 };  
 class DISPLAY : public event_sys<_DISPLAY>{
-    vect<ivec3> disp; // xy=wh ; z=index;
+    vect<ivec3> disp; // xy=wh ; z=hz;
+    vect<ivec3> mon;
+    size_t nummon;
     vec2 get_data(size_t pos=0){return this->disp[pos];}; // hw(pixels) ,hw(cm)
     int get_width(size_t pos=0){return this->disp[pos][0];};
     int get_height(size_t pos=0){return this->disp[pos][1];};
     int get_index(size_t pos=0){return this->disp[pos][2];};
-
-    virtual vec2 _get_data(size_t pos=0); // hw(pixels) ,hw(cm)
-    virtual int _get_width(size_t pos=0);
-    virtual int _get_height(size_t pos=0);
-    virtual int _get_index(size_t pos=0);
-
+    ivec3 get_monitor_data(size_t pos=0); // w,h,hz
+    ivec3 get_display_data(size_t pos=0); // w,h,hz
+    size_t get_num_monitors();
+    size_t get_monitor_display(size_t pos=0);
     virtual vec2 get_data(size_t pos=0){this->_get_data this->disp[pos];}; // hw(pixels) ,hw(cm)
     virtual int get_width(size_t pos=0){this->_get_width this->disp[pos][0];};
     virtual int get_height(size_t pos=0){this->_get_height this->disp[pos][1];};
@@ -533,50 +537,96 @@ class DISPLAY : public event_sys<_DISPLAY>{
     }; // 
 };
 
-template <typename win>
+template <typename win,typename command_sys>
 class SYS : public event_sys<_SYS>{
     public:
     command_sys* commsys;
     event_main evmain;
+    vect<event_sys*> eventsys;
     public:
     using winty = win;
     vect<win> wins;
-    int curr_win_index;
+    vect<ivec4> wind;
+    int curr_win_index=0;
+
     using MIN = 0b0001;
     using MAX = 0b0010;
     using HIDE = 0b0100;
     using NORMAL = 0b1000;
 void (*const close_app_win_func)();
-    void sleep_callback()final{this->evmain->push(sleep::sleep()};;
-    void wake_callback()final{this->evmain->push(wake::wake()};;
-    void min_callback()final{this->evmain->push(min::min(true));}
-    void max_callback()final{this->evmain->push(max::max(true));}
-    void resize_callback()final{this->evmain->push(resize::resize(this->curr_win_index,ivec2(this->wins[this->cur_win_index].second[2],this->wins[this->cur_win_index].second[3]));};;
-    void move_callback()final{this->evmain->push(move::move(this->curr_win_index,ivec2(this->wins[this->cur_win_index].second[0],this->wins[this->cur_win_index].second[1])));};;
-    void fullscreen_callback(bool val=true)final{this->evmain->push(fullscreen::fullscreen(val));};
+    void def_close(){delete this;};
+    void sleep_callback()final{this->evmain->push(sleep::sleep(this->cur_win_index,true));};;
+    void wake_callback()final{this->evmain->push(wake::wake(this->cur_win_index,true));};
+    void min_callback()final{this->evmain->push(min::min(this->cur_win_index,true));}
+    void max_callback()final{this->evmain->push(max::max(this->cur_win_index,true));}
+    void restore_callback()final{this->evmain->push(restore::restore(this->cur_win_index,true));};
+    void hide_callback()final{this->evmain->push(hide::hide(this->cur_win_index,true));};
+    void resize_callback()final{this->evmain->push(resize::resize(this->curr_win_index,ivec2(this->wind[this->cur_win_index][2],this->wind[this->cur_win_index][3]));};;
+    void move_callback()final{this->evmain->push(move::move(this->curr_win_index,ivec2(this->wind[this->cur_win_index][0],this->wind[this->cur_win_index][1])));};;
+    void fullscreen_callback(bool val=true)final{this->evmain->push(fullscreen::fullscreen(this->cur_win_index,val));};
     void close_callback()final{this->evmain->push(close::close(true));this->close_app_win_func();}
     
-    void handle();
-    void set_close(void (*const close_app)()){this->close_app_win_func= close_app;};
-    virtual void _init()
-    void init(void (*const close_app)() ){set_close(close_app);this->_init();};// Set callbacks
     virtual win create_win(ivec2 size,ivec2 pos,win parent=NULL,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) ;
     win create_child_cur (ivec2 size,ivec2 pos,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) final{
             return this->create_win (ivec2 size,ivec2 pos,this->wins[this->curr_win_index].w,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) ;
     } ;
     virtual ivec2 get_pos(win w=this->wins[0]);
     virtual ivec2 get_size(win w=this->wins[0]);
-    virtual ivec4 get_all(win w=this->wins[0]);
+    virtual ivec4 get_data_all(win w=this->wins[0]);
     virtual void resize_win(win w=this->wins[0],ivec2 addsize);
     virtual void move_win(win w=this->wins[0],ivec2 addpos);
+    virtual void minimize_win(size_t pos);
+    virtual void maximize_win{size_t pos};
+    virtual void restore_win{size_t pos};
+    virtual void hide_win(size_t pos);
+    
     virtual bool is_min(win w=this->wins[0])
     virtual bool is_hidden(win w=this->wins[0])
     virtual bool is_normal(win w=this->wins[0])
     virtual bool is_max(win w=this->wins[0])
-    virtual void set_win_opacity(float opacity);
-    virtual void set_win_fullscreen();
-    virtual void close();
+    virtual void set_win_opacity(size_t index,float opacity);
+    virtual void set_win_fullscreen(size_t index);
+    virtual void close_win();
     virtual void sleep(int mstime=2000);
+    virtual void _handle(); // Called during the event loop
+    void handle() final{
+        this->_handle();
+        for(int i =0; i<this->eventsys.size();i++){this->eventsys.handle();};
+    };
+    void set_close(void (*const close_app)() = this->def_close){this->close_app_win_func= close_app;};
+    virtual void _init();// Set callbacks
+    void init(void (*const close_app)() ){set_close(close_app);this->_init();for(int i=0;i<this->eventsys.size();i++){this->eventsys[i].init();};
+    void set_priority(int place,int flag){
+        for(int i = 0;i<this->eventsys.size();i++){
+            if(this->eventsys[i].flag==flag){
+                this->eventsys.swap(i,place);
+                int s = ((place-i)>0)?1:-1;
+                for(int j = place ; j != i ; j+=s){
+                    this->eventsys.swap(place,place+s);
+                };
+            };
+        };
+    };
+    void set_priority(vect<ivec2> flag_place){
+        for(int i=0;i<flag_place.size();i++){
+            for(int j = 0 ; j <this->eventsys.size();j++){
+                if(this->eventsys[j].flag==flag_place[i][0]){
+                    this->eventsys.swap(g,flag_place[1]);
+                    break;
+                }
+            };
+        }
+    };
+    void push(event_sys* first){this->eventsys.push(first);};
+    void push(event_sys* first,event_sys* second){this->push(first);this->push(second);};
+    void push(event_sys* first,event_sys* s...){
+        this->push(first);
+        this->push(s...);
+    };
+    SYS(eventsys* first, eventsys* args...){
+        this->eventsys.push(first) ; this->push(args...)
+        
+    };
 };
 
 };
