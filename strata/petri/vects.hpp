@@ -168,7 +168,14 @@ class vect {
         this->data= new T[a+size_buf] ;this->data=n;
         this->s= a;
     };
-   
+    void reserve(size_t n){
+        this->tsize=this->tsize+n;
+        T* n = new T[this->tsize];
+        for(int i=0 ; i < this->s ; i++ ){
+            n[i] = this->data[i]; 
+        };
+        this->data= new T[this->tsize] ;this->data=n;
+    };
     void insert(size_t pos, T elem){
         if(!(this->s+1 < this->tsize)){
         this->resize(this->s+1);};

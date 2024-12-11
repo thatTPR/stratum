@@ -29,9 +29,12 @@ namespace win_events {
     };
     class JOY                     :public events::JOY                     {
     virtual void init();
-    }
+    };
+    class CONT                  : public events::CONT {
+
+    };
     class TOUCH                   :public events::TOUCH                   { }         
-    class CONTROL              :public events::CONTROL            {
+    class INT              :public events::INT            {
     virtual void init();
     }              
     class UI            : public events::UI{
