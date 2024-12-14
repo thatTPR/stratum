@@ -1,7 +1,10 @@
-layout(location=0) uniform ivec4 bounds;
-layout(location=1) uniform fg_col;
-layout(location=2) uniform bg_col;
-layout(location=3) uniform bool set;
+layout(binding=0) buffer checkbox 
+{
+ ivec4 bounds;
+ uniform fg_col;
+ uniform bg_col;
+ uniform bool set;
+}
 layout(std432,binding=0) out  image2D im;
 void drawBox(){
     int size= bounds.z-bounds.x;
