@@ -4,11 +4,18 @@
 #include <initializer_list>
 template<typename T, size_t sizearr>
 class arr {
+    public:
     
     T data[s];
     size_t size=sizearr;
+    size_t pos=0 ;
+    T data(){return this->data;}
+    T& data(){return this->data;}
+    T* data(){return &(this->data);}
 
-    public:
+    size_t pos(){return this->pos;};
+    void clear(){this->pos=0;};
+    operator+=(T n){if(this->pos==(this->size-1)){this->clear};this->data[pos]= n; this->pos++;};
     T& get(size_t pos){return this->data[pos];};
      T& operator[](size_t pos){
         assert(pos<size, "pos bigger than array size")
@@ -53,6 +60,7 @@ class arr {
             this->data[i] = val; i++;
         };
     };
+    arr() = default ;
 
     #ifdef SWIZZLE_ARR
     using dim =sizearr ;
@@ -66,6 +74,10 @@ class mat {
     public:
     T data[r][c];
     size_t row = r ; size_t col = c;
+    T data(){return this->data;}
+    T& data(){return this->data;}
+    T* data(){return &(this->data);}
+
     arr<T&,c> operator[](size_t pos){
      assert(pos<r);
     arr<T,c> res = this->data[pos];
@@ -258,7 +270,9 @@ class vect {
         this->s = s; this->tsize = tsize ; this->data= new T[this->tsize];
     };
 
-}; 
+};
+template <typename T,size_t sb=0b100,>
+using vectvect= vect<<vect<T,sb>,sb>> ;
 
 #ifdef TENSOR_MAT
 template <typename T,size_t first>

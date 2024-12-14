@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <atomic>
 #include <future>
+#include <cpuid.h>
 #define fs std::filesystem
 
 #ifdef STA_IMPL_WIN
@@ -21,54 +22,122 @@
 #endif
 
 
-template<typename device,typename _shader, typename _stage>
+struct gpu_info {
+
+    bool robustBufferAccess       ,  //Ensures bounds-checking for buffer accesses.
+    bool fullDrawIndexUint32      ,  //Allows 32-bit indices for drawing.
+    bool geometryShader           ,  //Supports geometry shaders.
+    bool tessellationShader       ,  //Supports tessellation shaders.
+    bool multiDrawIndirect        ,  //Allows multiple draw calls in a single command.
+    bool wideLines                ,  //Enables rendering wide lines.
+    bool largePoints              ,  //Enables rendering large points.
+    bool textureCompressionETC2   ,  //ETC2 texture compression support.
+    bool sparseBinding            ,  //Supports sparse resources (like sparse textures).
+
+
+    bool ray_tracing_pipeline; /*
+Adds support for ray tracing features.
+Features structure: VkPhysicalDeviceRayTracingPipelineFeaturesKHR.
+    */
+    bool descriptor_indexing;/*
+Adds support for descriptor indexing.
+Features structure: VkPhysicalDeviceDescriptorIndexingFeatures.
+    */    
+    bool multiview;
+/*
+Adds support for rendering to multiple views (e.g., for VR).
+Features structure: VkPhysicalDeviceMultiviewFeatures.
+*/
+    bool sampler_filter_minmax;
+
+Adds support for min/max filtering.
+Features structure: VkPhysicalDeviceSamplerFilterMinmaxFeaturesEXT.
+    bool 
+};
+template <typename winsurface, typename Pipeline,   > 
 class strata_impl {
-    using stage = _stage ;
-
-
+    vect<Pipeline> pipelines;
+    vect<winsurface> winsurfaces;
 virtual void create_fullscreen();
-virtual void get_gpu_info();
+virtual void get_gpu_info(gpu_info gpinfo);
 virtual _shader load_shader(const uint32_t shader[] );
 virtual void shader_bind(_shader shader,auto*... uniforms);
-    void descriptor_set();
-    void descriptor_pool();
+void descriptor_set();
+void descriptor_pool();
+void create_swapchain();
 virtual void load_SSBO(_shader shader,auto* buffer);
 virtual void load_UBO(_shader shader,auto* buffer);
 virtual void draw(_stage ;);
 virtual void blend();
-virtual void mesh_load();
-virtual void texture_load();
+
+void exec(shader_module module) final{};
+void pipeline_create(size_t shad_size , shader_module* modules )final{
+    for(int i =0; i<shad_size;i++){
+        this->
+    };
+};
+virtual void init(){
+
+} ; // Gets platform info
 
 };
+struct cpu_feat {
+    bool pse=false;
+// SIMD extensions like
+bool SSE=false;bool AVX=false ; //bool AVX2=false; bool AVX_512=false;
+bool AES_NI=false;
+//Virtualization Support:
+bool hypervisor;
+bool VT_x=false ;//(Intel) 
+bool AMD_V=false;
+//Multithreading and Parallelism:
+bool HTT=false;
+// Cores and logical processors
+int cores=1; int logical=1;
+// Hardware Capabilities:
+    //Support for features like 64-bit operation 
+    bool x64=false;
+    // TSX (Transactional Synchronization Extensions).
+    bool TSX=false;
 
+} ;
 
-// Scope : 
-// gpu Platform info
-// cpu Platform info  
-// window  
-// power management
-// input events
+    struct cpu_feat_ext {
+        bool crypto = false;  // Feats:
 
-// GPU info
-// bool hasThing();
-// CPU info
+        // neural net 
+        bool nn = false; // Feats:
 
-// Window
-s_init();
-s_create_window();
-s_del_window();
-
-template <typename shared,typename procinstance>
-class strata_env{
-    struct cpu_info {
-        std::string name;
-        std::string arch;
+        // Acceleration
+        bool other_accel = false; // Feats:
 
     };
+template <typename shared,typename procinstance>
+class strata_env{
+
+    
     public:
     using sharedty= shared; 
-   
-    virtual void init(int flags); // System initialization
+    void 
+    cpu_feat get_cpu_feat(){
+        cpu_feat cpuf;
+#if defined(__x86_64__) || defined(__i386__)
+     unsigned int eax, ebx, ecx, edx;
+
+    // Query standard function 1 (Processor Info and Feature Bits)
+    __cpuid(1, eax, ebx, ecx, edx);
+    cpuf.SSE= edx&(1<<25);
+    cpuf.AVX= ecx&(1<<28);
+    cpuf.pse= eax&(1<<3);
+    cpuf.hypervisor=ecx(1<<31);
+    
+#endif
+return cpuf;
+    };
+     void init(int flags){
+        // Get cpu features
+        
+     }; // System initialization
     #ifdef STA_IMPL_VK
     virtual void initVk(win w, VkInstance inst, VKSurfaceKHR* surface, procinstance hInstance);
     #endif
@@ -77,249 +146,112 @@ class strata_env{
     #endif
     void cpu_info();
     virtual void load_shared(fs::path p);
-    virtual void unload_shared(shared s);
+    virtual void unload_shared(shared s);  
+};
     
-    };
-    
-    
-
-} ;
-
 
 namespace events {
-enum evs {
-
- _DEFAULT=                0,
-_click=                  1,
-_mousedown=               2,
-_mouseup=                 3,
-_mousepress=              4,
-_mouse_move=              5,
-_mouse_wheel=             6,
-    _MOUSE=                   (_click|_mousedown |_mouseup |_mousepress|_mouse_move |_mouse_wheel),                                 ,
-_keyup=                   8,
-_keydown=                 9,
-_keypress=               10,
-    _KEY=                    (_keyup|_keydown|_keypress),
-_joy_hat  =              12,
-_joy_axis=               13,
-_joy_up=                 14,
-_joy_down=               15,
-_joy_press=              16,
-    _JOY=                    (_joy_axis|_joy_up|_joy_down|_joy_press),
-_CONT_axis=        22,
-_CONT_up=          23,
-_CONT_down=        24,
-_CONT_press=       25,
-_CONT_dpad=        26,
-_CONT=             ( _CONT_axis|_CONT_up|_CONT_down|_CONT_press),
-_touch_move=             30,
-_touch_tap=              31,
-_touch_gesture=          32,
-_touch_zoom=             33,
-_TOUCH=                  ( _touch_move|_touch_tap|_touch_gesture|_touch_zoom),
-        _IDEV_ALL = _MOUSE | _KEY | _JOY | _CONT | _TOUCH ,
-_MOVE=              0x01000000,
-_ACC=               0x10000000,
-_motion=            0x01000010,
-_accmotion=         0x10000010,
-_rotate2d=          0x01000100,
-_translate2d=       0x01001000,
-_rotate3d=          0x01010000,
-_translate3d=       0x01100000,
-_accrotate2d=       0x10000100,
-_acctranslate2d=    0x10001000,
-_accrotate3d=       0x10010000,
-_acctranslate3d=    0x10100000,
-_INT_NAV=( _up|_down|_left|_right|_forward|_back),
-_INT_GAME=( _up|_down|_left|_right|_forward|_back|_accup|_accdown|_accleft|_accright|_accforward|_accback),
-_INT_SIM=( _yawleft|_yawright|_pitchdown|_pitchup|_accyawleft|_accyawright|_accpitchdown|_accpitchup| _rotate2d|_translate2d|_rotate3d|_translate3d|_accrotate2d|_acctranslate2d|_accrotate3d|_acctranslate3d),
-_INT=( INT_NAV|INT_GAME| INT_SIM  ),
-_enter=     228,
-_leave=     229,
-_focus=     230,
-_drag=      231,
-_dragstart= 232,
-_dragend=   233,
-_keycombo=  234,
-_dbclick=   235,
-_combo=     236,
-_text_in=   237,
-_text_edit= 238,
-_clipboard= 239,
-_play_audio=           252,    
-_play_audio_about_to=  253,     // For loading,
-_AUDIO= (play_audio |play_audio),
-_UI= (_enter|_leave|_focus|_drag|_dragstart|_dragend|_keycombo|_dbclick|_click|_combo|_text_in|_text_edit|_clipboard),
-_wake=        356,
-_sleep=       357,
-_min=         358,
-_max=         359,
-_hide=        360,
-_move=        361,
-_resize=      362,
-_fullscreen=  363,
-_close=       364,
-_display_conn=365,
-_display_power=366,
-_displat_orient=367,
-_SYS=( _wake|_sleep|_min|_max|_move|_resize|_fullscreen|_close),
-};
-
-
-    template <typename T , evs _type =evs::_DEFAULT>
-    class event {
-        public:
-        using ty = T;
-        const uint type = _type;
-        T data;
-        uint32 ms;
-        int index; // device index
-        static const std::string name = ev_map[type];  
-        operator bool() const {return *(this->data);}
-
-        inline bool operator<=(event& lhs,event& rhs){return lhs.data==rhs.data;};
-        inline bool operator>=(event& lhs,event& rhs){return lhs.data==rhs.data;};
-        inline bool operator<(event<d>& lhs,event<d>& rhs){return lhs.data<rhs.data};
-        inline bool operator>(event<d>& lhs,event<d>& rhs){return lhs.data>rhs.data};
-        inline bool operator==(event<d>& lhs,event<d>& rhs){return lhs.data==rhs.data};
-        inline bool operator!=(event<d>& lhs,event<d>& rhs){return lhs.data!=rhs.data};
-        inline bool operator<=>(event<d>& lhs,event<d>& rhs){return lhs.data<=>rhs.data};
-        std::string parser_cls_inst(){
-            std::string ret;
-            ret+=map[ty]+"("+ ;
-        };
-        d get(){return this->data;};
-        int get_index(){return this->index;};
-        uint32 get_time(){return this->ms;};
-        event(d data,uint32 ms){
-            this=default;
-            this->data = data; this->ms = ms;
-        };
-        event() = default ;
-        event(event<T,type> s) = default {this = s;}
-        event(T data){this->data = data;}
-        event(T data, int index);{this->data = data;this->index=index;}
-        event(T data, int index,uint32 ms);{this->data = data;this->index=index;this->ms=ms;}
-        
-    };
-    // template <>
-    // class event<void,_DEFAULT>{
-    
-    //     template<typename t,uint _ty>
-    //     event<t,_ty> operator=(event<t,_ty> s){ return s;};
-    // };
-    // using ev_default = event<void,_DEFAULT>;
-    
-
-
-    class event_union {
-
-    };
-    template <typename T,evs type=evs::_DEFAULT>
-    class ev_filter : public event<T,type> {
-        public:
-        virtual void cb(event<T,type>& lhs); // Callback to call
-        virtual bool filter(event<T,type>& lhs){
-            return lhs>this;
-        };      
-    };
-
-    class ev_filters {
-        public:
-        arr<ev_filter<void, _DEFAULT>*> filters;
-        void filter(event<d>& lhs){
-            for(int i=0; i<this->filters.size();i++){this->filters->filter(lhs);};
-        };
-    };
-    class event_main ;
-    template <uint flag>
-    class event_sys : public event<void,ty>{
-        public:
-        const uint flag=ty;
-        event_main* evmain;
-        event_sys<evs::_SYS>* sys;
-        void _init(); // Initialize the subsystem
-        void init() {this->_init()}; 
-        virtual event* resolve();
-        virtual event* handle();
-        virtual void listen();// Checks if there was an event;
-        virtual event filter(event* ev);
-        event_sys(event_sys<evs::_SYS> sys, event_main* evm){this->sys=sys;this->evmain=evm;};
-    };
-
-
-
-    template<>
-    class event_sys<evs::_DEFAULT>{
-        public:
-        template<uint flag>
-        event_sys<flag> operator=(event_sys<flag> s){
-            return s<flag>();
-        };
-    };
-    using evsys_default=event_sys<evs::_DEFAULT>;
-
-
-
+#include "impl.def.hpp"
 
 using click = event<int,_click>;    
+using dbclick = event<int,_dbclick>;
 using mousedown = event<int,_mousedown>;        
 using mouseup = event<int,_mouseup>;      
-using mouse_press = event<int,_mousepress>; // 0 left 1 right 2 wheel, 3 forward ,4 back
-using mouse_move = event<vec2,_mouse_move>;//xy
-using mouse_wheel = event<float,_mouse_wheel>; //x       
-   
-class  event_sys<evs::_MOUSE> {
+using mouse_move = event<ivec2,_mouse_move>;//xy
+using mouse_wheel = event<int,_mouse_wheel>; //x       
+using mouse_wheelh = event<int,_mouse_wheelh>;
+class MOUSE: public  event_sys<evs::_MOUSE> {
  public:
- 
+    
  const uint flag=_MOUSE;
-    click       last_click;      
-    mousedown   last_down;          
-    mouseup     last_up;        
-    mouse_press last_press;            
-    mouse_move  last_move;           
-    mouse_wheel last_wheel;            
+    arr<click, MAX_POLL>       last_click; 
+    arr<dbclick, MAX_POLL>     last_db_click;     
+    arr<mousedown, MAX_POLL>   last_down;          
+    arr<mouseup, MAX_POLL>     last_up;        
+    arr<mouse_move,MAX_POLL>  last_move;           
+    arr<mouse_wheel,MAX_POLL> last_wheel;     
+    arr<mouse_wheelh,MAX_POLL> last_wheelh;     
+    bool detect_combo(ivec2* s){
+        bool x=false;bool y=false;
+            for(int i = 0 ; i < this->last_down.pos();i++){
+                if(this->last_down[i]== s[j][0] ){
+                    bool cond=false;
+                    for(int k = 0 ; k < this->last_up.pos();k++){if(this->last_up[k]==this->last_down[i]){cond=true};break;};
+                    if(cond){continue;}
+                    else {
+                        if(x){y=true}
+                        else x = true;
+                    };
+                }; 
+                if(this->last_down[i]== s[j][1] ){
+                    bool cond=false;
+                    for(int k = 0 ; k < this->last_up.pos();k++){if(this->last_up[k]==this->last_down[i]){cond=true};break;};
+                    if(cond){continue;}
+                    else {
+                        if(x){y=true}
+                        else x = true;
+                    };
+                }; 
+                if(x and y){return true};
+        };
+        return false;
+    };
+    int detect_combo(size_t size_combos ,ivec2* s){
 
-
-    virtual vec2 get_pos();
-    virtual bool get_state(short int bt);
-     void push_cl(int click,int index=0) final {this->ev_main.push(mouse_move(click,index));}
+        for(int j = 0 ; j < size_combos){
+            if(detect_combo(s[j])){return j};
+        };
+        return -1;
+    };
+    void up_check(int i){
+        for(int i = 0 ; i<this->last_down.pos() ;i++ ){
+            if(i==this->last_down.data();){this->last_down[i].data=-1; break;}
+        };
+    };
+    void clear()final{this->last_click.clear();this->last_down.clear();this->last_up.clear();this->last_press.clear();this->last_move.clear();this->last_wheel.clear();}
+    virtual vec2 get_pos(){return this->last_move.data()};
+    virtual bool get_state(short int bt){return this->last_press.data==bt};
+     void push_click(int click,int index=0) final {this->ev_main.push(mouse_move(click,index));}
      void push_move(vec2 mv,int index=0) final {this->ev_main.push(mouse_move(mv,index));};
-     void push_press(int press,int index=0) final {this->ev_main.push(mouse_press(press,index));};
      void push_down(int down,int index=0) final {this->ev_main.push(mouse_down(down,index));};
      void push_up(int up,int index=0) final {this->ev_main.push(mouse_up(up,index));};
      void push_wheel(float wheel,int index=0) final {this->ev_main.push(mouse_wheel(wheel,index));};
+     void push_wheelh(float wheel,int index=0) final {this->ev_main.push(mouse_wheelh(wheel,index));};
      void push_click(click ev) final {this->ev_main.push(ev);}
-     void push_move(move_cb ev) final {this->ev_main.push(ev);};
-     void push_press(press_cb ev) final {this->ev_main.push(ev);};
-     void push_down(down_cb ev) final {this->ev_main.push(ev);};
-     void push_up(up_cb ev) final {this->ev_main.push(ev);};
-     void push_wheel(wheel_cb ev) final {this->ev_main.push(ev);};
+     void push_move(move ev) final {this->ev_main.push(ev);};
+     void push_down(down ev) final {this->ev_main.push(ev);};
+     void push_up(up ev) final {this->ev_main.push(ev);};
+     void push_wheel(wheel ev) final {this->ev_main.push(ev);};
+     void push_wheelh(wheelh ev) final {this->ev_main.push(ev);};
 
-     void click_cb(int click,int index=0) final {this->last_click=mouse_move(click,index);}
-     void move_cb(vec2 mv,int index=0) final {this->last_move=mouse_move(mv,index);};
-     void press_cb(int press,int index=0) final {this->last_press=mouse_press(press,index);};
-     void down_cb(int down,int index=0) final {this->last_down=mouse_down(down,index);};
-     void up_cb(int up,int index=0) final {this->last_up=mouse_up(up,index);};
-     void wheel_cb(float wheel,int index=0) final {this->last_wheel=mouse_wheel(wheel,index);};
-     void click_cb(click ev) final {this->last_click=ev;}
-     void move_cb(move_cb ev) final {this->last_move=ev;};
-     void press_cb(press_cb ev) final {this->last_press=ev;};
-     void down_cb(down_cb ev) final {this->last_down=ev;};
-     void up_cb(up_cb ev) final {this->last_up=ev;};
-     void wheel_cb(wheel_cb ev) final {this->last_wheel=ev;};
+     void click_cb(int click,int index=0) final {this->last_click+=mouse_move(click,index);}
+     void move_cb(vec2 mv,int index=0) final {this->last_move+=mouse_move(mv,index);};
+     void down_cb(int down,int index=0) final {this->last_down+=mouse_down(down,index);};
+     void up_cb(int up,int index=0) final {up_check(up);this->last_up+=mouse_up(up,index);};
+     void wheel_cb(float wheel,int index=0) final {this->last_wheel+=mouse_wheel(wheel,index);};
+     void wheelh_cb(float wheel,int index=0) final {this->last_wheelh+=mouse_wheelh(wheel,index);};
+     void dbclick_cb(click ev) final {this->last_dbclick+=ev;}
+     void click_cb(click ev) final {this->last_click+=ev;}
+     void move_cb(mouse_move ev) final {this->last_move+=ev;};
+     void down_cb(mousedown ev) final {this->last_down+=ev;};
+     void up_cb(mouseup ev) final { up_check(ev.data());this->last_up+=ev;};
+     void wheel_cb(mouse_wheel ev) final {this->last_wheel+=ev;};
+     void wheelh_cb(mouse_wheel ev) final {this->last_wheelh+=ev;};
    
+    virtual void handle();
+    virtual void _handle(){
+        this->handle();
+
+    };
     void init()override{
         this->_init();};
     };
    
 }; 
-using MOUSE=event_sys<evs::_MOUSE>;
 using keyup = event<int,_keyup>; // x button, y index    
 using keydown = event<int,_keydown>; // x button, y index      
 using keypress = event<int,_keypress>; // x button, y index       
-class event_sys<evs::_KEY> {
+class KEY : public event_sys<evs::_KEY> {
  public:
   keyup    last_keyup;
   keydown  last_keydown;
@@ -349,13 +281,12 @@ class event_sys<evs::_KEY> {
         return false;
     };
 }; // index 
-using KEY = event_sys<evs::_KEY>
 using joy_hat = event<int,_joy_hat>;  
 using joy_axis = event<ivec2,_joy_axis>; // x axis y index       
 using joy_up = event<int,_joy_up>;    
 using joy_down = event<int,_joy_down>;      
 using joy_press = event<int,_joy_press>;     
-class  event_sys<evs::_JOY> {
+class  JOY : public event_sys<evs::_JOY> {
  public:
         joy_hat   last_hat;
         joy_axis  last_axis;    
@@ -389,13 +320,12 @@ void axis_cb(int16 axis,int index) final {this->last_axis=joy_axis(axis,index);}
         return false;
     };
 };
-using JOY = event_sys<evs::_JOY>;
 using CONT_press= event<int,_CONT_press>;                    
 using CONT_down = event<int,_CONT_down>; 
 using CONT_up = event<int,_CONT_up>; 
 using CONT_dpad = event<int,_CONT_dpad>;
 using CONT_axis = event<ivec2,_CONT_axis>;  // Axis index;
-class event_sys<evs::_CONT> {
+class CONT: public event_sys<evs::_CONT> {
  public:
     CONT_press last_press;      
     CONT_down  last_down;     
@@ -433,34 +363,43 @@ class event_sys<evs::_CONT> {
 
 
 };  // index
-using CONT= event_sys<evs::_CONT>;
 using touch_move = event<vect<vec4>,_touch_move>; //xy last zw move
 using touch_tap  =  event<vect<vec2>,_touch_tap>;// tap
 using touch_zoom =  event<mat<vec2>,_touch_gesture>; // xy move,z rotate,w zoom
 using touch_gesture =event<vect<vec4>,_touch_zoom>; // rotate
 
 
-class event_sys<evs::_TOUCH> { 
+class TOUCH: public event_sys<evs::_TOUCH> { 
  public:
 touch_move last_move;
 touch_tap last_tap;
 touch_zoom last_zoom;
 touch_gesture last_gesture;
     
-        bool move_cb(vect<vec4> d,int index){this->last_move=move_cb(d,index);}      bool push_touch_move(vect<vec4> d,int index){this->evmain.push(move_cb(d,index));}
-        bool tap_cb(vect<vec2> d,int index){this->last_tap=tap_cb(d,index);}      bool push_touch_tap(vect<vec2> d,int index){this->evmain.push(tap_cb(d,index));}
-        bool zoom_cb(mat<vec2> d,int index){this->last_zoom=zoom_cb(d,index);}      bool push_touch_zoom(mat<vec2> d,int index){this->evmain.push(zoom_cb(d,index));}
-        bool gesture_cb(vect<vec4> d,int index){this->last_gesture=gesture_cb(d,index);}      bool push_touch_gesture(vect<vec4> d,int index){this->evmain.push(gesture_cb(d,index));}
+    bool rec_gest;
     suvec2 get_pos();
     vect<suvec2> get_multi_pos();
+    virtual void get_touch();
+    vect<touch_move> s;
+        bool move_cb(vect<vec4> d,int index){this->last_move=move(d,index);}      bool push_touch_move(vect<vec4> d,int index){this->evmain.push(move_cb(d,index));}
+        bool tap_cb(vect<vec2> d,int index){this->last_tap=tap(d,index);}      bool push_touch_tap(vect<vec2> d,int index){this->evmain.push(tap_cb(d,index));}
+        bool zoom_cb(mat<vec2> d,int index){this->last_zoom=zoom(d,index);}      bool push_touch_zoom(mat<vec2> d,int index){this->evmain.push(zoom_cb(d,index));}
+        bool gesture_cb(vect<vec4> d,int index){this->last_gesture=gesture(d,index);}      bool push_touch_gesture(vect<vec4> d,int index){this->evmain.push(gesture_cb(d,index));}
     void move_cb(touch_move ev){this->last_move_cb=ev;};           void push_move(touch_move ev){this->evmain.push(ev);};
     void tap_cb(touch_tap ev){this->last_tap_cb=ev;};              void push_tap(touch_tap ev){this->evmain.push(ev);};
     void zoom_cb(touch_zoom ev){this->last_zoom_cb=ev;};           void push_zoom(touch_zoom ev){this->evmain.push(ev);};
     void gesture_cb(touch_gesture ev){this->last_gesture_cb=ev;};  void push_gesture(touch_gesture ev){this->evmain.push(ev);};
 
-    virtual void get_touch();
     void init(){event_sys::init();};
-    virtual touch_gesture record_gesture(){}
+    void record_gesture(){this->rec_gest=true;};
+    vect<touch_move> finish_gesture(){this->reg_get=false;return this->s};
+    void priority(){
+
+
+
+        // gesture
+        if(rec_gest){this->s.push(this->last_move);};
+    };
     bool filter(short int type_flag){
         switch(type_flag){
             case _touch_move: {return true;};
@@ -472,7 +411,6 @@ touch_gesture last_gesture;
     };
 
 };
-using TOUCH = event_sys<evs::_TOUCH>;
 
 using motion = event<vec3,_motion>;
 using accmotion = event<vec4,_accmotion>;
@@ -486,7 +424,7 @@ using accrotate3d = event<vec3,_accrotate3d>;
 using acctranslate3d = event<vec3,_acctranslate3d>;
 
 
-class event_sys<evs::_CONTROL>{
+class INT : public event_sys<evs::_INT>{
     motion last_motion;
     accmotion last_accmotion;
     rotate2d last_rotate2d;
@@ -523,7 +461,6 @@ class event_sys<evs::_CONTROL>{
 
 
 };
-using INT = event_sys<evs::_INT>;
 
 ;
 typedef struct text_edit {
@@ -540,22 +477,42 @@ using keycombo = event<ivec4,_keycombo> ; //-1 is
 using dbclick = event<ivec2,_dbclick> ;
 using combo = event<imat2x4,_combo> ; //r0 keys, r1 mouse
 using textedit = event<text_edit,_textedit>;
-class event_sys<evs::_UI> {
+class UI :public event_sys<evs::_UI> {
  public:
     // Lasts
-    enter     last_enter;  
-    leave     last_leave;  
-    focus     last_focus;  
-    drag      last_drag; 
-    dragstart last_dragstart;      
-    dragend   last_dragend;    
-    keycombo  last_keycombo;     
-    dbclick   last_dbclick;    
-    click     last_click;  
-    combo     last_combo;  
+    enter     last_enter;       
+    leave     last_leave;       
+    focus     last_focus;       
+    drag      last_drag;      
+    dragstart last_dragstart;           
+    dragend   last_dragend;         
+    keycombo  last_keycombo;          
+    dbclick   last_dbclick;         
+    combo     last_combo;       
     textedit  last_textedit;     
 
-    
+    bool enter_cb(bool d,int index){this->last_enter=last_enter(d,index);};
+    bool leave_cb(bool d,int index){this->last_leave=last_leave(d,index);};
+    bool focus_cb(bool d,int index){this->last_focus=last_focus(d,index);};
+    bool drag_cb(bool d,int index){this->last_drag=last_drag(d,index);};
+    bool dragstart_cb(bool d,int index){this->last_dragstart=last_dragstart(d,index);};
+    bool dragend_cb(bool d,int index){this->last_dragend=last_dragend(d,index);};
+    bool keycombo_cb(ivec4 d,int index){this->last_keycombo=last_keycombo(d,index);};
+    bool dbclick_cb(ivec2 d,int index){this->last_dbclick=last_dbclick(d,index);};
+    bool combo_cb(imat2x4 d,int index){this->last_combo=last_combo(d,index);};
+    bool textedit_cb(text_edit d,int index){this->last_textedit=last_textedit(d,index);};
+
+
+    bool enter_cb(enter ev){this->last_enter=ev;};
+    bool leave_cb(leave ev){this->last_leave=ev;};
+    bool focus_cb(focus ev){this->last_focus=ev;};
+    bool drag_cb(drag ev){this->last_drag=ev;};
+    bool dragstart_cb(dragstart ev){this->last_dragstart=ev;};
+    bool dragend_cb(dragend ev){this->last_dragend=ev;};
+    bool keycombo_cb(keycombo ev){this->last_keycombo=ev;};
+    bool dbclick_cb(dbclick ev){this->last_dbclick=ev;};
+    bool combo_cb(combo ev){this->last_combo=ev;};
+    bool textedit_cb(textedit ev){this->last_textedit=ev;};
 
  const uint flag=_UI;
     public: 
@@ -563,7 +520,6 @@ class event_sys<evs::_UI> {
     virtual void get_db_click_ms(int per);
     int get_ms(int _ms=200) final{this->ms=_ms}; int16 ms_cur;}
 };
-using UI =  event_sys<evs::_UI>; 
 
 using wake        = event<bool,_wake>;
 using sleep       = event<bool,_sleep>;        
@@ -577,7 +533,7 @@ using close       = event<bool,_close>;
 using display_conn =event<bool,_display_conn>;  
 using display_orient =event<int,_display_orient>;
 using display_power=event<int ,_display_power>;
-class event_sys<evs::_DISPLAY> {
+class DISPLAY : event_sys<evs::_DISPLAY> {
  public:
     vect<ivec3> disp; // xy=wh ; z=hz;
     vect<ivec3> mon;
@@ -616,7 +572,6 @@ class event_sys<evs::_DISPLAY> {
         bool res=_get
     }; // 
 };
-using DISPLAY=event_sys<evs::_DISPLAY>;
 
     static const std::map<int , std::string> ev_map = {
 {evs::_click,"click"},{evs::_mousedown,"mousedown"},{evs::_mouseup,"mouseup"},{evs::_mouseup,"mousepress"}{evs::_mouse_move,"mouse_move"},{evs::_mouse_wheel,"mouse_wheel"},{evs::_MOUSE,"MOUSE"},
@@ -633,26 +588,22 @@ using DISPLAY=event_sys<evs::_DISPLAY>;
 
 };
 
-template <typename command_sys,typename win, int flags...>
-class SYS :  event_sys<evs::_SYS> { 
+template <typename win>
+class SYS : public event_sys<evs::_SYS> { 
     public:
 
  const uint flag=_SYS;
-    command_sys* comms;
     event_main evmain;
-    MOUSE     sMOUSE;           
-    KEY       sKEY;         
-    JOY       sJOY;         
-    CONT      sCONT;                
-    TOUCH     sTOUCH;           
-    INT   sINT;                  
-    UI        sUI;        
-    AUDIO     sAUDIO;           
-    INT  sINT ;
-
-
-
-
+    MOUSE      sMOUSE;           
+    KEY        sKEY;         
+    JOY        sJOY;         
+    CONT       sCONT;                
+    TOUCH      sTOUCH;           
+    INT        sINT;                  
+    UI         sUI;        
+    AUDIO      sAUDIO;         
+    SENSOR     sSENSOR;  
+  
     virtual bool wake(wake ev);
     virtual bool sleep(sleep ev);
     virtual bool min(min ev);
@@ -679,9 +630,9 @@ class SYS :  event_sys<evs::_SYS> {
     bool display_power(evun ev){return this-> display_power(ev.display_power)};
     
     
-    
-    void prioirty(){
-        
+    template<typename... subsys>
+    void prioirty(subsys... s){// TODO Priority remplating.
+        ((s.priority())...);
     };
     vect<event_sys<_DEFAULT>*> evsys;
     using winty = win;
@@ -695,24 +646,20 @@ class SYS :  event_sys<evs::_SYS> {
         for(int i=0;i<this->evsys.size();i++){this->evsys[i].listen();};
      };// Checks if there was an event;
     event filter(event* ev){ev};
-
+    virtual void handle();
    
-    void init() {
-        
+    void init() {        
         this->_init()}; 
     void init_evsys(uint flags){
-        if( (flags & MOUSE::flag)==MOUSE::flag)       {this->evsys.push(&MOUSE());   this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & KEY::flag)==KEY::flag)           {this->evsys.push(&KEY());     this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & JOY::flag)==JOY::flag)           {this->evsys.push(&JOY());     this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & CON::flag)==CON::flag)           {this->evsys.push(&CON());     this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & TOUCH::flag)==TOUCH::flag)       {this->evsys.push(&TOUCH());   this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & UI::flag)==UI::flag)             {this->evsys.push(&UI());      this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & AUDIO::flag)==AUDIO::flag)       {this->evsys.push(&AUDIO());   this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & INT_ALL::flag)==INT_ALL::flag)   {this->evsys.push(&INT_ALL()); this->evsys[this->evsys.size()-1]0->init();return;};
-        if( (flags & INT_NAV::flag)==INT_NAV::flag)   {this->evsys.push(&INT_NAV()); this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & INT_SIM::flag)==INT_SIM::flag)   {this->evsys.push(&INT_SIM()); this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & INT_GAME::flag)==INT_GAME::flag) {this->evsys.push(&INT_GAME());this->evsys[this->evsys.size()-1]0->init();};
-        if( (flags & INT_EDIT::flag)==INT_EDIT::flag) {this->evsys.push(&INT_EDIT());this->evsys[this->evsys.size()-1]0->init();};
+        if( (flags & MOUSE::flag)==MOUSE::flag)       {this->sMOUSE.init();};
+        if( (flags & KEY::flag)==KEY::flag)           {this->sKEY.init();};
+        if( (flags & JOY::flag)==JOY::flag)           {this->sJOY.init();};
+        if( (flags & CON::flag)==CON::flag)           {this->sCON.init();};
+        if( (flags & TOUCH::flag)==TOUCH::flag)       {this->sTOUCH.init();};
+        if( (flags & UI::flag)==UI::flag)             {this->sUI.init();};
+        if( (flags & AUDIO::flag)==AUDIO::flag)       {this->sAUDIO.init();};
+        if( (flags & INT::flag)==INT::flag)           {this->sINT_ALL.init();};
+        if( (flags & SENSOR::flag)==SENSOR::flag)     {this->sSENSOR.init();};
     };
     using MIN = 0b0001;
     using MAX = 0b0010;
@@ -782,7 +729,7 @@ void (*const close_app_win_func)();
             };
         }
     };
-    SYS(uint flags){this->init_evsys(flags);}
+    SYS(uint flags)=default{this->init_evsys(flags);}
 };
 
 };

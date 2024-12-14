@@ -16,13 +16,99 @@ namespace win_events {
     using events::event;
     using events::event_filter;
     using events::event_main;
-
-    class click : public events::click {
-        public:
-        click();
+    using MSG=UINT;
+    using PARAM = LPARAM;
+    int get_dev_index(HANDLE deviceHandle) {
+    // Query the size of the device info
+    UINT size = 0;
+    GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICENAME, nullptr, &size);
+    if (size > 0) {
+        std::vector<char> deviceName(size);
+        if (GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICENAME, deviceName.data(), &size) > 0) {
+            std::cout << "Device Name: " << deviceName.data() << std::endl;
+        };
     };
+    RID_DEVICE_INFO deviceInfo = {};
+    deviceInfo.cbSize = sizeof(RID_DEVICE_INFO);
+    size = sizeof(RID_DEVICE_INFO);
+    GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICEINFO, &deviceInfo, &size) 
+    return (int)deviceInfo.mouse.dwId << std::endl;
+
+};
     class MOUSE                   :public events::MOUSE                   { 
-        virtual void init();
+        virtual bool get_state(short int bt){
+            return 
+        };
+        virtual  handle(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+             switch (this->mMsg) {
+                case WM_INPUT: {
+            UINT dataSize;
+            GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dataSize, sizeof(RAWINPUTHEADER));
+
+            if (dataSize > 0) {
+                RAWINPUT* raw = (RAWINPUT*)malloc(dataSize);
+                int id = get_dev_index(raw->header.hDevice);
+                if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, raw, &dataSize, sizeof(RAWINPUTHEADER)) == dataSize) {
+                    if (raw->header.dwType == RIM_TYPEMOUSE) {
+                        ivec2 s;
+                    s[0]= (int)raw->data.mouse.lLastX;s[1]= (int)raw->data.mouse.lLastY;
+                    this->move_cb(mouse_move( s ,id); 
+                    RAWMOUSE mouse = raw->data.mouse;
+                        if (mouse.usButtonFlags & RI_MOUSE_WHEEL) {int wheel = static_cast<int>(mouse.usButtonData); this->wheel_cb(wheel,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_HWHEEL) {int wheel = static_cast<int>(mouse.usButtonData); this->wheelh_cb(wheel,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) {this->down_cb(0,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {this->up_cb(0,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN){this->down_cb(1,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {this->up_cb(1,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN){this->down_cb(2,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {this->up_cb(2,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN){this->down_cb(4,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP){this->up_cb(4,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) {this->down_cb(5,id);}
+                        if (mouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP){this->up_cb(5,id);}
+                    int bt=(int)raw->data.mouse.ul;;
+                    };
+                };
+                free(raw);
+                return 0;
+            };
+            return 0;
+        };
+        case WM_LBUTTONDOWN   :{this->down_cb(mouse_down(0));return 1;};
+        case WM_LBUTTONUP     :{this->up_cb(mouse_up(0));return 1;}
+        case WM_LBUTTONDBLCLK :{this->dbclick_cb(db_click(0));};
+        case WM_RBUTTONDOWN   :{this->down_cb(mouse_down(1));return 1;};
+        case WM_RBUTTONUP     :{this->down_cb(mouse_up(1));return 1;}
+        case WM_RBUTTONDBLCLK :{this->dbclick_cb(dbclick(1));return 1};
+        case WM_MBUTTONDOWN   :{this->down_cb(mouse_down(3));return 1};
+        case WM_MBUTTONUP     :{this->down_cb(mouse_up(3));return 1};
+        case WM_MBUTTONDBLCLK :{this->down_cb(dbclick(3));return 1};
+        case WM_XBUTTONUP: {
+            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) {this->last_up+=mouse_up(4);            }
+            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON2) {this->last_up+=mouse_up(5);}
+            return 1;
+        };
+        case WM_XBUTTONDOWN: {
+            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) {this->last_up=mouse_down(4);};
+            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON2) {this->last_up=mouse_down(5);};
+            return 1;
+        };
+        
+        case WM_MOUSEMOVE: {
+            ivec2 s;
+            s[0]=(int)GET_X_LPARAM(lParam);s[1]=(int)GET_Y_LPARAM(lParam)
+            this->last_move+= mouse_move( s );
+            return 1;
+        };
+       case WM_MOUSEWHEEL: {
+            int delta = GET_WHEEL_DELTA_WPARAM(wParam); // Motion delta
+            this->last_wheel+= mouse_wheel(delta); return 1;};
+    };
+    return -1;
+    };
+        virtual void _init(){
+            
+        };
     };         
     class KEY                     :public events::KEY                     {
         virtual void init();
@@ -166,6 +252,7 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
     using MAX = strate_env::MAX; 
     using HIDE = strate_env::HIDE; 
     using NORMAL = strate_env::NORMAL;
+    HWND win;
     vect<HWND> wins ;
     vect<ivec4> wind;
     vect<int> state; 
@@ -199,13 +286,35 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
     };
     return 0;
     };
-   
+    void handle((HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+        this->hanlde_win(hwnd, mMsg, wParam,  lParam);
+        if (sMOUSE.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
+        if (sKEY.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
+        if (sJOY.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
+        if (sCONT.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
+        if (sTOUCH.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
+        if (sSENSOR.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
+        /*
+        if (sINT.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
+        if (sUI.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
+        if (sAUDIO.handle(hwnd, mMsg, wParam,  lParam )!=0){return;}; */
+    };
+    void handle_extr(){
+
+    };
+    MSG msg ;
+    void handle() 
+        GetMessage(&(this->msg), nullptr, 0, 0));
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    };
 
     HWND create_win (ivec2 size,ivec2 pos,HWND parent=NULL,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,char CLASS_NAME[]="DefaultName" ,std::string text=NULL) override {
         // Register class
 
     WNDCLASS wc = {};
-    wc.lpfnWndProc = this->handle_win;
+    wc.lpfnWndProc = this->handle;
     wc.hInstance = GetModuleHandle(NULL);
     wc.lpszClassName = CLASS_NAME;
 

@@ -103,6 +103,7 @@ namespace sgui {
             
         } data;
         
+        
         bool is_pt_of(uint pt[2] ){return (pt[0] > coord[0]) and (pt[0]<coord[3]) and (pt[1]<coord[1]) and (pt[2]>coord[4])  ;}
         std::shared_ptr<vect<widget*>> childs;
         

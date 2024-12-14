@@ -6,6 +6,7 @@
                 "${default}",
                 "${workspaceFolder}",
                 "${workspaceFolder}/lib",
+                "${workspaceFolder}/strata",
                 "C:/llvm-project/libcxx/include",
                 // "C:/vcpkg/packages/**",
                 "C:/VulkanSDK/1.3.250.1/Include/**",
