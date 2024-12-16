@@ -241,5 +241,97 @@ ONE(TY_INDEX,TY_IMF(COLORS_FORM),
 ONE(TY_INDEX,ONE(IMG_INSTS,COLORSFORM))
 });
 
+// TODO cubemap based destruct 
+std::vector<char> readFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+    size_t fileSize = static_cast<size_t>(file.tellg());
+    std::vector<char> buffer(fileSize);
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+    return buffer;
+};
+enum shader_type {
+    all,
+    gr,
+    vert,
+    frag,
+    geom,
+    tesc,
+    tese,
+    comp,
+    task,
+    mesh,
+    rgen,
+    rint,
+    rahit,
+    rchit,
+    rmiss,
+    rcall,
+};
+
+struct shaderModule {
+    bool unib=false ,shab=false ;
+    void* ubo  ; 
+    void* ssbo  ; 
+    int code_size;
+    const uint32_t* code; // SPIR-V Moudule
+    char* entry_point;
+    char** entry_points; // all entry points
+};
+
+template <shader_type st,typename ubo,typename ssbo>
+struct ShaderModule{
+    shader_type shad_ty= st;
+    size_t uni_size;
+    size_t sssbo_size;
+    ubo unibuf;
+    char* code ; // SPIR-V module path;
+    ssbo ssbuf;
+    shaderModule shadmod;
+    void 
+    void bind(bool ubo_,bool ssbo_){
+        if(ubo_){this->shadmod.unib=true ;this->shadmod.ubo = static_cast<void*>(&(this->unibuf));};
+        if(ssbo_){this->shadmod.shab=true ;this->shadmod.ssbo = static_cast<void*>(&(this->unibuf));};
+    };
+};
+template <typename _ubo , typename _ssbo>
+shaderModule<_ubo,_ssbo> makeshaderModule(_ubo ubo_,_ssbo ssbo_, char* spv_file){ shaderModule<_ubo,_ssbo> s;s.ubo=ubo; s.ssbo=ssbo_; s.code = reinterpret_cast<const uint32_t*>(readFile(spvfile).data()); return s};
+shaderModule<_ubo,_ssbo> makeshaderModule(_ubo ubo_,_ssbo ssbo_, uint32_t* code){ shaderModule<_ubo,_ssbo> s;s.ubo=ubo; s.ssbo=ssbo_; s.code = code ;return s};
+
+template <typename _ubo,typename _ssbo> 
+struct  all_shmod : ShaderModule<shader_type::all,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  gr_shmod : ShaderModule<shader_type::gr,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  vert_shmod : ShaderModule<shader_type::vert,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  frag_shmod : ShaderModule<shader_type::frag,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  geom_shmod : ShaderModule<shader_type::geom,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  tesc_shmod : ShaderModule<shader_type::tesc,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  tese_shmod : ShaderModule<shader_type::tese,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  comp_shmod : ShaderModule<shader_type::comp,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  task_shmod : ShaderModule<shader_type::task,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  mesh_shmod : ShaderModule<shader_type::mesh,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  rgen_shmod : ShaderModule<shader_type::rgen,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  rint_shmod : ShaderModule<shader_type::rint,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  rahit_shmod : ShaderModule<shader_type::rahit,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  rchit_shmod : ShaderModule<shader_type::rchit,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  rmiss_shmod : ShaderModule<shader_type::rmiss,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+struct  rcall_shmod : ShaderModule<shader_type::rcall,_ubo,_ssbo>;
 
 
+// TO be put in front of definition of template specialization
+#define STRATA_PARSE_RULE() 
+#define GET_SHADER_MEMBERS_DECORATOR(shaderMod ) STRATA_PARSE_RULE 

@@ -10,77 +10,20 @@
 #include <cpuid.h>
 #define fs std::filesystem
 
-#ifdef STA_IMPL_WIN
-#define STA_IMPL_VK
-#define STA_IML_DX
+
+#include <strata/backend/implgl.hpp>
+#ifdef STRATA_IMPL_WIN
+// #define STRATA_IMPL_VK
+// #define STRATA_IML_DX
 #endif
-#ifdef STA_IMPL_ANDROID
-#define STA_IMPL_VK
+#ifdef STRATA_IMPL_ANDROID
+#define STRATA_IMPL_VK
 #endif
-#ifdef STA_IMPL_LINUX
-#define STA_IMPL_VK
+#ifdef STRATA_IMPL_LINUX
+#define STRATA_IMPL_VK
 #endif
 
 
-struct gpu_info {
-
-    bool robustBufferAccess       ,  //Ensures bounds-checking for buffer accesses.
-    bool fullDrawIndexUint32      ,  //Allows 32-bit indices for drawing.
-    bool geometryShader           ,  //Supports geometry shaders.
-    bool tessellationShader       ,  //Supports tessellation shaders.
-    bool multiDrawIndirect        ,  //Allows multiple draw calls in a single command.
-    bool wideLines                ,  //Enables rendering wide lines.
-    bool largePoints              ,  //Enables rendering large points.
-    bool textureCompressionETC2   ,  //ETC2 texture compression support.
-    bool sparseBinding            ,  //Supports sparse resources (like sparse textures).
-
-
-    bool ray_tracing_pipeline; /*
-Adds support for ray tracing features.
-Features structure: VkPhysicalDeviceRayTracingPipelineFeaturesKHR.
-    */
-    bool descriptor_indexing;/*
-Adds support for descriptor indexing.
-Features structure: VkPhysicalDeviceDescriptorIndexingFeatures.
-    */    
-    bool multiview;
-/*
-Adds support for rendering to multiple views (e.g., for VR).
-Features structure: VkPhysicalDeviceMultiviewFeatures.
-*/
-    bool sampler_filter_minmax;
-
-Adds support for min/max filtering.
-Features structure: VkPhysicalDeviceSamplerFilterMinmaxFeaturesEXT.
-    bool 
-};
-template <typename winsurface, typename Pipeline,   > 
-class strata_impl {
-    vect<Pipeline> pipelines;
-    vect<winsurface> winsurfaces;
-virtual void create_fullscreen();
-virtual void get_gpu_info(gpu_info gpinfo);
-virtual _shader load_shader(const uint32_t shader[] );
-virtual void shader_bind(_shader shader,auto*... uniforms);
-void descriptor_set();
-void descriptor_pool();
-void create_swapchain();
-virtual void load_SSBO(_shader shader,auto* buffer);
-virtual void load_UBO(_shader shader,auto* buffer);
-virtual void draw(_stage ;);
-virtual void blend();
-
-void exec(shader_module module) final{};
-void pipeline_create(size_t shad_size , shader_module* modules )final{
-    for(int i =0; i<shad_size;i++){
-        this->
-    };
-};
-virtual void init(){
-
-} ; // Gets platform info
-
-};
 struct cpu_feat {
     bool pse=false;
 // SIMD extensions like
@@ -138,10 +81,10 @@ return cpuf;
         // Get cpu features
         
      }; // System initialization
-    #ifdef STA_IMPL_VK
+    #ifdef STRATA_IMPL_VK
     virtual void initVk(win w, VkInstance inst, VKSurfaceKHR* surface, procinstance hInstance);
     #endif
-    #ifdef STA_IMPL_DX
+    #ifdef STRATA_IMPL_DX
     virtual void initDx(){std::cerr<<"System has no dx implementation"};
     #endif
     void cpu_info();
@@ -739,43 +682,23 @@ void (*const close_app_win_func)();
 #define NS_USE(ns) using namespace ns;
 
 event_main evmain;
-#ifdef STA_IMPL_SDL
+#ifdef STRATA_IMPL_SDL
 #include "impl_sdl.hpp"
 using namespace SDL_events;
 #endif
-#ifdef STA_IMPL_LINUX
+#ifdef STRATA_IMPL_LINUX
 #include "impl_linux.hpp"
 using namespace linux_events;
 using env = linux_env;
 using evns = linux_events;
-#elifdef STA_IMPL_WINDOWS
+#elifdef STRATA_IMPL_WINDOWS
 #include "impl_win.hpp"
 using namespace win_events;
-void init_win(){
 
-};
-#elifdef STA_IMPL_ANDROID
+#elifdef STRATA_IMPL_ANDROID
 #include "impl_android.hpp"
 using namespace android_events;
 #elifdef
-#endif
-#ifdef STA_IMPL_VK
-#include "impl_vk.hpp"
-using impl = vk_impl;
-#else
-#ifdef STA_IML_DX
-#define D3D12
-#include "impl_dx.hpp"
-using impl = dx_impl;
-#else
-#ifdef STA_IMPL_GL
-#include "impl_gl.hpp"
-using impl = gl_impl;
-#endif
-#ifdef STA_IMPL_WASM
-#include "impl_wasm.hpp"
-using env = wasm_env;  
-using impl = wasm_impl ;
 #endif
 
 

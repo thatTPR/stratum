@@ -1,20 +1,7 @@
 #include "vects.hpp"
 
 
-char[4] msby_from_int(int t){ 
-    char r[4] ;
-    r[0] = (t - (1<<24))>>24;
-    r[1] =( t -  (1<<16) - (t-(1<<24))) >>16 ;
-    r[2] = (t - (t-(1<<16)) - (1<<8))>>8 ;
-    r[3] = (t - (t-(1<<8)));
-};
-char[4] lsby_from_int(int t){
-    char r[4] ;
-    r[0] = (t - (t-(1<<8)));
-    r[1] = (t - (t-(1<<16)) - (1<<8))>>8 ;
-    r[2] =( t -  (1<<16) - (t-(1<<24))) >>16 ;
-    r[3] = (t - (1<<24))>>24;
-};
+
 typedef struct strct {
     int size; // In bytes
     int num_members;

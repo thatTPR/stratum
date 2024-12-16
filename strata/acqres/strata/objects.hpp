@@ -4,28 +4,26 @@
 #include "gltf.hpp"
 
 
-class image : public property , public objnar{
+class image : public property<true,true> , public objnar{
     static const std::string name = "image";
+    const bool arr_val=true ; 
+    const bool obj_val=true ; 
+    const gltfval val = val::obj ;
 
 };
 class sampler : public property , public objnar {
     static const std::string name = "sampler";
 };
-class texture : public property , public objnar{
-    image* _image;
-    sampler* _sampler;
-    virtual void props(){
-        size_t p;
-        PROPS(image)
-        PROPS(sampler)
+class texture : public property<true,true> , public objnar{
+    class globj : public property<true,true,> {
+        image* _image;
+        sampler* _sampler;
     };
-    // void parse_obj(std::ifstream* f,size_t pos,bool names){
-
-    // };  
-    // void parse_arr(std::ifstream* f,size_t pos,bool names){
-        
-    //     for(int i = 0)
-    // };
+    globj obj;
+    virtual auto props()override{
+        PROPERTS(image,sampler)
+    };
+    
 
 
 };
@@ -36,8 +34,15 @@ class buffer : public property , public objnar{
     int buffer;
 };
 class buffer_view : public property , public objnar{
+    public:
     vect<buffer*> buf;
     vect<image*> buf; 
+    const bool arr_val=false ; 
+    const bool obj_val=false ; 
+    const gltfval = gltfval::intgr;
+    void props(bool names, size_t pos , std::ifstream* f, std::string s)){
+        size_t p;
+    };
 };
 
 class accessor : public property , public objnar{
@@ -74,8 +79,3 @@ class scene : public property , public objnar{
 };
 
 
-
-
-class shader_module {
-
-};

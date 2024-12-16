@@ -322,18 +322,18 @@ private :
 
 
 
-// Example usage 
-int main(){
+// // Example usage 
+// int main(){
     
 
-        string a = "Text Printed cool" ;
-        string set = sgr(bg(122,123,0), fg(225,0,225) , sgv({_b , _u }) ) ;
-        std::cout<< set ;
-        std::cout<<a ;
-        string se = sgr(sg(_r));
-        std::cout<< se;
-        std::cout<< a ;
+//         string a = "Text Printed cool" ;
+//         string set = sgr(bg(122,123,0), fg(225,0,225) , sgv({_b , _u }) ) ;
+//         std::cout<< set ;
+//         std::cout<<a ;
+//         string se = sgr(sg(_r));
+//         std::cout<< se;
+//         std::cout<< a ;
 
 
        
-};
+// };

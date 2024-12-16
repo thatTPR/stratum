@@ -1,6 +1,18 @@
 #include <fstream>
 #include <petri/vecs.hpp>
 #include <petri/vects.hpp>
+#include <lib/gltf.h>
+
+
+class json_parser {
+
+};
+
+
+class gltf_parser : {
+
+};
+
 
 class acqres {
     // strct s ;
