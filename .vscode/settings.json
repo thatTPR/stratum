@@ -141,7 +141,15 @@
         "bimap": "cpp",
         "cassert": "cpp",
         "*.rh": "cpp",
-        "version": "cpp"
+        "version": "cpp",
+        "vector_double2.hpp": "c",
+        "type_vec2.hpp": "c",
+        "qualifier.hpp": "c",
+        "vector_float2.hpp": "c",
+        "_swizzle.hpp": "c",
+        "*.def": "c",
+        "d": "cpp",
+        "g": "cpp"
     },
     "svg.preview.background": "custom"
 }

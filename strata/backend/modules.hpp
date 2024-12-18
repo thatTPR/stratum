@@ -3,6 +3,14 @@
 #include <petri/vects.hpp>
 #include <tuple>
 #include <map>
+#include <lib/glm/glm.hpp>
+
+struct app_info {
+    char*  name;
+    uint32_t  ver;
+    char*  engname;
+    char*  engver;
+};
 
 
 
@@ -51,46 +59,109 @@ r8ui
 template<image_formats imf>
 struct enu_vec        {
      using ty = ivec4; };
+#ifdef ENU_VEC_STRATA_NO_GLM
+struct enu_vec<image_formats::rgba32f>        { using ty =dvec4;};
+struct enu_vec<image_formats::rgba16f>        { using ty =vec4;};
+struct enu_vec<image_formats::rg32f>          { using ty =dvec2;};
+struct enu_vec<image_formats::rg16f>          { using ty =vec2;};
+struct enu_vec<image_formats::r11f_g11f_b10f> { using ty =svec3;};
+struct enu_vec<image_formats::r32f>           { using ty =float32;};
+struct enu_vec<image_formats::r16f>           { using ty =float16;};
+struct enu_vec<image_formats::rgba16>         { using ty =ivec4;};
+struct enu_vec<image_formats::rgb10_a2>       { using ty =sivec4 ;};
+struct enu_vec<image_formats::rgba8>          { using ty =sivec4 ;};
+struct enu_vec<image_formats::rg16>           { using ty =ivec2;};
+struct enu_vec<image_formats::rg8>            { using ty =sivec2 ;};
+struct enu_vec<image_formats::r16>            { using ty =int ;};
+struct enu_vec<image_formats::r8>             { using ty =sint ;};
+struct enu_vec<image_formats::rgba16_snorm>   { using ty =vec4;};
+struct enu_vec<image_formats::rgba8_snorm>    { using ty =svec4 ;};
+struct enu_vec<image_formats::rg16_snorm>     { using ty =vec2;};
+struct enu_vec<image_formats::rg8_snorm>      { using ty =vec2 ;};
+struct enu_vec<image_formats::r16_snorm>      { using ty =float;};
+struct enu_vec<image_formats::r8_snorm>       { using ty =float ;};
+struct enu_vec<image_formats::rgba32i>        { using ty =livec4;};
+struct enu_vec<image_formats::rgba16i>        { using ty =ivec4 ;};
+struct enu_vec<image_formats::rgba8i>         { using ty =sivec4;};
+struct enu_vec<image_formats::rg32i>          { using ty =livec2;};
+struct enu_vec<image_formats::rg16i>          { using ty =ivec2 ;};
+struct enu_vec<image_formats::rg8i>           { using ty =sivec2 ;};
+struct enu_vec<image_formats::r32i>           { using ty =int32 ;};
+struct enu_vec<image_formats::r16i>           { using ty =int16;};
+struct enu_vec<image_formats::r8i>            { using ty =int16 ;};
+struct enu_vec<image_formats::rgba32ui>       { using ty =luvec4 ;};
+struct enu_vec<image_formats::rgba16ui>       { using ty =uvec4 ;};
+struct enu_vec<image_formats::rgb10_a2ui>     { using ty =suvec4 ;};
+struct enu_vec<image_formats::rgba8ui>        { using ty =suvec4 ;};
+struct enu_vec<image_formats::rg32ui>         { using ty =luvec2 ;};
+struct enu_vec<image_formats::rg16ui>         { using ty =uvec2 ;};
+struct enu_vec<image_formats::rg8ui>          { using ty =suvec2 ;};
+struct enu_vec<image_formats::r32ui>          { using ty =uint32 ;};
+struct enu_vec<image_formats::r16ui>          { using ty =uint32 ;};
+struct enu_vec<image_formats::r8ui>           { using ty =suint ;};
+#endif
 
-struct enu_vec<image_formats::rgba32f>        { using ty =dvec4};
-struct enu_vec<image_formats::rgba16f>        { using ty =vec4};
-struct enu_vec<image_formats::rg32f>          { using ty =dvec2};
-struct enu_vec<image_formats::rg16f>          { using ty =vec2};
-struct enu_vec<image_formats::r11f_g11f_b10f> { using ty =svec3};
-struct enu_vec<image_formats::r32f>           { using ty =float32};
-struct enu_vec<image_formats::r16f>           { using ty =float16};
-struct enu_vec<image_formats::rgba16>         { using ty =ivec4};
-struct enu_vec<image_formats::rgb10_a2>       { using ty =sivec4 };
-struct enu_vec<image_formats::rgba8>          { using ty =sivec4 };
-struct enu_vec<image_formats::rg16>           { using ty =ivec2};
-struct enu_vec<image_formats::rg8>            { using ty =sivec2 };
-struct enu_vec<image_formats::r16>            { using ty =int };
-struct enu_vec<image_formats::r8>             { using ty =sint };
-struct enu_vec<image_formats::rgba16_snorm>   { using ty =vec4};
-struct enu_vec<image_formats::rgba8_snorm>    { using ty =svec4 };
-struct enu_vec<image_formats::rg16_snorm>     { using ty =vec2};
-struct enu_vec<image_formats::rg8_snorm>      { using ty =vec2 };
-struct enu_vec<image_formats::r16_snorm>      { using ty =float};
-struct enu_vec<image_formats::r8_snorm>       { using ty =float };
-struct enu_vec<image_formats::rgba32i>        { using ty =livec4};
-struct enu_vec<image_formats::rgba16i>        { using ty =ivec4 };
-struct enu_vec<image_formats::rgba8i>         { using ty =sivec4};
-struct enu_vec<image_formats::rg32i>          { using ty =livec2};
-struct enu_vec<image_formats::rg16i>          { using ty =ivec2 };
-struct enu_vec<image_formats::rg8i>           { using ty =sivec2 };
-struct enu_vec<image_formats::r32i>           { using ty =int32 };
-struct enu_vec<image_formats::r16i>           { using ty =int16};
-struct enu_vec<image_formats::r8i>            { using ty =int16 };
-struct enu_vec<image_formats::rgba32ui>       { using ty =luvec4 };
-struct enu_vec<image_formats::rgba16ui>       { using ty =uvec4 };
-struct enu_vec<image_formats::rgb10_a2ui>     { using ty =suvec4 };
-struct enu_vec<image_formats::rgba8ui>        { using ty =suvec4 };
-struct enu_vec<image_formats::rg32ui>         { using ty =luvec2 };
-struct enu_vec<image_formats::rg16ui>         { using ty =uvec2 };
-struct enu_vec<image_formats::rg8ui>          { using ty =suvec2 };
-struct enu_vec<image_formats::r32ui>          { using ty =uint32 };
-struct enu_vec<image_formats::r16ui>          { using ty =uint32 };
-struct enu_vec<image_formats::r8ui>           { using ty =suint };
+struct enu_vec<image_formats::rgba32f>        { using ty =glm::highp_vec4;};
+struct enu_vec<image_formats::rgba16f>        { using ty =glm::mediump_vec4;};
+struct enu_vec<image_formats::rg32f>          { using ty =glm::hihip_vec2;};
+struct enu_vec<image_formats::rg16f>          { using ty =glm::mediump_vec2;};
+struct enu_vec<image_formats::r11f_g11f_b10f> { using ty =glm::mediump_vec3;};
+struct enu_vec<image_formats::r32f>           { using ty =float32_t;};
+struct enu_vec<image_formats::r16f>           { using ty =float16_t;};
+struct enu_vec<image_formats::rgba16>         { using ty =glm::mediump_ivec4;};
+struct enu_vec<image_formats::rgb10_a2>       { using ty =glm::mediump_ivec4 ;};
+struct enu_vec<image_formats::rgba8>          { using ty =glm::lowp_ivec4 ;};
+struct enu_vec<image_formats::rg16>           { using ty =glm::mediump_ivec2;};
+struct enu_vec<image_formats::rg8>            { using ty =glm::lowp_ivec2 ;};
+struct enu_vec<image_formats::r16>            { using ty =int16_t ;};
+struct enu_vec<image_formats::r8>             { using ty =int8_t ;};
+struct enu_vec<image_formats::rgba16_snorm>   { using ty =glm::mediump_vec4;};
+struct enu_vec<image_formats::rgba8_snorm>    { using ty =glm::lowp_vec4 ;};
+struct enu_vec<image_formats::rg16_snorm>     { using ty =glm::mediump_vec2;};
+struct enu_vec<image_formats::rg8_snorm>      { using ty =glm::lowp_vec2 ;};
+struct enu_vec<image_formats::r16_snorm>      { using ty =float;};
+struct enu_vec<image_formats::r8_snorm>       { using ty =float ;};
+struct enu_vec<image_formats::rgba32i>        { using ty =glm::hihgp_ivec4;};
+struct enu_vec<image_formats::rgba16i>        { using ty =glm::mediump_ivec4 ;};
+struct enu_vec<image_formats::rgba8i>         { using ty =glm::lowp_ivec4;};
+struct enu_vec<image_formats::rg32i>          { using ty =glm::highp_ivec2;};
+struct enu_vec<image_formats::rg16i>          { using ty =glm::mediump_ivec2 ;};
+struct enu_vec<image_formats::rg8i>           { using ty =glm::lowp_ivec2<> ;};
+struct enu_vec<image_formats::r32i>           { using ty =int32_t ;};
+struct enu_vec<image_formats::r16i>           { using ty =int16_t;};
+struct enu_vec<image_formats::r8i>            { using ty =int8_t ;};
+struct enu_vec<image_formats::rgba32ui>       { using ty =glm::highp_uvec4 ;};
+struct enu_vec<image_formats::rgba16ui>       { using ty =glm::mediump_uvec4 ;};
+struct enu_vec<image_formats::rgb10_a2ui>     { using ty =glm::mediump_uvec4 ;};
+struct enu_vec<image_formats::rgba8ui>        { using ty =glm::lowp_uvec4 ;};
+struct enu_vec<image_formats::rg32ui>         { using ty =glm::highp_uvec2 ;};
+struct enu_vec<image_formats::rg16ui>         { using ty =glm::mediump_uvec2 ;};
+struct enu_vec<image_formats::rg8ui>          { using ty =glm::lowp+uvec2 ;};
+struct enu_vec<image_formats::r32ui>          { using ty =uint32_t ;};
+struct enu_vec<image_formats::r16ui>          { using ty =uint16_t ;};
+struct enu_vec<image_formats::r8ui>           { using ty =uint8_t ;};
+
+
+glm::lowp_ivec4 uint32ToRGBA(uint32_t color) {
+    glm::ivec4 s;
+    s.r = (color >> 24) & 0xFF; // Extract Red channel (highest byte)
+    s.g = (color >> 16) & 0xFF; // Extract Green channel
+    s.b = (color >> 8)  & 0xFF; // Extract Blue channel
+    s.a = (color)       & 0xFF; // Extract Alpha channel (lowest byte)
+    return s;
+};
+glm::lowp_ivec4 uint16torgba(uint16_t color) {
+    glm::ivec4 s;
+    s.r = (color >> 12) & 0xF; // Extract Red channel (highest byte)
+    s.g = (color >> 8 )  & 0xF; // Extract Green channel
+    s.b = (color >> 4)  & 0xF; // Extract Blue channel
+    s.a = (color)       & 0xF; // Extract Alpha channel (lowest byte)
+    return s;
+};
+
+int32_t f32_to_i32(f32_t s){
+    int_32_t r =  s*
+};  
 
 template <image_formats imf,size_t s>
 struct image2d {
@@ -100,10 +171,10 @@ struct image2d {
     void read(acqres resource;)
 
 };
-template <typename T,size_t x, size_t y , size_t  z>
+template <image_formats imf,size_t x, size_t y , size_t  z>
 struct image3d {
     using ty = enu_vec<imf>::ty;
-    ty s[x][y]
+    ty s[x][y][z]
 };
 
 template <image_formats imf>using im8    = image2d<imf,1024>;
@@ -119,48 +190,6 @@ template <image_formats imf>using im4096 = image2d<imf,4096>;
 template <image_formats imf>using im8192 = image2d<imf,8192>;
 template <image_formats imf>using im16384= image2d<imf,16384>;
 template <image_formats imf>using im32768= image2d<imf,32768>;
-
-#define COLORSFORM rgba32f,rgba16f,rg32f,rg16f,r11f_g11f_b10f,r32f,r16f,rgba16,rgb10_a2,rgba8,rg16,rg8,r16,r8,rgba16_snorm,rgba8_snorm,rg16_snorm,rg8_snorm,r16_snorm,r8_snorm,rgba32i,rgba16i,rgba8i,rg32i,rg16i,rg8i,r32i,r16i,r8i,rgba32ui,rgba16ui,rgb10_a2ui,rgba8ui,rg32ui,rg16ui,rg8ui,r32ui,r16ui,r8ui
-#define VECS bvec2,bvec3,bvec4,uvec2,uvec3,uvec4,ivec2,ivec3,ivec4,vec2,vec3,vec4,bmat2x2,bmat2x3,bmat2x4,bmat3x2,bmat3x3,bmat3x4,bmat4x2,bmat4x3,bmat4x4,umat2x2,umat2x3,umat2x4,umat3x2,umat3x3,umat3x4,umat4x2,umat4x3,umat4x4,imat2x2,imat2x3,imat2x4,imat3x2,imat3x3,imat3x4,imat4x2,imat4x3,imat4x4,mat2x2,mat2x3,mat2x4,mat3x2,mat3x3,mat3x4,mat4x2,mat4x3,mat4x4
-#define IMS im8,im16,im32,im164,im128,im256,im512,im1024,im2048,im4096,im8192,im16384,im32768
-
-#define ONE(macro, x) macro(x)
-#define ONE(macro, first, ...)  macro(first) ONE(macro,__VA_LIST__) 
-
-#define ONE(macro ,first , second) macro(first ) macro(second)
-
-#define IMF(imf) /
-using ##imf_im8 = im8<image_formats::##imf>;/
-using ##imf_im16 = im16<image_formats::##imf>;/
-using ##imf_im32 = im32<image_formats::##imf>;/
-using ##imf_im164 = im164<image_formats::##imf>;/
-using ##imf_im128 = im128<image_formats::##imf>;/
-using ##imf_im256 = im256<image_formats::##imf>;/
-using ##imf_im512 = im512<image_formats::##imf>;/
-using ##imf_im1024 = im1024<image_formats::##imf>;/
-using ##imf_im2048 = im2048<image_formats::##imf>;/
-using ##imf_im4096 = im4096<image_formats::##imf>;/
-using ##imf_im8192 = im8192<image_formats::##imf>;/
-using ##imf_im16384 = im16384<image_formats::##imf>;/
-using ##imf_im32768 = im32768<image_formats::##imf>;
-
-#define IMG_INSTS(imf) ##imf_im8,##imf_im16,##imf_im32,##imf_im164,##imf_im128,##imf_im256,##imf_im512,##imf_im1024,##imf_im2048,##imf_im4096,##imf_im8192,##imf_im16384,##imf_im32768
-
-#define tyind(t) type_index(typeid(t))
-#define TY_INDEX_STR(imf) {tyind(##imf_im8),"##imf_im8"},{tyind(##imf_im16),"##imf_im16"},{tyind(##imf_im32),"##imf_im32"},{tyind(##imf_im164),"##imf_im164"},{tyind(##imf_im128),"##imf_im128"},{tyind(##imf_im256),"##imf_im256"},{tyind(##imf_im512),"##imf_im512"},{tyind(##imf_im1024),"##imf_im1024"},{tyind(##imf_im2048),"##imf_im2048"},{tyind(##imf_im4096),"##imf_im4096"},{tyind(##imf_im8192),"##imf_im8192"},{tyind(##imf_im16384),"##imf_im16384"},{tyind(##imf_im32768),"##imf_im32768"},
-
-#define TPASTE(tok,a) ##tok_a
-
-#define TPASTE_TYIND(imf) tyind(##imf_t),
-
-#define TY_IMF(imf)  enu_vec<image::formats::##imf>::ty
-
-#define COL_VF_STR(imf) {tyind(TY_IMF),"##imf"},
-#define COL_VF(imf) enu_vec<image::formats::##imf>::ty
-
-
-
-
 
 
 enum texture_format {
@@ -227,6 +256,10 @@ ONE(COL_VF_STR,rgba32f,rgba16f,rg32f,rg16f,r11f_g11f_b10f,r32f,r16f,rgba16,rgb10
 };
 
 
+
+struct {
+
+};
  
 #define IMS_FROM_COLORS_FORM(im,colors_form) im<colors_form>
 ty_index_map<
@@ -242,13 +275,14 @@ ONE(TY_INDEX,ONE(IMG_INSTS,COLORSFORM))
 });
 
 // TODO cubemap based destruct 
-std::vector<char> readFile(const std::string& filename) {
+void readFile(const std::string& filename , const uint32_t* c , int* code_size) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
     size_t fileSize = static_cast<size_t>(file.tellg());
+    (*code_size) = filesize;
     std::vector<char> buffer(fileSize);
     file.seekg(0);
     file.read(buffer.data(), fileSize);
-    return buffer;
+    c = reinterpret_cast<const uint32_t*>(buffer.data());
 };
 enum shader_type {
     all,
@@ -279,6 +313,7 @@ struct shaderModule {
     char** entry_points; // all entry points
 };
 
+
 template <shader_type st,typename ubo,typename ssbo>
 struct ShaderModule{
     shader_type shad_ty= st;
@@ -288,22 +323,81 @@ struct ShaderModule{
     char* code ; // SPIR-V module path;
     ssbo ssbuf;
     shaderModule shadmod;
-    void 
+    void read_code(){readFile(std::string(this->code),this->shadmod.code,&(this->shadmod.code_size); );
     void bind(bool ubo_,bool ssbo_){
         if(ubo_){this->shadmod.unib=true ;this->shadmod.ubo = static_cast<void*>(&(this->unibuf));};
         if(ssbo_){this->shadmod.shab=true ;this->shadmod.ssbo = static_cast<void*>(&(this->unibuf));};
     };
 };
-template <typename _ubo , typename _ssbo>
-shaderModule<_ubo,_ssbo> makeshaderModule(_ubo ubo_,_ssbo ssbo_, char* spv_file){ shaderModule<_ubo,_ssbo> s;s.ubo=ubo; s.ssbo=ssbo_; s.code = reinterpret_cast<const uint32_t*>(readFile(spvfile).data()); return s};
-shaderModule<_ubo,_ssbo> makeshaderModule(_ubo ubo_,_ssbo ssbo_, uint32_t* code){ shaderModule<_ubo,_ssbo> s;s.ubo=ubo; s.ssbo=ssbo_; s.code = code ;return s};
+enum transform_image {
+    none,
+    rotate90,
+    rotate180,
+    roate270,
+    mirror,
+    mirror_rotate90,
+    mirror_rotate180,
+    mirror_roate270
+};
+enum image_dim {
+    one=0,
+    two=1,
+    three=2,
+};
+enum sample_count {
+    sample_1 = 0x00000001,
+    sample_2 = 0x00000002,
+    sample_4 = 0x00000004,
+    sample_8 = 0x00000008,
+    sample_16 = 0x00000010,
+    sample_32 = 0x00000020,
+    sample_64 = 0x00000040,
+};
+enum image_usage {
+TRANSFER_SRC_BIT = 0x00000001,
+TRANSFER_DST_BIT = 0x00000002,
+SAMPLED_BIT = 0x00000004,
+STORAGE_BIT = 0x00000008,
+COLOR_ATTACHMENT_BIT = 0x00000010,
+DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000020,
+TRANSIENT_ATTACHMENT_BIT = 0x00000040,
+INPUT_ATTACHMENT_BIT = 0x00000080,
+VIDEO_DECODE_DST_BIT_KHR = 0x00000400,
+VIDEO_DECODE_SRC_BIT_KHR = 0x00000800,
+VIDEO_DECODE_DPB_BIT_KHR = 0x00001000,
+FRAGMENT_DENSITY_MAP_BIT_EXT = 0x00000200,
+FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = 0x00000100,
+ATTACHMENT_FEEDBACK_LOOP_BIT_EXT = 0x00080000,
+INVOCATION_MASK_BIT_HUAWEI = 0x00040000,
+SAMPLE_WEIGHT_BIT_QCOM = 0x00100000,
+SAMPLE_BLOCK_MATCH_BIT_QCOM = 0x00200000,
+SHADING_RATE_IMAGE_BIT_NV = VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,
+};
+struct image {
+    bool storage = true;
+    bool sharing =false;
+    image_usage usage = image_usage::TRANSFER_DST_BIT | image_usage::STORAGE_BIT ;
+    image_dim dim;
+    uint32_t w,h,depth;
+    int miplevels;
+    int arrlayers =1;
+    sample_count sample =  sample_count::sample_1;
+    image() = default { this->storage}
+};
+struct im_shaderModule : ShaderModule {
+
+    image im;
+    
+};
+
+
 
 template <typename _ubo,typename _ssbo> 
 struct  all_shmod : ShaderModule<shader_type::all,_ubo,_ssbo>;
 template <typename _ubo,typename _ssbo> 
 struct  gr_shmod : ShaderModule<shader_type::gr,_ubo,_ssbo>;
 template <typename _ubo,typename _ssbo> 
-struct  vert_shmod : ShaderModule<shader_type::vert,_ubo,_ssbo>;
+struct  vert_shmod : ShaderModule<shader_type::vert,_ubo,_ssbo> ;
 template <typename _ubo,typename _ssbo> 
 struct  frag_shmod : ShaderModule<shader_type::frag,_ubo,_ssbo>;
 template <typename _ubo,typename _ssbo> 
@@ -335,3 +429,10 @@ struct  rcall_shmod : ShaderModule<shader_type::rcall,_ubo,_ssbo>;
 // TO be put in front of definition of template specialization
 #define STRATA_PARSE_RULE() 
 #define GET_SHADER_MEMBERS_DECORATOR(shaderMod ) STRATA_PARSE_RULE 
+
+
+
+struct LoadDomainInfo{glm::ivec2 coords, int view_distance , void chunks_distance,int fog };
+
+struct LoadWorldInfo{int index, glm::ivec3 coords };
+void load_world_domain(glm::ivec3 coords, int view_distance, );

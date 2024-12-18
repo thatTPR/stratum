@@ -3,16 +3,149 @@
 #include <strata/backend/modules.hpp>
 #include <lib/vk/vulkan.h>
 #include <lib/vk/vulkan_core.h>
+
+// Image formats
+
+#define GET_VK_FORMAT(image_form) 
+
+
 class DescriptorAllocatorSets {
     
 };
-class vk_impl  {
+class vk_impl : public strata_impl  {
     public:
     bool nv; // TAkes prioriy over ext else 
     // bool ext; // else KHRl
     int size_t curdev;
-    std::vector<VkDevice> device,
-  
+    VkInstance instance ;
+    std::vector<VkPhysicalDevice> physdev;
+    VkPhysicalDevice pdevice;
+    VkDevice dev;
+
+
+void instance_set_up(app_info info) {
+    // Step 1: Fill out application info
+    VkApplicationInfo appInfo{};
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pApplicationName = info.name;
+    appInfo.applicationVersion = info.ver;
+    appInfo.pEngineName = info.engname;
+    appInfo.engineVersion = info.engver;
+    appInfo.apiVersion = VK_API_VERSION_1_2;
+    // Step 2: Specify required extensions
+    const char** glfwExtensions = vkEnumerateInstanceExtensionProperties(nullptr, &glfwExtensionCount, nullptr);
+
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); // For debugging
+
+    // Step 3: Specify validation layers (if debugging)
+    const std::vector<const char*> validationLayers = {
+        "VK_LAYER_KHRONOS_validation"
+    };
+
+    // Check if validation layers are supported
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validationLayers) {
+        bool layerFound = false;
+
+        for (const auto& layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound) {
+            throw std::runtime_error("Validation layer not available!");
+        }
+    }
+
+    // Step 4: Create the instance
+    VkInstanceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.pApplicationInfo = &appInfo;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInfo.ppEnabledExtensionNames = extensions.data();
+    createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+    createInfo.ppEnabledLayerNames = validationLayers.data();
+
+    VkInstance instance;
+    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create Vulkan instance!");
+    }
+
+    this->inst= instance;
+};
+void set_up_dev(){
+     // Enumerate physical devices
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(this->instance, &deviceCount, nullptr);
+    if (deviceCount == 0) {
+        throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+    }
+    this->physdev.resize(deviceCount);
+    vkEnumeratePhysicalDevices(this->instance, &deviceCount, this->physdev.data());
+
+    this->pdevice = this->physdev[0]; // Select the first device
+
+    // Query queue family properties
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(this->pdevice, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(this->pdevice, &queueFamilyCount, queueFamilies.data());
+
+    // Find a queue family that supports graphics
+    graphicsQueueFamilyIndex = -1;
+    for (int i = 0; i < queueFamilies.size(); i++) {
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            graphicsQueueFamilyIndex = i;
+            break;
+        };
+    };
+
+    if (graphicsQueueFamilyIndex == -1) {
+        throw std::runtime_error("Failed to find a graphics queue family!");
+    };
+
+    // Create the logical device
+    float queuePriority = 1.0f;
+    VkDeviceQueueCreateInfo queueCreateInfo{};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
+    queueCreateInfo.queueCount = 1;
+    queueCreateInfo.pQueuePriorities = &queuePriority;
+
+    VkPhysicalDeviceFeatures deviceFeaturesEnabled{};
+    deviceFeaturesEnabled.geometryShader = VK_TRUE;
+    
+
+    std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
+    VkDeviceCreateInfo deviceCreateInfo{};
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceCreateInfo.queueCreateInfoCount = 1;
+    deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+    deviceCreateInfo.pEnabledFeatures = &deviceFeaturesEnabled;
+    deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+    if (vkCreateDevice(this->pdevice, &deviceCreateInfo, nullptr, &device) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create logical device!");
+    }
+
+    // Retrieve the graphics queue
+    vkGetDeviceQueue(device, graphicsQueueFamilyIndex, 0, &graphicsQueue);
+
+};
+
 // VK_BUFFER_USAGE_TRANSFER_SRC_BIT
 // VK_BUFFER_USAGE_TRANSFER_DST_BIT
 // VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT
@@ -31,6 +164,91 @@ class vk_impl  {
 // VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
 // VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR
 // VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR
+
+
+
+constexpr VkFormat get_vk_format(image_formats fm){
+    switch(fm){
+image_formats::rgba32f         :{return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT; break;}; 
+image_formats::rgba16f         :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT; break;};
+image_formats::rg32f           :{return VkFormat::VK_FORMAT_R32G32_SFLOAT; break;};
+image_formats::rg16f           :{return VkFormat::VK_FORMAT_R16G16_SFLOAT; break;};
+image_formats::r11f_g11f_b10f  :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT; break;};
+image_formats::r32f            :{return VkFormat::VK_FORMAT_R32_SFLOAT; break;};
+image_formats::r16f            :{return VkFormat::VK_FORMAT_R16_SFLOAT; break;};
+image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM; break;};
+image_formats::rgb10_a2        :{return VkFormat::VK_FORMAT_A2R10G10B10_SNORM_PACK32; break;};
+image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SRGB; break;};
+image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SNORM; break;};
+image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SNORM; break;};
+image_formats::r16             :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM; break;};
+image_formats::r8              :{return VkFormat::VK_FORMAT_R8_SNORM; break;};
+image_formats::rgba16_snorm    :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM; break;};
+image_formats::rgba8_snorm     :{return VkFormat::VK_FORMAT_R8G8B8A8_SNORM; break;};
+image_formats::rg16_snorm      :{return VkFormat::VK_FORMAT_R16G16_SNORM; break;};
+image_formats::rg8_snorm       :{return VkFormat::VK_FORMAT_R8G8_SNORM; break;};
+image_formats::r16_snorm       :{return VkFormat::VK_FORMAT_R16_SNORM; break;};
+image_formats::r8_snorm        :{return VkFormat::VK_FORMAT_R8_SNORM; break;};
+image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_SINT; break;};
+image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SINT; break;};
+image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SINT; break;};
+image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32_SINT; break;};
+image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SINT; break;};
+image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SINT; break;};
+image_formats::r32i            :{return VkFormat::VK_FORMAT_R32_SINT; break;};
+image_formats::r16i            :{return VkFormat::VK_FORMAT_R16_SINT; break;};
+image_formats::r8i             :{return VkFormat::VK_FORMAT_R8_SINT; break;};
+image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_UINT; break;};
+image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_UINT; break;};
+image_formats::rgb10_a2ui      :{return VkFormat::VK_FORMAT_A2R10G10B10_UINT_PACK32; break;};
+image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_UINT; break;};
+image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32B32_UINT; break;};
+image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16B16_UINT; break;};
+image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8B8_UINT; break;};
+image_formats::r32             :{return VkFormat::VK_FORMAT_R32_UINT; break;};
+image_formats::r16             :{return VkFormat::VK_FORMAT_R16_UINT; break;};
+image_formats::r8              :{return VkFormat::VK_FORMAT_R8_UINT; break;};
+    };
+};
+constexpr VkSurfaceTransformFlagBitsKHR get_transform(transform::image s){
+    switch(s){
+case none:  {return VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;};
+case rotate90:  {return VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR;};
+case rotate180:  {return VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR;};
+case roate270:  {return VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR;};
+case mirror:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR;};
+case mirror_rotate90:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR;};
+case mirror_rotate180:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR;};
+case mirror_roate270:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR;};};};
+
+VkResult create_image2d( image im){
+VkImageCreateInfo imageCreateInfo{};
+imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+imageCreateInfo.imageType = (im.dim);
+imageCreateInfo.format = get_vk_format(s); // Use the format
+imageCreateInfo.extent.width = {im.w,im.h, im.depth };
+imageCreateInfo.mipLevels = im.miplevels;
+imageCreateInfo.arrayLayers = i.arrlayers;
+imageCreateInfo.samples = im.sample;
+imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+imageCreateInfo.usage = im.usage;                                                                   
+
+imageCreateInfo.sharingMode = im.sharing==true?VK_SHARING_MODE_CONCURRENT:VK_SHARING_MODE_EXCLUSIVE;  // Exclusive access (one queue family)
+imageCreateInfo.queueFamilyIndexCount = 0;
+imageCreateInfo.pQueueFamilyIndices = nullptr;
+imageCreateInfo.preTransform = VK_TRANSFORM_IDENTITY_BIT_KHR;  
+imageCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;  // Opaque alpha
+imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;  // Initial layout
+
+VkImage image;
+VkResult result = vkCreateImage(device, &imageCreateInfo, nullptr, &image);
+if (result != VK_SUCCESS) {
+    std::cerr << "Failed to create image!" << std::endl;
+}
+};
+void create_image2d_cube_map(image_formats s ,size_t x, size_t y)
+
+
 void ubo(void* buffer, size_t bufsize){
 const VkDeviceSize bufferSize = bufsize;
 VkBufferCreateInfo bufferInfo{};
@@ -65,7 +283,7 @@ vkBindBufferMemory(this->device[device_index], unibuffer, ssboMemory, 0);
 
 
 };
-void ssbo(void* buffer, size_t strcts ){
+int ssbo(void* buffer, size_t strcts ){
 // Buffer size
 const VkDeviceSize bufferSize = sizeof(strcts); 
 
@@ -102,9 +320,6 @@ vkMapMemory(device, ssboMemory, 0, bufferSize, 0, &buffer);
 memcpy(buffer, data_ref, bufferSize);
 };
 
-
-void ssbo(shaderModule* module){this->ssbo(module,false);};
-};
 
 
 void unmap_ssbo(){

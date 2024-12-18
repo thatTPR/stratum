@@ -1,0 +1,3 @@
+class extension_prop {
+
+};

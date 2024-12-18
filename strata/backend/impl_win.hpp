@@ -398,8 +398,53 @@ class win_env : public strata_env<HMODULE,HINSTANCE>{
         #ifdef STA_IMPL_DX
     };
 
-     void load_shared(fs::path p){HMODULE LoadLibrary(p.name(););};
-    
+    void load_shared(fs::path p){HMODULE s= LoadLibrary(p.name(););};
+
+#define WATCH_DIR_TREE true
+#include <fileapi.h>
+
+     fswatch(std::wstring dir);
+    void fswatch(std::vector<std::wstring> dirs , std::shared_ptr<std::vector<std::wstring>> changes;){ 
+        std::vector<HANDLE> dirhwnds;
+        for(std::wstring t : dirs){
+            HANDLE  dir = FindFirstChangeNotification(
+            directory.c_str(),
+            WATCH_DIR_TREE ,
+            FILE_NOTIFIY_CHANGE_LAST_WRITE
+    );
+    if (dir == INVALID_HANDLE_VALUE) {std::cerr << "Failed to open fs_watch " << GetLastError() << std::endl;return;}
+            else dirhwnds->push_back(dir);
+        };
+        
+
+    char buffer[1024];
+    DWORD bytesReturned;
+
+    while (true) {
+        if (ReadDirectoryChangesW(
+                dir,
+                buffer,
+                sizeof(buffer),
+                TRUE,
+                FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
+                FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE |
+                FILE_NOTIFY_CHANGE_LAST_WRITE,
+                &bytesReturned,
+                nullptr,
+                nullptr)) {
+
+            FILE_NOTIFY_INFORMATION* info = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(buffer);
+
+            do {
+                std::wcout << L"File changed: " << std::wstring(info->FileName, info->FileNameLength / sizeof(wchar_t)) << std::endl;
+                info = info->NextEntryOffset ? reinterpret_cast<FILE_NOTIFY_INFORMATION*>(
+                        reinterpret_cast<BYTE*>(info) + info->NextEntryOffset) : nullptr;
+            } while (info);
+        }
+    }
+
+    CloseHandle(dir);
+    };
     template <typename func>
     func get_func(const char* funcname; HMODULE m){return (func)GetProcAddress(m,name); };
     void unload_shared(HMODULE m){FreeLibrary(m);};
