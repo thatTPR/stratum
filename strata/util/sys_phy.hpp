@@ -1,28 +1,28 @@
 #include "sys.hpp"
-    class field ;
-    class Field_2d : field {
+    struct field ;
+    struct Field_2d : field {
         glm::fvec2 x ;
         glm::fvec2 y ;
         glm::angle phi ;
     }
     
-    class Field_3d : field {
+    struct Field_3d : field {
         glm::fvec3 x ;
         glm::fvec3 y ;
         glm::angle phi ;
         glm::angle theta ;
     };
-    class Field_Sphere_3d : field{
+    struct Field_Sphere_3d : field{
         glm::fvec3 x ;
         
     };
-    class Field_Sphere_2d : field {
+    struct Field_Sphere_2d : field {
         glm::vec<float,2,glm::defaultp> x ; 
     };
     
 
 // TODO allign correctly
-    class physics {
+    struct physics {
         bool gravity_override ;
         float gravity ;
         float air_current ;
@@ -31,29 +31,29 @@
     };
     
     template <DIM T>
-    class physicsField {
+    struct physicsField {
         glm::vec3 pos ;
         glm::vec3    
         float gradient ; 
         physics properties ; 
     };
     
-    class distorsion_3d {
+    struct distorsion_3d {
         glm::fvec3 x ;
         glm::fvec3 y ;
         glm::fvec2 orientation ;
     };
-    class distortion_2d {
+    struct distortion_2d {
 
     };
 
-    class physics_constraint {
+    struct physics_constraint {
         
         glm::bvec3 xyz_pos_lock ;
         glm::bvec3 xyx_rot_lock ; 
     };
-    class physical_properties {
-        public:
+    struct physical_properties {
+        
         
         float gravitational_mass  ;
         float inertial_mass ;

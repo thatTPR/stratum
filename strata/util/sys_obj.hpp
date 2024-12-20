@@ -126,7 +126,7 @@ typedef enum DIM {
 template <DIM t>
 using dim_pos = typename <std::conditional<t == DIM.Bi , glm::vec2 , 
                 typename std::conditional<t == DIM.Tri , glm::vec3 , void>::type>::type
-class material_physical_properties {
+struct material_physical_properties {
     bool dynamic
     float gravitational_density ;
     float inertial_density ;
@@ -144,7 +144,7 @@ class material_physical_properties {
 // Images can be rendered 
 
 // This materia rendering scheme can be applied to a mesh
-class material  {
+struct material  {
     public:
     std::array<std::array<glm::vec4>> normal ;
     std::array<std::array<glm::vec4>> tangent   ;  
@@ -173,7 +173,7 @@ class material  {
 
     }
 };
-class particle  {
+struct particle  {
     std::string name ;
 
     bool physics ;
@@ -186,7 +186,7 @@ class particle  {
     };
    
 };
-class fluid  {
+struct fluid  {
     unsigned float anisotropy = void; // Normalised between  -1 and 1  with 0 meaning none
     color::rgba Base Color = void;
     image::rgba_static_image normal = void;
@@ -214,16 +214,16 @@ class fluid  {
     }
 };
 
-class particle {
+struct particle {
     float size ;
     float density ;
 
 };
-class fluidSource {
+struct fluidSource {
     fluid f ;
      
 };
-class particleSource {
+struct particleSource {
 
 };
 
@@ -250,14 +250,14 @@ struct physicsVertInfo {
     glm::dvec2 div_curl ; 
     glm::dvec3 grad ;
 };
-class fluidMesh { // This is used for water bodies and smoke and the like
+struct fluidMesh { // This is used for water bodies and smoke and the like
     std::vector<std::pair<vertex, > > vertices ;
     
     float turbulence ;
     double cycleSeconds = 2 ; // Default is 
 
 };
-class particleMesh { // Closed bounding box fill everything
+struct particleMesh { // Closed bounding box fill everything
     std::vector<vertex> vertices ; 
     std::vector<uint> bounding ;
     std::vector<uint> internal ;
@@ -298,11 +298,11 @@ struct elemInfo {
     
 };
 
-class elemSource {
+struct elemSource {
 
 };
 template <DIM T>
-class elem { 
+struct elem { 
 
     std::vector<vertex<T>> vec ;
     std::vector<uint> uv ;
@@ -310,13 +310,13 @@ class elem {
     std::vector<Texture>
 
 };
-class icon : elem {
+struct icon : elem {
 
 };
 
 
 template <DIM T>
-class model : elem<T> {
+struct model : elem<T> {
     std::string name ; 
 
     
@@ -334,12 +334,12 @@ class model : elem<T> {
     virtual void compile():
 
 };
-class flat_model : model<DIM> {
+struct flat_model : model<DIM> {
     std::string name ;
     double thickness ; 
 };
 
-class ngon_collection {
+struct ngon_collection {
     std::map<uint , std::vector<std::vector<uint>>> ngons ; 
     bool checkExists(uint size , std::vector<uint> &ngon_vertices){
         for(const auto &i : this->ngons[size]){
@@ -359,7 +359,7 @@ class ngon_collection {
 };
 
 template <DIM S>
-class mesh {
+struct mesh {
 	std::vector<vertex<S>> vertices;
 
     point_list point_l ;
@@ -375,46 +375,46 @@ class mesh {
     
 };
 template <DIM S>
-class staticMesh : mesh { // Does 
+struct staticMesh : mesh { // Does 
 
 };
 template <DIM S>
-class dynamicMesh : mesh {
+struct dynamicMesh : mesh {
 
 };
 template <DIM S>
-class softBody : dynamicMesh {
+struct softBody : dynamicMesh {
 
 };
 template <DIM S>
-class cloth : dynamicMesh {
+struct cloth : dynamicMesh {
     std::vector<vertex> vertices;
     
 };
 template <DIM S>
-class wire : dynamicMesh{
+struct wire : dynamicMesh{
     std::vector<vertex> vertices ; 
     float stiffness ;
     float elasticity ; 
 };
-class entity : dynamicMesh  
+struct entity : dynamicMesh  
 {
     virtual virtual render();
     virtual update();
 };
-class flora : elem {
+struct flora : elem {
 
 };
 // Actors are entities which can be possessed by controlSchemes
 
-class actor : entity 
+struct actor : entity 
 {
         mesh mainBody ; 
 };
-class fauna : entity {
+struct fauna : entity {
 
 };
-class human : entity 
+struct human : entity 
 {
     std::string name ;
 };
@@ -436,7 +436,7 @@ struct attach_points {
     std::vector<uint> verts ; 
 };
 
-class group { // Groups elements together in one shared animation unit .
+struct group { // Groups elements together in one shared animation unit .
     
     struct attach {
         typedef enum ATTACH_MODE {
@@ -466,21 +466,21 @@ class group { // Groups elements together in one shared animation unit .
     };
 
 };
-class component {
+struct component {
    
     std::string name; 
     std::vector<elem*> elements; 
     std::vector<group*> groups ;
 };
-class collection {
+struct collection {
     std::string name ;
     std::vector<elem*> elems ;
     std::vector<group*> groups ;
     std::vector<component*> component ;
              
 };
-// Allows the creation and instantiotion of objects in scene based on a base elem
-class chain { 
+// Allows the creation and instantiation of objects in scene based on a base elem
+struct chain { 
     struct ref {
         coords ; 
     };

@@ -149,7 +149,9 @@
         "_swizzle.hpp": "c",
         "*.def": "c",
         "d": "cpp",
-        "g": "cpp"
+        "g": "cpp",
+        "vector_int2.hpp": "c",
+        "vector_bool2.hpp": "c"
     },
     "svg.preview.background": "custom"
 }
