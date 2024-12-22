@@ -1,26 +1,28 @@
+#include <cmath>
 #include <stdint.h>
 #include <lib/glm/glm.hpp>
 #include <acqres/source.hpp>
 
 
-struct animateMotion{
+struct animateMotion : prop{
     double dur=1; // ms
     double begin=0,end=dur; // ms or event;
     int valuesSize;
     glm::dmat4 values; // Values to animate over; // xy: dpos : zw :rotation(size)
 
 };
-struct animateTransform {
+struct animateTransform : prop{
     double dur=1; // ms
     double begin=0,end=dur; // ms or event;
     int index_size;
     int index;
     int valuesSize;
     glm::dmat4 values; // 
+    
 };
 
-
-struct striate {
+/*
+struct striate : prop{
     glm::dvec2 center;
     float curl ; // means nothin;
     float theta; // Direction of striation 
@@ -29,26 +31,21 @@ struct striate {
     glm::dvec2 straightness;
     
 
-};
+};*/
 
-enum pathpt {
-    cubic=0,
-    quad=1,
-    line=2,
-    arc=3,
-};
 
 
 glm::dvec4 rgba16itorgbaf(glm::uvec4 s){vec4 t = s.xyzw ;t= t/0xFF; };
 
 enum fe {
-    color,
-    striate,
-    perlin,
-    simplex,
-    convolve,
-    turbulence
+    color=1,
+    striate=2,
+    perlin=3,
+    simplex=4,
+    convolve=5,
+    turbulence=6
 };
+struct shape_at ;
 struct shape_atv { // TODO make fe all one vector and adapt index, also add ats to g and add feRGBA glm::dmat4
     int animateMotionSize;
 std::vector< animateMotion> animateMotions;
@@ -64,14 +61,120 @@ std::vector< animateTransform> animateTransforms;
     int feSize;  // TODO mul in fourths according to sparse idmat
 std::vector< int> feIndex;
 std::vector< glm::mat4> fe;
+ shape_atv(shape_at s);
+static tinygltf::Value::Object getgltf(shape_at at){
+        tinygltf::Value::Object ats;
+         if(at.animateMotionSize>0){
+            std::vector<tinygltf::Value> animm;
+            for(int i = 0 ; i < at.animateMotionSize ; i++){
+                animMo["dur"] = tinygltf::Value(at.animateMotion[i].dur) ;
+                animMo["begin"] = tinygltf::Value(at.animateMotion[i].begin) ;
+                animMo["end"] = tinygltf::Value(at.animateMotion[i].end) ;
+                std::vector<tinygltf::Value> vals;
+                animMo["values"] =tinygltf::Value(getmatgltfv<glm::dmat4>(at.animateMotion[i].values)) ;
+                animm.push_back(tinygltf::Value(animMo));
+            };
+            ats["animateMotion"] = tinygltf::Value(animm);
+        };
+        if(at.animateTransformSize>0){
+            std::vector<tinygltf::Value> animt;
+            for(int i = 0 ; i < at.animateTransformSize ; i++){
+                animTr["dur"] = tinygltf::Value(at.animateTransform[i].dur) ;
+                animTr["begin"] = tinygltf::Value(at.animateTransform[i].begin) ;
+                animTr["end"] = tinygltf::Value(at.animateTransform[i].end) ;
+                animTr["index"] = tinygltf::Value(at.animateTransform[i].index);
+                animTr["values"] = tinygltf::Value(getmatgltfv<glm::dvec4>(at.animateTransform[i].values));
+                animt.push_back(tinygltf::Value(animTr));
+            };
+            ats["animateTransform"] = tinygltf::Value(animt);
+        };
+            ats["stroke"] = tinygltf::Value(getvecgltfv<glm::dvec4>(at.stroke));
+            ats["strokeWidth"] = tinygltf::Value(at.strokeWidth);
+            ats["fill"] = tinygltf::Value(getvecgltfv<glm::dvec4>(at.fill));
+            ats["gradient"] = tinygltf::Value(getvecgltfv<glm::dvec4>(at.gradient));
+            ats["radialGradient"] = tinygltf::Value(getvecgltfv<glm::dvec4>(at.radialGradient));
+            ats["feSize"] = tinygltf::Value(at.feSize);
+            std::vector<tinygltf:Value> fei;
+            for(int i=0;i<at.feSize;i++){fei.push_back(tinygltf::Value(at.feIndex[i]));};
+            ats["feIndex"] = tinygltf::Value(fei);
+            fei.clear()
+            for(int i=0;i<at.feSize;i++){fei.push_back(getmatgltfv<glm::dmat4>(at.fe[i]));}
+            ats["fe"]=tinygltf::Value(fei);
+            return ats;          
+    };
+     static shape_atv getgltf(tinygltf::Value ats) {
+        shape_atv s;
+        std::vector<tinygltf::Value> animm ; animm = vals["animateMotion"].Get<tinygltf::Value::Array>();int sizem=0;
+        for(tinygltf::Value t : animm){ 
+            animateMotion i;
+            i.dur = t["dur"].GetNumberAsDouble();
+            i.begin = t["begin"].GetNumberAsDouble();
+            i.end = t["end"].GetNumberAsDouble();
+            i.values= getmat<glm::dmat4>(t["values"]) ; 
+            s.animateMotions.push_back(i);sizem++;
+        };
+        delete animm; s.animateMotionSize = sizem;sizem=0
+        std::vector<tinygltf::Value> animt ; animt = vals["animateTransform"].Get<tinygltf::Value::Array>();
+        for(tinygltf::Value t : animt){  
+            animateTransform i;
+            i.dur = t["dur"].GetNumberAsDouble();
+            i.begin = t["begin"].GetNumberAsDouble();
+            i.end = t["end"].GetNumberAsDouble();
+            i.index = t["index"].GetNumberAsInt();
+            i.values= getmat<glm::dmat4>(t["values"]) ; 
+            s.animateTransforms.push_back(i);sizem++;
+        };
+        s.animateTransformSize=sizem;
+        s.stroke   = getvec<glm::dvec4>(ats["stroke"])
+        s.strokeWidth   = ats["strokeWidth"].GetNumberAsDouble();
+        s.fill   = getvec<glm:dvec4>(ats["fill"]);
+        s.gradient   = getvec<glm::dvec4>(ats["gradient"]);
+        s.radialGradient   = getvec<glm::dvec4>(ats["radialGradient"]);
+
+        tinygltf::Value::Array fei =ats["feIndex"].Get<tinygltf::Value::Array>() ;sizem=0;
+        for(tinygltf::Value v : fei){s.feIndex[sizem] = getmat<glm::dmat4>(v);  sizem++;};
+        s.feSize=sizem; 
+        s.fe.resize(s.feSize);
+        fei = ats["fe"].Get<tinygltf::Value::Array>() ; sizem=0
+        for(tinygltf::Value v: fei){s.fe[i] = getmat<glm::dmat4>(fei[sizem]); sizem++;};
+        return s;    
+    };
+    shape_atv(shape_at sat);
 
 };
-
+#ifndef FEMAGIC
+#define FEMAGIC 20000
+#endif
+glm::dmat4 feMagic(glm::dmat4 p, fe s){
+    glmd::dmat4 s = p; s.x.w=(s.x.w)%1+((s.x.w)-(s.x.w)%1)*FEMAGIC+s;
+    return s;
+};
+fe feMagic(glm::dmat4 p){
+    double t = p.x.w;
+    int s = (int)t;
+    s = s%FEMAGIC ;
+    return (fe)s;
+};
 struct shapev {
     glm::dvec2 pos;
     shape_atv at;
-};
+    tinygltf::Value getgltf(shapev shape){
+    #define SHAPEGETGLTFV(name) \
+        o["pos"] = getvecgltfv<glm::dvec2>(name.pos);\
+        o["at"] = shape_atv::getgltf(name.at);\
 
+
+    };
+    shapev get(tinygltf::Value::Object o){
+        #define SHAPEGET(name) \
+        name.pos=tinygltf::Value(getvec<glm::dvec2>(o["pos"])); \
+        name.at = shape_atv::get(o["at"]); \
+        
+    };
+    
+
+};
+struct polyline;
 struct polylinev : shapev {
     int ptSize ;
 std::vector< glm::dvec2> pts;
@@ -80,7 +183,34 @@ std::vector< glm::dvec2> pts;
         return this->pts[index-1];
         };
     };
+
+    static  tinygltf::Value getgltf( polyline PolyLine){
+            tinygltf::Value::Object  o;
+            SHAPEGETGLTFV(PolyLine)
+
+            o["pos"] = tinyglf::Value(getvecgltfv<glm::dvec2>(PolyLine.pos));
+        if(PolyLine.ptSize>0) {
+                std::vector<tinygltf::Value> v;
+            for(int i = 0 ; i<PolyLine.ptsize;i++){
+                v.push(tinygltf::Value(tinygltf::Value(getvecgltfv<glm::dvec2>(PolyLine.pts[i])));
+            };
+            o["pts"] = tinygltf::Value(v); tinygltf::Value;
+            o["attributes"] = tinygltf::Value(shape_atv::getgltfv(PolyLine.at));
+            return tinylgtf::Value(o);
+        };
+    };
+    static polylinev get(tinygltf::Value o){
+        polylinev pl;
+        SHAPEGET(pl)
+        pl.ptSize=tinygltf::Value(o["ptSize"]);
+        for(tinygltf::Value a : o["pts"].Get<tinygltf::Value::Array>()){
+            pl.pts.push_back(getvec<glm::dvec2>(a));
+        };
+        return pl;
+    };
+    polylinev(polyline s);
 };
+struct ellipse
 struct ellipsev : shapev {
     double r; int8_t size;
     glm::dmat4x2 foci; // radi
@@ -92,8 +222,27 @@ struct ellipsev : shapev {
         case 3 : {return rads.z ;};
         case 4 : {return rads.w ;};
     }; 
-    
+     static tinygltf::Value writeEllipse( ellipse Ellipse){
+        tinygltf::Value::Object  o;
+        SHAPEGETGLTFV(Ellipse)
+        o["pos"] = tinyglf::Value(std::vector<tinygltf::Value>({tinygltf::Value(Ellipse.pos.x),tinygltf::Value(Ellipse.pos.y)});
+        o["attributes"] = tinygltf::Value(shape_atv::getgltfv(Ellipse.at));
+        o["size"] = tinygltf::Value(Ellipse.size);
+        o["foci"] = tinyglf::Value(getmatgltfv<glm::dmat4>(Ellipse.foci));
+        o["r"] = tinyglf::Value(Ellipse.r);
+        return tinygltf::Value(o)
+    };
+    static ellipsev get(tinygltf::Value o){
+        ellipsev e;
+        SHAPEGET(e)
+
+        e.size=o{"size"}.GetNumberAsInt();
+        e.r = o["r"].GetNumberAsDouble();
+        e.foci = getvec<glm::dmat4x2>(o["foci"]); return e;
+    };
+    ellipsev(ellipse s);
 };
+struct rect;
 struct rectv : shapev {
     glm::dvec2 d; // (w,h<center>)
     float rx; // corner radius;(0-1<0 means normal 1 means rect is circle>)
@@ -104,8 +253,25 @@ struct rectv : shapev {
         case 2 : {return d.y };
         case 3 : {return rx };
         };
+        };
+    
+    static tinygltf::Value getgltf( rect Rect){
+            tinygltf::Value::Object  o;
+            SHAPEGETGLTFV(Rect)
+            o["d"] = tinygltf::Value(getvecgltfv<glm::dvec2>(Rect.d));
+            o["rx"] = tinygltf::Value(Rect.rx);
+            return tinygltf::Value(o);
+    };
+    static rectv get(tinygltf::Value o){
+        rectv r;
+        SHAPEGET(r)
+        r.rx = tinygltf::Value(o["rx"]);
+        r.d = tinygltf::Value(getvec<glm::dvec2>(o["d"]));
+        return r;
+    };
+    rectv(rect s);
 };
-
+struct path;
 struct pathv :shapev {// Absolute values;
 
     int ptlistSize;// total number of pts
@@ -124,36 +290,172 @@ struct pathv :shapev {// Absolute values;
         if(index.x<=0){return this->at(index);}
     return this->operator[](glm::uvec2(glm::abs(index.xy)));
     }; 
-
+    static tinygltf::Value getgltf( path Path){ // TODO fix
+        tinygltf::Value::Object  o;
+        SHAPEGETGLTFV(Rect)
+        o["pos"] = tinyglf::Value(std::vector<tinygltf::Value>({tinygltf::Value(Ellipse.pos.x),tinygltf::Value(Ellipse.pos.y)});
+        o["text"] = tinygltf::Value(Path.text)
+        o["attributes"] = tinygltf::Value(shape_atv::getgltfv(Path.at));
+        std::vector<tinygltf::Value> plist,index;
+        for(int i =0 ; i< Path.ptlistSize ; i++)
+        {
+                ptlist.push_back(tinygltf::Value(getvecgltfv<glm::dvec2>(Path.ptlist[i])));
+                index.push_back(tinygltf::Value(Path.index[i]));
+        };
+        o["ptlist"]=tinygltf::Value(ptlist);
+        o["index"]=tinygltf::Value(index);
+        return tinygltf::Value(o);
+        ;};
+    static pathv get(tinygltf::Value o){
+        pathv p;
+        SHAPEGET(p)
+        p.pos=getvec<glm::dvec2>(o["pos"]);
+        p.at =shape_atv::getgltfv(o["attributes"]);
+        for(tinygltf::value s : o["ptlist"]){
+            p.ptlist.push_back(getvec<glm::dvec2>(s));
+        };
+        return p;
+    };
+    pathv(path s);
+   
 };
+#define PTMAGIC 2000
+#define CUBIC 0,
+#define QUAD 1,
+#define LINE 2,
+double fract(double s){return s - std::floor(s);};  
+glm::dvec2 ptpmagic(glm::dvec2 p , int8_t g){ // Stays at 
+    glm::dvec2 s = p;
+    s.y=(fract(s.y))+std::floor(s.y)*PTMAGIC+g;
+    return s;
+};
+int8_t ptpmagic(glm::dvec2 p ){ // Stays at 
+    int8_t PT;    glm::dvec2 s = p;
+         int PT=int(std::floor(s.y))%PTMAGIC;
+    return PT;
+};
+void ptmagic(glm::dvec2& p){
+    p.y = std::floor(p.y)/PTMAGIC + fract(p.y);
+};
+struct textpath;
 struct textpathv : shapev {
     uint8_t font;
     std::string text;
     pathv p ;
-    
+     
+    static tinygltf::Value getgltf( textpath TextPath){
+        tinygltf::Value::Object  o;
+        SHAPEGETGLTFV(TextPath)
+        o["font"] = tinygltf::Value(TextPath.font);
+        o["text"] = tinygltf::Value(TextPath.text);
+        o["path"] =  tinygltf::Value(pathv::getgltf(TextPath.p););return tinygltf::Value(o);
+    static textpathv get(tinygltf::Value o){
+        textpathv tp;
+        SHAEGET(tp)
+        tp.font  =o{"font"}.GetNumberAsInt();
+        tp.text = o["text"].Get<std::string>();
+        tp.p = pathv::get(o["path"]);return tp;};
+   textpathv(textpath s);
 };
-struct gv : shapev {
+struct g;
+struct gv : shapev , prop {
     int size;
 std::vector< glm::uvec2> index;
+ static tinygltf::Value getgltf(g el){
+        tinygltf::Value::Object o ;
+        SHAPEGETGLTFV(el)
+              o["size"]=tinygltf::Value(el.size);
+              o["index"]=(std::vector<tinygltf>({tinygltf::Value( el.index[i].x) , tinygltf::Value( el.index[i].y)}));
+            return tinygltf::Value(o);
+        
+    static gv read_g(tinygltf::Value::Object o){
+        gv gr;
+        SHAPEGET(gr)
+        gr.size = o["size"].getNumberAsInt();
+        std::vector<tinygltf::Value> array = o["index"].Get<tinygltf::Value::Array>();;
+        for(tinygltf::Value a : array){
+            glm::uvec2 ind  = getvec<glm::uvec2>(a) ;
+            gr.index.push_back(ind)
+        };
+        return gr;
+    };
+    gv(g s);
 };
-struct vgv : shapev { // Size is 1,1 for 
+struct vg;
+struct vgv : shapev , prop { // Size is 1,1 for 
     std::string name;
     int gsize; 
-std::vector< g> g;
+std::vector< gv> gs;
 
     int polyLineSize;
-std::vector< polyline> polylines;
+std::vector< polylinev> polylines;
     int rectsSize;
-std::vector< rect> rects;
+std::vector< rectv> rects;
     int ellipsesSize;
-std::vector< ellipse> ellipses;
+std::vector< ellipsev> ellipses;
     int pathsSize;
-std::vector< path> paths;
+std::vector< pathv> paths;
     int textpathsSize;
-std::vector< textpath> textpaths;
+std::vector< textpathv> textpaths;
     int indexSize;
 std::vector< glm::uvec2> index; // x shape, y pos; // Starting from 1 0 being groups
+    tinygltf::Value getgltf(vg Vg  ){// TODOdo better
+        tinygltf::Value::Object o;
+        SHAPEGETGLTFV(Vg)
+
+        o["name"]=tinygltf::Value(Vg.name);
+
+        int size;
+        #define GETVGELTF(name,type,size) \
+        tinygltf::Value::Array arr ; size =0\
+        for( type s: Vg.name  ){ \
+            arr.push_back(type::getgltf(s));size++;\
+        }; \
+        b[#name] = arr;o[#size]=tinygltf::Value(size); \
+
+        GETVGLTF(gs,gv,gsize)
+        GETVGLTF(polylines, polylinev, polyLineSize)  
+        GETVGLTF(rects, rectv, rectsSize)  
+        GETVGLTF(ellipses, ellipsev, ellipsesSize)  
+        GETVGLTF(paths, pathv, pathsSize)  
+        GETVGLTF(textPaths, textPathv, textPathsSize)  
+       
+        std::vector<tinygltf::Value> ind; size=0;
+        for(int i = 0; i<Vg.indexSize;i++){
+            ind.push_back(tinygltf::value(Vg.index[i];););size++;
+        }; ;b["index"] = tinygltf::Value(ind);o["indexSize"]=tinygltf::Value(size);return ob;
+        };
+    vgv read(tinygltf::Value::Object ob){
+        vgv o;
+        SHAPEGET(o)
+
+        o.name = ob["name"].Get<std::string>();
+        o.gsize = ob["gsize"].GetNumberAsInt();
+
+        #define GETGVGLTF(name,type,size)
+        o.##size=ob[#size].GetNumberAsInt(); \
+        tintgltf::Value::Array arr; \
+        for(type s : ob.name){arr.push_back(type::get(s));};\
+
+        GETGVGLTF(gs,gv,gsize)
+        GETGVGLTF(polylines, polylinev, polyLineSize)  
+        GETGVGLTF(rects, rectv, rectsSize)  
+        GETGVGLTF(ellipses, ellipsev, ellipsesSize)  
+        GETGVGLTF(paths, pathv, pathsSize)  
+        GETGVGLTF(textPaths, textPathv, textPathsSize)  
+
+       
+        o.indexSize = ob["indexSize"].GetNumberAsInt();
+        tinygltf::Value::Array arr=tinygltf::Value( o["index"]));        
+        for(tinygltf::Value::Object s : arr){
+         o.index.push_back(getvec<glm::uvec2>(s));
+        } ;
+        return o;
+    };  
+    vgv(vg sv);
 };
+
+
 /***
  * 
  * 
@@ -188,8 +490,7 @@ struct shape_at {
     glm::mat4* feConvolves;
     int feTurbulenceSize;  
     glm::mat4* feTurbulences;*/
-};
-shape_at::shape_at(shape_atv satv){
+shape_at(shape_atv satv){
 this->animateMotionSize=satv.animateMotions.size();this->animateMotions=new animateMotion[satv.animateMotionSize] ; this->animateMotion = satv.animateMotion.data();
 this->animateTransformSize = satv.animateTransform.size();this->animateTransforms = new animateTrasform[this->animateTrasformSize] ; this->animateTrasforms = satv.animateTrasform.size();
 this->stroke = satv.stroke;
@@ -198,6 +499,7 @@ this->fill = satv.fill;
 this->gradient = satv.gradient;
 this->radialGradient= satv.radialGradient; 
 this->feSize=satv.feSize;this->feIndex=new int[satv.feSize];this->feIndex=satv.feIndex.data(); this->fe=satv.fe.size();this->fe=new glm::mat4[this->feSize]; this->fe = satv.fe.data();
+};
 };
 shape_atv::shape_atv(shape_at sat){
 this->animateMotionSize = sat.animateMotionSize;this->animateMotions.resize(sat.animateMotionSize);this->animateMotions.data()=sat.animateMotions;
@@ -379,7 +681,7 @@ vg(vgv sv){ this->name=sv.name;
    this->indexSize = sv.index.size();this->index = new index[s.indexSize];this->index = sv.index.data();  
 };
 };
-vg::vgv(vg sv){this->name=sv.name;
+vgv::vgv(vg sv){this->name=sv.name;
    this->gsize= sv.gsize;this->g.resize(s.gsize);this->g.data()= sv.g;                
    this->polyLineSize = sv.polyLinesize;this->polyLine.resize(s.polyLineSize);this->polyLine.data() = sv.polylines;                
    this->rectsSize = sv.rectssize;this->rects.resize(s.rectsSize);this->rects.data() = sv.rects;                
@@ -388,202 +690,8 @@ vg::vgv(vg sv){this->name=sv.name;
    this->textpathsSize = sv.textpathssize;this->textpaths.resize(s.textpathsSize);this->textpaths.data() = sv.textpaths;                
    this->indexSize = sv.indexsize;this->index.resize(s.indexSize);this->index.data() = sv.index;               
 };
-
-
-class vg_prop : public aqres_prop , tinygltf::Image{
-    std::vector<std::string> extensions={"strata_vg_extension"};
-    
-  
-   static tinygltf::Value::Object writeAttributes(shape_at at){
-        tinygltf::Value::Object ats;
-         if(at.animateMotionSize>0){
-            std::vector<tinygltf::Value> animm;
-            for(int i = 0 ; i < at.animateMotionSize ; i++){
-                animMo["dur"] = tinygltf::Value(at.animateMotion[i].dur) ;
-                animMo["begin"] = tinygltf::Value(at.animateMotion[i].begin) ;
-                animMo["end"] = tinygltf::Value(at.animateMotion[i].end) ;
-                std::vector<tinygltf::Value> vals;
-                animMo["values"] =tinygltf::Value(getmatgltfv<glm::dmat4>(at.animateMotion[i].values)) ;
-                animm.push_back(tinygltf::Value(animMo));
-            };
-            ats["animateMotion"] = tinygltf::Value(animm);
-        };
-        if(at.animateTransformSize>0){
-            std::vector<tinygltf::Value> animt;
-            for(int i = 0 ; i < at.animateTransformSize ; i++){
-                animTr["dur"] = tinygltf::Value(at.animateTransform[i].dur) ;
-                animTr["begin"] = tinygltf::Value(at.animateTransform[i].begin) ;
-                animTr["end"] = tinygltf::Value(at.animateTransform[i].end) ;
-                animTr["index"] = tinygltf::Value(at.animateTransform[i].index);
-                animTr["values"] = tinygltf::Value(getmatgltfv<glm::dvec4>(at.animateTransform[i].values));
-                animt.push_back(tinygltf::Value(animTr));
-            };
-            ats["animateTransform"] = tinygltf::Value(animt);
-        };
-            ats["stroke"] = tinygltf::Value(getvecgltfv<glm::dvec4>(at.stroke));
-            ats["strokeWidth"] = tinygltf::Value(at.strokeWidth);
-            ats["fill"] = tinygltf::Value(getvecgltfv<glm::dvec4>(at.fill));
-            ats["gradient"] = tinygltf::Value(getvecgltfv<glm::dvec4>(at.gradient));
-            ats["radialGradient"] = tinygltf::Value(getvecgltfv<glm::dvec4>(at.radialGradient));
-            ats["feSize"] = tinygltf::Value(at.feSize);
-            std::vector<tinygltf:Value> fei;
-            for(int i=0;i<at.feSize;i++){fei.push_back(tinygltf::Value(at.feIndex[i]));};
-            ats["feIndex"] = tinygltf::Value(fei);
-            fei.clear()
-            for(int i=0;i<at.feSize;i++){fei.push_back(getmatgltfv<glm::dmat4>(at.fe[i]));}
-            ats["fe"]=tinygltf::Value(fei);
-            return ats;          
-    };
-    static shape_atv readAttributes(tinygltf::Value ats){
-        shape_atv s;
-        std::vector<tinygltf::Value> animm ; animm = vals["animateMotion"].Get<tinygltf::Value::Array>();int sizem=0;
-        for(tinygltf::Value t : animm){ 
-            animateMotion i;
-            i.dur = t["dur"].GetNumberAsDouble();
-            i.begin = t["begin"].GetNumberAsDouble();
-            i.end = t["end"].GetNumberAsDouble();
-            i.values= getmat<glm::dmat4>(t["values"]) ; 
-            s.animateMotions.push_back(i);sizem++;
-        };
-        delete animm; s.animateMotionSize = sizem;sizem=0
-        std::vector<tinygltf::Value> animt ; animt = vals["animateTransform"].Get<tinygltf::Value::Array>();
-        for(tinygltf::Value t : animt){  
-            animateTransform i;
-            i.dur = t["dur"].GetNumberAsDouble();
-            i.begin = t["begin"].GetNumberAsDouble();
-            i.end = t["end"].GetNumberAsDouble();
-            i.index = t["index"].GetNumberAsInt();
-            i.values= getmat<glm::dmat4>(t["values"]) ; 
-            s.animateTransforms.push_back(i);sizem++;
-        };
-        s.animateTransformSize=sizem;
-        s.stroke   = getvec<glm::dvec4>(ats["stroke"])
-        s.strokeWidth   = ats["strokeWidth"].GetNumberAsDouble();
-        s.fill   = getvec<glm:dvec4>(ats["fill"]);
-        s.gradient   = getvec<glm::dvec4>(ats["gradient"]);
-        s.radialGradient   = getvec<glm::dvec4>(ats["radialGradient"]);
-
-        tinygltf::Value::Array fei =ats["feIndex"].Get<tinygltf::Value::Array>() ;sizem=0;
-        for(tinygltf::Value v : fei){s.feIndex[sizem] = getmat<glm::dmat4>(v);  sizem++;};
-        s.feSize=sizem; 
-        s.fe.resize(s.feSize);
-        fei = ats["fe"].Get<tinygltf::Value::Array>() ; sizem=0
-        for(tinygltf::Value v: fei){s.fe[i] = getmat<glm::dmat4>(fei[sizem]); sizem++;};
-        return s;    
-    };
-    static void writePolyLine( polyline PolyLine, tinygltf::Value::Object* ob){
-            tinygltf::Value::Object  o;
-            o["pos"] = tinyglf::Value(getvecgltfv<glm::dvec2>(PolyLine.pos));
-        if(PolyLine.ptSize>0) {
-                std::vector<tinygltf::Value> v;
-            for(int i = 0 ; i<PolyLine.ptsize;i++){
-                v.push(tinygltf::Value(tinygltf::Value(getvecgltfv<glm::dvec2>(PolyLine.pts[i])));
-            };
-            o["pts"] = tinygltf::Value(v); tinygltf::Value;
-            o["attributes"] = tinygltf::Value(this->writeAttributes(PolyLine.at));
-            (*ob)["polyline"] = tinygltf::Value(o); 
-        };
-    };
-    static polylinev readPolyLine(tinygltf::Value::Object o){
-        polylinev pl;
-        pl.pos=tinygltf::Value(getvec<glm::dvec2>(o["pos"]));
-        pl.at = this->
-    };
-    static void writeRect( rect Rect,   tinygltf::Value::Object* ob){
-            tinygltf::Value::Object  o;
-            o["pos"] = tinyglf::Value(getvecgltfv<glm::dvec2>(Rect.pos));
-            o["d"] = tinygltf::Value(getvecgltfv<glm::dvec2>(Rect.d));
-            o["rx"] = tinygltf::Value(Rect.rx);
-            o["attributes"] = tinygltf::Value(this->(Rect.at));
-            (*ob)["rect"] = tinygltf::Value(o);
-    };
-    static rectv readRect(tinygltf::Value::Object o){
-        rectv r;
-        r.pos=getvec<glm::dvec2>o["pos"];
-        r.at =this->readAttributes(o["attributes"]);
-        r.rx = tinygltf::Value(o["rx"]);
-        r.d = tinygltf::Value(getvec<glm::dvec2>(o["d"]));
-    static void writeEllipse( ellipse Ellipse, tinygltf::Value::Object* ob){
-        tinygltf::Value::Object  o;
-        o["pos"] = tinyglf::Value(std::vector<tinygltf::Value>({tinygltf::Value(Ellipse.pos.x),tinygltf::Value(Ellipse.pos.y)});
-        o["attributes"] = tinygltf::Value(this->writeAttributes(Ellipse.at));
-        o["size"] = tinygltf::Value(Ellipse.size);
-        o["foci"] = tinyglf::Value(getmatgltfv<glm::dmat4>(Ellipse.foci));
-        o["r"] = tinyglf::Value(Ellipse.r);
-        (*ob)["ellipse"] = tinygltf::Value(o);
-    };
-    static ellipsev readEllipse(tinygltf::Value::Object o){
-        ellipsev e;
-        e.pos=getvec<glm::dvec2>o["pos"];
-        e.at=this->writeAttributes(o["attributes"]);
-        e.size=o{"size"}.GetNumberAsInt();
-        e.r = o["r"].GetNumberAsDouble();
-        e.foci = getvec<glm::dmat4x2>(o["foci"]);
-    };
-    static void writePath( path Path,tinygltf::Value::Object* ob){ // TODO fix
-        tinygltf::Value::Object  o;
-        o["pos"] = tinyglf::Value(std::vector<tinygltf::Value>({tinygltf::Value(Ellipse.pos.x),tinygltf::Value(Ellipse.pos.y)});
-        o["text"] = tinygltf::Value(Path.text)
-        o["attributes"] = tinygltf::Value(this->writeAttributes(Path.at));
-        std::vector<tinygltf::Value> cubic,quad,line,arc;
-        for(int i =0 ; i< Path.ptlistSize ; i++){
-            switch(Path.ptlist[i].x){
-                case 0: {cubic.push_back(tinygltf::Value(std::vector<tinygltf::value>({tinygltf::Value(Path.cubic[Path.ptlist[i].y].x),tinygltf::Value(Path.cubic[Path.ptlist[i].y].y)} ) )) ;};
-                case 1: { quad.push_back(tinygltf::Value(std::vector<tinygltf::value>({tinygltf::Value( Path.quad[Path.ptlist[i].y].x),tinygltf::Value( Path.quad[Path.ptlist[i].y].y)} ) )) ;};
-                case 3: { line.push_back(tinygltf::Value(std::vector<tinygltf::value>({tinygltf::Value( Path.line[Path.ptlist[i].y].x),tinygltf::Value( Path.line[Path.ptlist[i].y].y)} ) )) ;};
-                case 4: {  arc.push_back(tinygltf::Value(std::vector<tinygltf::value>({tinygltf::Value(  Path.arc[Path.ptlist[i].y].x),tinygltf::Value(  Path.arc[Path.ptlist[i].y].y)} ) )) ;};
-            };
-        };
-        o["cubic"] = tinygltf::Value(cubic);
-        o["quad"] = tinygltf::Value(quad);
-        o["line"] = tinygltf::Value(line);
-        o["arc"] = tinygltf::Value(arc);
-        (*ob)["path"] = tinygltf::Value(o);
-        ;};
-    static pathv readPath(tinygltf::Value::Object o){
-        pathv p;
-        p.pos=getvec<glm::dvec2>(o["pos"]);
-        p.at =this->writeAttributes(o["attributes"]);
-        for(tinygltf::value s : o["ptlist"]){
-            p.ptlist.push_back(getvec<glm::dvec2>(s));
-        };
-    };
-    static void writeTextPath( textpath TextPath,tinygltf::Value::Object* ob){
-        tinygltf::Value::Object  o;
-        o["pos"] = tinyglf::Value(std::vector<tinygltf::Value>({tinygltf::Value(Ellipse.pos.x),tinygltf::Value(Ellipse.pos.y)});
-        o["attributes"] = tinygltf::Value(this->writeAttributes(TextPath.at));
-        o["font"] = tinygltf::Value(Path.font);
-        o["text"] = tinygltf::Value(Path.text);
-                    tinygltf::Value::Object  pat;
-                    void writePath(TextPath.path,&pat);
-        o["path"] = tinygltf::Value(pat);(*ob)["textpath"] = tinygltf::Value(o);};
-    static textpathv readTextPath(tinygltf::Value::Object o){
-        textpathv tp;
-        tp.pos= getvec<glm::dvec2>(o["pos"]);
-        tp.attributes = this->writeAttributes(o["attributes"]); 
-        tp.font  =o{"font"}.GetNumberAsInt();
-        tp.text = o["text"].Get<std::string>();
-        tp.p = this->readPath(o["path"]);return tp;};
-    static void write_g(g el, tinygltf::Value::Object* ob){
-        tinygltf::Value::Object o ;
-              o["size"]=tinygltf::Value(el.size);
-              o["attributes"]=this->writeAttributes(el.at);
-              o["index"]=(std::vector<tinygltf>({tinygltf::Value( el.index[i].x) , tinygltf::Value( el.index[i].y)}));
-              o{"attributes"}=
-        (*ob)["g"] = tinygltf::Value(o);};
-    static gv read_g(tinygltf::Value::Object o){
-        gv gr;
-        gr.pos=getvec<glm::dvec2>(o["pos"]);
-        gr.at = this->readAttributes(o["attributes"]);
-        gr.size = o["size"].getNumberAsInt();
-        std::vector<tinygltf::Value> array = o["index"].Get<tinygltf::Value::Array>();;
-        for(tinygltf::Value a : array){
-            glm::uvec2 ind  = getvec<glm::uvec2>(a) ;
-            gr.index.push_back(ind)
-        };
-        return gr;
-    };
-
+struct vgv_aq : vgv , aqres_prop {
+        std::vector<std::string> extensions={"strata_vg_extension"};
     template<typename s>
     inline void vg_el_write(tinygltf::Value::Object* ob, void (*write_func)(s , tinygltf::Value::Object* ) , int size , s* arr , std::string name ) {
         if(s>0){
@@ -595,63 +703,7 @@ class vg_prop : public aqres_prop , tinygltf::Image{
           };
          (*ob)[name]=tinygltf::Value(pls);};
     };
-    void write(vg Vg, tinygltf::Value::Object* ob ){
-        (*ob)["name"] = Vg.name;
-        (*ob)["attributes"] =tinygltf::Value( this->writeAttributes(Vg.at));
-        inline this->vg_el_write<g>       (ob,this->write_g       ,Vg.gsize     ,Vg.gs,"gs");
-        inline this->vg_el_write<polyline>(ob,this->writePolyLine ,Vg.polylines ,Vg.polyLinesize,"polylines");
-        inline this->vg_el_write<rect>    (ob,this->writeRect     ,Vg.rects     ,Vg.rectsSize,"rects");
-        inline this->vg_el_write<ellipse> (ob,this->writeEllipse  ,Vg.ellipses  ,Vg.ellipsesSize,"ellipses");
-        inline this->vg_el_write<path>    (ob,this->writePath     ,Vg.paths     ,Vg.pathsSize,"paths");
-        inline this->vg_el_write<textpath>(ob,this->writeTextPath ,Vg.textPaths ,Vg.textPathsSize,"textpaths");
-        /
-        std::vector<tinygltf::Value> ind;
-        for(int i = 0; i<Vg.indexSize;i++){
-            ind.push_back(tinygltf::value(Vg.index[i];););
-        };
-        (*ob)["index"] = tinygltf::Value(ind);
-        };
-    vgv read(tinygltf::Value::Object ob){
-        vgv o;
-        o.name = ob["name"].Get<std::string>();
-        o.gsize = ob["gsize"].GetNumberAsInt();
-        tintgltf::Value::Array arr=tinygltf::Value( o["g"]));
-        for(tinygltf::Value s : arr){
-            o.g.push_back(this->read_g(s));
-        };
-        o.polyLineSize = ob["polyLineSize"].GetNumberAsInt();
-        tintgltf::Value::Array arr=tinygltf::Value( o["polylines"]));
-        for(tinygltf::Value::Object s : arr){
-            o.polylines.push_back(this->readPolyLine(s));
-        };
-        o.rectSize = ob["rectsSize"].GetNumberAsInt();
-        tinygltf::Value::Array arr=tinygltf::Value( o["rects"]));
-        for(tinygltf::Value::Object s : arr){
-            o.rects.push_back(this->readRect(s));
-        };
-        o.ellipsesSize = ob["ellipsesSize"].GetNumberAsInt();
-        tinygltf::Value::Array arr=tinygltf::Value( o["ellipses"]));
-        for(tinygltf::Value::Object s : arr){
-            o.polylines.push_back(this->readEllipse(s));
-        };
-
-        o.ellipsesSize = ob["pathsSize"].GetNumberAsInt();
-        tinygltf::Value::Array arr=tinygltf::Value( o["paths"]));
-        for(tinygltf::Value::Object s : arr){
-            o.polylines.push_back(this->readPath(s));
-        };
-        o.ellipsesSize = ob["textpathsSize"].GetNumberAsInt();
-        tinygltf::Value::Array arr=tinygltf::Value( o["textpaths"]));
-        for(tinygltf::Value::Object s : arr){
-            o.polylines.push_back(this->readTextPath(s));
-        };
-        o.indexSize = ob["indexSize"].GetNumberAsInt();
-        tinygltf::Value::Array arr=tinygltf::Value( o["index"]));        
-        for(tinygltf::Value::Object s : arr){
-         o.index.push_back(getvec<glm::uvec2>(s));
-        } ;
-        return o;
-    };  
+   
     tinygltf::value::Object getVgObj(vg Vg){ 
         tinygltf::Value::Object obj;
         this->write(Vg,&obj);
@@ -708,9 +760,7 @@ class vg_prop : public aqres_prop , tinygltf::Image{
         tinygltf::Value::Object ob = m.extras;
         return (this->read(ob));
     };
-    bool to_single(vg)
-    
-    
+
 };
 
 

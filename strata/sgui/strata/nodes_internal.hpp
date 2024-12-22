@@ -4,6 +4,12 @@
 #include <typeinfo>
 #include <typeindex>
 #include <map>
+
+
+// TODO more runtime type checks
+bool issame(auto t,auto r){return std::is_same<decltype(r),decltype(t)>::value;};
+bool issamedecl(auto t,auto r)return std::is_same<std::remove_reference<decltype(t),std::remove_reference<decltype(r)>>::value;};
+
 std::map<std::type_index,std::string> ty_ind_map;
 void contribute_type(std::type_index i, std::string name){
     ty_ind_map[i] = name;

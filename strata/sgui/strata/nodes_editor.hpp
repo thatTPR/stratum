@@ -49,8 +49,7 @@ class pin : public widget{
     using ref= pin<T,_pintype>;
     using ptr=pin<T,_pintype>; 
     T d;
-
-    ivec4 bounds;
+  glm::ivec4 bounds;
     using arrmeta = arrtype<T>;
     std::string name = typeid(T).name() ;
     
@@ -119,6 +118,9 @@ class node : virtual public widget,virtual public pin<T> { // Has mainexec
     char name[] = "node";
     public:
     ivec4 bounds;
+       // Every node defines this;
+    typedef void (*func)(void) ;
+
     vect<node*> left_nodes_link;
     vect<node*> right_nodes_link;
     vect<node*> exec_left, exec_right;
@@ -206,10 +208,10 @@ class node : virtual public widget,virtual public pin<T> { // Has mainexec
         };
     };
     protected:
-    static inline void _push_pin_left( pin* s){this->left->push(s);};
-    static inline void _push_pin_right(pin* s){this->right->push(s);};
-    static inline void _insert_pin_left(size_t pos, pin* s){this->left->insert(pos,s);};
-    static inline void _insert_pin_right(size_t pos, pin* s){this->right->insert(pos,s);};
+    static void _push_pin_left( pin* s){this->left->push(s);};
+    static void _push_pin_right(pin* s){this->right->push(s);};
+    static void _insert_pin_left(size_t pos, pin* s){this->left->insert(pos,s);};
+    static void _insert_pin_right(size_t pos, pin* s){this->right->insert(pos,s);};
 public:
     node(){
         // Set events
@@ -227,10 +229,25 @@ public:
         this = new node(c,pos,/*canvas,left,right*/);
     };
 };
+
+    struct pinVoid {
+    std::string name,tyname;
+    void* data;
+    void cast(std::string name,std::string tyname,auto s){
+        this->name=name;
+        this->tyname=tyname;
+        decltype(s) r;
+        this->data = reinterpret_cast<void*>(s);
+        r = reinterpret_cast<decltype(s)>(this->data);
+        std::cout<<r;
+    };
+} ;
 template <typename T>
 class dyn_node : public node { // Like regular node but pins can be added;
-    
+    std::vector<> s;
+    void addPin(auto pin){
 
+    };
 
 };
 // Has only resources and modifiers and one out

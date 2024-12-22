@@ -5,8 +5,10 @@
 #include <glm/glm.hpp>
 
 
-template<typename glmvec>
-std::vector<tingltf::Value> getvecgltfv(glmvec s){
+
+template<size_t s,typename T, glm::qualifier Q>
+std::vector<tingltf::Value> getvecgltfv(glm::vec<s,T,Q> s){
+    using glmvec=glm::vec<s,T,Q>
     std::vector<tinygltf::Value> array ;
     size_t constexpr len = glmvec::length();
     array.resize(len);
@@ -20,9 +22,11 @@ std::vector<tingltf::Value> getvecgltfv(glmvec s){
     return array;
     };
     
-}; 
-template<typename glmvec>
-glmvec getvec(tinygltf::Value v){
+
+
+template<size_t s, typname T , glm::qualifier Q>
+glm::vec<s,T,Q> getvec(tinygltf::Value v){
+    using glmvec = glm::vec<s,T,Q>
     glmvec res;
     constexpr size_t len = glmvec::length();
     std::vector<tinygltf::Value> array = v.Get<tinygltf::Value::Array>();
@@ -54,8 +58,9 @@ glmvec getvec(tinygltf::Value v){
 
  
 };
-template <typename glmmat>
-std::vector<tinygltf::Value> getmatgltfv(gmlmmat s ){
+template <size_t r, size_t c, typename T, glm::qualifier Q>
+std::vector<tinygltf::Value> getmatgltfv(glm::mat<r,c,T,Q> s ){
+    using glmmat=glm::mat<r,c,T,Q>;
     constexpr size_t  rows = glmmat::row_type::length();
     constexpr size_t  cols = glmmat::col_type::length();
     std::vector<tinygltf::Value> array;
@@ -70,11 +75,9 @@ std::vector<tinygltf::Value> getmatgltfv(gmlmmat s ){
     array[3] = tinygltf::Value(getvecgltfv<glmmat::rowtype>(s.w));
     return array;
 };
-template<typename glmmat>
+template <size_t r, size_t c, typename T, glm::qualifier Q>
 glmmat getmat(tinygltf::Value v){
-    glmmat res;
-
-   
+    using glmmat =glm::mat<r,c,T,Q>;glmmat res;
     std::vector<tinygltf::Value> array = v.Get<tinygltf::Value::Array>();
     if constexpr (std::is_same_v<glmmat::value_type, float>) {
     rex.x = getv<glmmat::rowtype>(array[0]); 
@@ -103,7 +106,63 @@ glmmat getmat(tinygltf::Value v){
     };
 
 };
+#include <type_traits>
+template <typename , typenme = std::void_t<>>
+struct has_value_type : std::false_type {};
+template <typename T>
+struct has_value_type<T, T::value_type> : std::true_type {};
 
+template <typename , typenme = std::void_t<>>
+struct has_bool_type : std::false_type {};
+template <typename T>
+struct has_bool_type<T, T::value_type> : std::true_type {};
+
+
+
+template <typename , typenme = std::void_t<>>
+struct has_col : std::false_type {};
+template <typename T>
+struct has_col<T, T::col_type> : std::true_type {};
+
+
+template<typename T>
+T getv(tinygltf::Value v){
+    
+};
+
+template<typename T>
+tinygltf::Value getgltfv(T s){
+    if constexpr( has_value_type<T>::value &&  has_bool_type<T>::value ){
+if constexpr( has_col<T>::value){
+        return getmatgltfv(v);
+    };
+        return getvecgltfv(v);
+    };
+    return getgltfValue<T>(s);
+};
+template <typename T>
+T getv(tinygltf::Value v){
+    if constexpr(std::is_same<T,int>::value){
+        return v.GetNumberAsInt();
+    } ;
+    if constexpr(std::is_same<T,double>::value){
+        return v.GetNumberAsDouble();
+    } ;
+    if constexpr(std::is_same<T,float>::value){
+        return static_cast<float>(v.GetNumberAsDouble());
+    } ;
+    if constexpr(std::is_same<T,std::string>){
+        return v.Get<std::string>();
+    };
+    if constexpr( has_value_type<T>::value &&  has_bool_type<T>::value ){
+    if constexpr( has_col<T>::value){
+        return getmatv(v);
+    };
+        return getvecv(v);
+    };
+    getValue<T>(v);
+    
+};
 
 
 class acqres {
@@ -116,7 +175,13 @@ class acqres {
     };
 
 };
-class acqres_prop {
+class prop {
+    virtual std::vector<tinygltf::Value> getgltf();
+    virtual prop get(tinygltf::Value v);
+    virtual auto getBasic();
+    virtual auto getPipelineModule(); // Gets all alignable modules for shader use
+};
+class acqres_prop : {
     public:
     std::string mimeType="STRATA_default=mime";
     std::vector<std::string> extensions;

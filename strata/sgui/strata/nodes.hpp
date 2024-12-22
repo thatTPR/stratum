@@ -1,7 +1,15 @@
 #pragma once
 #include "nodes_editor.hpp"
+#include <acqres/vg2.hpp>
 
+#define MEMBER(type,member) STRCT_MEMBER(type,member) STRCT_REF(type,member)
+#define NODE(type )
+#define NODE(type, members, ...) NODE(type, ) NODE(member) ONE(NODE,__VA_ARGS__)  // TODO make work for all maybe 
+class node_vg {
+       // Every node defines this;
+    typedef vgv (*func)(glm::dvec2 ,shape_at , std::string name,g,polyline,rect,ellipse,path,textpath,uvec2) ;
 
+};
 class node_expression : public dyn_node, public w_code {
     public:
     #define MAX_EXPR_SIZE 256
