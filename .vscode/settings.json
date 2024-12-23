@@ -151,7 +151,8 @@
         "d": "cpp",
         "g": "cpp",
         "vector_int2.hpp": "c",
-        "vector_bool2.hpp": "c"
+        "vector_bool2.hpp": "c",
+        "*.inc": "cpp"
     },
     "svg.preview.background": "custom"
 }

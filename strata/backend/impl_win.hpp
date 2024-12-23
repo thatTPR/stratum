@@ -1,10 +1,10 @@
 #include <strata/backend/impl.hpp>
-#include <Windows.h>
-#ifdef STA_IMPL_VK
-#define VK_USE_PLATFORM_WIN32_KHR
+#include <windows.h>
+#ifdef STRATA_IMPL_VK
 #include <vk/vulkan.h>
+#define VK_USE_PLATFORM_WIN32_KHR
 #endif
-#ifdef STA_IMPL_DX
+#ifdef STRATA_IMPL_DX
 #ifdef D3D12
 #include <d3d12.h>
 #elifdef D3D11
@@ -12,36 +12,20 @@
 #endif
 #include <dxgi.h>
 #endif
-namespace win_events {
-    using events::event;
-    using events::event_filter;
-    using events::event_main;
-    using MSG=UINT;
-    using PARAM = LPARAM;
-    int get_dev_index(HANDLE deviceHandle) {
-    // Query the size of the device info
-    UINT size = 0;
-    GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICENAME, nullptr, &size);
-    if (size > 0) {
-        std::vector<char> deviceName(size);
-        if (GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICENAME, deviceName.data(), &size) > 0) {
-            std::cout << "Device Name: " << deviceName.data() << std::endl;
-        };
-    };
-    RID_DEVICE_INFO deviceInfo = {};
-    deviceInfo.cbSize = sizeof(RID_DEVICE_INFO);
-    size = sizeof(RID_DEVICE_INFO);
-    GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICEINFO, &deviceInfo, &size) 
-    return (int)deviceInfo.mouse.dwId << std::endl;
+#ifdef STRATA_IMPL_GL
+#include <gl/gl.h>
+#endif
 
-};
+namespace win_events {
+    // using events::event;
+    // using events::event_filter;
+    // using events::event_main;
+    #ifdef STRATA_CAPABILTY_MOUSE
     class MOUSE                   :public events::MOUSE                   { 
         virtual bool get_state(short int bt){
             return 
         };
-        virtual  handle(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
-             switch (this->mMsg) {
-                case WM_INPUT: {
+        void _handleMulti( WPARAM wParam, LPARAM lParam){
             UINT dataSize;
             GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dataSize, sizeof(RAWINPUTHEADER));
 
@@ -50,8 +34,8 @@ namespace win_events {
                 int id = get_dev_index(raw->header.hDevice);
                 if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, raw, &dataSize, sizeof(RAWINPUTHEADER)) == dataSize) {
                     if (raw->header.dwType == RIM_TYPEMOUSE) {
-                        ivec2 s;
-                    s[0]= (int)raw->data.mouse.lLastX;s[1]= (int)raw->data.mouse.lLastY;
+                        glm::ivec2 s;
+                    s.x= (int)raw->data.mouse.lLastX;s.y= (int)raw->data.mouse.lLastY;
                     this->move_cb(mouse_move( s ,id); 
                     RAWMOUSE mouse = raw->data.mouse;
                         if (mouse.usButtonFlags & RI_MOUSE_WHEEL) {int wheel = static_cast<int>(mouse.usButtonData); this->wheel_cb(wheel,id);}
@@ -70,62 +54,189 @@ namespace win_events {
                     };
                 };
                 free(raw);
-                return 0;
-            };
+                return true;
+            }; return false;
+        };
+        bool handleMulti( UINT mMsg, WPARAM wParam, LPARAM lParam ){
+            switch (mMsg) {
+                case WM_INPUT: {return this->_handleMulti(wParam, lParam) ; }
+                return false;
+    
+        };
+        bool handle(UINT mMsg, WPARAM wParam, LPARAM lParam ){
+             switch (mMsg) {
+              
             return 0;
         };
-        case WM_LBUTTONDOWN   :{this->down_cb(mouse_down(0));return 1;};
-        case WM_LBUTTONUP     :{this->up_cb(mouse_up(0));return 1;}
+        case WM_LBUTTONDOWN   :{this->down_cb(mouse_down(0));return;};
+        case WM_LBUTTONUP     :{this->up_cb(mouse_up(0));return;}
         case WM_LBUTTONDBLCLK :{this->dbclick_cb(db_click(0));};
-        case WM_RBUTTONDOWN   :{this->down_cb(mouse_down(1));return 1;};
-        case WM_RBUTTONUP     :{this->down_cb(mouse_up(1));return 1;}
+        case WM_RBUTTONDOWN   :{this->down_cb(mouse_down(1));return;};
+        case WM_RBUTTONUP     :{this->down_cb(mouse_up(1));return;}
         case WM_RBUTTONDBLCLK :{this->dbclick_cb(dbclick(1));return 1};
         case WM_MBUTTONDOWN   :{this->down_cb(mouse_down(3));return 1};
         case WM_MBUTTONUP     :{this->down_cb(mouse_up(3));return 1};
         case WM_MBUTTONDBLCLK :{this->down_cb(dbclick(3));return 1};
         case WM_XBUTTONUP: {
-            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) {this->last_up+=mouse_up(4);            }
-            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON2) {this->last_up+=mouse_up(5);}
-            return 1;
+            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) {this->up_cb(4);            }
+            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON2) {this->up_cb(5);}
+            return;
         };
         case WM_XBUTTONDOWN: {
-            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) {this->last_up=mouse_down(4);};
-            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON2) {this->last_up=mouse_down(5);};
-            return 1;
+            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) {this->down_cb(4);};
+            if (GET_XBUTTON_WPARAM(wParam) == XBUTTON2) {this->down_cb(5);};
+            return;
         };
         
         case WM_MOUSEMOVE: {
-            ivec2 s;
-            s[0]=(int)GET_X_LPARAM(lParam);s[1]=(int)GET_Y_LPARAM(lParam)
-            this->last_move+= mouse_move( s );
-            return 1;
+            this->move_cb( mouse_move((int)GET_X_LPARAM(lParam),(int)GET_Y_LPARAM(lParam)) );
+            return;
         };
        case WM_MOUSEWHEEL: {
             int delta = GET_WHEEL_DELTA_WPARAM(wParam); // Motion delta
-            this->last_wheel+= mouse_wheel(delta); return 1;};
+            this->wheel_cb( mouse_wheel(delta)); return;};
+          case WM_INPUT: {return this->_handleMulti( WPARAM wParam, LPARAM lParam)}
+            };
     };
     return -1;
     };
         virtual void _init(){
             
         };
-    };         
+        glm::vec2 Pos()(){
+            POINT cursorPos;
+            GetCursorPos(&cursorPos); glm::vec2(cursorPos.x,cursorPos.y);
+        };
+        glm::vec2 WinPos() override{
+
+        };
+    };      
+    #endif
+    #ifdef STRATA_CAPABILTY_KEY   
     class KEY                     :public events::KEY                     {
-        virtual void init();
+        virtual void init(){return;};  CALLBACK
+        bool handle( UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+        case WM_KEYDOWN: {int key = (int)wParam;this->down_cb(key);return true;};
+        case WM_KEYUP : {int key = (int)wParam; this->up_cb(key);return true;};
+        };
+        return false;
     };
+};
+    };
+    #endif
+    // #include <dinput.h> // TODO maybe
+    // #include <xinput.h>
+#ifdef STRATA_CAPABILITY_JOY
+#include <joystickapi.h>
     class JOY                     :public events::JOY                     {
+
     virtual void init();
+    virtual int num(){this->num=joyGetNumDevs();return this->num;};
+
+  /*  joycap getCap(int index){
+  LPJOYCAPS pj;      
+        joyGetDevCaps(index,&pj,sizeof(pj))};
+*/
+     virtual int get_btn_state(int btn=-1 , int index=0;);
+    virtual int get_axis_state(int axis=-1 , int index=0;);
+    virtual int get_state(int key=-1 , int index=0;);
+    virtual int get_hat_state(int hatpos=-1 , int index=0;); // usually 8 starting n;
+
+    void init(HWND hwnd){
+        this->num();
+      for(int i=0; i <this->num;i++){
+      joySetCapture( hwnd,  i,this->period,  true);
+      };
     };
+    void end(){
+        for(int i=0;i<this->num;i++){
+            joyReleaseCapture(i);
+        };
+    };  
+
+    bool handle(){
+    for(int i = 0 ;i < this->num;i++){
+        if (joyGetPos(JOYSTICKID1, &joyInfo) == JOYERR_NOERROR) {
+                           this->axis_cb(glm::ivec2(joyInfo.wXpos,joyInfo.wYpos);
+                            for(int j =0 ;j<maxbtn ; j++)
+                                if(joyInfo.wButtons &( j<<1 )){
+                                    this->press_cb( j ,i);};
+                           };};
+    };
+    
+    };
+    #endif
+    #ifdef STRATA_CAPABILITY_CONT
+    #ifndef XINPUT
+    #include <Xinput.h>
+    #endif
     class CONT                  : public events::CONT {
+        void num(){
 
-    };
-    class TOUCH                   :public events::TOUCH                   { }         
-    class INT              :public events::INT            {
-    virtual void init();
-    }              
-    class UI            : public events::UI{
+        };
+        void init(){
 
+        };
+        bool handle(int index=0){
+ XINPUT_STATE state;
+    ZeroMemory(&state, sizeof(XINPUT_STATE));
+
+    // Get the state of the controller
+    DWORD result = XInputGetState(index, &state);
+    if (result == ERROR_SUCCESS) {
+        this->trig_cb(CONT_trig( (int)state.Gamepad.bLeftTrigger,(int)state.Gamepad.bRightTrigger) , index);
+             WORD buttons = state.Gamepad.wButtons;
+             if(buttons & XINPUT_GAMEPAD_DPAD_UP)       {this->dpad_cb(0,index);}
+             if(buttons & XINPUT_GAMEPAD_DPAD_DOWN)     {this->dpad_cb(1,index);}
+             if(buttons & XINPUT_GAMEPAD_DPAD_LEFT)     {this->dpad_cb(2,index);}
+             if(buttons & XINPUT_GAMEPAD_DPAD_RIGHT)    {this->dpad_cb(3,index);}
+             if(buttons & XINPUT_GAMEPAD_A)             {this->press_cb(0,index)}
+             if(buttons & XINPUT_GAMEPAD_B)             {this->press_cb(1,index)}
+             if(buttons & XINPUT_GAMEPAD_X)             {this->press_cb(2,index)}
+             if(buttons & XINPUT_GAMEPAD_Y)             {this->press_cb(3,index)}
+             if(buttons & XINPUT_GAMEPAD_LEFT_THUMB)    {this->press_sb(4,index)}
+             if(buttons & XINPUT_GAMEPAD_RIGHT_THUMB)   {this->press_sb(5,index)}
+             if(buttons & XINPUT_GAMEPAD_LEFT_SHOULDER) {this->press_sb(6,index)}
+             if(buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER){this->press_sb(7,index)}
+             if(buttons & XINPUT_GAMEPAD_START)         {this->press_cb(8,index)}
+             if(buttons & XINPUT_GAMEPAD_BACK)          {this->press_cb(9,index)}
+        // Read thumbstick positions
+         this->laxis_cb(CONT_axis(state.Gamepad.sThumbLX,state.Gamepad.sThumbLY)); 
+         this->raxis_cb(CONT_axis(state.Gamepad.sThumbRX,state.Gamepad.sThumbRY)); 
+         return true;        
+        };
     };
+    class TOUCH                   :public events::TOUCH                   {
+         
+         void init(HWND hwnd){RegisterTouchWindow(hwnd, TWF_WANTPALM);};
+         void end(HWND hwnd){UnregisterTouchWindow (hwnd);};
+         void handle( UINT uMsg, WPARAM wParam, LPARAM lParam){
+         switch (uMsg) {
+            case WM_TOUCH: {
+            UINT cInputs = LOWORD(wParam);
+            TOUCHINPUT touchInputs[10]; // Support up to 10 simultaneous touches
+
+            if (GetTouchInputInfo((HTOUCHINPUT)lParam, cInputs, touchInputs, sizeof(TOUCHINPUT))) {
+                for (UINT i = 0; i < cInputs; i++) {
+                    TOUCHINPUT ti = touchInputs[i];
+                    if (ti.dwFlags & TOUCHEVENTF_DOWN) {
+                        down_cb(touch_tap(ti.x,ti.y));
+                    } else if (ti.dwFlags & TOUCHEVENTF_UP) {
+                        up_cb(touch_tap(ti.x,ti.y));
+                    } else if (ti.dwFlags & TOUCHEVENTF_MOVE) {
+                        move_cb(touch_tap(ti.x,ti.y));
+                    };
+                 CloseTouchInputHandle((HTOUCHINPUT)lParam);   
+                }
+            };
+
+            return 0;
+        }
+         };
+         
+     }         
+   
     class DISPLAY   : public events::UI {
         bool gotten;
 //         typedef struct _DISPLAY_DEVICEW {
@@ -136,19 +247,19 @@ namespace win_events {
 //     WCHAR  DeviceID[128];
 //     WCHAR  DeviceKey[128];
 // } DISPLAY_DEVICEW, *PDISPLAY_DEVICEW, *LPDISPLAY_DEVICEW;
-    ivec3 get_display_data(size_t pos=0)final {
+    glm::ivec3 get_display_data(uint pos=0)final {
         DISPLAY_DEVICE displayDevice;
         displayDevice.cb = sizeof(DISPLAY_DEVICE);
-        ivec3 res;
+        glm::ivec3 res;
     // Enumerate the monitor by index
         if (EnumDisplayDevices(NULL, monitorIndex, &displayDevice, 0)) {
         DEVMODE devMode;
         devMode.dmSize = sizeof(DEVMODE);
         // Get the current display settings for this monitor
         if (EnumDisplaySettings(displayDevice.DeviceName, ENUM_CURRENT_SETTINGS, &devMode)) {
-             res[0] = devMode.dmPelsWidht;
-             res[1] = devMode.dmPelsHeight;
-             res[2]=devMode.dmDisplayFrequency ; this->disp[pos] = res; return res;
+             res.x = devMode.dmPelsWidht;
+             res.y = devMode.dmPelsHeight;
+             res.z=devMode.dmDisplayFrequency ; this->disp[pos] = res; return res;
         } else {
             std::cerr << "  Failed to retrieve display settings." << std::endl;
         }
@@ -157,7 +268,7 @@ namespace win_events {
     }
         
     }
-        ivec3 get_monitor_data(size_t pos=0) final {
+        glm::ivec3 get_monitor_data(uint pos=0) final {
  MONITORINFOEX monitorInfo;
     monitorInfo.cbSize = sizeof(MONITORINFOEX);
 
@@ -169,28 +280,47 @@ namespace win_events {
         int widthMM = GetDeviceCaps(hdcMonitor, HORZSIZE);
         int heightMM = GetDeviceCaps(hdcMonitor, VERTSIZE);
         int hz = GetDeviceCaps(hdcMonitor,VREFRESH);
-        return ivec4(widthMM,heightMM);
+        return glm::ivec4(widthMM,heightMM);
         DeleteDC(hdcMonitor);
-        this->mon[pos] = ivec3(widthMM,heightMM,hz);
+        this->mon[pos] = glm::ivec3(widthMM,heightMM,hz);
         return this->mon[pos];
     };
-    else std::cerr<<"Could not get_monitor_data(size_t pos= "<<pos<<")"; 
+    else std::cerr<<"Could not get_monitor_data(uint pos= "<<pos<<")"; 
     delete monitorInfo;
     };
-    int get_num_monitors(){
-        this->nummon = GetSystemMonitors(SMCMONITORS);
-    };
+    int Num(){this->num = GetSystemMonitors(SMCMONITORS);};
     void get_all(){
         this->get_num_monitors();
         this->disp.clear();
         this->mon.clear();
-        for(size_t i =0; i <this->nummon;i++){
+        for(uint i =0; i <this->nummon;i++){
             this->get_display_data(i);
             this->get_monitor_data(i);
         };
     };
+    void handle();
+    bool handle(UINT uMsg, WPARAM wParam, LPARAM lParam){
+        switch (uMsg) {
+        case WM_DISPLAYCHANGE: {
+            this->change_cb(LOWORD(lParam),HIWORD(lParam),(int)wParam);return true;
+        };
+        case WM_DEVICECHANGE: {
+            if (wParam == DBT_DEVICEARRIVAL) {this->conn_cb(0);
+            } else if (wParam == DBT_DEVICEREMOVECOMPLETE) {
+                this->conn_cb(0,false)
+            }
+            return true;
+        };
+        case WM_SETTINGCHANGE: {
+            if (lParam) {
+                std::wstring settingName(reinterpret_cast<LPCWSTR>(lParam));
+                std::wcout << L"System setting changed: " << settingName << std::endl;
+            }
+            return true;
+        };
+    };
     
-    void _init()final{
+    void init()final{
         this->get_all();
     // Set callback to new monitor
     };
@@ -253,8 +383,8 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
     using HIDE = strate_env::HIDE; 
     using NORMAL = strate_env::NORMAL;
     HWND win;
-    vect<HWND> wins ;
-    vect<ivec4> wind;
+    std::vector<HWND> wins ;
+    vect<glm::ivec4> wind;
     vect<int> state; 
     
     LRESULT void handle_win(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
@@ -286,31 +416,149 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
     };
     return 0;
     };
-    void handle((HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+    evq<long , MAXPOLL> last;
+    LRESULT CALLBACK WindowProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
-        this->hanlde_win(hwnd, mMsg, wParam,  lParam);
-        if (sMOUSE.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
-        if (sKEY.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
-        if (sJOY.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
-        if (sCONT.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
-        if (sTOUCH.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
-        if (sSENSOR.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
-        /*
-        if (sINT.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
-        if (sUI.handle(hwnd, mMsg, wParam,  lParam )!=0){return;};
-        if (sAUDIO.handle(hwnd, mMsg, wParam,  lParam )!=0){return;}; */
+#ifdef STRATA_CAPABILTY_MOUSE
+if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+#ifdef STRATA_CAPABILTY_KEY
+if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAPABILTY_JOY
+if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#endif
+        #ifdef STRATA_CAPABILTY_CONT
+if(s.CONT.handle()!=0){this->last.push(5);return 5;};
+#endif
+        #ifdef STRATA_CAPABILTY_TOUCH
+if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+        #ifdef STRATA_CAPABILTY_SENSOR
+if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
+#endif
+        #ifdef STRATA_CAPABILTY_AUDIO
+if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
-    void handle_extr(){
+    LRESULT CALLBACK KeyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+#ifdef STRATA_CAPABILTY_KEY
+if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAPABILTY_MOUSE
+if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+#ifdef STRATA_CAPABILTY_JOY
+if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#endif
+        #ifdef STRATA_CAPABILTY_CONT
+if(s.CONT.handle()!=0){this->last.push(5);return 5;};
+#endif
+        #ifdef STRATA_CAPABILTY_TOUCH
+if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+        #ifdef STRATA_CAPABILTY_SENSOR
+if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
+#endif
+        #ifdef STRATA_CAPABILTY_AUDIO
+if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
+    };
 
+    LRESULT CALLBACK JoyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+#ifdef STRATA_CAPABILTY_JOY
+if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#endif
+#ifdef STRATA_CAPABILTY_KEY
+if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAPABILTY_MOUSE
+if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+        #ifdef STRATA_CAPABILTY_CONT
+if(s.CONT.handle()!=0){this->last.push(5);return 5;};
+#endif
+        #ifdef STRATA_CAPABILTY_TOUCH
+if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+        #ifdef STRATA_CAPABILTY_SENSOR
+if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
+#endif
+        #ifdef STRATA_CAPABILTY_AUDIO
+if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
+
+    LRESULT CALLBACK ContProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+        #ifdef STRATA_CAPABILTY_CONT
+if(s.CONT.handle()!=0){this->last.push(5);return 5;};
+#endif
+#ifdef STRATA_CAPABILTY_KEY
+if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAPABILTY_MOUSE
+if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+#ifdef STRATA_CAPABILTY_JOY
+if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#endif
+        #ifdef STRATA_CAPABILTY_TOUCH
+if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+        #ifdef STRATA_CAPABILTY_SENSOR
+if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
+#endif
+        #ifdef STRATA_CAPABILTY_AUDIO
+if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
+    };
+     LRESULT CALLBACK TouchProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+        #ifdef STRATA_CAPABILTY_TOUCH
+if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+#ifdef STRATA_CAPABILTY_KEY
+if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAPABILTY_MOUSE
+if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+#ifdef STRATA_CAPABILTY_JOY
+if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#endif
+        #ifdef STRATA_CAPABILTY_CONT
+if(s.CONT.handle()!=0){this->last.push(5);return 5;};
+#endif
+        #ifdef STRATA_CAPABILTY_SENSOR
+if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
+#endif
+        #ifdef STRATA_CAPABILTY_AUDIO
+if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
+    };
+   
     MSG msg ;
-    void handle() 
-        GetMessage(&(this->msg), nullptr, 0, 0));
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+    bool _handle() 
+        while(GetMessage(&(this->msg), nullptr, 0, 0)) {
+        TranslateMessage(&(this->msg));
+        DispatchMessage(&(this->msg));
     };
-
-    HWND create_win (ivec2 size,ivec2 pos,HWND parent=NULL,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,char CLASS_NAME[]="DefaultName" ,std::string text=NULL) override {
+    };
+    void changeCb(HWND hwnd , LRESULT CALLBACK (*WindowProc)(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam )){SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WindowProc );};
+    void changePrMouse(uint pos=0){this->changCb(this->wins[0],this->WindowProc;)};
+    void changePrKey(uint pos=0){this->changCb(this->wins[0],this->KeyProc;)};
+    void changePrCont(uint pos=0){this->changCb(this->wins[0],this->ContProc;)};
+    void changePrJoy(uint pos=0){this->changCb(this->wins[0],this->JoyProc;)};
+    void changePrTouch(uint pos=0){this->changCb(this->wins[0],this->TouchProc;)};
+    void create_win (glm::ivec2 size,glm::ivec2 pos,HWND parent=NULL,char CLASS_NAME[]="DefaultName" ,std::string text=NULL,int8_t flag) override {
         // Register class
 
     WNDCLASS wc = {};
@@ -320,42 +568,36 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
 
     if (!RegisterClass(&wc)) {
         std::cerr << "Failed to register window class!" << std::endl;
-        return 1;
-    }
-
-        DWORD style = (transparent?WS_EX_TRANSPARENT:0) | (always_on_top?WS_EX_TOPMOST:0)|  (tool?WS_EX_TOOLWINDOW:0) | (custom_tabbar?0:WS_CAPTION) ; 
+        return -1;
+    };
+        DWORD style = (flag&_transparent?WS_EX_TRANSPARENT:0) | (flag&_always_on_top?WS_EX_TOPMOST:0)|  (flag&_tool?WS_EX_TOOLWINDOW:0) | (flag&_custom_tabbar?0:WS_CAPTION) ; 
         HWND winh = CreateWindowEx(
-            style,                              // Optional window styles.
-            CLASS_NAME,                     // Window class
-            text,    // Window text
-            WS_OVERLAPPEDWINDOW,            // Window style
-
-            // Size and position
-            pox[0]!=0?pos[0]:CW_USEDEFAULT, pos[1]!=0?pos[1]:CW_USEDEFAULT,size[0]!=0?size[1]:CW_USEDEFAULT, size[0]!=0?size[1]:CW_USEDEFAULT,
+            style,CLASS_NAME,text,WS_OVERLAPPEDWINDOW,// Size and position
+            pox.x!=0?pos.x:CW_USEDEFAULT, pos.y!=0?pos.y:CW_USEDEFAULT,size.x!=0?size.y:CW_USEDEFAULT, size.x!=0?size.y:CW_USEDEFAULT,
 
             parent,       // Parent window    
             NULL,       // Menu
             hInstance,  // Instance handle
             NULL        // Additional application data
         );
-        this->wins.push(winh);
-        return winh;
+        this->wins.push_back(winh);
+        
     };
     
-     ivec2 get_pos(size_t pos){WINDOWPLACEMENT wp={ sizeof(WINDOWPLACEMENT) };GetWindowPlacement(this->wins[pos],&wp);ivec2 s ; s[0] =wp.rcNormalPosition.left;s[1] =wp.rcNormalPosition.top; return s};
-     ivec2 get_size(size_t pos){WINDOWPLACEMENT wp={ sizeof(WINDOWPLACEMENT) };GetWindowPlacement(this->wins[pos],&wp);ivec2 s ; s[0] =wp.rcNormalPosition.right-wp.rcNormalPosition.left;s[1] =wp.rcNormalPosition.top -wp.rcNormalPosition.bottom; return s;};
-     ivec4 get_data_all(size_t pos){WINDOWPLACEMENT wp={ sizeof(WINDOWPLACEMENT) };GetWindowPlacement(this->wins[pos],&wp);ivec4 s ;s[0] =wp.rcNormalPosition.left;s[1] =wp.rcNormalPosition.top; s[2] =wp.rcNormalPosition.right-wp.rcNormalPosition.left;s[3] =wp.rcNormalPosition.top -wp.rcNormalPosition.bottom;this->wind[pos]=s;return s;};
-     void resize_win(size_t pos,ivec2 addpos){ ivec4 s = get_all(); BOOL MoveWindow(this->wins[pos],s[0],s[1],s[2]+addsize[0],s[3]+addsize[1],false); };
-     void move_win(size_t pos,ivec2 addsize){ivec4 s = get_all(); BOOL MoveWindow(this->wins[pos],s[0]+addpos[0],s[1]+addpos[1],s[2],s[3],false); };
-     void minimize_win(size_t pos)final{ChangeWindowState(this->wind[pos], SW_MINIMIZE);};
-     void maximize_win{size_t pos}final{ChangeWindowState(this->wind[pos], SW_MAXIMIZE);};
-     void restore_win{size_t pos}final{ChangeWindowState(this->wind[pos], SW_RESTORE);};
-     void hide_win(size_t pos)final{ChangeWIndowState(this->wind[pos],SW_HIDE);};
+     glm::ivec2 winpos(uint pos){WINDOWPLACEMENT wp={ sizeof(WINDOWPLACEMENT) };GetWindowPlacement(this->wins[pos],&wp); return glm::ivec2(wp.rcNormalPosition.left,wp.rcNormalPosition.top)};
+     glm::ivec2 winsize(uint pos){WINDOWPLACEMENT wp={ sizeof(WINDOWPLACEMENT) };GetWindowPlacement(this->wins[pos],&wp);return glm::ivec2(wp.rcNormalPosition.right-wp.rcNormalPosition.left ,wp.rcNormalPosition.top -wp.rcNormalPosition.bottom); };
+     glm::ivec4 wininfo(uint pos){WINDOWPLACEMENT wp={ sizeof(WINDOWPLACEMENT) };GetWindowPlacement(this->wins[pos],&wp);this->wind[pos]= glm::ivec4(wp.rcNormalPosition.left,wp.rcNormalPosition.top, wp.rcNormalPosition.right-wp.rcNormalPosition.left ,wp.rcNormalPosition.top -wp.rcNormalPosition.bottom);return this->wind[pos];};
+     void winresize(uint pos,glm::ivec2 addpos){ glm::ivec4 s = get_all(); BOOL MoveWindow(this->wins[pos],s.x,s.y,s.z+addsize[0],s.w+addsize[1],false); };
+     void winmove(uint pos,glm::ivec2 addsize){glm::ivec4 s = get_all(); BOOL MoveWindow(this->wins[pos],s.x+addpos.x,s.y+addpos.y,s.z,s.w,false); };
+     void winminimize(uint pos)final{ChangeWindowState(this->wind[pos], SW_MINIMIZE);};
+     void winmaximize{uint pos}final{ChangeWindowState(this->wind[pos], SW_MAXIMIZE);};
+     void winrestore{uint pos}final{ChangeWindowState(this->wind[pos], SW_RESTORE);};
+     void winhide(uint pos)final{ChangeWIndowState(this->wind[pos],SW_HIDE);};
 
-     bool is_min(size_t pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_MINIMIZE |SW_SHOWMINIMIZED))?true:false;};
-     bool is_hidden(size_t pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd==SW_HIDE)?true:false;};
-     bool is_normal(size_t pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_RESTORE|SW_SHOW)?true:false;};
-     bool is_max(size_t pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&SW_SHOWMAXIMIZED)?true:false;};
+     bool is_min(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_MINIMIZE |SW_SHOWMINIMIZED))?true:false;};
+     bool is_hidden(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd==SW_HIDE)?true:false;};
+     bool is_normal(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_RESTORE|SW_SHOW)?true:false;};
+     bool is_max(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&SW_SHOWMAXIMIZED)?true:false;};
      bool setWindow(HWND w, vec4 pos_w_h, int state){
     WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT);
      wp.rcNormaplPosition.left=pos_w_h[0]; wp.rcNormaplPosition.top=pos_w_h[1];
@@ -363,28 +605,15 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
      wp.showCmd =  ((state&MIN)?SW_SHOWMINIMIZED:0)|((state&MAX)?SW_SHOWMAXIMIZED:0)|((state&HIDDEN)?SW_HIDE:0)|((state&NORMAL)?SW_SHOW:0);
     return  SetWindowPlacement(w,const WINDOWPLACEMENT *wp);
     };
-    void close_win(size_t pos){ SendMessage(this->wins[pos], WM_CLOSE, 0, 0);this->wins.erase(pos); if(pos==0) {this->close_app_win_func();};}
+    void closeWin(HWND hwnd){SendMessage(hwnd, WM_CLOSE, 0, 0);};
+    void close_win(uint pos){ SendMessage(this->wins[pos], WM_CLOSE, 0, 0);this->wins.erase(pos);this->wins.shrink_to_fit(); ;};
+    void close_app(){for(HWND hwnd : this->wins){this->closeWin(hwnd)}};
     void sleep(int mstime=2000){Sleep(mstime);}
-    virtual void _handle(){
+    virtual void _init(){return;}
 
-    };
     
-    virtual void _init(){// Set callbacks
-    return;
-    }
-    
-
-};
-};
-class win_env : public strata_env<HMODULE,HINSTANCE>{
- 
-    public:
-    
-    void init(int flags){
-
-    };
+    #ifdef STRATA_IMPL_VK
     void initVk(HWND win, VkInstance inst, VKSurfaceKHR* surface, HINSTANCE hInstance=GetModuleHandle(NULL)){ 
-        #ifdef STA_IMPL_VK
     VkWin32SurfaceCreateInfoKHR info;
     info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     info.hinstance = hInstance;
@@ -392,60 +621,70 @@ class win_env : public strata_env<HMODULE,HINSTANCE>{
          if (vkCreateWin32SurfaceKHR(vkInstance, &info, nullptr, surface) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Vulkan surface.");
     }
-        #endif
+    #endif
     };
+    #ifdef STRATA_IMPL_DX
+     #include 
      void initDx(){
-        #ifdef STA_IMPL_DX
+
     };
+    #endif
+    #ifdef STRATA_IMPL_GL
+    void initGl(){
 
+    };
+    #endif
     void load_shared(fs::path p){HMODULE s= LoadLibrary(p.name(););};
+    void unload_shared(HMODULE m){FreeLibrary(m);};
+    func get_func(const char* funcname; HMODULE m){return (func)GetProcAddress(m,name); };
+// #define WATCH_DIR_TREE true
+// // #include <fileapi.h>
 
-#define WATCH_DIR_TREE true
-#include <fileapi.h>
-
-     fswatch(std::wstring dir);
-    void fswatch(std::vector<std::wstring> dirs , std::shared_ptr<std::vector<std::wstring>> changes;){ 
-        std::vector<HANDLE> dirhwnds;
-        for(std::wstring t : dirs){
-            HANDLE  dir = FindFirstChangeNotification(
-            directory.c_str(),
-            WATCH_DIR_TREE ,
-            FILE_NOTIFIY_CHANGE_LAST_WRITE
-    );
-    if (dir == INVALID_HANDLE_VALUE) {std::cerr << "Failed to open fs_watch " << GetLastError() << std::endl;return;}
-            else dirhwnds->push_back(dir);
-        };
+//      fswatch(std::wstring dir);
+//     void fswatch(std::vector<std::wstring> dirs , std::shared_ptr<std::vector<std::wstring>> changes;){ 
+//         std::vector<HANDLE> dirhwnds;
+//         for(std::wstring t : dirs){
+//             HANDLE  dir = FindFirstChangeNotification(
+//             directory.c_str(),
+//             WATCH_DIR_TREE ,
+//             FILE_NOTIFIY_CHANGE_LAST_WRITE
+//     );
+//     if (dir == INVALID_HANDLE_VALUE) {std::cerr << "Failed to open fs_watch " << GetLastError() << std::endl;return;}
+//             else dirhwnds->push_back(dir);
+//         };
         
 
-    char buffer[1024];
-    DWORD bytesReturned;
+//     char buffer[1024];
+//     DWORD bytesReturned;
 
-    while (true) {
-        if (ReadDirectoryChangesW(
-                dir,
-                buffer,
-                sizeof(buffer),
-                TRUE,
-                FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
-                FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE |
-                FILE_NOTIFY_CHANGE_LAST_WRITE,
-                &bytesReturned,
-                nullptr,
-                nullptr)) {
+//     while (true) {
+//         if (ReadDirectoryChangesW(
+//                 dir,
+//                 buffer,
+//                 sizeof(buffer),
+//                 TRUE,
+//                 FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
+//                 FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE |
+//                 FILE_NOTIFY_CHANGE_LAST_WRITE,
+//                 &bytesReturned,
+//                 nullptr,
+//                 nullptr)) {
 
-            FILE_NOTIFY_INFORMATION* info = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(buffer);
+//             FILE_NOTIFY_INFORMATION* info = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(buffer);
 
-            do {
-                std::wcout << L"File changed: " << std::wstring(info->FileName, info->FileNameLength / sizeof(wchar_t)) << std::endl;
-                info = info->NextEntryOffset ? reinterpret_cast<FILE_NOTIFY_INFORMATION*>(
-                        reinterpret_cast<BYTE*>(info) + info->NextEntryOffset) : nullptr;
-            } while (info);
-        }
-    }
+//             do {
+//                 std::wcout << L"File changed: " << std::wstring(info->FileName, info->FileNameLength / sizeof(wchar_t)) << std::endl;
+//                 info = info->NextEntryOffset ? reinterpret_cast<FILE_NOTIFY_INFORMATION*>(
+//                         reinterpret_cast<BYTE*>(info) + info->NextEntryOffset) : nullptr;
+//             } while (info);
+//         }
+//     }
 
-    CloseHandle(dir);
-    };
-    template <typename func>
-    func get_func(const char* funcname; HMODULE m){return (func)GetProcAddress(m,name); };
-    void unload_shared(HMODULE m){FreeLibrary(m);};
+    // CloseHandle(dir);
+    // };
+  
+
 };
+
+    
+

@@ -43,21 +43,23 @@ class strata_impl {
     std::vector<device> devices;
     
 
-    std::vector<shaderModule*> all_modules;
-    std::vector<vertModule*> vert_modules;
-    std::vector<fragModule*> frag_modules;
-    std::vector<geomModule*> geom_modules;
-    std::vector<tescModule*> tesc_modules;
-    std::vector<teseModule*> tese_modules;
-    std::vector<compModule*> comp_modules;
-    std::vector<taskModule*> task_modules;
-    std::vector<meshModule*> mesh_modules;
-    std::vector<rgenModule*> rgen_modules;
-    std::vector<rintModule*> rint_modules;
-    std::vector<rahitModule*> rahit_modules;
-    std::vector<rchitModule*> rchit_modules;
-    std::vector<rmissModule*> rmiss_modules;
-    std::vector<rcallModule*> rcall_modules;
+    std::vector<shaderModule> all_modules;
+    std::vector<vertModule> vert_modules;
+    std::vector<fragModule> frag_modules;
+    std::vector<geomModule> geom_modules;
+    std::vector<tescModule> tesc_modules;
+    std::vector<teseModule> tese_modules;
+    std::vector<compModule> comp_modules;
+    std::vector<taskModule> task_modules;
+    std::vector<meshModule> mesh_modules;
+    std::vector<rgenModule> rgen_modules;
+    std::vector<rintModule> rint_modules;
+    std::vector<rahitModule> rahit_modules;
+    std::vector<rchitModule> rchit_modules;
+    std::vector<rmissModule> rmiss_modules;
+    std::vector<rcallModule> rcall_modules;
+    
+virtual void createSwapChain();
 virtual void set_up_dev();
 virtual void create_fullscreen();
 virtual void updateUniform(device* dev, );

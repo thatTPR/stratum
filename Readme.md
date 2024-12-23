@@ -41,7 +41,6 @@ SMat - mathematics library
 SG
 
 
-
 ## Dir Structure
 ---assets
 |   |-images
@@ -85,3 +84,14 @@ SG
     [ ] dx
     [ ] gles
     [ ] customRendering lib ; 
+
+
+## Builing
+Requires:
+tinygltf 
+    stbimage
+    json
+glm
+vulkan
+directx
+emsdk

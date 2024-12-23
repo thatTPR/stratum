@@ -37,14 +37,36 @@ lowp int feMagic(inout dmat4 p){
 #define LINE 2
 
 struct atrib {
+    animateMotion animm[16];
+    animateTransform animt[16];
     dvec4 stroke;
     double stroke_width; // Relative to size
     dvec4 fill; // rgba 
     dmat4 gradient ; //x:col  y: dir z:
     dmat4 radialGradient; // xy center , zw theta=0
-    animateTransform animt;
-    animateMotion animm;
-    dmat4 fe;
+    int feSize;
+    dmat4 fe[16];
+};
+struct polyline {
+
+};
+struct ellipse {
+
+}
+struct rect {
+
+};
+struct path {
+
+};
+struct textpath {
+
+};
+struct g {
+
+};
+struct vg {
+
 };
 dvec2 ptpmagic(inout dvec2 p , lowp int g){  
     
@@ -59,9 +81,10 @@ layout(binding=0 )uniform  ;
 
 layout(binding=1) buffer t {
     
-    atrib at;
+    atrib at[16];
     dvec2 vgsize; // Size of image in port
     ivec2 imsize;
+    int ptsize ;
     dvec2 pts[];
 };
 layout(location=0) out image2D im;

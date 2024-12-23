@@ -390,8 +390,22 @@ struct im_shaderModule : ShaderModule {
     
 };
 
-
-
+/*
+shaderModule
+vertModule
+fragModule
+geomModule
+tescModule
+teseModule
+compModule
+taskModule
+meshModule
+rgenModule
+rintModule
+rahitModule
+rchitModule
+rmissModule
+rcallModule*/
 template <typename _ubo,typename _ssbo> 
 struct  all_shmod : ShaderModule<shader_type::all,_ubo,_ssbo>;
 template <typename _ubo,typename _ssbo> 

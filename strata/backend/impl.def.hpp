@@ -12,12 +12,15 @@ _mouse_wheelh=            7,
 _keyup=                   8,
 _keydown=                 9,
 _keypress=               10,
+_keycombo=               11,
+_dbclick=                12,
+
     _KEY=                    (_keyup|_keydown|_keypress),
-_joy_hat  =              12,
-_joy_axis=               13,
-_joy_up=                 14,
-_joy_down=               15,
-_joy_press=              16,
+_joy_hat  =              13,
+_joy_axis=               14,
+_joy_up=                 15,
+_joy_down=               16,
+_joy_press=              17,
     _JOY=                    (_joy_axis|_joy_up|_joy_down|_joy_press),
 _CONT_axis=        22,
 _CONT_up=          23,
@@ -31,61 +34,44 @@ _touch_gesture=          32,
 _touch_zoom=             33,
 _TOUCH=                  ( _touch_move|_touch_tap|_touch_gesture|_touch_zoom),
         _IDEV_ALL = _MOUSE | _KEY | _JOY | _CONT | _TOUCH ,
-_MOVE=              0x01000000,
-_ACC=               0x10000000,
-_motion=            0x01000010,
-_accmotion=         0x10000010,
-_rotate2d=          0x01000100,
-_translate2d=       0x01001000,
-_rotate3d=          0x01010000,
-_translate3d=       0x01100000,
-_accrotate2d=       0x10000100,
-_acctranslate2d=    0x10001000,
-_accrotate3d=       0x10010000,
-_acctranslate3d=    0x10100000,
-_INT_NAV=( _up|_down|_left|_right|_forward|_back),
-_INT_GAME=( _up|_down|_left|_right|_forward|_back|_accup|_accdown|_accleft|_accright|_accforward|_accback),
-_INT_SIM=( _yawleft|_yawright|_pitchdown|_pitchup|_accyawleft|_accyawright|_accpitchdown|_accpitchup| _rotate2d|_translate2d|_rotate3d|_translate3d|_accrotate2d|_acctranslate2d|_accrotate3d|_acctranslate3d),
-_INT=( INT_NAV|INT_GAME| INT_SIM  ),
-_enter=     228,
-_leave=     229,
-_focus=     230,
-_drag=      231,
-_dragstart= 232,
-_dragend=   233,
-_keycombo=  234,
-_dbclick=   235,
-_combo=     236,
-_text_in=   237,
-_text_edit= 238,
-_clipboard= 239,
-_play_audio=           252,    
-_play_audio_about_to=  253,     // For loading,
-_AUDIO= (play_audio |play_audio),
-_UI= (_enter|_leave|_focus|_drag|_dragstart|_dragend|_keycombo|_dbclick|_click|_combo|_text_in|_text_edit|_clipboard),
-_wake=        356,
-_sleep=       357,
-_min=         358,
-_max=         359,
-_hide=        360,
-_move=        361,
-_resize=      362,
-_fullscreen=  363,
-_close=       364,
-_display_conn=365,
-_display_power=366,
-_display_orient=367,
+_wake=        56,
+_sleep=       57,
+_min=         58,
+_max=         59,
+_hide=        60,
+_move=        61,
+_resize=      62,
+_fullscreen=  63,
+_close=       64,
+_display_conn=65,
+_display_power=66,
+_display_orient=67,
 _SYS=( _wake|_sleep|_min|_max|_move|_resize|_fullscreen|_close),
-_gyro   = 510,
-_accel  = 511,
-_mag    = 512,
-_baro   = 513,
-_humid  = 514,
-_mic    = 515,
-_pos    = 516,
-_lidar  = 517,
-_cam    = 518,
+_rec = 256,
+_play= 257,
+_AUDIO = (_rec | _play),
+_gyro   = 120,
+_accel  = 121,
+_mag    = 122,
+_baro   = 123,
+_humid  = 124,
+_mic    = 125,
+_pos    = 126,
+_lidar  = 127,
+_cam    = 128,
 _SENSOR= _gyro|_accel|_mag|_baro|_humid|_mic|_pos|_lidar|_cam
+};
+    static const std::map<int , std::string> ev_map = {
+{evs::_click,"click"},{evs::_mousedown,"mousedown"},{evs::_mouseup,"mouseup"},{evs::_mouseup,"mousepress"}{evs::_mouse_move,"mouse_move"},{evs::_mouse_wheel,"mouse_wheel"},{evs::_MOUSE,"MOUSE"},
+{evs::_keyup,"keyup"},{evs::_keydown,"keydown"},{evs::_keypress,"keypress"},{evs::_KEY,"KEY"},
+{evs::_joy_axis,"joy_axis"},{evs::_joy_up,"joy_up"},{evs::_joy_down,"joy_down"},{evs::_joy_press,"joy_press"},{evs::_JOY,"JOY"},
+{evs::_CONT_axis,"CONT_axis"},{evs::_CONT_up,"CONT_up"},{evs::_CONT_down,"CONT_down"},{evs::_CONT_press,"CONT_press"},{evs::_CONT,"CONT"},
+{evs::_touch_move,"touch_move"},{evs::_touch_tap,"touch_tap"},{evs::_touch_gesture,"touch_gesture"},{evs::_touch_zoom,"touch_zoom"},{evs::_TOUCH,"TOUCH"},
+{evs::_up,"up"},{evs::_down,"down"},{evs::_left,"left"},{evs::_right,"right"},{evs::_forward,"forward"},{evs::_back,"back"},{evs::_accup,"accup"},{evs::_accdown,"accdown"},{evs::_accleft,"accleft"},{evs::_accright,"accright"},{evs::_accforward,"accforward"},{evs::_accback,"accback"},{evs::_yawleft,"yawleft"},{evs::_yawright,"yawright"},{evs::_pitchdown,"pitchdown"},{evs::_pitchup,"pitchup"},{evs::_accyawleft,"accyawleft"},{evs::_accyawright,"accyawright"},{evs::_accpitchdown,"accpitchdown"},{evs::_accpitchup,"accpitchup"},{evs::_rotate2d,"rotate2d"},{evs::_translate2d,"translate2d"},{evs::_rotate3d,"rotate3d"},{evs::_translate3d,"translate3d"},{evs::_accrotate2d,"accrotate2d"},{evs::_acctranslate2d,"acctranslate2d"},{evs::_accrotate3d,"accrotate3d"},{evs::_acctranslate3d,"acctranslate3d"},{evs::_CONTROL},
+{evs::_play_audio,"play_audio"},{evs::_play_audio_about_to,"play_audio_about_to"},{evs::_AUDIO,"AUDIO"},
+{evs::_wake,"wake"},{evs::_sleep,"sleep"},{evs::_min,"min"},{evs::_max,"max"},{evs::_hide,"hide"},{evs::_move,"move"},{evs::_resize,"resize"},{evs::_fullscreen,"fullscreen"},{evs::_close,"close"},{evs::_SYS,"SYS"},
+{evs::_display_conn,"display_conn"},{evs::_display_power,"display_power"},{{evs::_display_orient,"display_orient"}},{evs::_DISPLAY,"DISPLAY"}
+
 };
 
 
@@ -180,15 +166,6 @@ _SENSOR= _gyro|_accel|_mag|_baro|_humid|_mic|_pos|_lidar|_cam
     using evsys_default=event_sys<evs::_DEFAULT>;
 
 
-using gyro  =  event<vec3,_gyro>;     
-using accel  = event<vec3,_accel>;      
-using mag  =   event<float,_mag>;    
-using baro  =  event<float,_baro>;     
-using humid  = event<float,_humid>;      
-using pos  =   event<float,_pos>;   
-using mic  =   event<vec<int>,_mic>;    
-using lidar  = event<mat<int> >,_lidar>;      
-using cam  =   event<,_cam>;    
-class SENSOR : event_sys<evs::_SENSOR> {
-    
 };
+#define STRATA_CAPABILTY_DISPLAY
+#define STRATA_CAPABILTY_KEY

@@ -1,8 +1,23 @@
 #pragma once
+/*
+Capablities
+SYS_MOUSE
+SYS_KEY
+SYS_JOY
+SYS_CONT
+SYS
+SYS_FSWATCH
+SYS_KEYCOMBO
+SYS_MOUSECOMBO
+SYS_JOY
+SYS_COMBO
+*/
+#include <glm.hpp>
 #include "impl.hpp"
 #include "implmain.hpp"
 #include <strata/petri/vects.hpp>
 #include <strata/petri/queue.hpp>
+#include <vector>
 #include <memory>
 #include <filesystem>
 #include <atomic>
@@ -95,26 +110,40 @@ return cpuf;
 
 namespace events {
 #include "impl.def.hpp"
+#define MAXPOLL 10
+template<typename T , int size>
+struct evq {
+    T[size] d;
+    int pos ;
+    int pos(){return this->pos;};
+    void clear(){this->pos=0;};
+    void push(T s){}
+    void operator+=(T s){if(pos==size-1){this->clear();return;};this->d[pos]=s;this->pos++;};
+    evq() {
 
-using click = event<int,_click>;    
-using dbclick = event<int,_dbclick>;
-using mousedown = event<int,_mousedown>;        
-using mouseup = event<int,_mouseup>;      
-using mouse_move = event<ivec2,_mouse_move>;//xy
-using mouse_wheel = event<int,_mouse_wheel>; //x       
-using mouse_wheelh = event<int,_mouse_wheelh>;
+    };
+};
+
+using click        = int        ;//,           _click   >;    
+using dbclick      = int        ;//,   _dbclick>;
+using mousedown    = int        ;//,   _mousedown>;        
+using mouseup      = int        ;//,   _mouseup>;      
+using mouse_move   = glm::ivec2 ;//,   _mouse_move>;//xy
+using mouse_wheel  = int        ;//,   _mouse_wheel>; //x       
+using mouse_wheelh = int        ;//,   _mouse_wheelh>;
 class MOUSE: public  event_sys<evs::_MOUSE> {
  public:
     
  const uint flag=_MOUSE;
-    arr<click, MAX_POLL>       last_click; 
-    arr<dbclick, MAX_POLL>     last_db_click;     
-    arr<mousedown, MAX_POLL>   last_down;          
-    arr<mouseup, MAX_POLL>     last_up;        
-    arr<mouse_move,MAX_POLL>  last_move;           
-    arr<mouse_wheel,MAX_POLL> last_wheel;     
-    arr<mouse_wheelh,MAX_POLL> last_wheelh;     
-    bool detect_combo(ivec2* s){
+    evq<click ,MAXPOLL>       last_click; 
+    evq<dbclick ,MAXPOLL>     last_db_click;     
+    evq<mousedown ,MAXPOLL>   last_down;          
+    evq<mouseup ,MAXPOLL>     last_up;        
+    evq<mouse_move,MAXPOLL>  last_move;           
+    evq<mouse_wheel,MAXPOLL> last_wheel;     
+    evq<mouse_wheelh,MAXPOLL> last_wheelh;     
+    void clear()final{this->last_click.clear();this->last_down.clear();this->last_up.clear();this->last_press.clear();this->last_move.clear();this->last_wheel.clear();}
+    bool detect_combo(glm::ivec2* s){
         bool x=false;bool y=false;
             for(int i = 0 ; i < this->last_down.pos();i++){
                 if(this->last_down[i]== s[j][0] ){
@@ -139,7 +168,7 @@ class MOUSE: public  event_sys<evs::_MOUSE> {
         };
         return false;
     };
-    int detect_combo(size_t size_combos ,ivec2* s){
+    int detect_combo(uint size_combos ,glm::ivec2* s){
 
         for(int j = 0 ; j < size_combos){
             if(detect_combo(s[j])){return j};
@@ -151,11 +180,10 @@ class MOUSE: public  event_sys<evs::_MOUSE> {
             if(i==this->last_down.data();){this->last_down[i].data=-1; break;}
         };
     };
-    void clear()final{this->last_click.clear();this->last_down.clear();this->last_up.clear();this->last_press.clear();this->last_move.clear();this->last_wheel.clear();}
-    virtual vec2 get_pos(){return this->last_move.data()};
+    virtual glm::vec2 get_pos(){return this->last_move.data()};
     virtual bool get_state(short int bt){return this->last_press.data==bt};
      void push_click(int click,int index=0) final {this->ev_main.push(mouse_move(click,index));}
-     void push_move(vec2 mv,int index=0) final {this->ev_main.push(mouse_move(mv,index));};
+     void push_move(glm::vec2 mv,int index=0) final {this->ev_main.push(mouse_move(mv,index));};
      void push_down(int down,int index=0) final {this->ev_main.push(mouse_down(down,index));};
      void push_up(int up,int index=0) final {this->ev_main.push(mouse_up(up,index));};
      void push_wheel(float wheel,int index=0) final {this->ev_main.push(mouse_wheel(wheel,index));};
@@ -168,19 +196,21 @@ class MOUSE: public  event_sys<evs::_MOUSE> {
      void push_wheelh(wheelh ev) final {this->ev_main.push(ev);};
 
      void click_cb(int click,int index=0) final {this->last_click+=mouse_move(click,index);}
-     void move_cb(vec2 mv,int index=0) final {this->last_move+=mouse_move(mv,index);};
+     void move_cb(glm::vec2 mv,int index=0) final {this->last_move+=mouse_move(mv,index);};
      void down_cb(int down,int index=0) final {this->last_down+=mouse_down(down,index);};
      void up_cb(int up,int index=0) final {up_check(up);this->last_up+=mouse_up(up,index);};
      void wheel_cb(float wheel,int index=0) final {this->last_wheel+=mouse_wheel(wheel,index);};
      void wheelh_cb(float wheel,int index=0) final {this->last_wheelh+=mouse_wheelh(wheel,index);};
-     void dbclick_cb(click ev) final {this->last_dbclick+=ev;}
+     void dbclick_cb(dbclick ev) final {this->last_dbclick+=ev;}
      void click_cb(click ev) final {this->last_click+=ev;}
      void move_cb(mouse_move ev) final {this->last_move+=ev;};
      void down_cb(mousedown ev) final {this->last_down+=ev;};
      void up_cb(mouseup ev) final { up_check(ev.data());this->last_up+=ev;};
      void wheel_cb(mouse_wheel ev) final {this->last_wheel+=ev;};
      void wheelh_cb(mouse_wheel ev) final {this->last_wheelh+=ev;};
-   
+    
+     glm::vec2 Pos(int index=0);
+     glm::vec2 WinPos();
     virtual void handle();
     virtual void _handle(){
         this->handle();
@@ -191,29 +221,43 @@ class MOUSE: public  event_sys<evs::_MOUSE> {
     };
    
 }; 
-using keyup = event<int,_keyup>; // x button, y index    
-using keydown = event<int,_keydown>; // x button, y index      
-using keypress = event<int,_keypress>; // x button, y index       
+using keyup = int,        ;// _keyup>; // x button, y index    
+using keydown = int,        ;// _keydown>; // x button, y index      
+using keypress = int         ;//,_keypress>; // x button, y index       
+using keycombo = glm::ivec4   ;//,_keycombo> ; //-1 is 
 class KEY : public event_sys<evs::_KEY> {
  public:
-  keyup    last_keyup;
-  keydown  last_keydown;
-  keypress last_keypress;
+    evq<keyup,MAXPOLL>    last_keyup;
+    evq<keydown,MAXPOLL>  last_keydown;
+    evq<keypress,MAXPOLL> last_keypress;
+    evq<keycombo,MAXPOLL>  last_keycombo;          
+
     
-    bool push_up(int key,int index) final {this->evmain.push(keyup(key,index));};
-    bool push_down(int key,int index) final {this->evmain.push(keydown(key,index));};    
-    bool push_press(int key,int index) final {this->evmain.push(keypress(key,index));};    
+    bool push_up(char key,int index) final {this->evmain.push(keyup(key,index));};
+    bool push_down(char key,int index) final {this->evmain.push(keydown(key,index));};    
+    bool push_press(char key,int index) final {this->evmain.push(keypress(key,index));};    
     bool push_up(up ev) final {this->evmain.push(ev);};
     bool push_down(down ev) final {this->evmain.push(ev);};    
     bool push_press(press ev) final {this->evmain.push(ev);};    
 
-    bool up_cb(int key,int index) final {this->last_keyup=push(keyup(key,index));};
-    bool down_cb(int key,int index) final {this->last_keydown=push(keydown(key,index));};    
-    bool press_cb(int key,int index) final {this->last_keypress=push(keypress(key,index));};    
+    bool up_cb(char key,int index) final {this->last_keyup.push(keyup(key,index));};
+    bool down_cb(char key,int index) final {this->last_keydown.push(keydown(key,index));};    
+    bool press_cb(char key,int index) final {this->last_keypress.push(keypress(key,index));};    
     bool up_cb(up ev) final {this->last_keyup.push(ev);};
     bool down_cb(down ev) final {this->last_keydown.push(ev);};    
     bool press_cb(press ev) final {this->last_keypress.push(ev);};    
+    
+    struct keyComboCom {
+        glm::ivec4 combo ;
+        void (*func)();
+    };  
+    std::vector<keycomboCom>  s ;
+    void clearKeyCombo(){
 
+    };
+    void addKeyCombo(){
+
+    };
     virtual bool get_state(int key);
     bool resolve(void ev,evs flag){
         switch(flag){
@@ -224,34 +268,53 @@ class KEY : public event_sys<evs::_KEY> {
         return false;
     };
 }; // index 
-using joy_hat = event<int,_joy_hat>;  
-using joy_axis = event<ivec2,_joy_axis>; // x axis y index       
-using joy_up = event<int,_joy_up>;    
-using joy_down = event<int,_joy_down>;      
-using joy_press = event<int,_joy_press>;     
-class  JOY : public event_sys<evs::_JOY> {
+using joy_hat = int ;        //,_joy_hat>;  
+using joy_axis = glm::ivec3 ;        //,_joy_axis>; // x axis y index       
+using joy_up = int ;        //,_joy_up>;    
+using joy_down = int ;        //,_joy_down>;      
+using joy_press = int ;        //,_joy_press>;     
+struct joycap {
+
+};
+class  JOY : public event_sys<evs::_JOY> { // TODO handle multi input by calling multiple
  public:
-        joy_hat   last_hat;
-        joy_axis  last_axis;    
-        joy_up    last_up;  
-        joy_down  last_down;    
-        joy_press last_press;     
-void hat_cb(joy_hat ev) final {this->last_hat=ev;};void push_up(joy_hat ev) final {this->evmain.push(ev);};
-void up_cb(joy_up ev) final {this->last_up=ev;};void push_up(joy_up ev) final {this->evmain.push(ev);};
-void down_cb(joy_down ev) final {this->last_down=ev;};void push_down(joy_down ev) final {this->evmain.push(ev);};
-void press_cb(joy_press ev) final {this->last_press=ev;};void push_press(joy_press ev) final {this->evmain.push(ev);};
-void axis_cb(joy_axis ev) final {this->last_axis=ev;};void push_axis(joy_axis ev) final {this->evmain.push(ev);};
-void hat_cb(int btn,int index) final {this->last_hat=joy_hat(btn,index);};void push_up(int btn,int index) final {this->evmain.push(joy_hat(btn,index));};
-void up_cb(int btn,int index) final {this->last_up=joy_up(btn,index);};void push_up(int btn,int index) final {this->evmain.push(joy_up(btn,index));};
-void down_cb(int btn,int index) final {this->last_down=joy_down(btn,index);};void push_docb(int btn,int index) final {this->evmain.push(joy_down(btn,index));};    
-void press_cb(int btn,int index) final {this->last_press=joy_press(btn,index);};void push_pr_cb(int btn,int index) final {this->evmain.push(joy_press(btn,index));};    
-void axis_cb(int16 axis,int index) final {this->last_axis=joy_axis(axis,index);};void push_axcb(int16 axis,int index) final {this->evmain.push(joy_axis(axis,index));};    
+        evq<joy_hat,MAXPOLL>   last_hat;
+        evq<joy_axis,MAXPOLL>  last_axis;    
+        evq<joy_up,MAXPOLL>    last_up;  
+        evq<joy_down,MAXPOLL>  last_down;    
+        evq<joy_press,MAXPOLL> last_press;   
+        uint num =1;
+        uint period = 100;
+        // int maxbtn;
+        #ifndef no_maxbtn
+        #define maxbtn 16
+        #endif
+        virtual int _numJoys();
+        void clear(){this->last_hat.clear();this->last_axis.clear();this->last_up.clear();this->last_down.clear();this->last_press.clear();};
+        joycap getCap(int index);
+        void setperiod(uint ms) {this->period=ms;};
+        int numJoys(){ this->numJoys(); return this->num;}
+
+void hat_cb(joy_hat ev) final {this->last_hat=ev;};      //void push_up(joy_hat ev) final {this->evmain.push(ev);};
+void up_cb(joy_up ev) final {this->last_up=ev;};         //void push_up(joy_up ev) final {this->evmain.push(ev);};
+void down_cb(joy_down ev) final {this->last_down=ev;};   //void push_down(joy_down ev) final {this->evmain.push(ev);};
+void press_cb(joy_press ev) final {this->last_press=ev;};//void push_press(joy_press ev) final {this->evmain.push(ev);};
+void axis_cb(joy_axis ev) final {this->last_axis=ev;};   //void push_axis(joy_axis ev) final {this->evmain.push(ev);};
+void hat_cb(int btn,int index) final {this->last_hat=joy_hat(btn,index);};           //void push_up(int btn,int index) final {this->evmain.push(joy_hat(btn,index));};
+void up_cb(int btn,int index) final {this->last_up=joy_up(btn,index);};              //void push_up(int btn,int index) final {this->evmain.push(joy_up(btn,index));};
+void down_cb(int btn,int index) final {this->last_down=joy_down(btn,index);};        //void push_docb(int btn,int index) final {this->evmain.push(joy_down(btn,index));};    
+void press_cb(int btn,int index) final {this->last_press=joy_press(btn,index);};     //void push_pr_cb(int btn,int index) final {this->evmain.push(joy_press(btn,index));};    
+void axis_cb(int16 axis,int index) final {this->last_axis=joy_axis(axis,index);};    //void push_axcb(int16 axis,int index) final {this->evmain.push(joy_axis(axis,index));};    
 
     virtual int get_btn_state(int btn=-1 , int index=0;);
     virtual int get_axis_state(int axis=-1 , int index=0;);
     virtual int get_state(int key=-1 , int index=0;);
     virtual int get_hat_state(int hatpos=-1 , int index=0;); // usually 8 starting n;
+
+
+    int connected_no ;
     virtual void _init()
+    void connected_cb();
     virtual void init(){this->_init();};
       bool filter(short int type_flag){
         switch(type_flag){
@@ -262,36 +325,50 @@ void axis_cb(int16 axis,int index) final {this->last_axis=joy_axis(axis,index);}
         };
         return false;
     };
+    JOY() =default{};
 };
-using CONT_press= event<int,_CONT_press>;                    
-using CONT_down = event<int,_CONT_down>; 
-using CONT_up = event<int,_CONT_up>; 
-using CONT_dpad = event<int,_CONT_dpad>;
-using CONT_axis = event<ivec2,_CONT_axis>;  // Axis index;
+using CONT_press= int;//        _CONT_press>;                    
+using CONT_down = int;//        _CONT_down>; 
+using CONT_up =   int;//        _CONT_up>; 
+using CONT_dpad = int;//        _CONT_dpad>;
+using CONT_axis = glm::ivec2;//        _CONT_axis>;  // Axis index;
+using CONT_trig = glm::ivec2;
 class CONT: public event_sys<evs::_CONT> {
  public:
-    CONT_press last_press;      
-    CONT_down  last_down;     
-    CONT_up    last_up;   
-    CONT_dpad  last_dpad;     
-    CONT_axis  last_axis;     
-
-    bool up_cb(int btn,int index) final {this->last_up=CONT_up(btn,index);};        bool push_up(int btn,int index) final {this->evmain.push(CONT_up(btn,index));};
-    bool down_cb(int btn,int index) final {this->last_down=CONT_down(btn,index);};        bool push_down(int btn,int index) final {this->evmain.push(CONT_down(btn,index));};    
-    bool press_cb(int btn,int index) final {this->last_press=CONT_press(btn,index);};        bool push_press(int btn,int index) final {this->evmain.push(CONT_press(btn,index));};    
-    bool axis_cb(ivec2 axis,int index) final {this->last_axis=CONT_axis(axis,index);};        bool push_axis(ivec2 axis,int index) final {this->evmain.push(CONT_axis(axis,index));};    
-    bool dpad_cb(int axis,int index) final {this->last_dpad=CONT_dpad(axis,index);};        bool push_dpad(int axis,int index) final {this->evmain.push(CONT_dpad(axis,index));};    
+    evq<CONT_press,MAXPOLL> last_press;      
+    evq<CONT_down,MAXPOLL>  last_down;     
+    evq<CONT_up,MAXPOLL>    last_up;   
+    evq<CONT_dpad,MAXPOLL>  last_dpad;     
+    evq<CONT_axis,MAXPOLL>  last_laxis;     
+    evq<CONT_axis,MAXPOLL>  last_raxis;
+    evq<CONT_trigger,MAXPOLL> last_tr;
+    void clear()final{this->last_press.clear();this->last_down.clear();this->last_up.clear();this->last_dpad.clear();this->last_laxis.clear();this->last_raxis.clear();this->last_tr.clear();};
+    bool trig_cb(CONT_trig ev,int index=0) final {this->last_tr+=ev;}
+    bool up_cb(int btn,int index=0) final {this->last_up=CONT_up(btn,index);};                   //bool push_up(int btn,int index) final {this->evmain.push(CONT_up(btn,index));};
+    bool down_cb(int btn,int index=0) final {this->last_down=CONT_down(btn,index);};             //bool push_down(int btn,int index) final {this->evmain.push(CONT_down(btn,index));};    
+    bool press_cb(int btn,int index=0) final {this->last_press=CONT_press(btn,index);};          //bool push_press(int btn,int index) final {this->evmain.push(CONT_press(btn,index));};    
+    bool laxis_cb(glm::ivec2 axis,int index=0) final {this->last_laxis=CONT_axis(axis,index);};  //bool push_laxis(glm::ivec2 axis,int index) final {this->evmain.push(CONT_axis(axis,index));};    
+    bool raxis_cb(glm::ivec2 axis,int index=0) final {this->last_raxis=CONT_axis(axis,index);};  //bool push_raxis(glm::ivec2 axis,int index) final {this->evmain.push(CONT_axis(axis,index));};    
+    bool dpad_cb(int axis,int index) final {this->last_dpad=CONT_dpad(axis,index);};         //bool push_dpad(int axis,int index) final {this->evmain.push(CONT_dpad(axis,index));};    
     
-    bool up_cb(up ev) final {this->last_up = ev;};            bool push_up(up ev) final {this->evmain.push(ev);};             
-    bool down_cb(down ev) final {this->last_down = ev;};            bool push_down(down ev) final {this->evmain.push(ev);};                 
-    bool press_cb(press ev) final {this->last_press = ev;};            bool push_press(press ev) final {this->evmain.push(ev));};                
-    bool axis_cb(axis ev) final {this->last_axis = ev;};            bool push_axis(axis ev) final {this->evmain.push(ev));};                
-    bool dpad_cb(dpad ev) final {this->last_dpad = ev;};            bool push_dpad(dpad ev) final {this->evmain.push(ev));};                
+    bool trig_cb(CONT_trig ev) final {this->last_tr+=ev;}
+    bool up_cb(CONT_up ev) final {this->last_up+= ev;};           // bool push_up(up ev) final {this->evmain.push(ev);};             
+    bool down_cb(CONT_down ev) final {this->last_down+= ev;};     //       bool push_down(down ev) final {this->evmain.push(ev);};                 
+    bool press_cb(CONT_press ev) final {this->last_press+= ev;};  //          bool push_press(press ev) final {this->evmain.push(ev));};                
+    bool axis_cb(CONT_axis ev) final {this->last_axis+= ev;};     //       bool push_axis(axis ev) final {this->evmain.push(ev));};                
+    bool dpad_cb(dpad ev) final {this->last_dpad+= ev;};          //  bool push_dpad(dpad ev) final {this->evmain.push(ev));};                
 
     
-    virtual int get_btn(int btn=-1,  int index=0); // If negative then means get all pressed
+    virtual void handle(int index=0);
+    virtual handleMulti(){
+
+    };
+    virtual int get_state(int btn=-1,  int index=0); // If negative then means get all pressed
+    
     virtual int get_axis(int axis=-1,  int index=0 );
     virtual int get_dpad(int index =0);
+
+
     virtual void _init();
     void init(){event_sys::init();};
     bool filter(short int type_flag){
@@ -306,32 +383,42 @@ class CONT: public event_sys<evs::_CONT> {
 
 
 };  // index
-using touch_move = event<vect<vec4>,_touch_move>; //xy last zw move
-using touch_tap  =  event<vect<vec2>,_touch_tap>;// tap
-using touch_zoom =  event<mat<vec2>,_touch_gesture>; // xy move,z rotate,w zoom
-using touch_gesture =event<vect<vec4>,_touch_zoom>; // rotate
+
+using touch_move =glm::vec4; ///,_touch_move>; //xy last zw move
+using touch_tap  = glm::vec2; ///,_touch_tap>;// tap
+using touch_zoom = glm::vec4; ///,_touch_gesture>; // xy move,z rotate,w zoom
+using touch_gesture = evq<glm::vec4,MAXPOLL*MAXPOLL>; ///,_touch_zoom>; // rotate
 
 
 class TOUCH: public event_sys<evs::_TOUCH> { 
  public:
-touch_move last_move;
-touch_tap last_tap;
-touch_zoom last_zoom;
-touch_gesture last_gesture;
-    
+     evq<touch_tap,MAXPOLL> last_tap;
+     evq<touch_tap,MAXPOLL> last_up;
+     evq<touch_tap,MAXPOLL> last_down;
+     evq<touch_move,MAXPOLL> last_move;
+     evq<touch_zoom,MAXPOLL> last_zoom;
+    std::vector<touch_gesture,MAXPOLL> last_gesture;
+
+    std::vector<touch_gesture> gestures ;
+    std::vector<>
     bool rec_gest;
-    suvec2 get_pos();
-    vect<suvec2> get_multi_pos();
+    void clearGest()final {this->gestures.clear();};
+    void _clear()final {this->last_move.clear();this->last_tap.clear();this->last_zoom.clear();};
+    void clear()final {this->_clear();if(!(this->rec_gest)){this->clearGest();};};
+    glm::uvec2 get_pos();
+    vect<glm::uvec2> get_multi_pos();
     virtual void get_touch();
     vect<touch_move> s;
-        bool move_cb(vect<vec4> d,int index){this->last_move=move(d,index);}      bool push_touch_move(vect<vec4> d,int index){this->evmain.push(move_cb(d,index));}
-        bool tap_cb(vect<vec2> d,int index){this->last_tap=tap(d,index);}      bool push_touch_tap(vect<vec2> d,int index){this->evmain.push(tap_cb(d,index));}
-        bool zoom_cb(mat<vec2> d,int index){this->last_zoom=zoom(d,index);}      bool push_touch_zoom(mat<vec2> d,int index){this->evmain.push(zoom_cb(d,index));}
-        bool gesture_cb(vect<vec4> d,int index){this->last_gesture=gesture(d,index);}      bool push_touch_gesture(vect<vec4> d,int index){this->evmain.push(gesture_cb(d,index));}
+        bool move_cb(vect<glm::vec4> d,int index){this->last_move=move(d,index);}      bool push_touch_move(vect<glm::vec4> d,int index){this->evmain.push(move_cb(d,index));}
+        bool tap_cb(vect<glm::vec2> d,int index){this->last_tap=tap(d,index);}      bool push_touch_tap(vect<glm::vec2> d,int index){this->evmain.push(tap_cb(d,index));}
+        bool zoom_cb(mat<glm::vec2> d,int index){this->last_zoom=zoom(d,index);}      bool push_touch_zoom(mat<glm::vec2> d,int index){this->evmain.push(zoom_cb(d,index));}
+        bool gesture_cb(vect<glm::vec4> d,int index){this->last_gesture=gesture(d,index);}      bool push_touch_gesture(vect<glm::vec4> d,int index){this->evmain.push(gesture_cb(d,index));}
     void move_cb(touch_move ev){this->last_move_cb=ev;};           void push_move(touch_move ev){this->evmain.push(ev);};
     void tap_cb(touch_tap ev){this->last_tap_cb=ev;};              void push_tap(touch_tap ev){this->evmain.push(ev);};
     void zoom_cb(touch_zoom ev){this->last_zoom_cb=ev;};           void push_zoom(touch_zoom ev){this->evmain.push(ev);};
     void gesture_cb(touch_gesture ev){this->last_gesture_cb=ev;};  void push_gesture(touch_gesture ev){this->evmain.push(ev);};
+     void down_cb(mousedown ev) final {this->last_down+=ev;};
+     void up_cb(mouseup ev) final { up_check(ev.data());this->last_up+=ev;};
 
     void init(){event_sys::init();};
     void record_gesture(){this->rec_gest=true;};
@@ -355,132 +442,24 @@ touch_gesture last_gesture;
 
 };
 
-using motion = event<vec3,_motion>;
-using accmotion = event<vec4,_accmotion>;
-using rotate2d = event<vec2,_rotate2d>;
-using translate2d = event<vec2,_translate2d>;
-using rotate3d = event<vec3,_rotate3d>;
-using translate3d = event<vec3,_translate3d>;
-using accrotate2d = event<vec2,_accrotate2d>;
-using acctranslate2d = event<vec2,_acctranslate2d>;
-using accrotate3d = event<vec3,_accrotate3d>;
-using acctranslate3d = event<vec3,_acctranslate3d>;
 
-
-class INT : public event_sys<evs::_INT>{
-    motion last_motion;
-    accmotion last_accmotion;
-    rotate2d last_rotate2d;
-    translate2d last_translate2d;
-    rotate3d last_rotate3d;
-    translate3d last_translate3d;
-    accrotate2d last_accrotate2d;
-    acctranslate2d last_acctranslate2d;
-    accrotate3d last_accrotate3d;
-    acctranslate3d last_acctranslate3d;
-
-    bool motion_cb(vec3 d,int index){this->last_motion=motion(d,index));};                           bool push_motion(vec3 d,int index){this->evmain.push(motion(d,index));};
-    bool accmotion_cb(vec4 d,int index){this->last_accmotion=accmotion(d,index));};                  bool push_accmotion(vec4 d,int index){this->evmain.push(accmotion(d,index));};
-    bool rotate2d_cb(vec2 d,int index){this->last_rotate2d=rotate2d(d,index));};                     bool push_rotate2d(vec2 d,int index){this->evmain.push(rotate2d(d,index));};
-    bool translate2d_cb(vec2 d,int index){this->last_translate2d=translate2d(d,index));};            bool push_translate2d(vec2 d,int index){this->evmain.push(translate2d(d,index));};
-    bool rotate3d_cb(vec3 d,int index){this->last_rotate3d=rotate3d(d,index));};                     bool push_rotate3d(vec3 d,int index){this->evmain.push(rotate3d(d,index));};
-    bool translate3d_cb(vec3 d,int index){this->last_translate3d=translate3d(d,index));};            bool push_translate3d(vec3 d,int index){this->evmain.push(translate3d(d,index));};
-    bool accrotate2d_cb(vec2 d,int index){this->last_accrotate2d=accrotate2d(d,index));};            bool push_accrotate2d(vec2 d,int index){this->evmain.push(accrotate2d(d,index));};
-    bool acctranslate2d_cb(vec2 d,int index){this->last_acctranslate2d=acctranslate2d(d,index));};   bool push_acctranslate2d(vec2 d,int index){this->evmain.push(acctranslate2d(d,index));};
-    bool accrotate3d_cb(vec3 d,int index){this->last_accrotate3d=accrotate3d(d,index));};            bool push_accrotate3d(vec3 d,int index){this->evmain.push(accrotate3d(d,index));};
-    bool acctranslate3d_cb(vec3 d,int index){this->last_acctranslate3d=acctranslate3d(d,index));};   bool push_acctranslate3d(vec3 d,int index){this->evmain.push(acctranslate3d(d,index));};
-
-    bool motion_cb(motion ev){this->last_motion=ev; };                          bool push_motion(motion ev){this->evmain.push(ev);}
-    bool accmotion_cb(accmotion ev){this->last_accmotion=ev; };                 bool push_accmotion(accmotion ev){this->evmain.push(ev);}
-    bool rotate2d_cb(rotate2d ev){this->last_rotate2d=ev; };                    bool push_rotate2d(rotate2d ev){this->evmain.push(ev);}
-    bool translate2d_cb(translate2d ev){this->last_translate2d=ev; };           bool push_translate2d(translate2d ev){this->evmain.push(ev);}
-    bool rotate3d_cb(rotate3d ev){this->last_rotate3d=ev; };                    bool push_rotate3d(rotate3d ev){this->evmain.push(ev);}
-    bool translate3d_cb(translate3d ev){this->last_translate3d=ev; };           bool push_translate3d(translate3d ev){this->evmain.push(ev);}
-    bool accrotate2d_cb(accrotate2d ev){this->last_accrotate2d=ev; };           bool push_accrotate2d(accrotate2d ev){this->evmain.push(ev);}
-    bool acctranslate2d_cb(acctranslate2d ev){this->last_acctranslate2d=ev; };  bool push_acctranslate2d(acctranslate2d ev){this->evmain.push(ev);}
-    bool accrotate3d_cb(accrotate3d ev){this->last_accrotate3d=ev; };           bool push_accrotate3d(accrotate3d ev){this->evmain.push(ev);}
-    bool acctranslate3d_cb(acctranslate3d ev){this->last_acctranslate3d=ev; };  bool push_acctranslate3d(acctranslate3d ev){this->evmain.push(ev);}
-
-
-
-};
-
-;
-typedef struct text_edit {
-    ivec4 range; // ln,col
-    std::string text;
-}text_edit; 
-using enter = event<bool,_enter> ;
-using leave = event<bool,_leave> ;
-using focus = event<bool,_focus> ;
-using drag = event<bool,_drag> ;
-using dragstart = event<bool,_dragstart> ;
-using dragend = event<bool,_dragend> ;
-using keycombo = event<ivec4,_keycombo> ; //-1 is 
-using dbclick = event<ivec2,_dbclick> ;
-using combo = event<imat2x4,_combo> ; //r0 keys, r1 mouse
-using textedit = event<text_edit,_textedit>;
-class UI :public event_sys<evs::_UI> {
- public:
-    // Lasts
-    enter     last_enter;       
-    leave     last_leave;       
-    focus     last_focus;       
-    drag      last_drag;      
-    dragstart last_dragstart;           
-    dragend   last_dragend;         
-    keycombo  last_keycombo;          
-    dbclick   last_dbclick;         
-    combo     last_combo;       
-    textedit  last_textedit;     
-
-    bool enter_cb(bool d,int index){this->last_enter=last_enter(d,index);};
-    bool leave_cb(bool d,int index){this->last_leave=last_leave(d,index);};
-    bool focus_cb(bool d,int index){this->last_focus=last_focus(d,index);};
-    bool drag_cb(bool d,int index){this->last_drag=last_drag(d,index);};
-    bool dragstart_cb(bool d,int index){this->last_dragstart=last_dragstart(d,index);};
-    bool dragend_cb(bool d,int index){this->last_dragend=last_dragend(d,index);};
-    bool keycombo_cb(ivec4 d,int index){this->last_keycombo=last_keycombo(d,index);};
-    bool dbclick_cb(ivec2 d,int index){this->last_dbclick=last_dbclick(d,index);};
-    bool combo_cb(imat2x4 d,int index){this->last_combo=last_combo(d,index);};
-    bool textedit_cb(text_edit d,int index){this->last_textedit=last_textedit(d,index);};
-
-
-    bool enter_cb(enter ev){this->last_enter=ev;};
-    bool leave_cb(leave ev){this->last_leave=ev;};
-    bool focus_cb(focus ev){this->last_focus=ev;};
-    bool drag_cb(drag ev){this->last_drag=ev;};
-    bool dragstart_cb(dragstart ev){this->last_dragstart=ev;};
-    bool dragend_cb(dragend ev){this->last_dragend=ev;};
-    bool keycombo_cb(keycombo ev){this->last_keycombo=ev;};
-    bool dbclick_cb(dbclick ev){this->last_dbclick=ev;};
-    bool combo_cb(combo ev){this->last_combo=ev;};
-    bool textedit_cb(textedit ev){this->last_textedit=ev;};
-
- const uint flag=_UI;
-    public: 
-    
-    virtual void get_db_click_ms(int per);
-    int get_ms(int _ms=200) final{this->ms=_ms}; int16 ms_cur;}
-};
-
-using wake        = event<bool,_wake>;
-using sleep       = event<bool,_sleep>;        
-using min         = event<bool,_min>;      
-using max         = event<bool,_max>;      
-using hide        = event<bool,_max>;
-using resize      = event<ivec2,_resize>;
-using move        = event<ivec2,_move>;         
-using fullscreen  = event<bool,_fullscreen>;             
-using close       = event<bool,_close>;                  
-using display_conn =event<bool,_display_conn>;  
-using display_orient =event<int,_display_orient>;
-using display_power=event<int ,_display_power>;
+using wake        =  bool      ; //         ,_wake>;
+using sleep       =  bool      ; //         ,_sleep>;        
+using min         =  bool      ; //         ,_min>;      
+using max         =  bool      ; //         ,_max>;      
+using hide        =  bool      ; //         ,_max>;
+using resize      =  glm::ivec2; //               ,_resize>;
+using move        =  glm::ivec2; //               ,_move>;         
+using fullscreen  =  bool      ; //         ,_fullscreen>;             
+using close       =  bool      ; //         ,_close>;                  
+using display_conn = bool      ; //         ,_display_conn>;  
+using display_orient = int     ; //          ,_display_orient>;
+using display_power  = int       ; //         ,_display_power>;
 class DISPLAY : event_sys<evs::_DISPLAY> {
  public:
-    vect<ivec3> disp; // xy=wh ; z=hz;
-    vect<ivec3> mon;
-    size_t nummon;
+    vect<glm::ivec3> disp; // xy=wh ; z=hz;
+    vect<glm::ivec3> mon;
+    uint num;
     void _init(); // Initialize the subsystem
     void init() {this->_init()}; 
     virtual event* resolve();
@@ -488,65 +467,104 @@ class DISPLAY : event_sys<evs::_DISPLAY> {
     virtual void listen();// Checks if there was an event;
     virtual event filter(event* ev);
 
-    vec2 get_data(size_t pos=0){return this->disp[pos];}; // hw(pixels) ,hw(cm)
-    int get_width(size_t pos=0){return this->disp[pos][0];};
-    int get_height(size_t pos=0){return this->disp[pos][1];};
-    int get_index(size_t pos=0){return this->disp[pos][2];};
-    ivec3 get_monitor_data(size_t pos=0); // w,h,hz
-    ivec3 get_display_data(size_t pos=0); // w,h,hz
-    bool is_portrait(size_t pos){return (this->disp[pos][0]<this->disp[pos][1]);};
-    size_t get_num_monitors();
-    size_t get_monitor_display(size_t pos=0);
-    virtual vec2 get_data(size_t pos=0){this->_get_data this->disp[pos];}; // hw(pixels) ,hw(cm)
-    virtual int get_width(size_t pos=0){this->_get_width this->disp[pos][0];};
-    virtual int get_height(size_t pos=0){this->_get_height this->disp[pos][1];};
-    virtual int get_index(size_t pos=0){this->_get_index this->disp[pos][2];};
+    vec2 get_data(uint pos=0){return this->disp[pos];}; // hw(pixels) ,hw(cm)
+    int get_width(uint pos=0){return this->disp[pos][0];};
+    int get_height(uint pos=0){return this->disp[pos][1];};
+    int get_index(uint pos=0){return this->disp[pos][2];};
+    glm::ivec3 get_monitor_data(uint pos=0); // w,h,hz
+    glm::ivec3 get_display_data(uint pos=0); // w,h,hz
+    bool is_portrait(uint pos){return (this->disp[pos][0]<this->disp[pos][1]);};
+    int Num();
+    int get_monitor_display(uint pos=0);
+    virtual vec2 get_data(uint pos=0){this->_get_data this->disp[pos];}; // hw(pixels) ,hw(cm)
+    virtual int get_width(uint pos=0){this->_get_width this->disp[pos][0];};
+    virtual int get_height(uint pos=0){this->_get_height this->disp[pos][1];};
+    virtual int get_index(uint pos=0){this->_get_index this->disp[pos][2];};
  
-
-    bool conn_callback(uint index,bool val = true){this->evmain->push(display_conn::display_conn(index,val);)};
-    bool power_callback(uint index,bool val = true){this->evmain->push(display_power::display_power(index,val);)};
-    bool orient_callback(uint index,bool val = true){this->evmain->push(display_power::display_orient(index,val);)};
+    void change_cb()
+    void conn_cb(uint index,bool val = true){this->evmain->push(display_conn::display_conn(index,val);)};
+    void discon_cb()
+    void power_cb(uint index,bool val = true){this->evmain->push(display_power::display_power(index,val);)};
+    void orient_cb(uint index,bool val = true){this->evmain->push(display_power::display_orient(index,val);)};
     virtual void handle();
-    virtual void _init();
-    void init(){this->_init();};
+    virtual void init();
     virtual void close();
     virtual bool _get_mode();
     void get_mode(){
         bool res=_get
     }; // 
 };
-
-    static const std::map<int , std::string> ev_map = {
-{evs::_click,"click"},{evs::_mousedown,"mousedown"},{evs::_mouseup,"mouseup"},{evs::_mouseup,"mousepress"}{evs::_mouse_move,"mouse_move"},{evs::_mouse_wheel,"mouse_wheel"},{evs::_MOUSE,"MOUSE"},
-{evs::_keyup,"keyup"},{evs::_keydown,"keydown"},{evs::_keypress,"keypress"},{evs::_KEY,"KEY"},
-{evs::_joy_axis,"joy_axis"},{evs::_joy_up,"joy_up"},{evs::_joy_down,"joy_down"},{evs::_joy_press,"joy_press"},{evs::_JOY,"JOY"},
-{evs::_CONT_axis,"CONT_axis"},{evs::_CONT_up,"CONT_up"},{evs::_CONT_down,"CONT_down"},{evs::_CONT_press,"CONT_press"},{evs::_CONT,"CONT"},
-{evs::_touch_move,"touch_move"},{evs::_touch_tap,"touch_tap"},{evs::_touch_gesture,"touch_gesture"},{evs::_touch_zoom,"touch_zoom"},{evs::_TOUCH,"TOUCH"},
-{evs::_up,"up"},{evs::_down,"down"},{evs::_left,"left"},{evs::_right,"right"},{evs::_forward,"forward"},{evs::_back,"back"},{evs::_accup,"accup"},{evs::_accdown,"accdown"},{evs::_accleft,"accleft"},{evs::_accright,"accright"},{evs::_accforward,"accforward"},{evs::_accback,"accback"},{evs::_yawleft,"yawleft"},{evs::_yawright,"yawright"},{evs::_pitchdown,"pitchdown"},{evs::_pitchup,"pitchup"},{evs::_accyawleft,"accyawleft"},{evs::_accyawright,"accyawright"},{evs::_accpitchdown,"accpitchdown"},{evs::_accpitchup,"accpitchup"},{evs::_rotate2d,"rotate2d"},{evs::_translate2d,"translate2d"},{evs::_rotate3d,"rotate3d"},{evs::_translate3d,"translate3d"},{evs::_accrotate2d,"accrotate2d"},{evs::_acctranslate2d,"acctranslate2d"},{evs::_accrotate3d,"accrotate3d"},{evs::_acctranslate3d,"acctranslate3d"},{evs::_CONTROL},
-{evs::_INT_NAV,"_INT_NAV"},{evs::_INT_GAME,"_INT_GAME"},{evs::_INT_SIM,"_INT_SIM"},{evs::_INT_EDIT,"_INT_EDIT"},{evs::_INT_ALL,"_INT_ALL"},
-{evs::_enter,"enter"},{evs::_leave,"leave"},{evs::_focus,"focus"},{evs::_drag,"drag"},{evs::_dragstart,"dragstart"},{evs::_dragend,"dragend"},{evs::_keycombo,"keycombo"},{evs::_dbclick,"dbclick"},{evs::_click,"click"},{evs::_combo,"combo"},{evs::_text_in,"text_in"},{evs::_text_edit,"text_edit"},{evs::_clipboard,"clipboard"},{evs::_UI,"UI"}
-{evs::_play_audio,"play_audio"},{evs::_play_audio_about_to,"play_audio_about_to"},{evs::_AUDIO,"AUDIO"},
-{evs::_wake,"wake"},{evs::_sleep,"sleep"},{evs::_min,"min"},{evs::_max,"max"},{evs::_hide,"hide"},{evs::_move,"move"},{evs::_resize,"resize"},{evs::_fullscreen,"fullscreen"},{evs::_close,"close"},{evs::_SYS,"SYS"},
-{evs::_display_conn,"display_conn"},{evs::_display_power,"display_power"},{{evs::_display_orient,"display_orient"}},{evs::_DISPLAY,"DISPLAY"}
+#ifdef STRATA_CAPABILTY_AUDIO
+class AUDIO : event_sys<evs::_AUDIO> {
 
 };
-
+#endif
+#ifdef STRATA_CAPABILTY_SENSOR
+using gyro  =  glm::vec3//_gyro>;     
+using accel  = glm::vec3//_accel>;      
+using mag  =   float //,_mag>;    
+using baro  =  float //,_baro>;     
+using humid  = float //,_humid>;      
+using pos  =   float //,_pos>;   
+using mic  =   int** //,_mic>;    
+using lidar = double** //,_lidar>;      
+using cam  =  double** //,_cam>;    
+class SENSOR : event_sys<evs::_SENSOR> {
+    evq<gyro, MAXPOLL >   last_gyro;
+    evq<accel, MAXPOLL >  last_accel;
+    evq<mag, MAXPOLL >    last_mag;
+    evq<baro, MAXPOLL >   last_baro;
+    evq<humid, MAXPOLL >  last_humid;
+    evq<pos, MAXPOLL >    last_pos;
+    evq<mic, MAXPOLL >    last_mic;
+    evq<lidar, MAXPOLL >  last_lidar;
+    evq<cam, MAXPOLL >    last_cam;  
+};
+#endif
 template <typename win>
 class SYS : public event_sys<evs::_SYS> { 
     public:
 
- const uint flag=_SYS;
-    event_main evmain;
-    MOUSE      sMOUSE;           
-    KEY        sKEY;         
-    JOY        sJOY;         
-    CONT       sCONT;                
-    TOUCH      sTOUCH;           
-    INT        sINT;                  
-    UI         sUI;        
-    AUDIO      sAUDIO;         
-    SENSOR     sSENSOR;  
-  
+  uint flag=_SYS;
+    // event_main evmain;
+    
+#ifdef STRATA_CAPABILITY_MOUSE 
+MOUSE      sMOUSE;
+#endif    
+#ifdef STRATA_CAPABILITY_KEY
+KEY        sKEY;
+#endif
+#ifdef STRATA_CAPABILITY_JOY 
+JOY        sJOY;
+#endif
+#ifdef STRATA_CAPABILITY_CONT 
+CONT       sCONT;
+#endif
+#ifdef STRATA_CAPABILITY_TOUCH 
+TOUCH      sTOUCH;
+#endif
+#ifdef STRATA_CAPABILITY_DISPLAY 
+DISPLAY    sDISPLAY;
+#endif
+#ifdef STRATA_CAPABILITY_AUDIO 
+AUDIO      sAUDIO;
+#endif
+#ifdef STRATA_CAPABILITY_SENSOR 
+SENSOR     sSENSOR;
+#endif
+
+
+
+    void initMouse();
+    void initKey();
+    void initJoy();
+    void initCont();
+    void initTouch();
+    void initInt();
+    void initUi();
+    void initAudio();
+    void initSensor();
+    
     virtual bool wake(wake ev);
     virtual bool sleep(sleep ev);
     virtual bool min(min ev);
@@ -573,14 +591,10 @@ class SYS : public event_sys<evs::_SYS> {
     bool display_power(evun ev){return this-> display_power(ev.display_power)};
     
     
-    template<typename... subsys>
-    void prioirty(subsys... s){// TODO Priority remplating.
-        ((s.priority())...);
-    };
-    vect<event_sys<_DEFAULT>*> evsys;
+   
     using winty = win;
     vect<win> wins;
-    vect<ivec4> wind;
+    vect<glm::ivec4> wind;
     int curr_win_index=0;
     void _init(); // Initialize the subsystem
     virtual event* resolve();
@@ -599,48 +613,50 @@ class SYS : public event_sys<evs::_SYS> {
         if( (flags & JOY::flag)==JOY::flag)           {this->sJOY.init();};
         if( (flags & CON::flag)==CON::flag)           {this->sCON.init();};
         if( (flags & TOUCH::flag)==TOUCH::flag)       {this->sTOUCH.init();};
-        if( (flags & UI::flag)==UI::flag)             {this->sUI.init();};
         if( (flags & AUDIO::flag)==AUDIO::flag)       {this->sAUDIO.init();};
-        if( (flags & INT::flag)==INT::flag)           {this->sINT_ALL.init();};
         if( (flags & SENSOR::flag)==SENSOR::flag)     {this->sSENSOR.init();};
     };
     using MIN = 0b0001;
     using MAX = 0b0010;
     using HIDE = 0b0100;
     using NORMAL = 0b1000;
-void (*const close_app_win_func)();
-    void def_close(){delete this;};
+    void selfclose(){delete this;};
     void sleep_callback()final{this->evmain->push(sleep::sleep(this->cur_win_index,true));};;
     void wake_callback()final{this->evmain->push(wake::wake(this->cur_win_index,true));};
     void min_callback()final{this->evmain->push(min::min(this->cur_win_index,true));}
     void max_callback()final{this->evmain->push(max::max(this->cur_win_index,true));}
     void restore_callback()final{this->evmain->push(restore::restore(this->cur_win_index,true));};
     void hide_callback()final{this->evmain->push(hide::hide(this->cur_win_index,true));};
-    void resize_callback()final{this->evmain->push(resize::resize(this->curr_win_index,ivec2(this->wind[this->cur_win_index][2],this->wind[this->cur_win_index][3]));};;
-    void move_callback()final{this->evmain->push(move::move(this->curr_win_index,ivec2(this->wind[this->cur_win_index][0],this->wind[this->cur_win_index][1])));};;
+    void resize_callback()final{this->evmain->push(resize::resize(this->curr_win_index,glm::ivec2(this->wind[this->cur_win_index][2],this->wind[this->cur_win_index][3]));};;
+    void move_callback()final{this->evmain->push(move::move(this->curr_win_index,glm::ivec2(this->wind[this->cur_win_index][0],this->wind[this->cur_win_index][1])));};;
     void fullscreen_callback(bool val=true)final{this->evmain->push(fullscreen::fullscreen(this->cur_win_index,val));};
     void close_callback()final{this->evmain->push(close::close(true));this->close_app_win_func();}
-    
-    virtual win create_win(ivec2 size,ivec2 pos,win parent=NULL,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) ;
-    win create_child_cur (ivec2 size,ivec2 pos,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) final{
-            return this->create_win (ivec2 size,ivec2 pos,this->wins[this->curr_win_index].w,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) ;
+    #define _custom_tabbar 0b00001
+    #define _resizable     0b00010
+    #define _transparent   0b00100
+    #define _always_on_top 0b01000
+    #define _tool          0b10000
+    #define _default       0b00011
+    virtual win create_win(glm::ivec2 size,glm::ivec2 pos,win parent=NULL,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) ;
+    win create_child_cur (glm::ivec2 size,glm::ivec2 pos,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) final{
+            return this->create_win (glm::ivec2 size,glm::ivec2 pos,this->wins[this->curr_win_index].w,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) ;
     } ;
-    virtual ivec2 get_pos(win w=this->wins[0]);
-    virtual ivec2 get_size(win w=this->wins[0]);
-    virtual ivec4 get_data_all(win w=this->wins[0]);
-    virtual void resize_win(win w=this->wins[0],ivec2 addsize);
-    virtual void move_win(win w=this->wins[0],ivec2 addpos);
-    virtual void minimize_win(size_t pos);
-    virtual void maximize_win{size_t pos};
-    virtual void restore_win{size_t pos};
-    virtual void hide_win(size_t pos);
+    virtual glm::ivec2 winpos(win w=this->wins[0]);
+    virtual glm::ivec2 winsize(win w=this->wins[0]);
+    virtual glm::ivec4 wininfo(win w=this->wins[0]);
+    virtual void winresize(win w=this->wins[0],glm::ivec2 addsize);
+    virtual void winmove(win w=this->wins[0],glm::ivec2 addpos);
+    virtual void winminimize(uint pos);
+    virtual void winmaximize{uint pos};
+    virtual void winrestore{uint pos};
+    virtual void winhide(uint pos);
     
     virtual bool is_min(win w=this->wins[0])
     virtual bool is_hidden(win w=this->wins[0])
     virtual bool is_normal(win w=this->wins[0])
     virtual bool is_max(win w=this->wins[0])
-    virtual void set_win_opacity(size_t index,float opacity);
-    virtual void set_win_fullscreen(size_t index);
+    virtual void set_win_opacity(uint index,float opacity);
+    virtual void set_win_fullscreen(uint index);
     virtual void close_win();
     virtual void sleep(int mstime=2000);
     virtual void _handle(); // Called during the event loop
@@ -651,28 +667,7 @@ void (*const close_app_win_func)();
     void set_close(void (*const close_app)() = this->def_close){this->close_app_win_func= close_app;};
     virtual void _init();// Set callbacks
     void init(void (*const close_app)() ){set_close(close_app);this->_init();for(int i=0;i<this->evsyspriority.size();i++){this->evsyspriority[i].init();};
-    void set_priority(int place,int flag){
-        for(int i = 0;i<this->evsyspriority.size();i++){
-            if(this->evsyspriority[i].flag==flag){
-                this->evsyspriority.swap(i,place);
-                int s = ((place-i)>0)?1:-1;
-                for(int j = place ; j != i ; j+=s){
-                    this->evsyspriority.swap(place,place+s);
-                };
-            };
-        };
-    };
-    void set_priority(vect<ivec2> flag_place){
-        for(int i=0;i<flag_place.size();i++){
-            for(int j = 0 ; j <this->evsyspriority.size();j++){
-                if(this->evsyspriority[j].flag==flag_place[i][0]){
-                    this->evsyspriority.swap(g,flag_place[1]);
-                    break;
-                }
-            };
-        }
-    };
-    SYS(uint flags)=default{this->init_evsys(flags);}
+    SYS(uint flags)=default{this->flag=flags;this->init_evsys(flags);}
 };
 
 };
