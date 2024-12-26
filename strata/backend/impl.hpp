@@ -12,19 +12,23 @@ SYS_MOUSECOMBO
 SYS_JOY
 SYS_COMBO
 */
-#include <glm.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 #include "impl.hpp"
 #include "implmain.hpp"
 #include <strata/petri/vects.hpp>
 #include <strata/petri/queue.hpp>
 #include <vector>
 #include <memory>
+#include <string>
 #include <filesystem>
 #include <atomic>
 #include <future>
 #include <cpuid.h>
-#define fs std::filesystem
 
+#define fs std::filesystem
+using namespace std;
 
 #include <strata/backend/implgl.hpp>
 #ifdef STRATA_IMPL_WIN
@@ -108,22 +112,24 @@ return cpuf;
 };
     
 
-namespace events {
+namespace impl {
 #include "impl.def.hpp"
 #define MAXPOLL 10
 template<typename T , int size>
 struct evq {
-    T[size] d;
+    T d[size];
+    int i[size];
     int pos ;
+    T operator[](int s){return this->d[s];};
+    int ind(int s){return this->i[s];};
     int pos(){return this->pos;};
     void clear(){this->pos=0;};
-    void push(T s){}
-    void operator+=(T s){if(pos==size-1){this->clear();return;};this->d[pos]=s;this->pos++;};
-    evq() {
-
-    };
+    void push(T s){if(pos==size-1){this->clear();return;};this->d[pos]=s;this->i[pos]=0;this->pos++;};
+    void push(T s , int ind){if(pos==size){this->clear();return;};this->d[pos]=s;this->i[pos]=ind;this->pos++;};
+    void operator+=(T s){if(pos==size){this->clear();return;};this->d[pos]=s;this->pos++;};
+   
 };
-
+#ifdef STRATA_CAP_MOUSE
 using click        = int        ;//,           _click   >;    
 using dbclick      = int        ;//,   _dbclick>;
 using mousedown    = int        ;//,   _mousedown>;        
@@ -131,10 +137,8 @@ using mouseup      = int        ;//,   _mouseup>;
 using mouse_move   = glm::ivec2 ;//,   _mouse_move>;//xy
 using mouse_wheel  = int        ;//,   _mouse_wheel>; //x       
 using mouse_wheelh = int        ;//,   _mouse_wheelh>;
-class MOUSE: public  event_sys<evs::_MOUSE> {
- public:
-    
- const uint flag=_MOUSE;
+struct MOUSE {
+const uint flag=_MOUSE;
     evq<click ,MAXPOLL>       last_click; 
     evq<dbclick ,MAXPOLL>     last_db_click;     
     evq<mousedown ,MAXPOLL>   last_down;          
@@ -180,27 +184,17 @@ class MOUSE: public  event_sys<evs::_MOUSE> {
             if(i==this->last_down.data();){this->last_down[i].data=-1; break;}
         };
     };
-    virtual glm::vec2 get_pos(){return this->last_move.data()};
-    virtual bool get_state(short int bt){return this->last_press.data==bt};
-     void push_click(int click,int index=0) final {this->ev_main.push(mouse_move(click,index));}
-     void push_move(glm::vec2 mv,int index=0) final {this->ev_main.push(mouse_move(mv,index));};
-     void push_down(int down,int index=0) final {this->ev_main.push(mouse_down(down,index));};
-     void push_up(int up,int index=0) final {this->ev_main.push(mouse_up(up,index));};
-     void push_wheel(float wheel,int index=0) final {this->ev_main.push(mouse_wheel(wheel,index));};
-     void push_wheelh(float wheel,int index=0) final {this->ev_main.push(mouse_wheelh(wheel,index));};
-     void push_click(click ev) final {this->ev_main.push(ev);}
-     void push_move(move ev) final {this->ev_main.push(ev);};
-     void push_down(down ev) final {this->ev_main.push(ev);};
-     void push_up(up ev) final {this->ev_main.push(ev);};
-     void push_wheel(wheel ev) final {this->ev_main.push(ev);};
-     void push_wheelh(wheelh ev) final {this->ev_main.push(ev);};
+    // glm::vec2 get_pos(){return this->last_move.data()};
+    // bool get_state(short int bt){return this->last_press.data==bt};
+    
 
-     void click_cb(int click,int index=0) final {this->last_click+=mouse_move(click,index);}
-     void move_cb(glm::vec2 mv,int index=0) final {this->last_move+=mouse_move(mv,index);};
-     void down_cb(int down,int index=0) final {this->last_down+=mouse_down(down,index);};
-     void up_cb(int up,int index=0) final {up_check(up);this->last_up+=mouse_up(up,index);};
-     void wheel_cb(float wheel,int index=0) final {this->last_wheel+=mouse_wheel(wheel,index);};
-     void wheelh_cb(float wheel,int index=0) final {this->last_wheelh+=mouse_wheelh(wheel,index);};
+     void dbclick_cb(dbclick_cb ev, int index) final {this->last_dbclick.push(ev,index);}
+     void click_cb(click_cb click,int index) final {this->last_click.push(click,index);}
+     void move_cb(move_cb mv,int index) final {this->last_move.push(mv,index);};
+     void down_cb(down_cb down,int index) final {this->last_down.push(down,index);};
+     void up_cb(up_cb up,int index) final {up_check(up);this->last_up.push(up,index);};
+     void wheel_cb(wheel_cb wheel,int index) final {this->last_wheel.push(wheel,index);};
+     void wheelh_cb(wheelh_cb wheel,int index) final {this->last_wheelh.push(wheel,index);};
      void dbclick_cb(dbclick ev) final {this->last_dbclick+=ev;}
      void click_cb(click ev) final {this->last_click+=ev;}
      void move_cb(mouse_move ev) final {this->last_move+=ev;};
@@ -209,8 +203,8 @@ class MOUSE: public  event_sys<evs::_MOUSE> {
      void wheel_cb(mouse_wheel ev) final {this->last_wheel+=ev;};
      void wheelh_cb(mouse_wheel ev) final {this->last_wheelh+=ev;};
     
-     glm::vec2 Pos(int index=0);
-     glm::vec2 WinPos();
+     virtual glm::vec2 Pos(int index=0);
+     virtual glm::vec2 WinPos();
     virtual void handle();
     virtual void _handle(){
         this->handle();
@@ -221,28 +215,23 @@ class MOUSE: public  event_sys<evs::_MOUSE> {
     };
    
 }; 
+#endif
+#ifdef STRATA_CAP_KEY
 using keyup = int,        ;// _keyup>; // x button, y index    
 using keydown = int,        ;// _keydown>; // x button, y index      
 using keypress = int         ;//,_keypress>; // x button, y index       
 using keycombo = glm::ivec4   ;//,_keycombo> ; //-1 is 
-class KEY : public event_sys<evs::_KEY> {
+struct KEY   {
  public:
     evq<keyup,MAXPOLL>    last_keyup;
     evq<keydown,MAXPOLL>  last_keydown;
     evq<keypress,MAXPOLL> last_keypress;
-    evq<keycombo,MAXPOLL>  last_keycombo;          
+    evq<keycombo,MAXPOLL>  last_keycombo;
 
-    
-    bool push_up(char key,int index) final {this->evmain.push(keyup(key,index));};
-    bool push_down(char key,int index) final {this->evmain.push(keydown(key,index));};    
-    bool push_press(char key,int index) final {this->evmain.push(keypress(key,index));};    
-    bool push_up(up ev) final {this->evmain.push(ev);};
-    bool push_down(down ev) final {this->evmain.push(ev);};    
-    bool push_press(press ev) final {this->evmain.push(ev);};    
-
-    bool up_cb(char key,int index) final {this->last_keyup.push(keyup(key,index));};
-    bool down_cb(char key,int index) final {this->last_keydown.push(keydown(key,index));};    
-    bool press_cb(char key,int index) final {this->last_keypress.push(keypress(key,index));};    
+ 
+    bool up_cb(char key,int index) final {this->last_keyup.push(keyup(key),index);};
+    bool down_cb(char key,int index) final {this->last_keydown.push(keydown(key),index);};    
+    bool press_cb(char key,int index) final {this->last_keypress.push(keypress(key),index);};    
     bool up_cb(up ev) final {this->last_keyup.push(ev);};
     bool down_cb(down ev) final {this->last_keydown.push(ev);};    
     bool press_cb(press ev) final {this->last_keypress.push(ev);};    
@@ -268,6 +257,8 @@ class KEY : public event_sys<evs::_KEY> {
         return false;
     };
 }; // index 
+#endif
+#ifdef STRATA_CAP_JOY
 using joy_hat = int ;        //,_joy_hat>;  
 using joy_axis = glm::ivec3 ;        //,_joy_axis>; // x axis y index       
 using joy_up = int ;        //,_joy_up>;    
@@ -276,8 +267,8 @@ using joy_press = int ;        //,_joy_press>;
 struct joycap {
 
 };
-class  JOY : public event_sys<evs::_JOY> { // TODO handle multi input by calling multiple
- public:
+struct  JOY   { // TODO handle multi input by calling multiple
+public:
         evq<joy_hat,MAXPOLL>   last_hat;
         evq<joy_axis,MAXPOLL>  last_axis;    
         evq<joy_up,MAXPOLL>    last_up;  
@@ -327,14 +318,16 @@ void axis_cb(int16 axis,int index) final {this->last_axis=joy_axis(axis,index);}
     };
     JOY() =default{};
 };
+#endif
+#ifdef STRATA_CAP_CONT
 using CONT_press= int;//        _CONT_press>;                    
 using CONT_down = int;//        _CONT_down>; 
 using CONT_up =   int;//        _CONT_up>; 
 using CONT_dpad = int;//        _CONT_dpad>;
 using CONT_axis = glm::ivec2;//        _CONT_axis>;  // Axis index;
 using CONT_trig = glm::ivec2;
-class CONT: public event_sys<evs::_CONT> {
- public:
+struct CONT  {
+public:
     evq<CONT_press,MAXPOLL> last_press;      
     evq<CONT_down,MAXPOLL>  last_down;     
     evq<CONT_up,MAXPOLL>    last_up;   
@@ -342,6 +335,8 @@ class CONT: public event_sys<evs::_CONT> {
     evq<CONT_axis,MAXPOLL>  last_laxis;     
     evq<CONT_axis,MAXPOLL>  last_raxis;
     evq<CONT_trigger,MAXPOLL> last_tr;
+    int num =0 ; 
+    virtual void num();
     void clear()final{this->last_press.clear();this->last_down.clear();this->last_up.clear();this->last_dpad.clear();this->last_laxis.clear();this->last_raxis.clear();this->last_tr.clear();};
     bool trig_cb(CONT_trig ev,int index=0) final {this->last_tr+=ev;}
     bool up_cb(int btn,int index=0) final {this->last_up=CONT_up(btn,index);};                   //bool push_up(int btn,int index) final {this->evmain.push(CONT_up(btn,index));};
@@ -359,18 +354,14 @@ class CONT: public event_sys<evs::_CONT> {
     bool dpad_cb(dpad ev) final {this->last_dpad+= ev;};          //  bool push_dpad(dpad ev) final {this->evmain.push(ev));};                
 
     
-    virtual void handle(int index=0);
-    virtual handleMulti(){
-
-    };
-    virtual int get_state(int btn=-1,  int index=0); // If negative then means get all pressed
-    
-    virtual int get_axis(int axis=-1,  int index=0 );
-    virtual int get_dpad(int index =0);
+    virtual bool handle(int index=0);
+    virtual bool mhandle();
+     int get_state(int btn=-1,  int index=0); // If negative then means get all pressed
+     int get_axis(int axis=-1,  int index=0 );
+     int get_dpad(int index =0);
 
 
-    virtual void _init();
-    void init(){event_sys::init();};
+    void init();
     bool filter(short int type_flag){
         switch(type_flag){
             case _CONT_press: {return true;};
@@ -383,14 +374,14 @@ class CONT: public event_sys<evs::_CONT> {
 
 
 };  // index
-
+#endif
+#ifdef STRATA_CAP_TOUCH
 using touch_move =glm::vec4; ///,_touch_move>; //xy last zw move
-using touch_tap  = glm::vec2; ///,_touch_tap>;// tap
+using touch_tap  = glm::vec4; ///,_touch_tap sizex sizey
 using touch_zoom = glm::vec4; ///,_touch_gesture>; // xy move,z rotate,w zoom
 using touch_gesture = evq<glm::vec4,MAXPOLL*MAXPOLL>; ///,_touch_zoom>; // rotate
 
-
-class TOUCH: public event_sys<evs::_TOUCH> { 
+struct TOUCH  { 
  public:
      evq<touch_tap,MAXPOLL> last_tap;
      evq<touch_tap,MAXPOLL> last_up;
@@ -409,27 +400,21 @@ class TOUCH: public event_sys<evs::_TOUCH> {
     vect<glm::uvec2> get_multi_pos();
     virtual void get_touch();
     vect<touch_move> s;
-        bool move_cb(vect<glm::vec4> d,int index){this->last_move=move(d,index);}      bool push_touch_move(vect<glm::vec4> d,int index){this->evmain.push(move_cb(d,index));}
-        bool tap_cb(vect<glm::vec2> d,int index){this->last_tap=tap(d,index);}      bool push_touch_tap(vect<glm::vec2> d,int index){this->evmain.push(tap_cb(d,index));}
-        bool zoom_cb(mat<glm::vec2> d,int index){this->last_zoom=zoom(d,index);}      bool push_touch_zoom(mat<glm::vec2> d,int index){this->evmain.push(zoom_cb(d,index));}
-        bool gesture_cb(vect<glm::vec4> d,int index){this->last_gesture=gesture(d,index);}      bool push_touch_gesture(vect<glm::vec4> d,int index){this->evmain.push(gesture_cb(d,index));}
-    void move_cb(touch_move ev){this->last_move_cb=ev;};           void push_move(touch_move ev){this->evmain.push(ev);};
-    void tap_cb(touch_tap ev){this->last_tap_cb=ev;};              void push_tap(touch_tap ev){this->evmain.push(ev);};
-    void zoom_cb(touch_zoom ev){this->last_zoom_cb=ev;};           void push_zoom(touch_zoom ev){this->evmain.push(ev);};
-    void gesture_cb(touch_gesture ev){this->last_gesture_cb=ev;};  void push_gesture(touch_gesture ev){this->evmain.push(ev);};
+        bool move_cb(vect<glm::vec4> d,int index){this->last_move+=touch_move(d,index);}       //bool push_touch_move(vect<glm::vec4> d,int index){this->evmain.push(move_cb(d,index));}
+        bool tap_cb(vect<glm::vec2> d,int index){this->last_tap+=touc_tap(d,index);}       //bool push_touch_tap(vect<glm::vec2> d,int index){this->evmain.push(tap_cb(d,index));}
+        bool zoom_cb(mat<glm::vec2> d,int index){this->last_zoom+=touch_zoom(d,index);}       //bool push_touch_zoom(mat<glm::vec2> d,int index){this->evmain.push(zoom_cb(d,index));}
+        bool gesture_cb(vect<glm::vec4> d,int index){this->last_gesture+=touch_gesture(d,index);}       //bool push_touch_gesture(vect<glm::vec4> d,int index){this->evmain.push(gesture_cb(d,index));}
+    void move_cb(touch_move ev){this->last_move_cb+=ev;};         //  void push_move(touch_move ev){this->evmain.push(ev);};
+    void tap_cb(touch_tap ev){this->last_tap_cb+=ev;};            //  void push_tap(touch_tap ev){this->evmain.push(ev);};
+    void zoom_cb(touch_zoom ev){this->last_zoom_cb+=ev;};         //  void push_zoom(touch_zoom ev){this->evmain.push(ev);};
+    void gesture_cb(touch_gesture ev){this->last_gesture_cb+=ev;};//  void push_gesture(touch_gesture ev){this->evmain.push(ev);};
      void down_cb(mousedown ev) final {this->last_down+=ev;};
      void up_cb(mouseup ev) final { up_check(ev.data());this->last_up+=ev;};
 
     void init(){event_sys::init();};
     void record_gesture(){this->rec_gest=true;};
     vect<touch_move> finish_gesture(){this->reg_get=false;return this->s};
-    void priority(){
-
-
-
-        // gesture
-        if(rec_gest){this->s.push(this->last_move);};
-    };
+    //  bool handle();
     bool filter(short int type_flag){
         switch(type_flag){
             case _touch_move: {return true;};
@@ -441,7 +426,7 @@ class TOUCH: public event_sys<evs::_TOUCH> {
     };
 
 };
-
+#endif
 
 using wake        =  bool      ; //         ,_wake>;
 using sleep       =  bool      ; //         ,_sleep>;        
@@ -455,7 +440,7 @@ using close       =  bool      ; //         ,_close>;
 using display_conn = bool      ; //         ,_display_conn>;  
 using display_orient = int     ; //          ,_display_orient>;
 using display_power  = int       ; //         ,_display_power>;
-class DISPLAY : event_sys<evs::_DISPLAY> {
+struct DISPLAY  {
  public:
     vect<glm::ivec3> disp; // xy=wh ; z=hz;
     vect<glm::ivec3> mon;
@@ -494,63 +479,173 @@ class DISPLAY : event_sys<evs::_DISPLAY> {
         bool res=_get
     }; // 
 };
-#ifdef STRATA_CAPABILTY_AUDIO
-class AUDIO : event_sys<evs::_AUDIO> {
+#ifdef STRATA_CAP_AUDIO
+#define MONO
+#define WAVE_1M08  0b000001       //	11.025 kHz, mono, 8-bit
+#define WAVE_1M16  0b000010      //	11.025 kHz, mono, 16-bit
+#define WAVE_2M08  0b000101      //	22.05 kHz, mono, 8-bit
+#define WAVE_2M16  0b000110      //	22.05 kHz, mono, 16-bit
+#define WAVE_4M08  0b001001      //	44.1 kHz, mono, 8-bit
+#define WAVE_4M16  0b001010      //	44.1 kHz, mono, 16-bit
+#define WAVE_96M08 0b010001      // 96 kHz, mono, 8-bit
+#define WAVE_96M16 0b010010      // 96 kHz, mono, 16-bit
 
+#define WAVE_1S08  0b100001        //	11.025 kHz, stereo, 8-bit
+#define WAVE_1S16  0b100010       //	11.025 kHz, stereo, 16-bit
+#define WAVE_2S08  0b100101       //	22.05 kHz, stereo, 8-bit
+#define WAVE_2S16  0b100110       //	22.05 kHz, stereo, 16-bit
+#define WAVE_4S08  0b101001       //	44.1 kHz, stereo, 8-bit
+#define WAVE_4S16  0b101010       //	44.1 kHz, stereo, 16-bit
+#define WAVE_96S08 0b110001        //	96 kHz, stereo, 8-bit
+#define WAVE_96S16 0b110010        //	96 kHz, stereo, 16-bit
+struct devcap{
+    std::string name;
+    uint channels;
+    uint flags;
+    devcap(std::string _name, uint _channels,uint _flags) {this->name=_name;this->channels=_channels,this->flags=_flags;}; 
+};
+using dcaps = devcap;
+using 
+struct AUDIO  {
+public:
+    uint num = 0;
+    std::vector<dcaps> audioCaps; 
+    uint set =0 ; // device
+    virtual uint GetNum();
+    void clear()final {this->audioCaps.clear();};
+    void init(){this->GetNum();};
+    virtual void getCaps();
+    virtual void open(uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz,uint index);    
+    void open(uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz )final{this->open(byterate , bitspersampple,bitrate, channels, hz,0);};
+
+
+    virtual void playWav(std::string path, };
+    void playWav(std::string path, uint mstime, uint hz,uint bitrate)final {
+        this->playWav(path,mstime,hz,0,360000);
+    };
+    virtual void close(uint index);
+    void close()final{this->close(this->set);};
+    void play(uint sizedata, char* data, uint byterate,uint bitspersapmple,uint channels, uint hz ,uint index   )final{
+        this->open(byterate,bitspersample,channels,hz,index);
+        this->play(sizedata,data,index);
+        this->close(index);
+    };
+    void play(uint sizedata, char* data, uint byterate,uint bitspersapmple,uint channels, uint hz ,)final{this->play(sizedata, char* data,  byterate, bitspersapmple, channels, hz ,0);};
+    //  void play(std::string wavfile , );
+    //  play(uint sizedata, char* data);
+    void play(uint sizedata, char* data)final{this->play(uint sizedata, char* data,0);};
+    virtual void setVol(uint index, uint vol); 
+    void setVol(uint vol)final{this->setVol(this->set,vol);};
+    virtual void stopPlay(uint index);
+    void stopPlay()final{this->stopPlay(this->set);};
+    #ifdef STRATA_CAPABILITY_MIC
+    uint nummic=0;
+    std::vector<scas> mcaps ;
+
+    void clearmic();
+    virtual void getMicVaps();
+    virtual uint GetNumMic();
+    virtual void openMic(uint index);
+    void openMic()final{this->openMic(0);};
+    void clearMic(){this->micd.clear()}
+    virtual void openmic(uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz,uint index);    
+    void openmic(uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz )final{this->open(byterate , bitspersampple,bitrate, channels, hz,0);};
+ virtual void closemic(uint index);
+    void closemic()final{this->close(0);};
+ void rec(uint sizedata, char* data, uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz,uint index)final{
+        this->openMic(byterate ,  bitspersampple, bitrate, channels,  hz,index);
+        this->rec(sizedata, data,index);
+        this->closeMic(index);
+    };
+ void rec(uint sizedata, char* data, uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz)final{this->rec(sizedata, char* data,  byterate, bitspersapmple, channels, hz ,0);};
+ virtual void stoprec(uint index);
+  uint stoprec()final{this->stoprec(0);};
+#endif
 };
 #endif
-#ifdef STRATA_CAPABILTY_SENSOR
-using gyro  =  glm::vec3//_gyro>;     
+// This sections does not have include flag guard since it is meant to possibly be redefined
+using gyro  =  glm::vec3//_gyro>;   
+using loc = glm::dvec4;// long,lat,sealev,  
 using accel  = glm::vec3//_accel>;      
 using mag  =   float //,_mag>;    
 using baro  =  float //,_baro>;     
 using humid  = float //,_humid>;      
 using pos  =   float //,_pos>;   
-using mic  =   int** //,_mic>;    
 using lidar = double** //,_lidar>;      
 using cam  =  double** //,_cam>;    
-class SENSOR : event_sys<evs::_SENSOR> {
+struct SENSOR   {
+public:
     evq<gyro, MAXPOLL >   last_gyro;
     evq<accel, MAXPOLL >  last_accel;
     evq<mag, MAXPOLL >    last_mag;
     evq<baro, MAXPOLL >   last_baro;
     evq<humid, MAXPOLL >  last_humid;
     evq<pos, MAXPOLL >    last_pos;
-    evq<mic, MAXPOLL >    last_mic;
     evq<lidar, MAXPOLL >  last_lidar;
     evq<cam, MAXPOLL >    last_cam;  
+    evq<loc, MAXPOLL >    last_loc;  
+uint numGyro =1;
+uint numaccel =1;
+uint nummag =1;
+uint numbaro =1;
+uint numhumid =1;
+uint numpos =1;
+uint numlidar =1;
+uint numcam =1;
+uint numloc =1;
+    virtual void getSensorPermisisons();
+
+    virtual uint getNumgyro();
+    virtual uint getNumaccel();
+    virtual uint getNummag();
+    virtual uint getNumbaro();
+    virtual uint getNumhumid();
+    virtual uint getNumpos();
+    virtual uint getNumlidar();
+    virtual uint getNumcam();
+    virtual uint getNumloc();
+    void getnums()final {this->getNumgyro();this->getNumaccel();this->getNummag();this->getNumbaro();this->getNumhumid();this->getNumpos();this->getNumlidar();this->getNumcam();this->getNumloc();};
+
+    virtual gyro getgyro();
+    virtual accel getaccel();
+    virtual mag getmag();
+    virtual baro getbaro();
+    virtual humid gethumid();
+    virtual pos getpos();
+    virtual lidar getlidar();
+    virtual cam getcam();
+    virtual loc getloc();
 };
-#endif
 template <typename win>
-class SYS : public event_sys<evs::_SYS> { 
-    public:
+struct SYS   { 
+public:
 
   uint flag=_SYS;
     // event_main evmain;
     
 #ifdef STRATA_CAPABILITY_MOUSE 
-MOUSE      sMOUSE;
+MOUSE      mouse;
 #endif    
 #ifdef STRATA_CAPABILITY_KEY
-KEY        sKEY;
+KEY        key;
 #endif
 #ifdef STRATA_CAPABILITY_JOY 
-JOY        sJOY;
+JOY        joy;
 #endif
 #ifdef STRATA_CAPABILITY_CONT 
-CONT       sCONT;
+CONT       cont;
 #endif
 #ifdef STRATA_CAPABILITY_TOUCH 
-TOUCH      sTOUCH;
+TOUCH      touch;
 #endif
 #ifdef STRATA_CAPABILITY_DISPLAY 
-DISPLAY    sDISPLAY;
+DISPLAY    display;
 #endif
 #ifdef STRATA_CAPABILITY_AUDIO 
-AUDIO      sAUDIO;
+AUDIO      audio;
 #endif
 #ifdef STRATA_CAPABILITY_SENSOR 
-SENSOR     sSENSOR;
+SENSOR     sensor;
 #endif
 
 
@@ -636,9 +731,10 @@ SENSOR     sSENSOR;
     #define _transparent   0b00100
     #define _always_on_top 0b01000
     #define _tool          0b10000
+    #define _permeable    0b100000
     #define _default       0b00011
-    virtual win create_win(glm::ivec2 size,glm::ivec2 pos,win parent=NULL,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) ;
-    win create_child_cur (glm::ivec2 size,glm::ivec2 pos,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) final{
+    virtual void createWwin(glm::ivec2 size,glm::ivec2 pos,uint8_t parent=-1,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,char CLASS_NAME[]=NULL ,char text[]=NULL) ;
+    void create_child_cur (glm::ivec2 size,glm::ivec2 pos,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) final{
             return this->create_win (glm::ivec2 size,glm::ivec2 pos,this->wins[this->curr_win_index].w,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) ;
     } ;
     virtual glm::ivec2 winpos(win w=this->wins[0]);
@@ -651,19 +747,18 @@ SENSOR     sSENSOR;
     virtual void winrestore{uint pos};
     virtual void winhide(uint pos);
     
-    virtual bool is_min(win w=this->wins[0])
-    virtual bool is_hidden(win w=this->wins[0])
-    virtual bool is_normal(win w=this->wins[0])
-    virtual bool is_max(win w=this->wins[0])
-    virtual void set_win_opacity(uint index,float opacity);
-    virtual void set_win_fullscreen(uint index);
-    virtual void close_win();
+    virtual bool ismin(win w=this->wins[0])
+    virtual bool ishidden(win w=this->wins[0])
+    virtual bool isnormal(win w=this->wins[0])
+    virtual bool ismax(win w=this->wins[0])
+    virtual void setwinopacity(uint index,float opacity);
+    virtual void setwinfullscreen(uint index);
+    virtual void closeWin();
+    virtual void recreateWin(uint index,glm::ivec2 size,glm::ivec2 pos,int8_t flag=_custom_tabbar,uint8_t parent=NULL,char CLASS_NAME[]="DefaultName" ,char text[]=NULL) {
+
     virtual void sleep(int mstime=2000);
-    virtual void _handle(); // Called during the event loop
-    void handle() final{
-        this->_handle();
-        for(int i =0; i<this->evsyspriority.size();i++){this->evsyspriority.handle();};
-    };
+    virtual void handle(); // Called during the event loop
+     
     void set_close(void (*const close_app)() = this->def_close){this->close_app_win_func= close_app;};
     virtual void _init();// Set callbacks
     void init(void (*const close_app)() ){set_close(close_app);this->_init();for(int i=0;i<this->evsyspriority.size();i++){this->evsyspriority[i].init();};
@@ -673,26 +768,25 @@ SENSOR     sSENSOR;
 };
 
 
-#define MAIN_DEF(ev_m) ev_m main; 
-#define NS_USE(ns) using namespace ns;
+// #define MAIN_DEF(ev_m) ev_m main; 
+// #define NS_USE(ns) using namespace ns;
 
-event_main evmain;
-#ifdef STRATA_IMPL_SDL
-#include "impl_sdl.hpp"
-using namespace SDL_events;
-#endif
+// #ifdef STRATA_IMPL_SDL
+// #include "impl_sdl.hpp"
+// using namespace SDL_events;
+// #endif
 #ifdef STRATA_IMPL_LINUX
 #include "impl_linux.hpp"
-using namespace linux_events;
+using namespace impl_linux;
 using env = linux_env;
 using evns = linux_events;
 #elifdef STRATA_IMPL_WINDOWS
 #include "impl_win.hpp"
-using namespace win_events;
+using namespace impl_win;
 
 #elifdef STRATA_IMPL_ANDROID
 #include "impl_android.hpp"
-using namespace android_events;
+using namespace impl_android;
 #elifdef
 #endif
 

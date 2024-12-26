@@ -1,5 +1,5 @@
 #include <strata/backend/impl.hpp>
-#include <windows.h>
+#include <Windows.h>
 #ifdef STRATA_IMPL_VK
 #include <vk/vulkan.h>
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -16,16 +16,16 @@
 #include <gl/gl.h>
 #endif
 
-namespace win_events {
-    // using events::event;
-    // using events::event_filter;
-    // using events::event_main;
-    #ifdef STRATA_CAPABILTY_MOUSE
-    class MOUSE                   :public events::MOUSE                   { 
+namespace impl_win {
+    // using impl::event;
+    // using impl::event_filter;
+    // using impl::event_main;
+    #ifdef STRATA_CAP_MOUSE
+    struct MOUSE                     : impl::MOUSE                     { 
         virtual bool get_state(short int bt){
             return 
         };
-        void _handleMulti( WPARAM wParam, LPARAM lParam){
+        void _mhandle( WPARAM wParam, LPARAM lParam){
             UINT dataSize;
             GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dataSize, sizeof(RAWINPUTHEADER));
 
@@ -57,17 +57,14 @@ namespace win_events {
                 return true;
             }; return false;
         };
-        bool handleMulti( UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        bool mhandle( UINT mMsg, WPARAM wParam, LPARAM lParam ){
             switch (mMsg) {
                 case WM_INPUT: {return this->_handleMulti(wParam, lParam) ; }
                 return false;
     
-        };
+        };};
         bool handle(UINT mMsg, WPARAM wParam, LPARAM lParam ){
              switch (mMsg) {
-              
-            return 0;
-        };
         case WM_LBUTTONDOWN   :{this->down_cb(mouse_down(0));return;};
         case WM_LBUTTONUP     :{this->up_cb(mouse_up(0));return;}
         case WM_LBUTTONDBLCLK :{this->dbclick_cb(db_click(0));};
@@ -95,9 +92,8 @@ namespace win_events {
        case WM_MOUSEWHEEL: {
             int delta = GET_WHEEL_DELTA_WPARAM(wParam); // Motion delta
             this->wheel_cb( mouse_wheel(delta)); return;};
-          case WM_INPUT: {return this->_handleMulti( WPARAM wParam, LPARAM lParam)}
-            };
-    };
+       case WM_INPUT: {return this->mhandle( WPARAM wParam, LPARAM lParam);};
+       };
     return -1;
     };
         virtual void _init(){
@@ -112,9 +108,10 @@ namespace win_events {
         };
     };      
     #endif
-    #ifdef STRATA_CAPABILTY_KEY   
-    class KEY                     :public events::KEY                     {
-        virtual void init(){return;};  CALLBACK
+    #ifdef STRATA_CAP_KEY   
+    struct KEY                       : impl::KEY                       {
+        virtual void init(){return;};  
+        bool mhandle(){return;};// TODO and init
         bool handle( UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
         case WM_KEYDOWN: {int key = (int)wParam;this->down_cb(key);return true;};
@@ -129,7 +126,7 @@ namespace win_events {
     // #include <xinput.h>
 #ifdef STRATA_CAPABILITY_JOY
 #include <joystickapi.h>
-    class JOY                     :public events::JOY                     {
+    struct JOY                       : impl::JOY                       {
 
     virtual void init();
     virtual int num(){this->num=joyGetNumDevs();return this->num;};
@@ -171,12 +168,19 @@ namespace win_events {
     #ifndef XINPUT
     #include <Xinput.h>
     #endif
-    class CONT                  : public events::CONT {
+    struct CONT                   : impl::CONT                   {
         void num(){
 
         };
-        void init(){
-
+        void init(){XINPUT_STATE state;
+    ZeroMemory(&state, sizeof(XINPUT_STATE)); int i;
+            for(i = 0; i<4 ; i++){
+                DWORD result = XinputGetState(i, &state);
+                if (result != ERROR_SUCCESS){
+                    break;
+                };
+            };
+            this->num=i;
         };
         bool handle(int index=0){
  XINPUT_STATE state;
@@ -206,12 +210,18 @@ namespace win_events {
          this->raxis_cb(CONT_axis(state.Gamepad.sThumbRX,state.Gamepad.sThumbRY)); 
          return true;        
         };
+        bool mhandle(){ int i=0;
+            for(; i<this->num;i++){this->handle(i);};
+            if(i){return true;}
+            else {return false;};
+        };
+        bool handle(){return true;};
     };
-    class TOUCH                   :public events::TOUCH                   {
+    struct TOUCH                      : impl::TOUCH                      {
          
          void init(HWND hwnd){RegisterTouchWindow(hwnd, TWF_WANTPALM);};
          void end(HWND hwnd){UnregisterTouchWindow (hwnd);};
-         void handle( UINT uMsg, WPARAM wParam, LPARAM lParam){
+         bool handle( UINT uMsg, WPARAM wParam, LPARAM lParam){
          switch (uMsg) {
             case WM_TOUCH: {
             UINT cInputs = LOWORD(wParam);
@@ -221,23 +231,26 @@ namespace win_events {
                 for (UINT i = 0; i < cInputs; i++) {
                     TOUCHINPUT ti = touchInputs[i];
                     if (ti.dwFlags & TOUCHEVENTF_DOWN) {
-                        down_cb(touch_tap(ti.x,ti.y));
+                        if(ti.dwMask & TOUCHEVENTFMASK_CONTACTAREA){
+                        this->down_cb(touch_tap(float(ti.x),float(ti.y),float(ti.cxContact),float(ti.cyContact)));
+                        };
+                       this->down_cb(touch_tap(float(ti.x),float(ti.y),0,0));
+
                     } else if (ti.dwFlags & TOUCHEVENTF_UP) {
-                        up_cb(touch_tap(ti.x,ti.y));
+                        this->up_cb(touch_tap(float(ti.x),float(ti.y),0,0));
                     } else if (ti.dwFlags & TOUCHEVENTF_MOVE) {
-                        move_cb(touch_tap(ti.x,ti.y));
+                        this->move_cb(touch_tap(float(ti.x),float(ti.y),0,0));
                     };
                  CloseTouchInputHandle((HTOUCHINPUT)lParam);   
                 }
             };
 
-            return 0;
-        }
-         };
-         
+            return 0;}
+        };
+        bool handle(){return true;};
      }         
    
-    class DISPLAY   : public events::UI {
+    struct DISPLAY    : impl::DISPLAY    {
         bool gotten;
 //         typedef struct _DISPLAY_DEVICEW {
 //     DWORD  cb;
@@ -298,7 +311,7 @@ namespace win_events {
             this->get_monitor_data(i);
         };
     };
-    void handle();
+    void handle(){return true;};
     bool handle(UINT uMsg, WPARAM wParam, LPARAM lParam){
         switch (uMsg) {
         case WM_DISPLAYCHANGE: {
@@ -325,9 +338,177 @@ namespace win_events {
     // Set callback to new monitor
     };
     };
+#ifdef STRATA_CAPABILITY_AUDIO
+#include <mmeapi.h>
+struct AUDIO : impl::AUDIO{
+    virtual uint GetNum(){this->num = waveOutGetNumDevs();return this->num;}; 
+    std::vector<HWAVEOut> waveformats; // Opened audiodevs
+    void getCaps(){
+        this->getNum();
+        this->clear();
+        this->audioCaps.resize(this->num);
+        LPWAVEOUTCAPS pwoc ;
+        for(uint i =0 ; i<this->nums;i++){
+        waveOutGetDevCaps(  i,&pwoc, sizeof(pwoc));
+        uint flags ;
+        if(pwoc.dwSupport&WAVE_FORMAT_1M08 != false){flags|=WAVE_1M08;};
+        if(pwoc.dwSupport&WAVE_FORMAT_1M16 != false){flags|=WAVE_1M16;};
+        if(pwoc.dwSupport&WAVE_FORMAT_2M08 != false){flags|=WAVE_2M08;};
+        if(pwoc.dwSupport&WAVE_FORMAT_2M16 != false){flags|=WAVE_2M16;};
+        if(pwoc.dwSupport&WAVE_FORMAT_4M08 != false){flags|=WAVE_4M08;};
+        if(pwoc.dwSupport&WAVE_FORMAT_4M16 != false){flags|=WAVE_4M16;};
+        if(pwoc.dwSupport&WAVE_FORMAT_96M08 != false){flags|=WAVE_96M08;};
+        if(pwoc.dwSupport&WAVE_FORMAT_96M16 != false){flags|=WAVE_96M16;};
+        if(pwoc.dwSupport&WAVE_FORMAT_1S08 != false){flags|=WAVE_1S08;};
+        if(pwoc.dwSupport&WAVE_FORMAT_1S16 != false){flags|=WAVE_1S16;};
+        if(pwoc.dwSupport&WAVE_FORMAT_2S08 != false){flags|=WAVE_2S08;};
+        if(pwoc.dwSupport&WAVE_FORMAT_2S16 != false){flags|=WAVE_2S16;};
+        if(pwoc.dwSupport&WAVE_FORMAT_4S08 != false){flags|=WAVE_4S08;};
+        if(pwoc.dwSupport&WAVE_FORMAT_4S16 != false){flags|=WAVE_4S16;};
+        if(pwoc.dwSupport&WAVE_FORMAT_96S08 != false){flags|=WAVE_96S08;};
+        if(pwoc.dwSupport&WAVE_FORMAT_96S16 != false){flags|=WAVE_96S16;};
+        this->audioCaps[i]= dcaps(powc.wChannels,pwoc.dwSupport, flags );
+        };
+    };
 
+    void open(uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz , uint index ){
+    WAVEFORMATEX waveFormat;
+    waveFormat.wFormatTag = WAVE_FORMAT_PCM;       // PCM format
+    waveFormat.nChannels = channels;                     // Mono sound
+    waveFormat.nSamplesPerSec = hz;            // Sample rate (44.1 kHz)
+    waveFormat.nAvgBytesPerSec = byterate;       // Byte rate
+    waveFormat.nBlockAlign = 2;                   // Block alignment
+    waveFormat.wBitsPerSample = bitspersample;               // 16-bit samples
+    HWAVEOUT hWaveOut;
+    MMRESULT result = waveOutOpen(&hWaveOut, index, &waveFormat, 0, 0, CALLBACK_NULL);
+    this->waveout.push_back(hWaveOut);
+    };
+    void close(uint index){waveOutClose(this->waveout[index]);};
+    void play(uint sizedata, char* data, uint index){
+     WAVEHDR waveHeader = {};
+    waveHeader.dwBufferLength = sizeData;   // Length of the audio data
+    waveHeader.lpData = (LPSTR)data;         // Pouinter to audio data
+    waveHeader.dwFlags = 0;
+
+    MMRESULT result = waveOutPrepareHeader(this->waveout[index], &waveHeader, sizeof(WAVEHDR));
+    result = waveOutWrite(this->waveout[index], &waveHeader, sizeof(WAVEHDR));
+    if (result != MMSYSERR_NOERROR) {
+        waveOutUnprepareHeader(this->waveout[index], &waveHeader, sizeof(WAVEHDR));
+        return 1;
+    };
+     while (!(waveHeader.dwFlags & WHDR_DONE)) {Sleep(5);};
+    waveOutUnprepareHeader(this->waveout[index], &waveHeader, sizeof(WAVEHDR));
+    return 0;
+    };
+    // void play(uint sizedata, char* data){
+    //      uint bitspersampple, bitrate, channels, hz ,  index ;
+    // };
+
+    void playWav(std::string path, uint bitrate,uint channels, uint hz , uint bitrate );{};
+    void close(uint index){waveOutClose(this->waveout[index]);};
+    void setVol(uint index,uint vol){waveOutSetVolume(this->waveout[index],DWORD(vol) );};
+    uint stopPlay(uint index){LPMMTIME lm;waveOutGetPosition(this->waveout[index],&lm,sizeof(lm));waveInStop(this->waveout[index]);return uint(lm)};
+    #ifdef STRATA_CAPABILITY_MIC
+
+    uint GetNumMic(){this->nummic = waveInGetNumDevs();return this->nummic;}
+    std::vector<HWAVEINCAPS> wavein;
+        void clearmic(){this->mcaps.clear();this->wavein.clear();};
+
+    void getMicCaps(){
+        this->getNumMic();
+        LPWAVEINCAPS pwic;
+        this->miccaps.resize(this->nummic);
+    for(uint i=0;i<this->nummic;i++){
+        waveInGetDevCaps(i,&pwic,sizeof(pwic));
+         uint flags =0;
+        if(pwic.dwFormats&WAVE_FORMAT_1M08 != false){flags|=WAVE_1M08;};
+        if(pwic.dwFormats&WAVE_FORMAT_1M16 != false){flags|=WAVE_1M16;};
+        if(pwic.dwFormats&WAVE_FORMAT_2M08 != false){flags|=WAVE_2M08;};
+        if(pwic.dwFormats&WAVE_FORMAT_2M16 != false){flags|=WAVE_2M16;};
+        if(pwic.dwFormats&WAVE_FORMAT_4M08 != false){flags|=WAVE_4M08;};
+        if(pwic.dwFormats&WAVE_FORMAT_4M16 != false){flags|=WAVE_4M16;};
+        if(pwic.dwFormats&WAVE_FORMAT_96M08 != false){flags|=WAVE_96M08;};
+        if(pwic.dwFormats&WAVE_FORMAT_96M16 != false){flags|=WAVE_96M16;};
+        if(pwic.dwFormats&WAVE_FORMAT_1S08 != false){flags|=WAVE_1S08;};
+        if(pwic.dwFormats&WAVE_FORMAT_1S16 != false){flags|=WAVE_1S16;};
+        if(pwic.dwFormats&WAVE_FORMAT_2S08 != false){flags|=WAVE_2S08;};
+        if(pwic.dwFormats&WAVE_FORMAT_2S16 != false){flags|=WAVE_2S16;};
+        if(pwic.dwFormats&WAVE_FORMAT_4S08 != false){flags|=WAVE_4S08;};
+        if(pwic.dwFormats&WAVE_FORMAT_4S16 != false){flags|=WAVE_4S16;};
+        if(pwic.dwFormats&WAVE_FORMAT_96S08 != false){flags|=WAVE_96S08;};
+        if(pwic.dwFormats&WAVE_FORMAT_96S16 != false){flags|=WAVE_96S16;};
+        this->miccaps[i]=dcaps(std::string(pwic.szPname),pwic.wChannels,flags);};};
+    void openMic(uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz,uint index){
+        uint chan = channels
+        if(this->mcaps[index].x<channels){chan=this->mcaps[index].x<};
+    WAVEFORMATEX waveFormat;
+    waveFormat.wFormatTag = WAVE_FORMAT_PCM;       // PCM format
+    waveFormat.nChannels = channels;                     // Mono sound
+    waveFormat.nSamplesPerSec = hz;            // Sample rate (44.1 kHz)
+    waveFormat.nAvgBytesPerSec = byterate;       // Byte rate
+    waveFormat.nBlockAlign = 2;                   // Block alignment
+    waveFormat.wBitsPerSample = bitspersample;               // 16-bit samples
+    HWAVEIN hWaveIn;
+    MMRESULT result = waveInOpen(&hWaveIn, devi, &waveFormat, 0, 0, CALLBACK_NULL);
+    this->wavein.push_back(hWaveIn);
+    };};
+
+    void closeMic(uint index){waveInClose(this->wavein[index]);};
+    void rec(uint sizedata, char* data, uint index){
+     LPWAVEHDR waveHeader = {};
+    waveHeader.dwBufferLength = sizeData;   // Length of the audio data
+    waveHeader.lpData = (LPSTR)data;         // Pouinter to audio data
+    waveHeader.dwFlags = 0;
+    this->headers[index]=
+    MMRESULT result = waveInPrepareHeader(this->waveout[index], &waveHeader, sizeof(WAVEHDR));
+    result = waveOutWrite(this->wavein[index], &waveHeader, sizeof(WAVEHDR));
+    if (result != MMSYSERR_NOERROR) {
+        waveInUnprepareHeader(this->wavein[index], &waveHeader, sizeof(WAVEHDR));
+        return 1;
     }
-    class SYS : public events::SYS{
+     while (!(waveHeader.dwFlags & WHDR_DONE)) {Sleep(5);};
+    waveOutUnprepareHeader(this->waveout[index], &waveHeader, sizeof(WAVEHDR));
+    return 0;
+};
+   uint stoprec(uint index){LPMMTIME lm;waveInGetPosition(this->wavein[index],&lm,sizeof(lm));waveInStop(this->wavein[index]);return uint(lm)};
+
+     
+
+
+    #endif
+
+};
+#endif
+#ifdef STRATA_CAP_SENSOR
+#include <sensorsapi.h>
+struct SENSOR : impl::SENSOR {
+
+
+     void getPermisisons(){
+
+     };
+     uint getNumGyro() {this->numgyro = };
+     uint getNumaccel(){this->numaccel = };
+     uint getNummag()  {this->nummag = };
+     uint getNumbaro() {this->numbaro = };
+     uint getNumhumid(){this->numhumid = };
+     uint getNumpos()  {this->numpos = };
+     uint getNumlidar(){this->numlidar = };
+     uint getNumcam()  {this->numcam = };
+     uint getNumloc()  {this->numloc = };
+
+     gyro getgyro(){return gyro()};
+     accel getaccel(){return getaccel(); };
+     mag getmag(){return getmag(); };
+     baro getbaro(){return getbaro(); };
+     humid gethumid(){return gethumid(); };
+     pos getpos(){return getpos(); };
+     lidar getlidar(){return getlidar(); };
+     cam getcam(){return getcam(); };
+     loc getloc(){return getloc(); };
+};
+#endif
+    struct SYS  : impl::SYS  {
         /*   
 using OVERLAPPED= WS_OVERLAPPED; 
 using POPUP= WS_POPUP; 
@@ -419,134 +600,211 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
     evq<long , MAXPOLL> last;
     LRESULT CALLBACK WindowProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
-#ifdef STRATA_CAPABILTY_MOUSE
-if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#ifdef STRATA_CAP_MOUSE
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif
-#ifdef STRATA_CAPABILTY_KEY
-if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#ifdef STRATA_CAP_KEY
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
 #endif        
-#ifdef STRATA_CAPABILTY_JOY
-if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#ifdef STRATA_CAP_JOY
+if(joy.handle()!=0){this->last.push(4);return 4;};
 #endif
-        #ifdef STRATA_CAPABILTY_CONT
-if(s.CONT.handle()!=0){this->last.push(5);return 5;};
+        #ifdef STRATA_CAP_CONT
+if(cont.handle()!=0){this->last.push(5);return 5;};
 #endif
-        #ifdef STRATA_CAPABILTY_TOUCH
-if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
 #endif
-        #ifdef STRATA_CAPABILTY_SENSOR
-if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
-#endif
-        #ifdef STRATA_CAPABILTY_AUDIO
-if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
-#endif
+
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
     LRESULT CALLBACK KeyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
-#ifdef STRATA_CAPABILTY_KEY
-if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#ifdef STRATA_CAP_KEY
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
 #endif        
-#ifdef STRATA_CAPABILTY_MOUSE
-if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#ifdef STRATA_CAP_MOUSE
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif
-#ifdef STRATA_CAPABILTY_JOY
-if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#ifdef STRATA_CAP_JOY
+if(joy.handle()!=0){this->last.push(4);return 4;};
 #endif
-        #ifdef STRATA_CAPABILTY_CONT
-if(s.CONT.handle()!=0){this->last.push(5);return 5;};
+        #ifdef STRATA_CAP_CONT
+if(cont.handle()!=0){this->last.push(5);return 5;};
 #endif
-        #ifdef STRATA_CAPABILTY_TOUCH
-if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
-#endif
-        #ifdef STRATA_CAPABILTY_SENSOR
-if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
-#endif
-        #ifdef STRATA_CAPABILTY_AUDIO
-if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
 
     LRESULT CALLBACK JoyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
-#ifdef STRATA_CAPABILTY_JOY
-if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#ifdef STRATA_CAP_JOY
+if(joy.handle()!=0){this->last.push(4);return 4;};
 #endif
-#ifdef STRATA_CAPABILTY_KEY
-if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#ifdef STRATA_CAP_KEY
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
 #endif        
-#ifdef STRATA_CAPABILTY_MOUSE
-if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#ifdef STRATA_CAP_MOUSE
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif
-        #ifdef STRATA_CAPABILTY_CONT
-if(s.CONT.handle()!=0){this->last.push(5);return 5;};
+        #ifdef STRATA_CAP_CONT
+if(cont.handle()!=0){this->last.push(5);return 5;};
 #endif
-        #ifdef STRATA_CAPABILTY_TOUCH
-if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
-#endif
-        #ifdef STRATA_CAPABILTY_SENSOR
-if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
-#endif
-        #ifdef STRATA_CAPABILTY_AUDIO
-if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
 
     LRESULT CALLBACK ContProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
-        #ifdef STRATA_CAPABILTY_CONT
-if(s.CONT.handle()!=0){this->last.push(5);return 5;};
+        #ifdef STRATA_CAP_CONT
+if(cont.handle()!=0){this->last.push(5);return 5;};
 #endif
-#ifdef STRATA_CAPABILTY_KEY
-if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#ifdef STRATA_CAP_KEY
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
 #endif        
-#ifdef STRATA_CAPABILTY_MOUSE
-if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#ifdef STRATA_CAP_MOUSE
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif
-#ifdef STRATA_CAPABILTY_JOY
-if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#ifdef STRATA_CAP_JOY
+if(joy.handle()!=0){this->last.push(4);return 4;};
 #endif
-        #ifdef STRATA_CAPABILTY_TOUCH
-if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
-#endif
-        #ifdef STRATA_CAPABILTY_SENSOR
-if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
-#endif
-        #ifdef STRATA_CAPABILTY_AUDIO
-if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
      LRESULT CALLBACK TouchProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
-        #ifdef STRATA_CAPABILTY_TOUCH
-if(s.TOUCH.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
 #endif
-#ifdef STRATA_CAPABILTY_KEY
-if(s.KEY.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#ifdef STRATA_CAP_KEY
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
 #endif        
-#ifdef STRATA_CAPABILTY_MOUSE
-if(sMOUSE.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#ifdef STRATA_CAP_MOUSE
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif
-#ifdef STRATA_CAPABILTY_JOY
-if(s.JOY.handle()!=0){this->last.push(4);return 4;};
+#ifdef STRATA_CAP_JOY
+if(joy.handle()!=0){this->last.push(4);return 4;};
 #endif
-        #ifdef STRATA_CAPABILTY_CONT
-if(s.CONT.handle()!=0){this->last.push(5);return 5;};
-#endif
-        #ifdef STRATA_CAPABILTY_SENSOR
-if(s.SENSOR.handle( mMsg, wParam,  lParam )!=0){this->last.push(7);return 7;};
-#endif
-        #ifdef STRATA_CAPABILTY_AUDIO
-if(s.AUDIO.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+        #ifdef STRATA_CAP_CONT
+if(cont.handle()!=0){this->last.push(5);return 5;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
    
+// Multi
+
+ LRESULT CALLBACK mWindowProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+#ifdef STRATA_CAP_MOUSE
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+#ifdef STRATA_CAP_KEY
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAP_JOY
+if(joy.mhandle()!=0){this->last.push(4);return 4;};
+#endif
+        #ifdef STRATA_CAP_CONT
+if(cont.mhandle()!=0){this->last.push(5);return 5;};
+#endif
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
+    };
+    LRESULT CALLBACK mKeyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+#ifdef STRATA_CAP_KEY
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAP_MOUSE
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+#ifdef STRATA_CAP_JOY
+if(joy.mhandle()!=0){this->last.push(4);return 4;};
+#endif
+        #ifdef STRATA_CAP_CONT
+if(cont.mhandle()!=0){this->last.push(5);return 5;};
+#endif
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+if(audio.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
+    };
+
+    LRESULT CALLBACK mJoyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+#ifdef STRATA_CAP_JOY
+if(joy.mhandle()!=0){this->last.push(4);return 4;};
+#endif
+#ifdef STRATA_CAP_KEY
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAP_MOUSE
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+        #ifdef STRATA_CAP_CONT
+if(cont.mhandle()!=0){this->last.push(5);return 5;};
+#endif
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
+    };
+
+    LRESULT CALLBACK mContProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+        #ifdef STRATA_CAP_CONT
+if(cont.mhandle()!=0){this->last.push(5);return 5;};
+#endif
+#ifdef STRATA_CAP_KEY
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAP_MOUSE
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+#ifdef STRATA_CAP_JOY
+if(joy.mhandle()!=0){this->last.push(4);return 4;};
+#endif
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+if(audio.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
+    };
+     LRESULT CALLBACK mTouchProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        // If WM_INPUT(0) then go thorugh rest
+        #ifdef STRATA_CAP_TOUCH
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+#endif
+#ifdef STRATA_CAP_KEY
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+#endif        
+#ifdef STRATA_CAP_MOUSE
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+#endif
+#ifdef STRATA_CAP_JOY
+if(joy.mhandle()!=0){this->last.push(4);return 4;};
+#endif
+        #ifdef STRATA_CAP_CONT
+if(cont.mhandle()!=0){this->last.push(5);return 5;};
+#endif
+if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
+    };
+   
+
+   
     MSG msg ;
-    bool _handle() 
+    bool handle() 
         while(GetMessage(&(this->msg), nullptr, 0, 0)) {
         TranslateMessage(&(this->msg));
         DispatchMessage(&(this->msg));
@@ -558,11 +816,10 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
     void changePrCont(uint pos=0){this->changCb(this->wins[0],this->ContProc;)};
     void changePrJoy(uint pos=0){this->changCb(this->wins[0],this->JoyProc;)};
     void changePrTouch(uint pos=0){this->changCb(this->wins[0],this->TouchProc;)};
-    void create_win (glm::ivec2 size,glm::ivec2 pos,HWND parent=NULL,char CLASS_NAME[]="DefaultName" ,std::string text=NULL,int8_t flag) override {
-        // Register class
-
+    
+    void createWin (glm::ivec2 size,glm::ivec2 pos,int8_t flag=_custom_tabbar,uint8_t parent = -1,char CLASS_NAME[]=NULL ,char text[]=NULL) override {
     WNDCLASS wc = {};
-    wc.lpfnWndProc = this->handle;
+    wc.lpfnWndProc = this->WindowProc;
     wc.hInstance = GetModuleHandle(NULL);
     wc.lpszClassName = CLASS_NAME;
 
@@ -570,12 +827,12 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
         std::cerr << "Failed to register window class!" << std::endl;
         return -1;
     };
-        DWORD style = (flag&_transparent?WS_EX_TRANSPARENT:0) | (flag&_always_on_top?WS_EX_TOPMOST:0)|  (flag&_tool?WS_EX_TOOLWINDOW:0) | (flag&_custom_tabbar?0:WS_CAPTION) ; 
+        DWORD style = (flag&_permeable?WS_EX_TRANSPARENT:0)|(flag&_transparent?WS_EX_LAYERED:0) | (flag&_always_on_top?WS_EX_TOPMOST:0)|  (flag&_tool?WS_EX_TOOLWINDOW:0) | (flag&_custom_tabbar?0:WS_CAPTION) ; 
         HWND winh = CreateWindowEx(
             style,CLASS_NAME,text,WS_OVERLAPPEDWINDOW,// Size and position
             pox.x!=0?pos.x:CW_USEDEFAULT, pos.y!=0?pos.y:CW_USEDEFAULT,size.x!=0?size.y:CW_USEDEFAULT, size.x!=0?size.y:CW_USEDEFAULT,
 
-            parent,       // Parent window    
+            (parent>=0)?this->wins[parent]:NULL,       // Parent window    
             NULL,       // Menu
             hInstance,  // Instance handle
             NULL        // Additional application data
@@ -594,10 +851,10 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
      void winrestore{uint pos}final{ChangeWindowState(this->wind[pos], SW_RESTORE);};
      void winhide(uint pos)final{ChangeWIndowState(this->wind[pos],SW_HIDE);};
 
-     bool is_min(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_MINIMIZE |SW_SHOWMINIMIZED))?true:false;};
-     bool is_hidden(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd==SW_HIDE)?true:false;};
-     bool is_normal(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_RESTORE|SW_SHOW)?true:false;};
-     bool is_max(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&SW_SHOWMAXIMIZED)?true:false;};
+     bool ismin(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_MINIMIZE |SW_SHOWMINIMIZED))?true:false;};
+     bool ishidden(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd==SW_HIDE)?true:false;};
+     bool isnormal(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_RESTORE|SW_SHOW)?true:false;};
+     bool ismax(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&SW_SHOWMAXIMIZED)?true:false;};
      bool setWindow(HWND w, vec4 pos_w_h, int state){
     WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT);
      wp.rcNormaplPosition.left=pos_w_h[0]; wp.rcNormaplPosition.top=pos_w_h[1];
@@ -605,9 +862,31 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
      wp.showCmd =  ((state&MIN)?SW_SHOWMINIMIZED:0)|((state&MAX)?SW_SHOWMAXIMIZED:0)|((state&HIDDEN)?SW_HIDE:0)|((state&NORMAL)?SW_SHOW:0);
     return  SetWindowPlacement(w,const WINDOWPLACEMENT *wp);
     };
+    void setwinopacity(uint index,uint8_t opacity){SetLayeredWindowAttributes(this->wins{index],rgbwhite,opacity,LWA_ALPHA)};
+    void setwinfullscreen(uint index){SetWindow();};
     void closeWin(HWND hwnd){SendMessage(hwnd, WM_CLOSE, 0, 0);};
-    void close_win(uint pos){ SendMessage(this->wins[pos], WM_CLOSE, 0, 0);this->wins.erase(pos);this->wins.shrink_to_fit(); ;};
-    void close_app(){for(HWND hwnd : this->wins){this->closeWin(hwnd)}};
+    void recreateWin(uint index,glm::ivec2 size,glm::ivec2 pos,int8_t flag=_custom_tabbar,uint8_t parent=NULL,char CLASS_NAME[]=NULL ,char text[]=NULL) {
+        WNDCLASS wc = {};
+    wc.lpfnWndProc = this->WindowProc;
+    wc.hInstance = GetModuleHandle(NULL);
+    wc.lpszClassName = CLASS_NAME;
+    if (!RegisterClass(&wc)) {
+        std::cerr << "Failed to register window class!" << std::endl;
+        return -1;
+    };
+        DWORD style = (flag&_permeable?WS_EX_TRANSPARENT:0)|(flag&_transparent?WS_EX_LAYERED:0) | (flag&_always_on_top?WS_EX_TOPMOST:0)|  (flag&_tool?WS_EX_TOOLWINDOW:0) | (flag&_custom_tabbar?0:WS_CAPTION) ; 
+        HWND winh = CreateWindowEx(
+            style,CLASS_NAME,text,WS_OVERLAPPEDWINDOW,// Size and position
+            pox.x!=0?pos.x:CW_USEDEFAULT, pos.y!=0?pos.y:CW_USEDEFAULT,size.x!=0?size.y:CW_USEDEFAULT, size.x!=0?size.y:CW_USEDEFAULT,
+
+            (parent>=0)?this->wins[parent]:NULL,       // Parent window    
+            NULL,       // Menu
+            hInstance,  // Instance handle
+            NULL        // Additional application data
+        );
+        this->wins[index]=winh;};
+    void closeWin(uint pos){ SendMessage(this->wins[pos], WM_CLOSE, 0, 0);this->wins.erase(pos);/* TODO this->wins.shrink_to_fit()*/};
+    void closeapp(){for(HWND hwnd : this->wins){this->closeWin(hwnd)}};
     void sleep(int mstime=2000){Sleep(mstime);}
     virtual void _init(){return;}
 
