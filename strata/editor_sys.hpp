@@ -333,7 +333,7 @@ stng_condition cond;
             {   
                 SeiSet(std::string filename , )
             };
-#include "project.cpp"        
+#include <project.cpp>   
             void reload(){
                 // Reloads window and settings
 
@@ -345,7 +345,7 @@ stng_condition cond;
                 std::vector<std::string> projects =  getProjects(projectsFolder);
                 bool grid_view = true ;
 
-#include "../lib/stb/stb_image.h"
+#include <lib/stb_image.h>
                 SfwVec2 PresetButtonSize = SfwVec2(600, 200);
                     SfwVec2 PresetImageSize = SfwVec2(500 , 180);
                 auto AppImage = stbi_load("assets/ui/PresetAppImage.png",PresetImageSize.x,PresetImageSize.y);
@@ -370,8 +370,9 @@ stng_condition cond;
                     constexpr const float uv0 = SfwVec2(0 + padding , 0+ padding);
                     constexpr const float uv1 = SfwVec2(1 - padding , 1 - padding) ;
                 // Start window to select or create project as well as review settings
-                 while (SDL_PollEvent(&event) != 0) 
+                 while () 
                 {
+
                     SfwGui::Begin("StartWindow");
                     SfwGui::Columns(2, "FirstWIndowCols" , true );
                     SfwGui::SetColumnWidth(300);
@@ -413,7 +414,7 @@ stng_condition cond;
             void editor()
             {
                 this->editorInst = editor(&this->sei_project, &this->sei, &this->sei_set, &this->sei_project);
-            }
+            };
         };
     strata::SeiProjSet sei_project_set ;
     strata::SeiProject sei_project;

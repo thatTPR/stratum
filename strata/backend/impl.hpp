@@ -124,6 +124,7 @@ struct evq {
     int ind(int s){return this->i[s];};
     int pos(){return this->pos;};
     void clear(){this->pos=0;};
+    void get(uint pos , T* d , int* inde){d = this->d[pos], inde = this->i[pos];};
     void push(T s){if(pos==size-1){this->clear();return;};this->d[pos]=s;this->i[pos]=0;this->pos++;};
     void push(T s , int ind){if(pos==size){this->clear();return;};this->d[pos]=s;this->i[pos]=ind;this->pos++;};
     void operator+=(T s){if(pos==size){this->clear();return;};this->d[pos]=s;this->pos++;};
@@ -137,7 +138,7 @@ using mouseup      = int        ;//,   _mouseup>;
 using mouse_move   = glm::ivec2 ;//,   _mouse_move>;//xy
 using mouse_wheel  = int        ;//,   _mouse_wheel>; //x       
 using mouse_wheelh = int        ;//,   _mouse_wheelh>;
-struct MOUSE {
+struct MOUSE {  // TODO filters for all
 const uint flag=_MOUSE;
     evq<click ,MAXPOLL>       last_click; 
     evq<dbclick ,MAXPOLL>     last_db_click;     
@@ -498,31 +499,38 @@ struct DISPLAY  {
 #define WAVE_4S16  0b101010       //	44.1 kHz, stereo, 16-bit
 #define WAVE_96S08 0b110001        //	96 kHz, stereo, 8-bit
 #define WAVE_96S16 0b110010        //	96 kHz, stereo, 16-bit
-struct devcap{
+typedef struct devcap{
     std::string name;
     uint channels;
     uint flags;
     devcap(std::string _name, uint _channels,uint _flags) {this->name=_name;this->channels=_channels,this->flags=_flags;}; 
-};
+}devcap;
 using dcaps = devcap;
-using 
+#include <strata/acqres/wav.hpp>
 struct AUDIO  {
 public:
     uint num = 0;
+    const bool direction;
     std::vector<dcaps> audioCaps; 
     uint set =0 ; // device
     virtual uint GetNum();
     void clear()final {this->audioCaps.clear();};
     void init(){this->GetNum();};
     virtual void getCaps();
-    virtual void open(uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz,uint index);    
+    void open(uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz,uint index);    
     void open(uint byterate , uint bitspersampple,uint bitrate,uint channels, uint hz )final{this->open(byterate , bitspersampple,bitrate, channels, hz,0);};
 
+    void open(uint hz, uint channels);
+    virtual void open();
+    
+    virtual void _play_wav(wavh header,std::vector<uint8_t> data);
+ void playWav(std::string path,double start,double end) final{
+    wavh header;
+    std::vector<uint8_t> pcmdata;
+    readwavfile(path.cstr(),&header,pcmdata,start,end);
+    this->_play_wav(header,data);
+ };
 
-    virtual void playWav(std::string path, };
-    void playWav(std::string path, uint mstime, uint hz,uint bitrate)final {
-        this->playWav(path,mstime,hz,0,360000);
-    };
     virtual void close(uint index);
     void close()final{this->close(this->set);};
     void play(uint sizedata, char* data, uint byterate,uint bitspersapmple,uint channels, uint hz ,uint index   )final{
@@ -563,36 +571,101 @@ public:
 #endif
 };
 #endif
+
 // This sections does not have include flag guard since it is meant to possibly be redefined
+#if defined(STRATA_CAP_SENSOR) || defined(STRATA_CAP_CAMERA) || defined(STRATA_CAP_LOCATION) 
 using gyro  =  glm::vec3//_gyro>;   
-using loc = glm::dvec4;// long,lat,sealev,  
-using accel  = glm::vec3//_accel>;      
-using mag  =   float //,_mag>;    
-using baro  =  float //,_baro>;     
-using humid  = float //,_humid>;      
-using pos  =   float //,_pos>;   
-using lidar = double** //,_lidar>;      
-using cam  =  double** //,_cam>;    
+using loc = glm::dvec4;// long,lat,sealev,
+using light = float;
+using gravity = double;  
+using accel  = glm::vec3;//_accel>;      
+using magnet  =   float; //,_mag>;    
+using baro  =  float; //,_baro>;     
+using humid  = float; //,_humid>;      
+using pos  =   float; //,_pos>;   
+using lidar = double**; //,_lidar>;      
+using cam  =  double**; //,_cam>;    
+using motion = bool;
+using rotation = glm::vec3;
+
 struct SENSOR   {
 public:
-    evq<gyro, MAXPOLL >   last_gyro;
-    evq<accel, MAXPOLL >  last_accel;
-    evq<mag, MAXPOLL >    last_mag;
-    evq<baro, MAXPOLL >   last_baro;
-    evq<humid, MAXPOLL >  last_humid;
-    evq<pos, MAXPOLL >    last_pos;
-    evq<lidar, MAXPOLL >  last_lidar;
-    evq<cam, MAXPOLL >    last_cam;  
-    evq<loc, MAXPOLL >    last_loc;  
-uint numGyro =1;
-uint numaccel =1;
-uint nummag =1;
-uint numbaro =1;
-uint numhumid =1;
-uint numpos =1;
-uint numlidar =1;
-uint numcam =1;
-uint numloc =1;
+#ifdef STRATA_CAP_SENSOR
+gyro        last_gyro;
+loc         last_loc;
+light       last_light;
+gravity     last_gravity;
+proximity last_proximity;
+temperature 
+accel last_accel;
+magnet last_magnet;
+baro last_baro;
+humid last_humid;
+pos last_pos;
+lidar last_lidar;
+motion last_motion;
+motion last_stationary;
+rotation last_rotation;
+rotation last_game_rotation;
+#endif
+evq<lidar,MAXPOLL>      last_lidar;
+evq<cam, MAXPOLL >    last_cam;
+
+#ifdef STRATA_CAP_SENSOR
+virtual temp        gettemp(uint index=0);
+virtual gyro        getgyro(uint index=0);
+virtual loc         getloc(uint index=0);         
+virtual light       getlight(uint index=0);       
+virtual gravity     getgravity(uint index=0);     
+virtual proximity   getproximity(uint index=0); 
+virtual accel       getaccel(uint index=0); 
+virtual mag         getmag(uint index=0); 
+virtual baro        getbaro(uint index=0); 
+virtual humid       gethumid(uint index=0); 
+virtual pos         getpos(uint index=0); 
+virtual lidar       getlidar(uint index=0); 
+virtual motion      getmotion(uint index=0); 
+virtual motion      getmotion(uint index=0); 
+virtual rotation    getrotation(uint index=0); 
+virtual rotation    getgamerotation(uint index=0); 
+#endif
+virtual lidar       getlidar(uint index=0);       
+virtual cam         getcam(uint index=0);     
+
+
+virtual void init();
+#ifdef STRATA_CAP_SENSOR
+virtual bool inittemp(uint pollrateus=1000000);virtual void closetemp();
+virtual bool initgyro(uint pollrateus=1000000);virtual void closegyro();
+virtual bool initlight(uint pollrateus=1000000);virtual void closelight();
+virtual bool initgravity(uint pollrateus=1000000);virtual void closegravity();
+virtual bool initproximity(uint pollrateus=1000000);virtual void closeproximity();
+virtual bool initaccel(uint pollrateus=1000000);virtual void closeaccel();
+virtual bool initmag(uint pollrateus=1000000);virtual void closemag();
+virtual bool initbaro(uint pollrateus=1000000);virtual void closebaro();
+virtual bool inithumid(uint pollrateus=1000000);virtual void closehumid();
+virtual bool initmotion(uint pollrateus=1000000);virtual void closemotion();
+virtual bool initstationary(uint pollrateus=1000000);virtual void closestationary();
+virtual bool initrotation(uint pollrateus=1000000);virtual void closerotation();
+virtual bool initgamerotation(uint pollrateus=1000000);virtual void closegamerotation();
+void initAll(){init();initgyro();initloc();initlight();initgravity();initproximity();initaccel();initmag();initbaro();inithumid();initpos();initlidar();initmotion();initmotion();initrotation();initgamerotation();
+void closeAll(){closegyro();closelight();closegravity();closeproximity();closeaccel();closemag();closebaro();closehumid();closemotion();closestationary();closerotation();closegamerotation();};
+#endif
+
+
+
+};
+
+
+// uint numGyro =1;
+// uint numloc =1;
+// uint numaccel =1;
+// uint nummag =1;
+// uint numbaro =1;
+// uint numhumid =1;
+// uint numpos =1;
+// uint numlidar =1;
+// uint numcam =1;
     virtual void getSensorPermisisons();
 
     virtual uint getNumgyro();
@@ -616,85 +689,69 @@ uint numloc =1;
     virtual cam getcam();
     virtual loc getloc();
 };
+
+#ifdef STRATA_CAP_NET
+#include <int/net.hpp>
+struct NET {
+void sockcreate();
+void socksend();
+virtual auto inetaddr(const char dotstr[]);
+void char* inettoa(long  ad){return intnet::inettoa(ad)};
+std::vector<long> getLocalAddr();
+void send(long addr) ;
+void conn()
+};
+#endif
 template <typename win>
 struct SYS   { 
-public:
-
-  uint flag=_SYS;
+private:
     // event_main evmain;
     
 #ifdef STRATA_CAPABILITY_MOUSE 
 MOUSE      mouse;
+    void initMouse();
 #endif    
 #ifdef STRATA_CAPABILITY_KEY
 KEY        key;
+    void initKey();
 #endif
 #ifdef STRATA_CAPABILITY_JOY 
 JOY        joy;
+    void initJoy();
 #endif
 #ifdef STRATA_CAPABILITY_CONT 
 CONT       cont;
+    void initCont();
 #endif
 #ifdef STRATA_CAPABILITY_TOUCH 
 TOUCH      touch;
+    void initTouch();
 #endif
 #ifdef STRATA_CAPABILITY_DISPLAY 
 DISPLAY    display;
+    void initDisplay();
 #endif
 #ifdef STRATA_CAPABILITY_AUDIO 
 AUDIO      audio;
+    void initAudio();
 #endif
 #ifdef STRATA_CAPABILITY_SENSOR 
 SENSOR     sensor;
+    void initSensor();
 #endif
 
 
+public:
 
-    void initMouse();
-    void initKey();
-    void initJoy();
-    void initCont();
-    void initTouch();
-    void initInt();
-    void initUi();
-    void initAudio();
-    void initSensor();
-    
-    virtual bool wake(wake ev);
-    virtual bool sleep(sleep ev);
-    virtual bool min(min ev);
-    virtual bool max(max ev);
-    virtual bool hide(hide ev);
-    virtual bool resize(resize ev);
-    virtual bool move(move ev);
-    virtual bool fullscreen(fullscreen ev);
-    virtual bool close(close ev)final{return this->fullscreen(ev);};
-    virtual bool display_conn(display_conn ev);
-    virtual bool display_orient(display_orient ev);
-    virtual bool display_power(display_power ev);
-    bool wake(evun ev)final{return this->wake(ev.wake)};
-    bool sleep(evun ev)final{return this->sleep(ev.sleep)};
-    bool min(evun ev)final{return this->min(ev.min)};
-    bool max(evun ev)final{return this->max(ev.max)};
-    bool hide(evun ev)final{return this->hide(ev.hide)};
-    bool resize(evun ev)final{return this->resize(ev.resize)};
-    bool move(evun ev)final{return this->move(ev.move)};
-    bool fullscreen(evun ev)final{return this->fullscreen(ev.fullscreen)};
-    bool close(evun ev)final{return this->fullscreen(ev.close)};
-    bool display_conn(evun ev){return this-> display_conn(ev.display_conn)};
-    bool display_orient(evun ev){return this-> display_orient(ev.display_orient)};
-    bool display_power(evun ev){return this-> display_power(ev.display_power)};
-    
     
    
+    
+     
     using winty = win;
-    vect<win> wins;
-    vect<glm::ivec4> wind;
+    // vect<win> wins;
+    std::vector<glm::ivec4> wind;
     int curr_win_index=0;
-    void _init(); // Initialize the subsystem
-    virtual event* resolve();
-    virtual event* handle();
-     void listen(){
+    void listen(){
         for(int i=0;i<this->evsys.size();i++){this->evsys[i].listen();};
      };// Checks if there was an event;
     event filter(event* ev){ev};
@@ -711,20 +768,26 @@ SENSOR     sensor;
         if( (flags & AUDIO::flag)==AUDIO::flag)       {this->sAUDIO.init();};
         if( (flags & SENSOR::flag)==SENSOR::flag)     {this->sSENSOR.init();};
     };
+
+    virtual void changePrMouse(uint pos=0);
+    virtual void changePrKey(uint pos=0);
+    virtual void changePrCont(uint pos=0);
+    virtual void changePrJoy(uint pos=0);
+    virtual void changePrTouch(uint pos=0);
     using MIN = 0b0001;
     using MAX = 0b0010;
     using HIDE = 0b0100;
     using NORMAL = 0b1000;
-    void selfclose(){delete this;};
-    void sleep_callback()final{this->evmain->push(sleep::sleep(this->cur_win_index,true));};;
-    void wake_callback()final{this->evmain->push(wake::wake(this->cur_win_index,true));};
-    void min_callback()final{this->evmain->push(min::min(this->cur_win_index,true));}
-    void max_callback()final{this->evmain->push(max::max(this->cur_win_index,true));}
-    void restore_callback()final{this->evmain->push(restore::restore(this->cur_win_index,true));};
-    void hide_callback()final{this->evmain->push(hide::hide(this->cur_win_index,true));};
-    void resize_callback()final{this->evmain->push(resize::resize(this->curr_win_index,glm::ivec2(this->wind[this->cur_win_index][2],this->wind[this->cur_win_index][3]));};;
-    void move_callback()final{this->evmain->push(move::move(this->curr_win_index,glm::ivec2(this->wind[this->cur_win_index][0],this->wind[this->cur_win_index][1])));};;
-    void fullscreen_callback(bool val=true)final{this->evmain->push(fullscreen::fullscreen(this->cur_win_index,val));};
+    void selfclose()final{delete this;};
+    void sleep_callback()final{return;};
+    void wake_callback()final{return;};
+    void min_callback()final{return;};
+    void max_callback()final{return;};
+    void restore_callback()final{return;};
+    void hide_callback()final{return;};
+    void resize_callback()final{return;};
+    void move_callback()final{return;};
+    void fullscreen_callback(bool val=true)final{return};
     void close_callback()final{this->evmain->push(close::close(true));this->close_app_win_func();}
     #define _custom_tabbar 0b00001
     #define _resizable     0b00010
@@ -733,26 +796,27 @@ SENSOR     sensor;
     #define _tool          0b10000
     #define _permeable    0b100000
     #define _default       0b00011
-    virtual void createWwin(glm::ivec2 size,glm::ivec2 pos,uint8_t parent=-1,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,char CLASS_NAME[]=NULL ,char text[]=NULL) ;
+    void createWin();
+    void createWin(glm::ivec2 size,glm::ivec2 pos,uint8_t parent=-1,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,char CLASS_NAME[]=NULL ,char text[]=NULL) ;
     void create_child_cur (glm::ivec2 size,glm::ivec2 pos,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) final{
             return this->create_win (glm::ivec2 size,glm::ivec2 pos,this->wins[this->curr_win_index].w,bool tool=false,bool custom_tabbar=true, bool resizable=true,bool transparent=false,bool always_on_top=true,std::string CLASS_NAME=NULL ,std::string text=NULL) ;
     } ;
     virtual glm::ivec2 winpos(win w=this->wins[0]);
     virtual glm::ivec2 winsize(win w=this->wins[0]);
     virtual glm::ivec4 wininfo(win w=this->wins[0]);
-    virtual void winresize(win w=this->wins[0],glm::ivec2 addsize);
-    virtual void winmove(win w=this->wins[0],glm::ivec2 addpos);
-    virtual void winminimize(uint pos);
-    virtual void winmaximize{uint pos};
-    virtual void winrestore{uint pos};
-    virtual void winhide(uint pos);
+    virtual void resize(win w=this->wins[0],glm::ivec2 addsize);
+    virtual void move(win w=this->wins[0],glm::ivec2 addpos);
+    virtual void minimize(uint pos);
+    virtual void maximize{uint pos};
+    virtual void restore{uint pos};
+    virtual void hide(uint pos);
     
-    virtual bool ismin(win w=this->wins[0])
-    virtual bool ishidden(win w=this->wins[0])
-    virtual bool isnormal(win w=this->wins[0])
-    virtual bool ismax(win w=this->wins[0])
-    virtual void setwinopacity(uint index,float opacity);
-    virtual void setwinfullscreen(uint index);
+    virtual bool ismin(uint index=0)
+    virtual bool ishidden(uint index=0)
+    virtual bool isnormal(uint index=0)
+    virtual bool ismax(uint index=0)
+    virtual void setopacity(uint index,float opacity);
+    virtual void setfullscreen(uint index);
     virtual void closeWin();
     virtual void recreateWin(uint index,glm::ivec2 size,glm::ivec2 pos,int8_t flag=_custom_tabbar,uint8_t parent=NULL,char CLASS_NAME[]="DefaultName" ,char text[]=NULL) {
 
@@ -767,27 +831,5 @@ SENSOR     sensor;
 
 };
 
-
-// #define MAIN_DEF(ev_m) ev_m main; 
-// #define NS_USE(ns) using namespace ns;
-
-// #ifdef STRATA_IMPL_SDL
-// #include "impl_sdl.hpp"
-// using namespace SDL_events;
-// #endif
-#ifdef STRATA_IMPL_LINUX
-#include "impl_linux.hpp"
-using namespace impl_linux;
-using env = linux_env;
-using evns = linux_events;
-#elifdef STRATA_IMPL_WINDOWS
-#include "impl_win.hpp"
-using namespace impl_win;
-
-#elifdef STRATA_IMPL_ANDROID
-#include "impl_android.hpp"
-using namespace impl_android;
-#elifdef
-#endif
 
 

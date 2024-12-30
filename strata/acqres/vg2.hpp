@@ -36,14 +36,20 @@ struct striate : prop{
 
 
 glm::dvec4 rgba16itorgbaf(glm::uvec4 s){vec4 t = s.xyzw ;t= t/0xFF; };
-
+struct filt {
+    glm::dvec4 col;
+    float weight;
+    float stabilize;
+};
 enum fe {
     color=1,
     striate=2,
-    perlin=3,
-    simplex=4,
-    convolve=5,
-    turbulence=6
+    fibrate=3,
+    cybrate=4,
+    perlin=5,
+    simplex=6,
+    convolve=7,
+    turbulence=8
 };
 struct shape_at ;
 struct shape_atv { // TODO make fe all one vector and adapt index, also add ats to g and add feRGBA glm::dmat4

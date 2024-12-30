@@ -152,7 +152,8 @@
         "g": "cpp",
         "vector_int2.hpp": "c",
         "vector_bool2.hpp": "c",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "vector_bool2_precision.hpp": "c"
     },
     "svg.preview.background": "custom"
 }

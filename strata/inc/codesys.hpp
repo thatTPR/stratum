@@ -6,10 +6,6 @@
 #include <vector>
 
 
-// TODO wasm support 
-
-// TODO moltenvk
-
 
 #ifdef __ANDROID__
 #define PLATFORM_ANDROID
@@ -320,39 +316,3 @@ namespace platform
             cxx
         };
 
-    }
-    class platform
-    {
-        std::string name;
-        ShaderTarget ShaderTarget;
-        virtual void compile();
-    }
-
-    class web : platform
-    {
-        std::string name = "Web";
-        std::array<ShaderTarget> acceptsTargets;
-        std::array<CxxTarget>
-        shaderTarget()
-    };
-    class android : platform
-    {
-        std::string name = "Android";
-        std::array<ShaderTarget> acceptsTargets = {
-            ShaderTargetSource};
-        std::array<ShaderSource> acceptsSource = {
-            ShaderSource.hlsl
-        }
-    };
-
-    class platforms
-    {
-        std::vector<platform> platforms;
-        std::vector<platform> targets;
-
-        platforms(std::vector<platform> pluginContributions)
-        {
-        }
-    }
-
-}

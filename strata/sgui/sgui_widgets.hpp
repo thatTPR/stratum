@@ -24,29 +24,64 @@ using namespace std ;
 namespace sgui {
 // Text arrsize()
 // Maybe make widget childs so that it has static size defined per widget
-    class widget_base {
-        
+
+       #define align_no           0b0000
+       #define align_left         0b0001
+       #define align_left_cen     0b1101
+       #define align_right        0b0010
+       #define align_right_cen    0b1110
+       #define align_top          0b0100
+       #define align_top_cen      0b0111
+       #define align_down         0b1000
+       #define align_down_cen     0b1011
+       #define align_cenh         0b0011
+       #define align_cenv         0b1100
+       #define align_cen          0b1111
+    */
+
+   
+    class widget : public widget_base{
         public:
-        static const char name[30] ; 
+        bool calced;
+        bool childs_calced = false;
+        uint canvas_pos;
+        widget* parent ; uint parent_pos;
+        // uint pos; // position in canvas hierarchy
+        uint childs_length=0;
+        canvas* canvas; // TODO maybe uint index;
+         static const char name[30] ; 
         char* shader_bin ;
         uint shader_bin_size;
         short int alignment=0;
-#ifdef STRATA_CAP_DOCKING
+// #ifdef STRATA_CAP_DOCKING // TODO
         bool dockable = true; // Means a widget can be moved to a different widget, including an auto-constructed new canvas outside the current window; 
-#elif
+// #elif
         bool dockable = false;
-#endif
+// #endif
 
 
         bool leaf = false; // Leafs can't move child widgets
         constexpr int alignment(){return this->alignment}; 
         constexpr bool is_leaf(){return this->leaf;}
         constexpr bool is_dockable(){return this->dockable;};
-       
-        void drag(glm::ivec2){
-
+       bool dragging=true;
+        glm::ivec2 dragpos;
+       void dragend(){this->dragging=false;};
+        void drop(glm::ivec2 pos){
+            #ifdef STRATA_CAP_DOCKING
+            canv.find
+            #endif
+            this->dragend();
         };
-        void drop(glm::ivec2)
+        void drag(glm::ivec2 move){
+        // Check if needs new window and if so make one which would be appropiate
+            uint8_t pos = canv.size();
+            canv.newwin(/* sizedata here*/ );
+            
+            #ifdef STRATA_CAP_DOCKING
+          
+        };
+       void dragstart(){this->dragging=true;};
         uint  coord[4];
         uint  width,height;
         bool bounds_check(uint  x[2]){
@@ -76,33 +111,9 @@ namespace sgui {
             };
             return cur;
         };
-        widget_base();
-    };  
-   /*
-       #define align_no           0b0000
-       #define align_left         0b0001
-       #define align_left_cen     0b1101
-       #define align_right        0b0010
-       #define align_right_cen    0b1110
-       #define align_top          0b0100
-       #define align_top_cen      0b0111
-       #define align_down         0b1000
-       #define align_down_cen     0b1011
-       #define align_cenh         0b0011
-       #define align_cenv         0b1100
-       #define align_cen          0b1111
-    */
-   class widget: public wiget_base;
-   class canvas : public widget ;
-    class widget : public widget_base{
-        public:
-        bool calced;
-        bool childs_calced = false;
-        uint canvas_pos;
-        widget* parent ; uint parent_pos;
-        // uint pos; // position in canvas hierarchy
-        uint childs_length=0;
-        canvas* canvas; 
+        void close(){
+
+        };
         static struct d {
             uint  coord[4]; //nw->se
             uint  wh_size[2];
@@ -270,11 +281,8 @@ namespace sgui {
             };
         };
         bool ret();
-        
-
-    };
     
-    widget::widget(widget* parent,  bool dockable, bool leaf,short int alignment ){
+    widget(widget* parent,  bool dockable, bool leaf,short int alignment ){ // TODO modify constructors
             uint arr_size = sizeof(parent->childs)/sizeof(parent->childs[0]);
             this->parent= parent ;
             this->dockable = dockable;
@@ -283,24 +291,27 @@ namespace sgui {
             this->canvas = current;
             parent->add_child(this);
         };
-    widget::widget(widget* parent) = default{
+    widget(widget* parent) = default{
             this->parent= parent ;
             this->canvas=current;
             parent->add_child(this);
         };
-    widget::widget(bool dockable, bool leaf, short int alignment){
+    widget(bool dockable, bool leaf, short int alignment){
         this = new widget(w_cur,dockable,leaf,alignment);
     };
-    widget::widget(){
+    widget(){
         this = new widget(w_cur);
     };
-    widget::widget(bool dockable, bool leaf, short int alignment, widget* childs...){
+    widget(bool dockable, bool leaf, short int alignment, widget* childs...){
         this = new widget(w_cur,dockable,leaf,alignment);
          std::va_list args;
         va_start(args, childs);
         for (int i = 0; i<childs;i++)
             this->add_child(va_args(args,widget*));
         va_end(args);
+
+    };
+        
 
     };
     

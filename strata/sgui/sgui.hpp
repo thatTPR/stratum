@@ -7,16 +7,14 @@ using namespace std;
 
 #include <strata/sgui.hpp>
 // TODO figure out correct usage
-class convasob {
-    uint winind;
+class canvasob : widget_base{
+    bool has  
     std::vector<widget*> childs ; 
 
-}
+};
 class canvas : public widget_base { // Uses SYS form backend to make dockign
         public:
-        SYS* s;
-        font f;
-std::vector>
+        std::vector<canvasob> canvob; // Bound to wins accesses SYS
         uint get_pos_from_widget(widget* w){
             for(uint i = 0 ; i < this->mat.size(); i++){
                 if(w==(*(this->mat[0]))[0]){

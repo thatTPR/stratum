@@ -16,11 +16,7 @@ void contribute_type(std::type_index i, std::string name){
 };
 
 namespace pins {
-    // For gcc type_index.name()
-    // type
-    // for fp : F @return @args E
-    // F means is func E is end
-    // 
+  
     class type_ident {
         std::type_index index;
         std::string name;
@@ -111,5 +107,72 @@ using res_pinref = res_pin<T&,pintype::res>;
 
 #define ptr(name) ##name_ptr
 #define ref(name) ##name_ref
+
+
+
+
+template <typename T>
+class instance_pin : pin<T> {
+    
+};
+template <typename T>
+struct modifier_pin : pin<T>
+
+
+// Template for cxx primitive types and their array flavors
+template <typename T>
+struct cxxpin : pin<T> {
+
+};
+
+
+
+// Container Pin
+
+#include <glm/glm.hpp>
+#include <strata/petri/meta.hpp>
+using namespace glm;
+template <typename T>
+struct glmpin : pin<T> { // This is supposed
+    constexpr bool isvec = is_glmvec<T>::value; 
+    constexpr bool ismat = is_glmmat<T>::value;  
+};
+
+template <typename glmv>
+struct vecglmpin : pin<std::vector<glmv<T>>> { // No Dropdown // TODO <<>> symbol for them
+    constexpr bool isvec = is_glmvec<T>::value; 
+    constexpr bool ismat = is_glmmat<T>::value;  
+
+    void 
+};
+
+
+#define GLMVMAC(gl) \
+struct glmp##gl : glmpin<gl>;\
+template <typename T>
+struct vecglmp##gl : vecglmpin<gl>  ;
+
+
+
+#define GLMVPINDEF( ...)  ONE(GLMVAC,__VA_ARGS__)
+GLMVPINDEF(vec2,vec3,vec4,bvec2,bvec3,bvec4,dvec2,dvec3,dvec4,uvec2,uvec3,uvec4,ivec2,ivec3,ivec4)
+
+#define GLMMAC(gl)\
+GLMVAC(gl##2)  \
+GLMVAC(gl##3) \ 
+GLMVAC(gl##4)  \
+GLMVAC(gl##2x3) \
+GLMVAC(gl##2x4) \
+GLMVAC(gl##3x2) \
+GLMVAC(gl##3x4) \
+
+
+
+
+#define GLMMPINDEF(...) ONE(GLMMAC,__VA_ARGS__)
+GLMMPINDEF(bmat,dmat,mat,umat,imat)
+
+#define GLPIN(glmt) glmp##glmt
+#define VPIN(glmt) glmp##glmt 
 
 };

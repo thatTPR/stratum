@@ -22,9 +22,7 @@ namespace impl_win {
     // using impl::event_main;
     #ifdef STRATA_CAP_MOUSE
     struct MOUSE                     : impl::MOUSE                     { 
-        virtual bool get_state(short int bt){
-            return 
-        };
+       
         void _mhandle( WPARAM wParam, LPARAM lParam){
             UINT dataSize;
             GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dataSize, sizeof(RAWINPUTHEADER));
@@ -94,7 +92,31 @@ namespace impl_win {
             this->wheel_cb( mouse_wheel(delta)); return;};
        case WM_INPUT: {return this->mhandle( WPARAM wParam, LPARAM lParam);};
        };
+
     return -1;
+    };
+    void init(){
+UINT numDevices;
+    GetRawInputDeviceList(nullptr, &numDevices, sizeof(RAWINPUTDEVICELIST));
+    if (numDevices == 0) {
+        return 0; // No devices found
+    };
+    RAWINPUTDEVICELIST* deviceList = new RAWINPUTDEVICELIST[numDevices];
+    if (GetRawInputDeviceList(deviceList, &numDevices, sizeof(RAWINPUTDEVICELIST)) == -1) {
+        delete[] deviceList;
+        return -1; // Error
+    };
+    int numMice = 0;
+    for (UINT i = 0; i < numDevices; ++i) {
+        if (deviceList[i].dwType == RIM_TYPEMOUSE) {
+            numMice++;
+        };
+    };
+
+    delete[] deviceList;
+    this->num = numMice;    
+    };
+    
     };
         virtual void _init(){
             
@@ -124,12 +146,12 @@ namespace impl_win {
     #endif
     // #include <dinput.h> // TODO maybe
     // #include <xinput.h>
-#ifdef STRATA_CAPABILITY_JOY
+#ifdef STRATA_CAP_JOY
 #include <joystickapi.h>
     struct JOY                       : impl::JOY                       {
 
-    virtual void init();
     virtual int num(){this->num=joyGetNumDevs();return this->num;};
+    virtual void init(){this->num();};
 
   /*  joycap getCap(int index){
   LPJOYCAPS pj;      
@@ -164,7 +186,7 @@ namespace impl_win {
     
     };
     #endif
-    #ifdef STRATA_CAPABILITY_CONT
+    #ifdef STRATA_CAP_CONT
     #ifndef XINPUT
     #include <Xinput.h>
     #endif
@@ -338,7 +360,7 @@ namespace impl_win {
     // Set callback to new monitor
     };
     };
-#ifdef STRATA_CAPABILITY_AUDIO
+#ifdef STRATA_CAP_AUDIO
 #include <mmeapi.h>
 struct AUDIO : impl::AUDIO{
     virtual uint GetNum(){this->num = waveOutGetNumDevs();return this->num;}; 
@@ -404,12 +426,14 @@ struct AUDIO : impl::AUDIO{
     //      uint bitspersampple, bitrate, channels, hz ,  index ;
     // };
 
-    void playWav(std::string path, uint bitrate,uint channels, uint hz , uint bitrate );{};
+    void _playWav(wavh header,std::vector<uint8_t > data );{
+        this->open(header.byteRate,header.bitsPerSample,header.bitRate,header.numChannels,header.sampleRate,0);
+        this->play(data.size(),(char*)data.data());
+    };
     void close(uint index){waveOutClose(this->waveout[index]);};
     void setVol(uint index,uint vol){waveOutSetVolume(this->waveout[index],DWORD(vol) );};
     uint stopPlay(uint index){LPMMTIME lm;waveOutGetPosition(this->waveout[index],&lm,sizeof(lm));waveInStop(this->waveout[index]);return uint(lm)};
-    #ifdef STRATA_CAPABILITY_MIC
-
+    #ifdef STRATA_CAP_MIC
     uint GetNumMic(){this->nummic = waveInGetNumDevs();return this->nummic;}
     std::vector<HWAVEINCAPS> wavein;
         void clearmic(){this->mcaps.clear();this->wavein.clear();};
@@ -508,6 +532,14 @@ struct SENSOR : impl::SENSOR {
      loc getloc(){return getloc(); };
 };
 #endif
+
+#ifdef STRATA_CAP_NET
+#include <winsock.h>
+struct NET : impl::NET {
+    auto inetaddr(const char doststr[]){return inet_addr(dotstr);};
+    auto inet()
+};
+#endif
     struct SYS  : impl::SYS  {
         /*   
 using OVERLAPPED= WS_OVERLAPPED; 
@@ -559,6 +591,41 @@ using CONTROLPARENT = WS_EX_CONTROLPARENT ;
 using STATICEDGE = WS_EX_STATICEDGE ;  
 using APPWINDOW = WS_EX_APPWINDOW ;  */
 
+     
+#ifdef STRATA_CAP_MOUSE 
+MOUSE      mouse;
+    void initMouse(){this->mouse.init();};
+#endif    
+#ifdef STRATA_CAP_KEY
+KEY        key;
+    void initKey(){this->key.init();};
+#endif
+#ifdef STRATA_CAP_JOY 
+JOY        joy;
+    void initJoy(){this->joy.init();};
+#endif
+#ifdef STRATA_CAP_CONT 
+CONT       cont;
+    void initCont(){this->cont.init();};
+#endif
+#ifdef STRATA_CAP_TOUCH 
+TOUCH      touch;
+    void initTouch(){this->touch.init();};
+#endif
+#ifdef STRATA_CAP_DISPLAY 
+DISPLAY    display;
+    void initDisplay(){this->display.init();};
+#endif
+#ifdef STRATA_CAP_AUDIO 
+AUDIO      audio;
+    void initAudio(){this->audio.init();};
+#endif
+#ifdef STRATA_CAP_SENSOR 
+SENSOR     sensor;
+    void initSensor(){this->sensor.init();};
+#endif
+
+    
     using MIN = strate_env::MIN; 
     using MAX = strate_env::MAX; 
     using HIDE = strate_env::HIDE; 
@@ -567,6 +634,9 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
     std::vector<HWND> wins ;
     vect<glm::ivec4> wind;
     vect<int> state; 
+
+
+    
     
     LRESULT void handle_win(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         if (this->wins[this->cur_win_index]!=hwnd){
@@ -593,12 +663,12 @@ using APPWINDOW = WS_EX_APPWINDOW ;  */
         case WM_MAXIMIZE : {this->max_callback();break;};
         case WM_RESTORE : {this->restore_callback();break;};
         case WM_HIDE :{this->hide_callback();break;};
-        default: return DefWindowProc(hwnd, uMsg, wParam, lParam);
+        default: return DefMouseProc(hwnd, uMsg, wParam, lParam);
     };
     return 0;
     };
     evq<long , MAXPOLL> last;
-    LRESULT CALLBACK WindowProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+    LRESULT CALLBACK MouseProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
 #ifdef STRATA_CAP_MOUSE
 if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
@@ -699,7 +769,7 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
    
 // Multi
 
- LRESULT CALLBACK mWindowProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+ LRESULT CALLBACK mMouseProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
 #ifdef STRATA_CAP_MOUSE
 if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
@@ -810,8 +880,8 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
         DispatchMessage(&(this->msg));
     };
     };
-    void changeCb(HWND hwnd , LRESULT CALLBACK (*WindowProc)(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam )){SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WindowProc );};
-    void changePrMouse(uint pos=0){this->changCb(this->wins[0],this->WindowProc;)};
+    void changeCb(HWND hwnd , LRESULT CALLBACK (*MouseProc)(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam )){SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)MouseProc );};
+    void changePrMouse(uint pos=0){this->changCb(this->wins[0],this->MouseProc;)};
     void changePrKey(uint pos=0){this->changCb(this->wins[0],this->KeyProc;)};
     void changePrCont(uint pos=0){this->changCb(this->wins[0],this->ContProc;)};
     void changePrJoy(uint pos=0){this->changCb(this->wins[0],this->JoyProc;)};
@@ -819,7 +889,7 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
     
     void createWin (glm::ivec2 size,glm::ivec2 pos,int8_t flag=_custom_tabbar,uint8_t parent = -1,char CLASS_NAME[]=NULL ,char text[]=NULL) override {
     WNDCLASS wc = {};
-    wc.lpfnWndProc = this->WindowProc;
+    wc.lpfnWndProc = this->MouseProc;
     wc.hInstance = GetModuleHandle(NULL);
     wc.lpszClassName = CLASS_NAME;
 
@@ -844,17 +914,17 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
      glm::ivec2 winpos(uint pos){WINDOWPLACEMENT wp={ sizeof(WINDOWPLACEMENT) };GetWindowPlacement(this->wins[pos],&wp); return glm::ivec2(wp.rcNormalPosition.left,wp.rcNormalPosition.top)};
      glm::ivec2 winsize(uint pos){WINDOWPLACEMENT wp={ sizeof(WINDOWPLACEMENT) };GetWindowPlacement(this->wins[pos],&wp);return glm::ivec2(wp.rcNormalPosition.right-wp.rcNormalPosition.left ,wp.rcNormalPosition.top -wp.rcNormalPosition.bottom); };
      glm::ivec4 wininfo(uint pos){WINDOWPLACEMENT wp={ sizeof(WINDOWPLACEMENT) };GetWindowPlacement(this->wins[pos],&wp);this->wind[pos]= glm::ivec4(wp.rcNormalPosition.left,wp.rcNormalPosition.top, wp.rcNormalPosition.right-wp.rcNormalPosition.left ,wp.rcNormalPosition.top -wp.rcNormalPosition.bottom);return this->wind[pos];};
-     void winresize(uint pos,glm::ivec2 addpos){ glm::ivec4 s = get_all(); BOOL MoveWindow(this->wins[pos],s.x,s.y,s.z+addsize[0],s.w+addsize[1],false); };
-     void winmove(uint pos,glm::ivec2 addsize){glm::ivec4 s = get_all(); BOOL MoveWindow(this->wins[pos],s.x+addpos.x,s.y+addpos.y,s.z,s.w,false); };
-     void winminimize(uint pos)final{ChangeWindowState(this->wind[pos], SW_MINIMIZE);};
-     void winmaximize{uint pos}final{ChangeWindowState(this->wind[pos], SW_MAXIMIZE);};
-     void winrestore{uint pos}final{ChangeWindowState(this->wind[pos], SW_RESTORE);};
-     void winhide(uint pos)final{ChangeWIndowState(this->wind[pos],SW_HIDE);};
+     void resize(uint pos,glm::ivec2 addpos){ glm::ivec4 s = get_all(); BOOL MoveWindow(this->wins[pos],s.x,s.y,s.z+addsize[0],s.w+addsize[1],false); };
+     void move(uint pos,glm::ivec2 addsize){glm::ivec4 s = get_all(); BOOL MoveWindow(this->wins[pos],s.x+addpos.x,s.y+addpos.y,s.z,s.w,false); };
+     void minimize(uint pos)final{ChangeWindowState(this->wind[pos], SW_MINIMIZE);};
+     void maximize{uint pos}final{ChangeWindowState(this->wind[pos], SW_MAXIMIZE);};
+     void restore{uint pos}final{ChangeWindowState(this->wind[pos], SW_RESTORE);};
+     void hide(uint pos)final{ChangeWIndowState(this->wind[pos],SW_HIDE);};
 
-     bool ismin(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_MINIMIZE |SW_SHOWMINIMIZED))?true:false;};
-     bool ishidden(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd==SW_HIDE)?true:false;};
-     bool isnormal(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&(SW_RESTORE|SW_SHOW)?true:false;};
-     bool ismax(uint pos){WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT); GetWindowPlacement(w,wp); return (wp.showCmd&SW_SHOWMAXIMIZED)?true:false;};
+     bool ismin(uint index=0){WINDOWPLACEMENT wp={sizeof(WINDOWPLACEMENT)}; GetWindowPlacement(this->wins[index],&wp); return (wp.showCmd&(SW_MINIMIZE |SW_SHOWMINIMIZED))?true:false;};
+     bool ishidden(uint index=0){WINDOWPLACEMENT wp={sizeof(WINDOWPLACEMENT)}; GetWindowPlacement(this->wins[index],&wp); return (wp.showCmd==SW_HIDE)?true:false;};
+     bool isnormal(uint index=0){WINDOWPLACEMENT wp={sizeof(WINDOWPLACEMENT)}; GetWindowPlacement(this->wins[index],&wp); return (wp.showCmd&(SW_RESTORE|SW_SHOW)?true:false;};
+     bool ismax(uint index=0){WINDOWPLACEMENT wp={sizeof(WINDOWPLACEMENT)}; GetWindowPlacement(this->wins[index],&wp); return (wp.showCmd&SW_SHOWMAXIMIZED)?true:false;};
      bool setWindow(HWND w, vec4 pos_w_h, int state){
     WINDOWPLACEMENT wp=sizeof(WINDOWPLACEMENT);
      wp.rcNormaplPosition.left=pos_w_h[0]; wp.rcNormaplPosition.top=pos_w_h[1];
@@ -862,12 +932,12 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
      wp.showCmd =  ((state&MIN)?SW_SHOWMINIMIZED:0)|((state&MAX)?SW_SHOWMAXIMIZED:0)|((state&HIDDEN)?SW_HIDE:0)|((state&NORMAL)?SW_SHOW:0);
     return  SetWindowPlacement(w,const WINDOWPLACEMENT *wp);
     };
-    void setwinopacity(uint index,uint8_t opacity){SetLayeredWindowAttributes(this->wins{index],rgbwhite,opacity,LWA_ALPHA)};
-    void setwinfullscreen(uint index){SetWindow();};
-    void closeWin(HWND hwnd){SendMessage(hwnd, WM_CLOSE, 0, 0);};
+    void setopacity(uint index,uint8_t opacity){SetLayeredWindowAttributes(this->wins{index],rgbwhite,opacity,LWA_ALPHA)};
+    void setfullscreen(uint index){SetWindow();};
+    void closeWin(HWND hwnd){SendMessage(hwnd, WM_CLOSE, 0, 0)};
     void recreateWin(uint index,glm::ivec2 size,glm::ivec2 pos,int8_t flag=_custom_tabbar,uint8_t parent=NULL,char CLASS_NAME[]=NULL ,char text[]=NULL) {
         WNDCLASS wc = {};
-    wc.lpfnWndProc = this->WindowProc;
+    wc.lpfnWndProc = this->MouseProc;
     wc.hInstance = GetModuleHandle(NULL);
     wc.lpszClassName = CLASS_NAME;
     if (!RegisterClass(&wc)) {
@@ -885,7 +955,7 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
             NULL        // Additional application data
         );
         this->wins[index]=winh;};
-    void closeWin(uint pos){ SendMessage(this->wins[pos], WM_CLOSE, 0, 0);this->wins.erase(pos);/* TODO this->wins.shrink_to_fit()*/};
+    void closeWin(uint pos){ SendMessage(this->wins[pos], WM_CLOSE, 0, 0);this->wins.erase(pos);this->wind.erase(pos);this->wins.shrink_to_fit();this->wind.shrink_to_fit();/* TODO this->wins.shrink_to_fit()*/};
     void closeapp(){for(HWND hwnd : this->wins){this->closeWin(hwnd)}};
     void sleep(int mstime=2000){Sleep(mstime);}
     virtual void _init(){return;}

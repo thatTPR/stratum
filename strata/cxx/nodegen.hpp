@@ -23,7 +23,7 @@ void create_ssbo(){
 void parse_line(std::string s){
 
 };
-void get_struct_file(std::string path, std::string name){
+void get_strct_file(std::string path, std::string name){
     ifstream in(path); size_t pos;
     std::vector<std::string> members;
     bool cond=true;std::string line;size_t pos;
@@ -35,3 +35,7 @@ void get_struct_file(std::string path, std::string name){
         };
     };
 };
+
+// Function here to take node and canvas json object and generate cpp from it
+
+// take node and canvas and generate runtime node for it;

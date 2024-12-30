@@ -10,37 +10,55 @@ enum engine_capabilites {
     models,
     animation,
     video, 
-    p2p,
+vert,
+frag,
+geom,
+tesc,
+tese,
+comp,
+task,
+mesh,
+rgen,
+rint,
+rahit,
+rchit,
+rmiss,
+rcall,
+
 };
 
 enum sys_capabilites {
-    mouse  = evs::_MOUSE,
-    keyboard  = evs::_KEYBOARD,
-    joystick  = evs::_JOY,
-    controller  = evs::_CONT,
-    INT  = evs::_INT, // Move and acc in games
-    audio  = evs::_AUDIO,
-    display  = evs::_DISPLAY,
-    ui      = evs::_UI,
-    sensor  = evs::_SENSOR,
-    net = evs::net
+    mouse  ,
+    keyboard  ,
+    joystick  ,
+    controller  ,
+    touch  , // Move and acc in games
+    audio  ,
+    display  ,
+    ui      ,
+    sensor  ,
+    net 
 
+};
+
+enum mobile_caps {
+    STRATA_CAP_TOUCH_CONT
 };
 static const std::map<engine_capabilites,std::string> eng_capabilites_map = {
 
 } ; 
 
 static const std::map< sys_capabilites,std::string > sys_capabilites_map = {
-{sys_capabilites::mouse,"STRATA_MOUSE"},
-{sys_capabilites::keyboard,"STRATA_KEYBOARD"},
-{sys_capabilites::joystick,"STRATA_JOYSTICK"},
-{sys_capabilites::controller,"STRATA_CONTROLLER"},
-{sys_capabilites::INT,"STRATA_INT"},
-{sys_capabilites::audio,"STRATA_AUDIO"},
-{sys_capabilites::display,"STRATA_DISPLAY"},
-{sys_capabilites::ui, "STRATA_UI"},
-{sys_capabilites::sensor,"STRATA_SENSOR"},
-{sys_capabilites::net,"STRATA_NET"}
+{sys_capabilites::mouse,"STRATA_CAP_MOUSE"},
+{sys_capabilites::keyboard,"STRATA_CAP_KEY"},
+{sys_capabilites::joystick,"STRATA_CAP_JOY"},
+{sys_capabilites::controller,"STRATA_CAP_CONT"},
+{sys_capabilites::INT,"STRATA_CAP_TOUCH"},
+{sys_capabilites::audio,"STRATA_CAP_AUDIO"},
+{sys_capabilites::display,"STRATA_CAP_DISPLAY"},
+{sys_capabilites::sensor,"STRATA_CAP_SENSOR"},
+{sys_capabilites::net,"STRATA_CAP_NET"},
+{sys_capabilites::}
 }; 
 
 class capabilities {
@@ -76,3 +94,4 @@ class capabilities {
     capabilities(std::initializer_list<sys_capabilites> sys_caps,std::initializer_list<engine_capabilites> eng_caps ) :sys_cap(sys_caps) , eng_cap(end_caps){};
 
 };
+

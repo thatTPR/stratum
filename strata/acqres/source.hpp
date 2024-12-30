@@ -1,6 +1,3 @@
-#include <fstream>
-#include <petri/vecs.hpp>
-#include <petri/vects.hpp>
 #include <lib/gltf.h>
 #include <glm/glm.hpp>
 
@@ -106,34 +103,12 @@ glmmat getmat(tinygltf::Value v){
     };
 
 };
-#include <type_traits>
-template <typename , typenme = std::void_t<>>
-struct has_value_type : std::false_type {};
-template <typename T>
-struct has_value_type<T, T::value_type> : std::true_type {};
 
-template <typename , typenme = std::void_t<>>
-struct has_bool_type : std::false_type {};
-template <typename T>
-struct has_bool_type<T, T::value_type> : std::true_type {};
-
-
-
-template <typename , typenme = std::void_t<>>
-struct has_col : std::false_type {};
-template <typename T>
-struct has_col<T, T::col_type> : std::true_type {};
-
-
-template<typename T>
-T getv(tinygltf::Value v){
-    
-};
-
+#include <strata/petri/meta.hpp>
 template<typename T>
 tinygltf::Value getgltfv(T s){
-    if constexpr( has_value_type<T>::value &&  has_bool_type<T>::value ){
-if constexpr( has_col<T>::value){
+    if constexpr(is_glmvec<T>::value){
+if constexpr( is_glmmat<T>::value){
         return getmatgltfv(v);
     };
         return getvecgltfv(v);
