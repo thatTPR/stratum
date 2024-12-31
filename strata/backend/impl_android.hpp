@@ -179,13 +179,13 @@ void get(){
 //   case ASENSOR_TYPE_GYROSCOPE_LIMITED_AXES_UNCALIBRATED :{}; 
   case ASENSOR_TYPE_HEADING :{this->last_heading=event.heading;break;};   
   };
-        };
+};
 
 }
 void init(){this->sensorManager=ASensorManager_getInstance();this->looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);sensorEventQueue = ASensorManager_createEventQueue(this->sensorManager, this->looper, 0, sensorCallback, nullptr);if (!sensorEventQueue) {LOGE("Failed to create sensor event queue");return;};};
 void cleanup(){ASensorManager_destroyEventQueue(sensorManager, evqueue);};
 };
-
+    };
 
 #ifdef STRATA_CAP_CAM
 #include <camera/NdkCameraManager.h>
@@ -222,60 +222,81 @@ void initcam() {
 
 void closecam(){ ACaptureSessionOutputContainer_free(this->outputContainer);   ACameraManager_delete(this->cameraManager);};
 bool initlidar(){return;};
-void closelidar(){;}
+void closelidar(){return;}
+};
+#ifdef STRATA_CAP_NET
+struct NET : impl::NET{
+
+};
+#endif
+    #include <android/native_window.h>
+#define STRATA_CAP_DISPLAY
+#ifdef STRATA_CAP_DISPLAY 
+struct DISPLAY : impl:DISPLAY{
+    std::vector<ANativeWindow* >* natwin;
+int get_width(uint pos){return ANativeWindow_getWidth((*natwin)[pos]); }
+int get_height(uint pos){return ANativeWindow_getHeight((*natwin)[pos]);}
+vec2 get_data(uint pos){return glm::ivec2(ANativeWindow_getWidth((*natwin)[pos]),ANativeWindow_getHeight((*natwin)[pos]));}
+void handle(){return;}
+void init(){return;};
+void close(){delete this;};
+
 };
 
-    struct NET : impl::NET
-    #include <android/native_window.h>
     class SYS : impl::SYS {
 
         
 #ifdef STRATA_CAPABILITY_MOUSE 
 MOUSE      mouse;
-    void initMouse();
+    void initMouse(){return};
 #endif    
 #ifdef STRATA_CAPABILITY_KEY
 KEY        key;
-    void initKey();
+    void initKey(){return;};
 #endif
 #ifdef STRATA_CAPABILITY_JOY 
 JOY        joy;
-    void initJoy();
+    void initJoy(){return;};
 #endif
 #ifdef STRATA_CAPABILITY_CONT 
 CONT       cont;
-    void initCont();
+    void initCont(){return;};
 #endif
 #ifdef STRATA_CAPABILITY_TOUCH 
 TOUCH      touch;
-    void initTouch();
+    void initTouch(){return;};
 #endif
-// #ifdef STRATA_CAPABILITY_DISPLAY 
-// DISPLAY    display;
-//     void initDisplay();
-// #endif
+
 #ifdef STRATA_CAPABILITY_AUDIO 
 AUDIO      audio;
-    void initAudio();
+    void initAudio(){return;};
 #endif
 #ifdef STRATA_CAPABILITY_SENSOR 
 SENSOR     sensor;
-    void initSensor();
+    void initSensor(){return;};
 #endif
 #ifdef STRATA_CAP_CAM
 CAM cam;
+
 #endif
 #ifdef STRATA_CAP_NET
 NET net;
 #endif
+#ifdef STRATA_CAP_DISPLAY
+DISPLAY display;
+
+#endif 
         std::vector<ANativeWindow*> wins;
+
+void initDisplay(){this->display.natwin=&(this->wins);this->display.init();};
+
         void handle();
         void createWin(){
             ANativeWindow* anatw;
             ANativeWindow_acquire(anatw);
             this->wins.push_back(anatw);
         };
-        void 
+        
     };
 };
 

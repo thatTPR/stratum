@@ -272,94 +272,7 @@ UINT numDevices;
         bool handle(){return true;};
      }         
    
-    struct DISPLAY    : impl::DISPLAY    {
-        bool gotten;
-//         typedef struct _DISPLAY_DEVICEW {
-//     DWORD  cb;
-//     WCHAR  DeviceName[32];
-//     WCHAR  DeviceString[128];
-//     DWORD  StateFlags;
-//     WCHAR  DeviceID[128];
-//     WCHAR  DeviceKey[128];
-// } DISPLAY_DEVICEW, *PDISPLAY_DEVICEW, *LPDISPLAY_DEVICEW;
-    glm::ivec3 get_display_data(uint pos=0)final {
-        DISPLAY_DEVICE displayDevice;
-        displayDevice.cb = sizeof(DISPLAY_DEVICE);
-        glm::ivec3 res;
-    // Enumerate the monitor by index
-        if (EnumDisplayDevices(NULL, monitorIndex, &displayDevice, 0)) {
-        DEVMODE devMode;
-        devMode.dmSize = sizeof(DEVMODE);
-        // Get the current display settings for this monitor
-        if (EnumDisplaySettings(displayDevice.DeviceName, ENUM_CURRENT_SETTINGS, &devMode)) {
-             res.x = devMode.dmPelsWidht;
-             res.y = devMode.dmPelsHeight;
-             res.z=devMode.dmDisplayFrequency ; this->disp[pos] = res; return res;
-        } else {
-            std::cerr << "  Failed to retrieve display settings." << std::endl;
-        }
-        } else {
-        std::cerr << "Monitor index " << monitorIndex << " is invalid." << std::endl;
-    }
-        
-    }
-        glm::ivec3 get_monitor_data(uint pos=0) final {
- MONITORINFOEX monitorInfo;
-    monitorInfo.cbSize = sizeof(MONITORINFOEX);
 
-    if (GetMonitorInfo(hMonitor, &monitorInfo)) {
-        // Get device context for the monitor
-        HDC hdcMonitor = CreateDC(NULL, monitorInfo.szDevice, NULL, NULL);
-
-        // Get physical width and height in millimeters
-        int widthMM = GetDeviceCaps(hdcMonitor, HORZSIZE);
-        int heightMM = GetDeviceCaps(hdcMonitor, VERTSIZE);
-        int hz = GetDeviceCaps(hdcMonitor,VREFRESH);
-        return glm::ivec4(widthMM,heightMM);
-        DeleteDC(hdcMonitor);
-        this->mon[pos] = glm::ivec3(widthMM,heightMM,hz);
-        return this->mon[pos];
-    };
-    else std::cerr<<"Could not get_monitor_data(uint pos= "<<pos<<")"; 
-    delete monitorInfo;
-    };
-    int Num(){this->num = GetSystemMonitors(SMCMONITORS);};
-    void get_all(){
-        this->get_num_monitors();
-        this->disp.clear();
-        this->mon.clear();
-        for(uint i =0; i <this->nummon;i++){
-            this->get_display_data(i);
-            this->get_monitor_data(i);
-        };
-    };
-    void handle(){return true;};
-    bool handle(UINT uMsg, WPARAM wParam, LPARAM lParam){
-        switch (uMsg) {
-        case WM_DISPLAYCHANGE: {
-            this->change_cb(LOWORD(lParam),HIWORD(lParam),(int)wParam);return true;
-        };
-        case WM_DEVICECHANGE: {
-            if (wParam == DBT_DEVICEARRIVAL) {this->conn_cb(0);
-            } else if (wParam == DBT_DEVICEREMOVECOMPLETE) {
-                this->conn_cb(0,false)
-            }
-            return true;
-        };
-        case WM_SETTINGCHANGE: {
-            if (lParam) {
-                std::wstring settingName(reinterpret_cast<LPCWSTR>(lParam));
-                std::wcout << L"System setting changed: " << settingName << std::endl;
-            }
-            return true;
-        };
-    };
-    
-    void init()final{
-        this->get_all();
-    // Set callback to new monitor
-    };
-    };
 #ifdef STRATA_CAP_AUDIO
 #include <mmeapi.h>
 struct AUDIO : impl::AUDIO{
@@ -534,11 +447,178 @@ struct SENSOR : impl::SENSOR {
 #endif
 
 #ifdef STRATA_CAP_NET
+#pragma comment(lib, "Ws2_32.lib")
 #include <winsock.h>
+#include <ws2tcpip.h>
 struct NET : impl::NET {
-    auto inetaddr(const char doststr[]){return inet_addr(dotstr);};
-    auto inet()
+    std::vector<SOCKET> socks;
+    auto ninetaddr(const char doststr[])override{return inet_addr(dotstr);};
+    char* ninettoa(long ad)override{return inet_ntoa(ad);};
+    char* ngethostname(char* name,uint size){gethostname(name,size);};
+    int ngetaddrinfo(char* dns){ return getaddrinfo(dns,NULL,NULL,NULL);};
+    void result(int res){
+        switch(result){
+            case 0 : {return 0};
+            case WSANOTINITIALISED : {return impl::NET::res::NOINIT;};
+            case WSAENETDOWN : {return impl::NET::res::NETDOWN};
+            case WSAEACCES : {return impl::NET::res::WSAE};
+            case WSAEADDRINUSE : {return impl::NET::res::ADRINUSE};
+            case WSAEADDRNOTAVAIL : {return impl::NET::res::ADRNAVAIL};
+            case WSAEFAULT : {return impl::NET::res::FAILDEF;};
+            case WSAEINPROGRESS : {return impl::NET::res::FAILDEF;};
+            case WSAEINVAL : {return impl::NET::res::INVALARG};
+            case WSAENOBUFS : {return impl::NET::res::FAILDEF;};
+            case WSAENOTSOCK : {return impl::NET::res::FAILDEF;};
+        };
+        return impl::NET::res::FAILDEF;
+    };
+    uint nsockcreate(char[14] addr,char[5] port,int crtty, int proto=0,int ty=0){
+
+    struct addrinfo *result = NULL,
+                *ptr = NULL,
+                hints;
+                int st,fam,prt;
+switch(proto){
+    case impl::NET::proto::TCP :{prt=IPPROTO_TCP;}; 
+    case impl::NET::proto::UDP :{prt=IPPROTO_UDP;}; 
+    case impl::NET::proto::PGM :{prt=IPPROTO_PGM;};
 };
+switch(crtty){
+    case impl::NET::sockcrtt::STREAM : {st = SOCK_STREAM};
+    case impl::NET::sockcrtt::DGRAM : {st = SOCK_DGRAM;};
+    // case impl::NET::sockcrtt::RAW : {s = SOCK_RAW};
+    // case impl::NET::sockcrtt::MCAST : {s = SOCK_RDM};
+    // case impl::NET::sockcrtt::SEQPACKET : {s = SOCK_SEQPACKET};
+};
+ZeroMemory( &hints, sizeof(hints) );
+hints.ai_family   = AF_INET;
+hints.ai_socktype = s;
+hints.ai_protocol = prt;
+    int iresult = getaddrinfo(addr,port,hints);
+if(iresult != 0 ){return VEC_MAX;};
+    SOCKET con ;
+ptr =result;
+con = socket(ptr->ai_family,ptr->ai_socktype,ptr->ai_protocol);
+if (con == INVALID_SOCKET) {
+    printf("Error at socket(): %ld\n", WSAGetLastError());
+    freeaddrinfo(result);
+    return 1;
+};
+    
+    }; 
+    bindres nsockbind(uint pos, impl::NET::sockt ty, char addr[14]){
+        uint s;
+       s=AF_INET ;
+
+        sockaddr address;address.sa_data=addr;address.sa_family=s;
+        int result = bind(this->socks[pos],&address,sizeof(address));
+        return this->result(result);
+    };
+ uint nsockclose(uint pos=0){closesocket(this->socks[pos]);};
+    void nsend(uint pos,uint bufsize,char* buf){
+        return this->result(send(this->socks[pos],buf,bufsize,MSG_OOB));
+    };
+    void nsendto(uint pos,uint bufsize,char* buf){
+
+    };
+    void close(){WSACleanup();};
+    bool init(){ int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (result != 0) {return false;};}
+    // void createBt(){uint s = AF_BTH;}
+};
+#endif
+
+#ifdef STRATA_CAP_DISPLAY
+    struct DISPLAY    : impl::DISPLAY    {
+        bool gotten;
+//         typedef struct _DISPLAY_DEVICEW {
+//     DWORD  cb;
+//     WCHAR  DeviceName[32];
+//     WCHAR  DeviceString[128];
+//     DWORD  StateFlags;
+//     WCHAR  DeviceID[128];
+//     WCHAR  DeviceKey[128];
+// } DISPLAY_DEVICEW, *PDISPLAY_DEVICEW, *LPDISPLAY_DEVICEW;
+    glm::ivec3 get_display_data(uint pos=0)final {
+        DISPLAY_DEVICE displayDevice;
+        displayDevice.cb = sizeof(DISPLAY_DEVICE);
+        glm::ivec3 res;
+    // Enumerate the monitor by index
+        if (EnumDisplayDevices(NULL, monitorIndex, &displayDevice, 0)) {
+        DEVMODE devMode;
+        devMode.dmSize = sizeof(DEVMODE);
+        // Get the current display settings for this monitor
+        if (EnumDisplaySettings(displayDevice.DeviceName, ENUM_CURRENT_SETTINGS, &devMode)) {
+             res.x = devMode.dmPelsWidht;
+             res.y = devMode.dmPelsHeight;
+             res.z=devMode.dmDisplayFrequency ; this->disp[pos] = res; return res;
+        } else {
+            std::cerr << "  Failed to retrieve display settings." << std::endl;
+        }
+        } else {
+        std::cerr << "Monitor index " << monitorIndex << " is invalid." << std::endl;
+    }
+        
+    }
+        glm::ivec3 get_monitor_data(uint pos=0) final {
+ MONITORINFOEX monitorInfo;
+    monitorInfo.cbSize = sizeof(MONITORINFOEX);
+
+    if (GetMonitorInfo(hMonitor, &monitorInfo)) {
+        // Get device context for the monitor
+        HDC hdcMonitor = CreateDC(NULL, monitorInfo.szDevice, NULL, NULL);
+
+        // Get physical width and height in millimeters
+        int widthMM = GetDeviceCaps(hdcMonitor, HORZSIZE);
+        int heightMM = GetDeviceCaps(hdcMonitor, VERTSIZE);
+        int hz = GetDeviceCaps(hdcMonitor,VREFRESH);
+        return glm::ivec4(widthMM,heightMM);
+        DeleteDC(hdcMonitor);
+        this->mon[pos] = glm::ivec3(widthMM,heightMM,hz);
+        return this->mon[pos];
+    };
+    else std::cerr<<"Could not get_monitor_data(uint pos= "<<pos<<")"; 
+    delete monitorInfo;
+    };
+    int Num(){this->num = GetSystemMonitors(SMCMONITORS);};
+    void get_all(){
+        this->get_num_monitors();
+        this->disp.clear();
+        this->mon.clear();
+        for(uint i =0; i <this->nummon;i++){
+            this->get_display_data(i);
+            this->get_monitor_data(i);
+        };
+    };
+    void handle(){return true;};
+    bool handle(UINT uMsg, WPARAM wParam, LPARAM lParam){
+        switch (uMsg) {
+        case WM_DISPLAYCHANGE: {
+            this->change_cb(LOWORD(lParam),HIWORD(lParam),(int)wParam);return true;
+        };
+        case WM_DEVICECHANGE: {
+            if (wParam == DBT_DEVICEARRIVAL) {this->conn_cb(0);
+            } else if (wParam == DBT_DEVICEREMOVECOMPLETE) {
+                this->conn_cb(0,false)
+            }
+            return true;
+        };
+        case WM_SETTINGCHANGE: {
+            if (lParam) {
+                std::wstring settingName(reinterpret_cast<LPCWSTR>(lParam));
+                std::wcout << L"System setting changed: " << settingName << std::endl;
+            }
+            return true;
+        };
+    };
+    };
+    void init()final{
+        this->get_all();
+    // Set callback to new monitor
+    };
+};
+#endif
+
 #endif
     struct SYS  : impl::SYS  {
         /*   
