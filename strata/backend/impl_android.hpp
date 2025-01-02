@@ -1,25 +1,77 @@
 #include <impl.hpp>
-#include <android/log.h>
 #include <android/input.h>
+#include <android/log.h>
+// #if defined(STRATA_CAP_MOUSE) | defined(STRATA_CAP_KEY) | defined(STRATA_CAP_JOY) | defined(STRATA_CAP_CONT) | defined(STRATA_CAP_TOUCH) 
+// #endif
+#include <android/looper.h>
 namespace impl_android{
-    struct MOUSE : impl::MOUSE {
-        glm::vec2 Pos(){};
-        void init();
-    };
+    #ifdef STRATA_CAP_KEY
     struct KEY : impl::KEY {
-
+        AInput_event *kev;
+        void handleMeta(AInpute_event *keyevent){
+            uint32_t mstate = AKeyEvent_getMetaState(keyevent);
+          if(mstate & AMETA_ALT_ON){this->alt= true;}
+          else {this->alt=false;};
+          if(mstate & AMETA_ALT_LEFT_ON){this->lalt= true;}
+          else {this->lalt=false;};
+          if(mstate & AMETA_ALT_RIGHT_ON){this->ralt= true;}
+          else {this->ralt=false;};
+          if(mstate & AMETA_SHIFT_ON){this->shift= true;}
+          else {this->shift=false;};
+          if(mstate & AMETA_SHIFT_LEFT_ON){this->lshift= true;}
+          else {this->lshift=false;};
+          if(mstate & AMETA_SHIFT_RIGHT_ON){this->rshift= true;}
+          else {this->rshift=false;};
+          if(mstate & AMETA_SYM_ON){this->sym= true;}
+          else {this->sym=false;};
+          if(mstate & AMETA_FUNCTION_ON){this->function= true;}
+          else {this->function=false;};
+          if(mstate & AMETA_CTRL_ON){this->ctrl= true;}
+          else {this->ctrl=false;};
+          if(mstate & AMETA_CTRL_LEFT_ON){this->lctrl= true;}
+          else {this->lctrl=false;};
+          if(mstate & AMETA_CTRL_RIGHT_ON){this->rctrl= true;}
+          else {this->rctrl=false;};
+          if(mstate & AMETA_META_ON){this->meta= true;}
+          else {this->meta=false;};
+          if(mstate & AMETA_META_LEFT_ON){this->lmeta= true;};
+          else {this->lmeta=false;};
+          if(mstate & AMETA_META_RIGHT_ON){this->rmeta= true;};
+          else {this->rmeta=false;};
+        //   if(mstate & AMETA_CAPS_LOCK_ON){this->caps_lock= true;}
+        //   else {this->caps_lock=false;};
+        //   if(mstate & AMETA_NUM_LOCK_ON){this->num_lock= true;}
+        //   else {this->num_lock=false;};
+        //   if(mstate & AMETA_SCROLL_LOCK_ON){this->scroll_lock= true;}
+        //   else {this->scroll_lock=false;};
+      
+        };
+        void handlemeta(){this->handleMeta(this->kev);};
+        void handle(AInput_event *keyevent){
+            this->kev = keyevent;
+         int32_t kc = keycodeAKeyEvent_getKeyCode(keyevent);
+            int action = AKeyEvent_getAction(keyevent);
+    switch (action) {
+        case AKEY_EVENT_ACTION_DOWN: {this->down_cb(kc);break;};
+        case AKEY_EVENT_ACTION_UP:{this->up_cb(kc);break};
+        case AKEY_EVENT_ACTION_MULTIPLE:{;}
+        default:
+         inline hanldeMeta(keyevent);     
     };
-    struct JOY : impl::JOY {
 
+        }
+        int init(){return 1;};
     };
-    struct CONT : IMPL::CONT {
-
-    };
+    #endif
+    #ifdef STRTA_CAP_TOUCH
     struct TOUCH : impl::TOUCH {
+
         handle(){
-            glm::vec2<>getTouch
+            AInputEvent
+            glm::vec2<s> getTouch
         };
     };
+    #endif
 
 #ifdef STRATA_CAP_AUDIO
 #include <aaudio/AAudio.h>
@@ -224,6 +276,7 @@ void closecam(){ ACaptureSessionOutputContainer_free(this->outputContainer);   A
 bool initlidar(){return;};
 void closelidar(){return;}
 };
+
 #ifdef STRATA_CAP_NET
 struct NET : impl::NET{
 
@@ -287,8 +340,16 @@ DISPLAY display;
 
 #endif 
         std::vector<ANativeWindow*> wins;
+        AInputQueue* evq;
+        ALooper* aloop;
+int(* ALooper_callbackFunc)(int fd, int events, void *data)
+        int handle(int fd,int events,void* data){
+
+        };
+void init(){this->aloop =  ALooper_prepare() ;this->ALoooper_callbackFunc=this->handle; AInputQueue_attachLooper(this->evq,this->aloop,this->ALooper_callbackFunc ,)};
 
 void initDisplay(){this->display.natwin=&(this->wins);this->display.init();};
+
 
         void handle();
         void createWin(){

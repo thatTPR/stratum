@@ -127,7 +127,7 @@ struct evq {
     void push(T s){if(pos==size-1){this->clear();return;};this->d[pos]=s;this->i[pos]=0;this->pos++;};
     void push(T s , int ind){if(pos==size){this->clear();return;};this->d[pos]=s;this->i[pos]=ind;this->pos++;};
     void operator+=(T s){if(pos==size){this->clear();return;};this->d[pos]=s;this->pos++;};
-   
+    bool operator==(T s){for(int i= 0 ; i < this->pos;i++){if(this->d[i] == s){return true;};} return false;};
 };
 #ifdef STRATA_CAP_MOUSE
 using click        = int        ;//,           _click   >;    
@@ -139,6 +139,7 @@ using mouse_wheel  = int        ;//,   _mouse_wheel>; //x
 using mouse_wheelh = int        ;//,   _mouse_wheelh>;
 struct MOUSE {  // TODO filters for all
 const uint flag=_MOUSE;
+    mouse_move  last_location;
     evq<click ,MAXPOLL>       last_click; 
     evq<dbclick ,MAXPOLL>     last_db_click;     
     evq<mousedown ,MAXPOLL>   last_down;          
@@ -146,6 +147,13 @@ const uint flag=_MOUSE;
     evq<mouse_move,MAXPOLL>  last_move;           
     evq<mouse_wheel,MAXPOLL> last_wheel;     
     evq<mouse_wheelh,MAXPOLL> last_wheelh;     
+    void clicked(click t){return this->last_click == t;};
+    void dbclicked(dbclick t){return this->last_dbclick == t;};
+    void down(mousedown t){return this->last_down == t;};
+    void up(mouseup t){return this->last_up == t;};
+    // void moved_gt(glm::ivec2 s);
+    // void move_lt(glm::ivec2 s);
+    // void 
     void clear()final{this->last_click.clear();this->last_down.clear();this->last_up.clear();this->last_press.clear();this->last_move.clear();this->last_wheel.clear();}
     bool detect_combo(glm::ivec2* s){
         bool x=false;bool y=false;
@@ -221,14 +229,21 @@ using keyup = int,        ;// _keyup>; // x button, y index
 using keydown = int,        ;// _keydown>; // x button, y index      
 using keypress = int         ;//,_keypress>; // x button, y index       
 using keycombo = glm::ivec4   ;//,_keycombo> ; //-1 is 
+enum metastate {
+    CRTL,
+    ALT,
+    LALT,
+    RALT,
+};
 struct KEY   {
  public:
+    bool meta,lmeta,rmeta;
+    bool ctrl, lctrl, rctrl;
+    bool alt, lalt, ralt;
+    bool shift, lshift, rshift;
     evq<keyup,MAXPOLL>    last_keyup;
     evq<keydown,MAXPOLL>  last_keydown;
     evq<keypress,MAXPOLL> last_keypress;
-    evq<keycombo,MAXPOLL>  last_keycombo;
-
- 
     bool up_cb(char key,int index) final {this->last_keyup.push(keyup(key),index);};
     bool down_cb(char key,int index) final {this->last_keydown.push(keydown(key),index);};    
     bool press_cb(char key,int index) final {this->last_keypress.push(keypress(key),index);};    
@@ -236,15 +251,8 @@ struct KEY   {
     bool down_cb(down ev) final {this->last_keydown.push(ev);};    
     bool press_cb(press ev) final {this->last_keypress.push(ev);};    
     
-    struct keyComboCom {
-        glm::ivec4 combo ;
-        void (*func)();
-    };  
-    std::vector<keycomboCom>  s ;
-    void clearKeyCombo(){
-
-    };
-    void addKeyCombo(){
+    virtual void handlemeta();
+    bool check_combo( uint32_t kc){
 
     };
     virtual bool get_state(int key);
@@ -255,6 +263,11 @@ struct KEY   {
             case _keypress :{this->last_keypress=(keypress)ev;return true;};
         };
         return false;
+    };
+    void clear()final{
+        this->last_keyup.clear();
+        this->last_keydown.clear();
+        this->last_keypress.clear();        
     };
 }; // index 
 #endif
@@ -335,6 +348,15 @@ public:
     evq<CONT_axis,MAXPOLL>  last_laxis;     
     evq<CONT_axis,MAXPOLL>  last_raxis;
     evq<CONT_trigger,MAXPOLL> last_tr;
+    void clear(){
+        this->last_press.clear();
+        this->last_down.clear();
+        this->last_up.clear();
+        this->last_dpad.clear();
+        this->last_laxis.clear();
+        this->last_raxis.clear();
+        this->last_tr.clear();
+    };
     int num =0 ; 
     virtual void num();
     void clear()final{this->last_press.clear();this->last_down.clear();this->last_up.clear();this->last_dpad.clear();this->last_laxis.clear();this->last_raxis.clear();this->last_tr.clear();};
@@ -388,6 +410,13 @@ struct TOUCH  {
      evq<touch_tap,MAXPOLL> last_down;
      evq<touch_move,MAXPOLL> last_move;
      evq<touch_zoom,MAXPOLL> last_zoom;
+     void clear(){
+        this->last_tap.clear();
+        this->last_up.clear();
+        this->last_down.clear();
+        this->last_move.clear();
+        this->last_zoom.clear();
+     };
     std::vector<touch_gesture,MAXPOLL> last_gesture;
 
     std::vector<touch_gesture> gestures ;
@@ -647,6 +676,8 @@ virtual numCams();
 };
 #endif
 #ifdef STRATA_CAP_NET
+
+#define CREATE_FAIL VEC_MAX
 #include <int/net.hpp>
 struct NET {
     std::vector<char*> sockaddrs;
@@ -682,26 +713,22 @@ bindres sockbind(uint pos,sockt ty,char* addr);
 bindres sockbind(impl::NET::sockt ty, char addr[14]){return this->sockbind(0,ty,addr);};
 uint sockclose(uint pos=0);// 
 
-void nsend(uint pos, uint bufsize, char* buf);
-void nsend(uint bufsize, char* buf){this->send(0,bufsize,buf)};
-void nrecvfrom(uint pos,uint bufsize, char* buf,uint* pos);
-void nrecvfrom(uint bufsize, char* buf,uint* pos){this->recvfrom(0,bufsize,buf,pos);};
-void nrecv(uint pos,uint sizelim);
-void naccept(uint pos);
+virtual int nsend(uint pos, uint bufsize, char* buf,char* to, int tolen);
+int nsend(uint bufsize, char* buf){this->send(0,bufsize,buf)};
+int nrecvfrom(uint pos,uint bufsize, char* buf,char* from, int fromlen);
+int nrecvfrom(uint pos,uint bufsize, char* buf,uint pos){this->nrecvfrom(pos,bufsize,buf,this->sockaddrs[posa],sizeof(this->sockaddrs[posa]));};
+int nrecvfrom(uint bufsize, char* buf,uint pos){this->recvfrom(0,bufsize,buf,pos);};
+int nrecv(uint pos,uint sizelim);
+int naccept(uint pos, char* addr,int *adrlen);
 
-void nconn(uint pos);;
-void nconn()final{this->conn(0)};
-void nsend(uint pos);
-void nsend()final{this->send(0);};
-void nrecv(uint pos);
-void nrecv()final{this->recv(0);};
+
 
 
 void naccept()
 void nrecv()final{this->recv(this->sockaddrs[pos]);};
 
-void close();
-virtual bool init();
+virtual bool close();
+virtual int init();
 };
 #endif
 #define STRATA_CAP_DISPLAY
@@ -886,7 +913,27 @@ public:
 
     virtual void sleep(int mstime=2000);
     virtual void handle(); // Called during the event loop
-     
+    void clear(){
+#ifdef STRATA_CAP_MOUSE
+this->mouse.clear();
+#endif
+#ifdef STRATA_CAP_KEY
+this->key.clear();
+#endif
+#ifdef STRATA_CAP_JOY
+this->key.clear();
+#endif
+#ifdef STRATA_CAP_CONT
+this->cont.clear();
+#endif
+    };
+    virtual void handle();
+    void run(){this->handle(); this->handle();this->clear();};
+    void mkb(){this->handle(); this->mouse.handle();this->clear();};
+    void cont(){this->handle(); this-> ;};
+    void set_mkb();
+    void set_cont();
+    void set
     virtual void _init();// Set callbacks
     SYS(uint flags)=default{this->flag=flags;this->init_evsys(flags);}
 };

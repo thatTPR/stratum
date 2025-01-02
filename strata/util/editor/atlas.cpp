@@ -3,4 +3,4 @@
 
 class editor {
     sys::atlas
-}
+};

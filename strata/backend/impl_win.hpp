@@ -117,17 +117,9 @@ UINT numDevices;
     this->num = numMice;    
     };
     
+    glm::ivec2 pos(){POINT p ;GetCursorPos(&p);return glm::ivec2(p.x,p.y);};
+    void setpos(glm::ivec2 p){ POINT pos;pos.x = p.x ; pos.y = p.y;    SetCursorPos(pos);};
     };
-        virtual void _init(){
-            
-        };
-        glm::vec2 Pos()(){
-            POINT cursorPos;
-            GetCursorPos(&cursorPos); glm::vec2(cursorPos.x,cursorPos.y);
-        };
-        glm::vec2 WinPos() override{
-
-        };
     };      
     #endif
     #ifdef STRATA_CAP_KEY   
@@ -447,9 +439,9 @@ struct SENSOR : impl::SENSOR {
 #endif
 
 #ifdef STRATA_CAP_NET
-#pragma comment(lib, "Ws2_32.lib")
 #include <winsock.h>
 #include <ws2tcpip.h>
+#pragma comment(lib, "Ws2_32.lib")
 struct NET : impl::NET {
     std::vector<SOCKET> socks;
     auto ninetaddr(const char doststr[])override{return inet_addr(dotstr);};
@@ -494,8 +486,8 @@ ZeroMemory( &hints, sizeof(hints) );
 hints.ai_family   = AF_INET;
 hints.ai_socktype = s;
 hints.ai_protocol = prt;
-    int iresult = getaddrinfo(addr,port,hints);
-if(iresult != 0 ){return VEC_MAX;};
+    int iresult = getaddrinfo(addr,port,hints,result);
+if(iresult != 0 ){return CREATE_FAIL;};
     SOCKET con ;
 ptr =result;
 con = socket(ptr->ai_family,ptr->ai_socktype,ptr->ai_protocol);
@@ -515,14 +507,17 @@ if (con == INVALID_SOCKET) {
         return this->result(result);
     };
  uint nsockclose(uint pos=0){closesocket(this->socks[pos]);};
-    void nsend(uint pos,uint bufsize,char* buf){
-        return this->result(send(this->socks[pos],buf,bufsize,MSG_OOB));
+    int nsend(uint pos,uint bufsize,char* buf){
+        int ires= send(this->socks[pos],buf,bufsize,MSG_OOB);
+        if(ires == SOCKET_ERROR){return impl::NET::res::FAILDEF;};
+        return 0;
     };
-    void nsendto(uint pos,uint bufsize,char* buf){
-
-    };
+    int nsendto(uint pos,uint bufsize,char* buf,char* to,int tolen){int ires =sendto(this->socks[pos],buf,bufsize,inet_addr(addres),tolen); if(ires == SOCKET_ERROR){return impl::NET::res::FAILDEF;};return 0;};
+    int nrecvfrom(uint pos,uint bufisze , char* buf, char* from, int fromlen){int ires = recvfrom(this->socks[pos],buf,bufsize,0,inet_addr(from),fromlen};if(ires == SOCKET_ERROR){return impl::NET::res::FAILDEF;};return 0;};
+    int nrecv(uint pos, uint bufsize,char* buf){int ires = recvfrom(this->socks[pos],buf,bufsize,0};if(ires == SOCKET_ERROR){return impl::NET::res::FAILDEF;};return 0;};
+    int naccept(uint pos, char* addr,int* addrlen){int ires = accept(this->socks[pos],inet_addr(addr),addrlen);if(ires == SOCKET_ERROR){return impl::NET::res::FAILDEF;};return 0;};
     void close(){WSACleanup();};
-    bool init(){ int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    int init(){ int result = WSAStartup(MAKEWORD(2, 2), &wsaData) ; return result;};
     if (result != 0) {return false;};}
     // void createBt(){uint s = AF_BTH;}
 };
@@ -552,14 +547,10 @@ if (con == INVALID_SOCKET) {
              res.x = devMode.dmPelsWidht;
              res.y = devMode.dmPelsHeight;
              res.z=devMode.dmDisplayFrequency ; this->disp[pos] = res; return res;
-        } else {
-            std::cerr << "  Failed to retrieve display settings." << std::endl;
-        }
-        } else {
-        std::cerr << "Monitor index " << monitorIndex << " is invalid." << std::endl;
-    }
+        } else {std::cerr << "  Failed to retrieve display settings." << std::endl;};
+        } else {std::cerr << "Monitor index " << monitorIndex << " is invalid." << std::endl;};
         
-    }
+    };
         glm::ivec3 get_monitor_data(uint pos=0) final {
  MONITORINFOEX monitorInfo;
     monitorInfo.cbSize = sizeof(MONITORINFOEX);
