@@ -139,3 +139,22 @@ class UI :public event_sys<evs::_UI> {
     virtual void get_db_click_ms(int per);
     int get_ms(int _ms=200) final{this->ms=_ms}; int16 ms_cur;}
 };
+
+
+
+
+#ifdef STRATA_CAP_TOUCH
+struct Itouch : public canvasWidget{
+
+    
+    std::vector<> toggles; 
+    std::vector<> buttons ;
+    std::vector<> pads ;
+
+    // Global touch behaviout( outside of widgets)
+    void gMove(glm::vec2 p);
+    void gTap(glm::vec2 p);
+
+};
+
+#endif

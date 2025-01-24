@@ -3,8 +3,11 @@
 using namespace std;
 #include <filesytem>
 #define fs std::filesystem
+#include <cxx>
+template <>
+class make
 
-class make {
+class makeWin {
     std::string libdirname;
     virtual incDir();
     virtual libDir(); 

@@ -1,17 +1,14 @@
+#ifndef IMPL_WIN_HPP
+#define IMPL_WIN_HPP
+
 #include <strata/backend/impl.hpp>
 #include <Windows.h>
 #ifdef STRATA_IMPL_VK
-#include <vk/vulkan.h>
+// #include <vk/vulkan.h>
+#include <vk/vulkan_win32.h>
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 #ifdef STRATA_IMPL_DX
-#ifdef D3D12
-#include <d3d12.h>
-#elifdef D3D11
-#include <d3d11.h>
-#endif
-#include <dxgi.h>
-#endif
 #ifdef STRATA_IMPL_GL
 #include <gl/gl.h>
 #endif
@@ -22,7 +19,8 @@ namespace impl_win {
     // using impl::event_main;
     #ifdef STRATA_CAP_MOUSE
     struct MOUSE                     : impl::MOUSE                     { 
-       
+        void cursorHide(){if(ShowCursor(false)<0)else{this->cursorHide();};};
+        void cursorShow(){if(ShowCursor(true)>4)else{this->cursorShow();};};
         void _mhandle( WPARAM wParam, LPARAM lParam){
             UINT dataSize;
             GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dataSize, sizeof(RAWINPUTHEADER));
@@ -183,8 +181,7 @@ UINT numDevices;
     #include <Xinput.h>
     #endif
     struct CONT                   : impl::CONT                   {
-        void num(){
-
+        void num(){this->num = GetNumDevs();
         };
         void init(){XINPUT_STATE state;
     ZeroMemory(&state, sizeof(XINPUT_STATE)); int i;
@@ -739,42 +736,44 @@ SENSOR     sensor;
     return 0;
     };
     evq<long , MAXPOLL> last;
+
+
     LRESULT CALLBACK MouseProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
 #ifdef STRATA_CAP_MOUSE
-if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1};
 #endif
 #ifdef STRATA_CAP_KEY
-if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
-#ifdef STRATA_CAP_JOY
-if(joy.handle()!=0){this->last.push(4);return 4;};
+ #ifdef STRATA_CAP_CONT
+if(cont.handle()!=0){this->last.push(4);return 4;};
 #endif
-        #ifdef STRATA_CAP_CONT
-if(cont.handle()!=0){this->last.push(5);return 5;};
+#ifdef STRATA_CAP_JOY
+if(joy.handle()!=0){this->last.push(3);return 3;;};
 #endif
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
-    LRESULT CALLBACK KeyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+LRESULT CALLBACK KeyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
 #ifdef STRATA_CAP_KEY
-if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
 #ifdef STRATA_CAP_MOUSE
-if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
-#endif
-#ifdef STRATA_CAP_JOY
-if(joy.handle()!=0){this->last.push(4);return 4;};
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1};
 #endif
         #ifdef STRATA_CAP_CONT
-if(cont.handle()!=0){this->last.push(5);return 5;};
+if(cont.handle()!=0){this->last.push(4);return 4;};
+#endif
+#ifdef STRATA_CAP_JOY
+if(joy.handle()!=0){this->last.push(3);return 3;;};
 #endif
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
@@ -782,19 +781,19 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
     LRESULT CALLBACK JoyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
 #ifdef STRATA_CAP_JOY
-if(joy.handle()!=0){this->last.push(4);return 4;};
+if(joy.handle()!=0){this->last.push(3);return 3;};
 #endif
 #ifdef STRATA_CAP_KEY
-if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
 #ifdef STRATA_CAP_MOUSE
-if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1};
 #endif
         #ifdef STRATA_CAP_CONT
-if(cont.handle()!=0){this->last.push(5);return 5;};
+if(cont.handle()!=0){this->last.push(4);return 4;};
 #endif
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
@@ -802,38 +801,38 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
     LRESULT CALLBACK ContProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
         #ifdef STRATA_CAP_CONT
-if(cont.handle()!=0){this->last.push(5);return 5;};
+if(cont.handle()!=0){this->last.push(4);return 4;};
 #endif
 #ifdef STRATA_CAP_KEY
-if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
 #ifdef STRATA_CAP_MOUSE
-if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1};
 #endif
 #ifdef STRATA_CAP_JOY
-if(joy.handle()!=0){this->last.push(4);return 4;};
+if(joy.handle()!=0){this->last.push(3);return 3;};
 #endif
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
      LRESULT CALLBACK TouchProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 #ifdef STRATA_CAP_KEY
-if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
 #ifdef STRATA_CAP_MOUSE
-if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
-#endif
-#ifdef STRATA_CAP_JOY
-if(joy.handle()!=0){this->last.push(4);return 4;};
+if(mouse.handle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1};
 #endif
         #ifdef STRATA_CAP_CONT
-if(cont.handle()!=0){this->last.push(5);return 5;};
+if(cont.handle()!=0){this->last.push(4);return 4;};
+#endif
+#ifdef STRATA_CAP_JOY
+if(joy.handle()!=0){this->last.push(3);return 3;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
@@ -843,38 +842,38 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
  LRESULT CALLBACK mMouseProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
 #ifdef STRATA_CAP_MOUSE
-if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1};
 #endif
 #ifdef STRATA_CAP_KEY
-if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
-#ifdef STRATA_CAP_JOY
-if(joy.mhandle()!=0){this->last.push(4);return 4;};
-#endif
         #ifdef STRATA_CAP_CONT
-if(cont.mhandle()!=0){this->last.push(5);return 5;};
+if(cont.mhandle()!=0){this->last.push(4);return 4;};
+#endif
+#ifdef STRATA_CAP_JOY
+if(joy.mhandle()!=0){this->last.push(3);return 3;};
 #endif
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
     LRESULT CALLBACK mKeyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
 #ifdef STRATA_CAP_KEY
-if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
 #ifdef STRATA_CAP_MOUSE
-if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
-#endif
-#ifdef STRATA_CAP_JOY
-if(joy.mhandle()!=0){this->last.push(4);return 4;};
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1};
 #endif
         #ifdef STRATA_CAP_CONT
-if(cont.mhandle()!=0){this->last.push(5);return 5;};
+if(cont.mhandle()!=0){this->last.push(4);return 4;};
+#endif
+#ifdef STRATA_CAP_JOY
+if(joy.mhandle()!=0){this->last.push(3);return 3;};
 #endif
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 if(audio.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
 #endif
@@ -884,39 +883,39 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
     LRESULT CALLBACK mJoyProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
 #ifdef STRATA_CAP_JOY
-if(joy.mhandle()!=0){this->last.push(4);return 4;};
+if(joy.mhandle()!=0){this->last.push(3);return 3;};
 #endif
 #ifdef STRATA_CAP_KEY
-if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
 #ifdef STRATA_CAP_MOUSE
-if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1};
 #endif
-        #ifdef STRATA_CAP_CONT
-if(cont.mhandle()!=0){this->last.push(5);return 5;};
+#ifdef STRATA_CAP_CONT
+if(cont.mhandle()!=0){this->last.push(4);return 4;};
 #endif
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
 
     LRESULT CALLBACK mContProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
-        #ifdef STRATA_CAP_CONT
-if(cont.mhandle()!=0){this->last.push(5);return 5;};
+#ifdef STRATA_CAP_CONT
+if(cont.mhandle()!=0){this->last.push(4);return 4;};
 #endif
 #ifdef STRATA_CAP_KEY
-if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
 #ifdef STRATA_CAP_MOUSE
-if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1};
 #endif
 #ifdef STRATA_CAP_JOY
-if(joy.mhandle()!=0){this->last.push(4);return 4;};
+if(joy.mhandle()!=0){this->last.push(3);return 3;;};
 #endif
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 if(audio.handle( mMsg, wParam,  lParam )!=0){this->last.push(8);return 8;}; 
 #endif
@@ -925,24 +924,22 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
      LRESULT CALLBACK mTouchProc(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
         // If WM_INPUT(0) then go thorugh rest
         #ifdef STRATA_CAP_TOUCH
-if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(6);return 6;};
+if(touch.handle( mMsg, wParam,  lParam )!=0){this->last.push(4);return 4;};
 #endif
 #ifdef STRATA_CAP_KEY
-if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(3);return 3;};
+if(key.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
 #endif        
 #ifdef STRATA_CAP_MOUSE
-if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(2);return 2;};
-#endif
-#ifdef STRATA_CAP_JOY
-if(joy.mhandle()!=0){this->last.push(4);return 4;};
+if(mouse.mhandle( mMsg, wParam,  lParam )!=0){this->last.push(1);return 1;
 #endif
         #ifdef STRATA_CAP_CONT
-if(cont.mhandle()!=0){this->last.push(5);return 5;};
+if(cont.mhandle()!=0){this->last.push(4);return 4;};
+#endif
+#ifdef STRATA_CAP_JOY
+if(joy.mhandle()!=0){this->last.push(3);return 3;;};
 #endif
 if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1;};
     };
-   
-
    
     MSG msg ;
     bool handle() 
@@ -951,12 +948,41 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
         DispatchMessage(&(this->msg));
     };
     };
-    void changeCb(HWND hwnd , LRESULT CALLBACK (*MouseProc)(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam )){SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)MouseProc );};
+    LRESULT CALLBACK (*curptrcb)(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam );
+
+    void changeCb(HWND hwnd , LRESULT CALLBACK (*ptrcb)(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam )){this->curptrcb = ptrcb;SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)ptrcb );};
     void changePrMouse(uint pos=0){this->changCb(this->wins[0],this->MouseProc;)};
     void changePrKey(uint pos=0){this->changCb(this->wins[0],this->KeyProc;)};
     void changePrCont(uint pos=0){this->changCb(this->wins[0],this->ContProc;)};
     void changePrJoy(uint pos=0){this->changCb(this->wins[0],this->JoyProc;)};
     void changePrTouch(uint pos=0){this->changCb(this->wins[0],this->TouchProc;)};
+
+   void stoprecordKey(){this->changeCb(this->lastptrcb);};
+   void stoprecordAxis(){this->changeCb(this->lastptrcb);};
+    LRESULT CALLBACK (*lastptrcb)(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam );
+    LRESULT CALLBACK recordkeycb(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        switch(this->lastptrcb(hwnd, mMsg, wParam, lParam)){
+            case 1 : { this->keyrec = keyrecord(1,mouse.getlastkey()); break;}
+            case 2 : { this->keyrec = keyrecord(2,this->key.getlastkey()); break;}
+            case 3 : { this->keyrec = keyrecord(3,this->joy.getlastkey()); break;}
+            case 4 : { this->keyrec = keyrecord(4,this->cont.getlastkey()); break;}
+            default : {return 0; };
+            this->stop_record_key();
+        };
+    };
+    LRESULT CALLBACK recordaxiscb(HWND hwnd, UINT mMsg, WPARAM wParam, LPARAM lParam ){
+        switch(this->lastptrcb(hwnd, mMsg, wParam, lParam)){
+            case 1 : {this->axisrec=keyrecord(1,this->mouse.getlastaxis()); break;};
+            case 3 : {this->axisrec=keyrecord(3,this->joy.getlastaxis()); break;};
+            case 4 : {this->axisrec=keyrecord(4,this->cont.getlastaxis()); break;};
+            case 5 : {this->axisrec=keyrecord(5,this->touch.getlastaxis()); break;};
+            default : {return 0; };
+            this->stop_record_axis();
+        };
+
+    };
+   void recordKey(){this->lastptrcb = this->curptrcb;this->changeCb(this->wins[0],this->recordkeycb);};
+   void recordAxis(){this->lastptrcb = this->curptrcb;this->changeCb(this->wins[0],this->recordaxiscb);};
     
     void createWin (glm::ivec2 size,glm::ivec2 pos,int8_t flag=_custom_tabbar,uint8_t parent = -1,char CLASS_NAME[]=NULL ,char text[]=NULL) override {
     WNDCLASS wc = {};
@@ -1033,7 +1059,7 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
 
     
     #ifdef STRATA_IMPL_VK
-    void initVk(HWND win, VkInstance inst, VKSurfaceKHR* surface, HINSTANCE hInstance=GetModuleHandle(NULL)){ 
+    void initgl(HWND win, VkInstance inst, VKSurfaceKHR* surface, HINSTANCE hInstance=GetModuleHandle(NULL)){ 
     VkWin32SurfaceCreateInfoKHR info;
     info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     info.hinstance = hInstance;
@@ -1044,13 +1070,12 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
     #endif
     };
     #ifdef STRATA_IMPL_DX
-     #include 
-     void initDx(){
+    void initgl(){
 
     };
     #endif
     #ifdef STRATA_IMPL_GL
-    void initGl(){
+    void initgl(){
 
     };
     #endif
@@ -1108,3 +1133,5 @@ if(this->handle_win(hwnd, mMsg, wParam,  lParam)!=0{this->last.push(1) ;return 1
 
     
 
+
+#endif

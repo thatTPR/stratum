@@ -1,3 +1,11 @@
+#ifndef IMPL_ANDROID_HPP
+#define IMPL_ANDROID_HPP
+#ifdef IMPL_VK
+#include <android/../vulkan/vulkan_android.h>
+#endif
+#ifdef IMPL_GL
+#include <android/../gl/GL.h>
+#endif
 #include <impl.hpp>
 #include <android/input.h>
 #include <android/log.h>
@@ -7,8 +15,7 @@
 namespace impl_android{
     #ifdef STRATA_CAP_KEY
     struct KEY : impl::KEY {
-        AInput_event *kev;
-        void handleMeta(AInpute_event *keyevent){
+        void handleMeta(AInputEvent *keyevent){
             uint32_t mstate = AKeyEvent_getMetaState(keyevent);
           if(mstate & AMETA_ALT_ON){this->alt= true;}
           else {this->alt=false;};
@@ -46,9 +53,7 @@ namespace impl_android{
         //   else {this->scroll_lock=false;};
       
         };
-        void handlemeta(){this->handleMeta(this->kev);};
         void handle(AInput_event *keyevent){
-            this->kev = keyevent;
          int32_t kc = keycodeAKeyEvent_getKeyCode(keyevent);
             int action = AKeyEvent_getAction(keyevent);
     switch (action) {
@@ -56,19 +61,67 @@ namespace impl_android{
         case AKEY_EVENT_ACTION_UP:{this->up_cb(kc);break};
         case AKEY_EVENT_ACTION_MULTIPLE:{;}
         default:
-         inline hanldeMeta(keyevent);     
+         inline this->handleMeta(keyevent);     
     };
 
         }
         int init(){return 1;};
     };
     #endif
+    #ifdef STRATA_CAP_CONT 
+    struct CONT : impl::CONT{
+        void handlekey(AInputeEvent* ev){
+           uint32_t act = AKeyEvent_GetAction(ev);
+            uint32_t key = AKeyEvent_getKeyCode(ev);
+            switch(act){
+                case AKEY_EVENT_ACTION_DOWN : {
+                    this->down_cb(key);
+                };
+                case AKEY_EVENT_ACTION_UP   : {
+                    this->up_cb(key);
+                };
+            }
+        };
+        void handleMotion(AInputEvent* ev){
+            uint32_t act = AmotionEvent_getAction(ev);
+            this->laxis_cb( cont_axis(AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_X,0),AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_Y,0)));
+            this->raxis_cb( cont_axis(AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_Z,0),AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_RZ,0)));
+            this->trig_cb( cont_axis(AmotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_LTRIGGER,0),AmotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_RTRIGGER,0)))
+        };
+    };
+    #ifdef STRATA_CAP_JOY
+    struct JOY : impl::JOY {
+        void handlekey(AInputEvnet *ev){
+            uint32_t act = AKeyEvent_GetAction(ev);
+            uint32_t key = AKeyEvent_getKeyCode(ev);
+            switch(act){
+                case AKEY_EVENT_ACTION_DOWN : {
+                    this->down_cb(key);
+                };
+                case AKEY_EVENT_ACTION_UP   : {
+                    this->up_cb(key);
+                };
+            }
+        };
+        void handlemotion(AInputEvent *ev){
+            this->axis_cb( joy_axis(AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_X,0),AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_Y,0)));
+            this->throt_cb(AMotionEvent_getAxisValue(ev,AMITION_EVNET_AXIS_Z,0));
+            this->rotate_cb(AMotionEvent_getAxisValue(ev,AMITION_EVNET_AXIS_RZ,0));
+        };
+    };
+    #endif
     #ifdef STRTA_CAP_TOUCH
     struct TOUCH : impl::TOUCH {
 
-        handle(){
-            AInputEvent
-            glm::vec2<s> getTouch
+        handle(AInputEvent *touchev){
+            uint32_t act = AMotionEvent_getAction(touchev);
+            switch(act){
+                case AMOTION_EVENT_ACTION_MOVE : {this->move_cb( touch_move( AMotionEvent_getX(touchev)  ,  AMotionEvent_getY(touchev)  ) ) ; return ;};
+                case AMOTION_EVENT_ACTION_DOWN : {this->down_cb( touch_tap( AMotionEvent_getX(touchev)  ,  AMotionEvent_getY(touchev)) ); return ;};
+                case AMOTION_EVENT_ACTION_UP   : {this->up_cb( touch_tap ( AMotionEvent_getX(touchev)  ,  AMotionEvent_getY(touchev)) ) ; return ;};
+            };
+            
+
         };
     };
     #endif
@@ -343,15 +396,46 @@ DISPLAY display;
         AInputQueue* evq;
         ALooper* aloop;
 int(* ALooper_callbackFunc)(int fd, int events, void *data)
-        int handle(int fd,int events,void* data){
+        int ahandle(int fd,int events,void* data){
 
         };
-void init(){this->aloop =  ALooper_prepare() ;this->ALoooper_callbackFunc=this->handle; AInputQueue_attachLooper(this->evq,this->aloop,this->ALooper_callbackFunc ,)};
+void init(){this->aloop =  ALooper_prepare() ;this->ALoooper_callbackFunc=this->ahandle; AInputQueue_attachLooper(this->evq,this->aloop,this->ALooper_callbackFunc ,)};
 
 void initDisplay(){this->display.natwin=&(this->wins);this->display.init();};
 
 
-        void handle();
+        int handle(){
+            AInputEvent *outev;
+            AInputQueue_getEvent(this->evq,&outev);
+            int ty = AInputEvent_getType(outev);
+            switch(ty){
+                case AINPUT_EVENT_TYPE_KEY :  {
+                    #ifdef STRATA_CAP_CONT
+                    if((ty& AINPUT_SOURCE_GAMEPAD) == AINPUT_SOURCE_GAMEPAD){this->cont.handlekey(outev);return impl::SYS::dev::Cont;};
+                    #endif
+                    #ifdef STRATA_CAP_KEY
+                    if((ty& AINPUT_SOURCE_KEYBOARD) == AINPUT_SOURCE_KEYBOARD){this->key.handle(outev);return impl::SYS::dev::Key;;};
+                    #endif
+                    #ifdef STRATA_CAP_JOY
+                    if((ty & AINPUT_SOURCE_JOYSTICK) ==AINPUT_SOURCE_JOYSTICK ){this->joy.handlekey(outev);return impl::SYS::dev::Joy;}
+                    #endif
+                case AINPUT_EVENT_TYPE_MOTION : {
+                    #ifdef STRATA_CAP_TOUCH
+                    if( ty & AINPUT_SOURCE_TOUCHSCREEN ) == AINPUT_SOURCE_TOUCHSCREEN){this->touch.handle(outev);return impl::SYS::dev::Touch;;};
+                    #endif
+                    #ifdef STRATA_CAP_CONT
+                    if((ty& AINPUT_SOURCE_GAMEPAD) == AINPUT_SOURCE_GAMEPAD){this->cont.handlemotion(outev);return impl::SYS::dev::Cont;};
+                    #endif
+                    #ifdef STRATA_CAP_JOY
+                    if( ty & AINPUT_SOURCE_JOYSTICK ) == AINPUT_SOURCE_JOYSTICK){this->joy.handlemotion(outev);return impl::SYS::dev::Joy;};
+                    #endif
+                // case AINPUT_EVENT_TYPE_FOCUS: {}
+                // case AINPUT_EVENT_TYPE_CAPTURE : {this->}
+                // case AINPUT_EVENT_TYPE_DRAG : {}
+                // case AINPUT_EVENT_TYPE_TOUCH_MODE : {}
+                default: {}
+            };
+        };
         void createWin(){
             ANativeWindow* anatw;
             ANativeWindow_acquire(anatw);
@@ -361,3 +445,4 @@ void initDisplay(){this->display.natwin=&(this->wins);this->display.init();};
     };
 };
 
+ #endif

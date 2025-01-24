@@ -1,10 +1,15 @@
-#pragma once
+#ifndef IMPL_VK_HPP
+#define IMPL_VK_HPP
 #include <strata/backend/implgl.hpp>
-#include <strata/backend/modules.hpp>
+#include <strata/modules.hpp>
+#ifdef IMPL_ANDROID
+#include <android/../vk/vulkan.hpp>
+#include <android/../vk/vulkan_core.hpp>
+#elif
 #include <lib/vk/vulkan.h>
 #include <lib/vk/vulkan_core.h>
 
-// Image formats
+#endif
 
 #define GET_VK_FORMAT(image_form) 
 
@@ -12,10 +17,12 @@
 class DescriptorAllocatorSets {
     
 };
-class vk_impl : public strata_impl  {
+class Descriptor {
+
+};
+struct vk_impl : public gl_impl  {
     public:
-    bool nv; // TAkes prioriy over ext else 
-    // bool ext; // else KHRl
+    bool nv = 0 ; // Takes prioriy ext; // else KHRl
     int size_t curdev;
     VkInstance instance ;
     std::vector<VkPhysicalDevice> physdev;

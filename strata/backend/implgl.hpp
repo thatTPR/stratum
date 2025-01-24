@@ -36,10 +36,10 @@ Features structure: VkPhysicalDeviceMultiviewFeatures.
 #define Buffer
 #define Size
 
-class strata_impl {
+struct gl_impl {
     public:
     std::vector<Pipeline> pipelines;
-    std::vector<winsurface> winsurfaces;
+    std::vector<uint> winsurfaces;
     std::vector<device> devices;
     
 
@@ -112,3 +112,4 @@ using gl_impl= dx_impl ;
 using gl_impl = gl_impl;
 #endif
 
+gl_impl gl;

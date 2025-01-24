@@ -1,5 +1,6 @@
-#pragma once
-/*
+#ifndef IMPL_HPP
+#define IMPL_HPP
+/*/
 Capablities
 SYS_MOUSE
 SYS_KEY
@@ -29,16 +30,18 @@ SYS_COMBO
 using namespace std;
 #define VEC_MAX 1000
 
+
 #include <strata/backend/implgl.hpp>
 #ifdef STRATA_IMPL_WIN
-// #define STRATA_IMPL_VK
-// #define STRATA_IML_DX
+#include <strata/backend/impl_win.hpp>
+
 #endif
 #ifdef STRATA_IMPL_ANDROID
-#define STRATA_IMPL_VK
-#endif
+#include <strata/backend/impl_android.hpp>
 #ifdef STRATA_IMPL_LINUX
-#define STRATA_IMPL_VK
+#include <strata/backend/impl_linux.hpp>
+#define STRATA_IMPL_WASM
+#include <strata/backend/impl_wasm.hpp>
 #endif
 
 
@@ -123,6 +126,7 @@ struct evq {
     int ind(int s){return this->i[s];};
     int pos(){return this->pos;};
     void clear(){this->pos=0;};
+    int lastn(){return this->d[pos-1];}
     void get(uint pos , T* d , int* inde){d = this->d[pos], inde = this->i[pos];};
     void push(T s){if(pos==size-1){this->clear();return;};this->d[pos]=s;this->i[pos]=0;this->pos++;};
     void push(T s , int ind){if(pos==size){this->clear();return;};this->d[pos]=s;this->i[pos]=ind;this->pos++;};
@@ -147,6 +151,11 @@ const uint flag=_MOUSE;
     evq<mouse_move,MAXPOLL>  last_move;           
     evq<mouse_wheel,MAXPOLL> last_wheel;     
     evq<mouse_wheelh,MAXPOLL> last_wheelh;     
+    uint getlastKey(){return this->last_down.lastn();};
+    uint getlastaxis(){mouse_move l = this->last_move.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1; };
+
+    virtual void cursorHide();
+    virtual void cursorShow();
     void clicked(click t){return this->last_click == t;};
     void dbclicked(dbclick t){return this->last_dbclick == t;};
     void down(mousedown t){return this->last_down == t;};
@@ -244,6 +253,8 @@ struct KEY   {
     evq<keyup,MAXPOLL>    last_keyup;
     evq<keydown,MAXPOLL>  last_keydown;
     evq<keypress,MAXPOLL> last_keypress;
+        uint getlastKey(){return this->last_keydown.lastn();};
+
     bool up_cb(char key,int index) final {this->last_keyup.push(keyup(key),index);};
     bool down_cb(char key,int index) final {this->last_keydown.push(keydown(key),index);};    
     bool press_cb(char key,int index) final {this->last_keypress.push(keypress(key),index);};    
@@ -273,20 +284,34 @@ struct KEY   {
 #endif
 #ifdef STRATA_CAP_JOY
 using joy_hat = int ;        //,_joy_hat>;  
-using joy_axis = glm::ivec3 ;        //,_joy_axis>; // x axis y index       
+using joy_axis = glm::vec2 ;        // x,y axis 
 using joy_up = int ;        //,_joy_up>;    
 using joy_down = int ;        //,_joy_down>;      
 using joy_press = int ;        //,_joy_press>;     
-struct joycap {
-
-};
+using joy_rot = float ;
+using joy_throt = float;
+#define JOY_A
+#define JOY_B
+#define JOY_X
+#define JOY_Y
+#define JOY_L1
+#define JOY_R1
+#define JOY_LTHUMB
+#define JOY_RTHUMB
 struct  JOY   { // TODO handle multi input by calling multiple
 public:
         evq<joy_hat,MAXPOLL>   last_hat;
-        evq<joy_axis,MAXPOLL>  last_axis;    
+        evq<joy_axis,MAXPOLL>  last_axis;
+
         evq<joy_up,MAXPOLL>    last_up;  
         evq<joy_down,MAXPOLL>  last_down;    
         evq<joy_press,MAXPOLL> last_press;   
+        evq<joy_throt,MAXPOLL> last_throt;   
+        evq<joy_rot,MAXPOLL> last_rot;   
+    uint getlastKey(){ this->last_down.lastn();};
+    uint getlastaxis(){joy_axis l = this->last_axis.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1;};
+
+        
         uint num =1;
         uint period = 100;
         // int maxbtn;
@@ -299,17 +324,18 @@ public:
         void setperiod(uint ms) {this->period=ms;};
         int numJoys(){ this->numJoys(); return this->num;}
 
-void hat_cb(joy_hat ev) final {this->last_hat=ev;};      //void push_up(joy_hat ev) final {this->evmain.push(ev);};
-void up_cb(joy_up ev) final {this->last_up=ev;};         //void push_up(joy_up ev) final {this->evmain.push(ev);};
-void down_cb(joy_down ev) final {this->last_down=ev;};   //void push_down(joy_down ev) final {this->evmain.push(ev);};
-void press_cb(joy_press ev) final {this->last_press=ev;};//void push_press(joy_press ev) final {this->evmain.push(ev);};
-void axis_cb(joy_axis ev) final {this->last_axis=ev;};   //void push_axis(joy_axis ev) final {this->evmain.push(ev);};
-void hat_cb(int btn,int index) final {this->last_hat=joy_hat(btn,index);};           //void push_up(int btn,int index) final {this->evmain.push(joy_hat(btn,index));};
-void up_cb(int btn,int index) final {this->last_up=joy_up(btn,index);};              //void push_up(int btn,int index) final {this->evmain.push(joy_up(btn,index));};
-void down_cb(int btn,int index) final {this->last_down=joy_down(btn,index);};        //void push_docb(int btn,int index) final {this->evmain.push(joy_down(btn,index));};    
-void press_cb(int btn,int index) final {this->last_press=joy_press(btn,index);};     //void push_pr_cb(int btn,int index) final {this->evmain.push(joy_press(btn,index));};    
-void axis_cb(int16 axis,int index) final {this->last_axis=joy_axis(axis,index);};    //void push_axcb(int16 axis,int index) final {this->evmain.push(joy_axis(axis,index));};    
-
+void hat_cb(joy_hat ev) final {this->last_hat+=ev;};      //void push_up(joy_hat ev) final {this->evmain.push(ev);};
+void up_cb(joy_up ev) final {this->last_up+=ev;};         //void push_up(joy_up ev) final {this->evmain.push(ev);};
+void down_cb(joy_down ev) final {this->last_down+=ev;};   //void push_down(joy_down ev) final {this->evmain.push(ev);};
+void press_cb(joy_press ev) final {this->last_press+=ev;};//void push_press(joy_press ev) final {this->evmain.push(ev);};
+void axis_cb(joy_axis ev) final {this->last_axis+=ev;};   //void push_axis(joy_axis ev) final {this->evmain.push(ev);};
+void hat_cb(int btn,int index) final {this->last_hat+=joy_hat(btn,index);};           //void push_up(int btn,int index) final {this->evmain.push(joy_hat(btn,index));};
+void up_cb(int btn,int index) final {this->last_up+=joy_up(btn,index);};              //void push_up(int btn,int index) final {this->evmain.push(joy_up(btn,index));};
+void down_cb(int btn,int index) final {this->last_down+=joy_down(btn,index);};        //void push_docb(int btn,int index) final {this->evmain.push(joy_down(btn,index));};    
+void press_cb(int btn,int index) final {this->last_press+=joy_press(btn,index);};     //void push_pr_cb(int btn,int index) final {this->evmain.push(joy_press(btn,index));};    
+void axis_cb(int16 axis,int index) final {this->last_axis+=joy_axis(axis,index);};    //void push_axcb(int16 axis,int index) final {this->evmain.push(joy_axis(axis,index));};    
+void throt_cb(joy_throt ev){this->last_throt+=ev;};
+void rotate_cb(joy_rot  ev){this->last_rot+=ev;};
     virtual int get_btn_state(int btn=-1 , int index=0;);
     virtual int get_axis_state(int axis=-1 , int index=0;);
     virtual int get_state(int key=-1 , int index=0;);
@@ -337,8 +363,8 @@ using CONT_press= int;//        _CONT_press>;
 using CONT_down = int;//        _CONT_down>; 
 using CONT_up =   int;//        _CONT_up>; 
 using CONT_dpad = int;//        _CONT_dpad>;
-using CONT_axis = glm::ivec2;//        _CONT_axis>;  // Axis index;
-using CONT_trig = glm::ivec2;
+using CONT_axis = glm::vec2;//        _CONT_axis>;  // Axis index;
+using CONT_trig = float;
 struct CONT  {
 public:
     evq<CONT_press,MAXPOLL> last_press;      
@@ -347,7 +373,11 @@ public:
     evq<CONT_dpad,MAXPOLL>  last_dpad;     
     evq<CONT_axis,MAXPOLL>  last_laxis;     
     evq<CONT_axis,MAXPOLL>  last_raxis;
-    evq<CONT_trigger,MAXPOLL> last_tr;
+    evq<CONT_trigger,MAXPOLL> last_ltr;
+    evq<CONT_trigger,MAXPOLL> last_rtr;
+      uint getlastKey(){ this->last_down.lastn();};
+    uint getlastaxis(){CONT_axis l ; this->last_laxis.lastn();CONT_axis r; this->last_raxis.lastn(); return (glm::abs(l)>glm::abs(r)) ? 0 : 1; };
+
     void clear(){
         this->last_press.clear();
         this->last_down.clear();
@@ -410,6 +440,8 @@ struct TOUCH  {
      evq<touch_tap,MAXPOLL> last_down;
      evq<touch_move,MAXPOLL> last_move;
      evq<touch_zoom,MAXPOLL> last_zoom;
+       uint getlastaxis(){touch_move l =this->last_move.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1; };
+
      void clear(){
         this->last_tap.clear();
         this->last_up.clear();
@@ -694,6 +726,7 @@ ADRNAVAIL=4,
 INVALARG=5,
 FAILDEF=6
 } ;
+
  uint result(int result);
 
 enum sockcrtt {
@@ -838,9 +871,40 @@ NET net;
 #endif
 public:
 
-    
-   
-    
+enum dev {
+    Mouse=1,
+    Key=2,
+    Joy=3,
+    Cont=4,
+    Touch=5
+    Mkb=7,
+};
+
+// virtual void handlemkb();
+// virtual void handleCont();
+// virtual void handleJoy();
+// virtual void
+uint8_t main ; 
+   uint last_dev ;
+    using keyrecord = glm::ivec2 ; // X is index impl::
+    static const keyrecord idlekrec = keyrecord(-1,-1); 
+    keyrecord keyrec = idlekrec; 
+    keyrecord axisrec = idlekrec;
+    void resetrec(){this->keyrec=idlekrec;this->axisrec=idlekrec;};
+    bool rec = false ;
+    private :
+    virtual void recordKey(); 
+    virtual void recordAxis();
+    virtual void stoprecordKey();
+    virtual void stoprecordAxis();
+    public:
+
+    void stop_record_key()final{this->rec=false ; this->stoprecordKey();};
+    void stop_record_axis()final{this->rec=false ; this->stoprecordAxis();};
+    void record_key()final{this->rec = true;recordKey();};
+    void record_axis()final{this->rec = true;recordAxis();};
+
+    };
      
     using winty = win;
     // vect<win> wins;
@@ -912,7 +976,7 @@ public:
     virtual void recreateWin(uint index,glm::ivec2 size,glm::ivec2 pos,int8_t flag=_custom_tabbar,uint8_t parent=NULL,char CLASS_NAME[]="DefaultName" ,char text[]=NULL) {
 
     virtual void sleep(int mstime=2000);
-    virtual void handle(); // Called during the event loop
+    virtual int handle(); // Called during the event loop
     void clear(){
 #ifdef STRATA_CAP_MOUSE
 this->mouse.clear();
@@ -933,12 +997,12 @@ this->cont.clear();
     void cont(){this->handle(); this-> ;};
     void set_mkb();
     void set_cont();
-    void set
     virtual void _init();// Set callbacks
     SYS(uint flags)=default{this->flag=flags;this->init_evsys(flags);}
 };
 
-};
 
 
 
+
+#endif

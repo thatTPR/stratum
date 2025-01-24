@@ -1,4 +1,6 @@
-#pragma once
+#ifndef SGUI_WIDGETS_HPP
+#define SGUI_WIDGETS_HPP
+#include <sgui_widgets.hpp>
 #include <strata/sgui/sgui.cpp>
 
 #include <cstdarg>
@@ -13,6 +15,9 @@
 #define uint  unsigned int
 #endif
 using namespace std ; 
+
+#define STRATA_GLM_NO_SWIZZLE
+
 #define SGUI_DECL static 
 
 #ifndef SGUI_DOCKING
@@ -37,34 +42,33 @@ namespace sgui {
        #define align_cenh         0b0011
        #define align_cenv         0b1100
        #define align_cen          0b1111
-    */
-
-   
-    class widget : public widget_base{
+    #define DOCKABLE             0b10000
+    #define LEAF                0b100000
+    #define 
+    class widget {
         public:
-        bool calced;
-        bool childs_calced = false;
-        uint canvas_pos;
-        widget* parent ; uint parent_pos;
+        widget* parent ;
+        canvas* canvas; // TODO maybe uint index;
+        uint flags ;
+        static constexpr char name[] = "widget base";
+        uint parent_pos;
         // uint pos; // position in canvas hierarchy
         uint childs_length=0;
-        canvas* canvas; // TODO maybe uint index;
-         static const char name[30] ; 
-        char* shader_bin ;
+         static const char* name ;uint namesize; 
+        char* shader_bin ; // TODO shader module
         uint shader_bin_size;
-        short int alignment=0;
+        short uint8_t alignment=0;
 // #ifdef STRATA_CAP_DOCKING // TODO
-        bool dockable = true; // Means a widget can be moved to a different widget, including an auto-constructed new canvas outside the current window; 
+        constexpr bool dockable = true; // Means a widget can be moved to a different widget, including an auto-constructed new canvas outside the current window; 
 // #elif
-        bool dockable = false;
+        // bool dockable = false;
 // #endif
 
 
         bool leaf = false; // Leafs can't move child widgets
-        constexpr int alignment(){return this->alignment}; 
-        constexpr bool is_leaf(){return this->leaf;}
-        constexpr bool is_dockable(){return this->dockable;};
-       bool dragging=true;
+         int alignment(){return this->alignment;}; 
+         bool is_dockable(){return true;};
+        bool dragging=true;
         glm::ivec2 dragpos;
        void dragend(){this->dragging=false;};
         void drop(glm::ivec2 pos){
@@ -82,7 +86,7 @@ namespace sgui {
           
         };
        void dragstart(){this->dragging=true;};
-        uint  coord[4];
+        glm::ivec4 s;
         uint  width,height;
         bool bounds_check(uint  x[2]){
             if(x[0]>this->c[0]){
@@ -111,9 +115,10 @@ namespace sgui {
             };
             return cur;
         };
-        void close(){
-
+        void close()final{
+            this->parent->erase_child(this->parent_pos);
         };
+
         static struct d {
             uint  coord[4]; //nw->se
             uint  wh_size[2];
@@ -121,15 +126,17 @@ namespace sgui {
         } data;
         
         
-        bool is_pt_of(uint  pt[2] ){return (pt[0] > coord[0]) and (pt[0]<coord[3]) and (pt[1]<coord[1]) and (pt[2]>coord[4])  ;}
-        std::shared_ptr<vect<widget*>> childs;
-        
+        bool is_pt_of(glm::ivec2 pt ){return (pt.x > coord[0]) and (pt[0]<coord[3]) and (pt[1]<coord[1]) and (pt[2]>coord[4])  ;}
+        std::vector<widget*> childs;
+        virtual void posEmpty();
+
         SGUI_DECL void _push_child(widget* w){
                 // this->childs.store(this->childs.load()->push(w));
                 this->childs->push(w);
         };
-        
-        SGUI_DECL void _insert_child(uint pos,widget* w ){w->parent = this;this->childs->insert(pos,w); };
+        SGUI_DECL void _insert_child(uint pos,widget* w ){w->parent = this;this->childs->insert(pos,w);
+            for(int i = pos +1;i<this->childs.size();i++){this->childs[i].parentpos++;};};
+         };
         SGUI_DECL void _erase_child(uint pos){
             this->childs->erase(pos);
         };
@@ -281,7 +288,9 @@ namespace sgui {
             };
         };
         bool ret();
-    
+    bool operator==widget* lhs,widget* rhs){
+        return (lhs->flags == rhs->flags) && (lhs->name == rhs->name);
+    };
     widget(widget* parent,  bool dockable, bool leaf,short int alignment ){ // TODO modify constructors
             uint arr_size = sizeof(parent->childs)/sizeof(parent->childs[0]);
             this->parent= parent ;
@@ -296,12 +305,8 @@ namespace sgui {
             this->canvas=current;
             parent->add_child(this);
         };
-    widget(bool dockable, bool leaf, short int alignment){
-        this = new widget(w_cur,dockable,leaf,alignment);
-    };
-    widget(){
-        this = new widget(w_cur);
-    };
+    widget(bool dockable, bool leaf, short int alignment){this = new widget(w_cur,dockable,leaf,alignment);};
+    widget(){this = new widget(w_cur);};
     widget(bool dockable, bool leaf, short int alignment, widget* childs...){
         this = new widget(w_cur,dockable,leaf,alignment);
          std::va_list args;
@@ -309,9 +314,25 @@ namespace sgui {
         for (int i = 0; i<childs;i++)
             this->add_child(va_args(args,widget*));
         va_end(args);
-
     };
-        
+
+    widget(widget* parent,uint flags  )=default{
+        this->flags=flags;
+        if(flags & DOCKABLE == DOCKABLE) {this->dockable=true;};
+        else {this->dockable=false;};
+        if(flags&LEAF == LEAF){this->leaf = true;};
+        else {this->leaf = false;};
+        this->parent = parent;this->canvas = current;
+    };
+    widget(widget* parent uint flags, widget* childs...){
+        this = new widget(parent , flags);
+         std::va_list args;
+        va_start(args, childs);
+        for (int i = 0; i<childs;i++)
+            this->add_child(va_args(args,widget*));
+        va_end(args);
+    };
+
 
     };
     
@@ -406,7 +427,10 @@ namespace sgui {
     };
     
     class vlist : public widget {
-        bool resizable_borders = true;
+        bool resizable_borders = ;
+
+    };
+    class table : public widget {
 
     };
     
@@ -526,3 +550,5 @@ image2D* im
 };
 // How is usage : Widget(args);
                 //   Widget(args);
+
+#endif

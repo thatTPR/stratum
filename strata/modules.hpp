@@ -305,12 +305,13 @@ enum shader_type {
 
 struct shaderModule {
     bool unib=false ,shab=false ;
-    void* ubo  ; 
-    void* ssbo  ; 
+    void* ubo  ;  uint16_t ubosize; bool dynsUbo;
+    void* ssbo  ;  uint16_t ssbosize; bool dynsSsbo
     int code_size;
-    const uint32_t* code; // SPIR-V Moudule
+    const uint32_t** code; // SPIR-V Moudule
     char* entry_point;
     char** entry_points; // all entry points
+    
 };
 
 
@@ -439,7 +440,7 @@ struct  rmiss_shmod : ShaderModule<shader_type::rmiss,_ubo,_ssbo>;
 template <typename _ubo,typename _ssbo> 
 struct  rcall_shmod : ShaderModule<shader_type::rcall,_ubo,_ssbo>;
 
-
+// TODO change to proper templating
 // TO be put in front of definition of template specialization
 #define STRATA_PARSE_RULE() 
 #define GET_SHADER_MEMBERS_DECORATOR(shaderMod ) STRATA_PARSE_RULE 
