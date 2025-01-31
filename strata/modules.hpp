@@ -1,3 +1,5 @@
+#ifndef MODULES_HPP
+#define MODULES_HPP
 #include <typeindex>
 #include <petri/vecs.hpp>
 #include <petri/vects.hpp>
@@ -166,10 +168,16 @@ int32_t f32_to_i32(f32_t s){
 template <image_formats imf,size_t s>
 struct image2d {
     using ty = enu_vec<imf>::ty;
-    ty s[s][s];
+    ty data[s][s];
 
-    void read(acqres resource;)
+    void read(acqres resource){
+        this->data=resource.read();
+    };
 
+    
+    auto read(acqres resource){
+        
+    };
 };
 template <image_formats imf,size_t x, size_t y , size_t  z>
 struct image3d {
@@ -177,13 +185,13 @@ struct image3d {
     ty s[x][y][z]
 };
 
-template <image_formats imf>using im8    = image2d<imf,1024>;
-template <image_formats imf>using im16   = image2d<imf,1024>;
-template <image_formats imf>using im32   = image2d<imf,1024>;
-template <image_formats imf>using im164  = image2d<imf,1024>;
-template <image_formats imf>using im128  = image2d<imf,1024>;
-template <image_formats imf>using im256  = image2d<imf,1024>;
-template <image_formats imf>using im512  = image2d<imf,1024>;
+template <image_formats imf>using im8    = image2d<imf,8>;
+template <image_formats imf>using im16   = image2d<imf,16>;
+template <image_formats imf>using im32   = image2d<imf,32>;
+template <image_formats imf>using im164  = image2d<imf,164>;
+template <image_formats imf>using im128  = image2d<imf,128>;
+template <image_formats imf>using im256  = image2d<imf,256>;
+template <image_formats imf>using im512  = image2d<imf,512>;
 template <image_formats imf>using im1024 = image2d<imf,1024>;
 template <image_formats imf>using im2048 = image2d<imf,2048>;
 template <image_formats imf>using im4096 = image2d<imf,4096>;
@@ -191,6 +199,7 @@ template <image_formats imf>using im8192 = image2d<imf,8192>;
 template <image_formats imf>using im16384= image2d<imf,16384>;
 template <image_formats imf>using im32768= image2d<imf,32768>;
 
+using imicon = im128<image_formats::rgba16>;
 
 enum texture_format {
 TEXTURE_1D                  = 0  ,  // Images in this texture all are 1-dimensional. They have width, but no height or depth.
@@ -451,3 +460,5 @@ struct LoadDomainInfo{glm::ivec2 coords, int view_distance , void chunks_distanc
 
 struct LoadWorldInfo{int index, glm::ivec3 coords };
 void load_world_domain(glm::ivec3 coords, int view_distance, );
+
+#endif

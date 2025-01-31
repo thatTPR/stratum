@@ -1,77 +1,248 @@
 #ifndef WORKLOAD_HPP
 #define WORKLOAD_HPP
-#include "inc/strata_types"
+#include <stdint.h>
 #include <iostream>
+#include "inc/strata_types"
 #include <strata/backend/impl.hpp>
 #include <strata/sgui/sgui_widgets.hpp>
 #include <cstddef>
 #include <string>
 #include <vector>
 #include <strata/workload.hpp>
-
-#include <stdint.h>
-
+#include <strata/modules.hpp>
 // From this file plugins can add app contribution;
 // Each of these classes have their own scope
 
 class contrib [
-    std::vector<std::string> ;
-    editor_widget w; 
+    std::string name ;
+    widget w; 
+    virtual void func();
 ];
 
-class topbar_contrib{
+class topbarContrib : contrib {
     public:
-    std::vector<> ; 
+     
 };
-class taskbar_contrib{
+class taskbarContrib{
     public:
+
     
 };
-class sidebar_contrib{
+
+class sideBarTab {
+    std::string name ;
+    imicon icon ;    
+    std::vector<uint> NodeIndex;
+    std::vector<>
+};
+class sidebarContrib{ // Sidebar with modes and status
     public:
+    sideBarTab* sideBarTab;
     left ;
     right ;
 };
-class widget_contrib{
+
+class widgetContrib{
     public:
     
 };
 class viewContrib{
+    public: 
+
+};
+class nodeContrib{
     public:
     
 };
 
-class node_editor_contrib{
-"T is time(task) , G is geom, V is vertex , F is frag , E is tessel, R is ray , pseudo eg TGVFERhumanInverseKinematic \n  Press \033[1m any \033[0m to close \n Press \033[1m Delete  \033[0m to never see this again "
-
-};
-class canvas_editor_contrib{
-
-};
-class video_editor_contrib{
-
-};
-class modelling_editor_contrib {
-
-};
-
 class workload {
-    topbar_contrib topbar  ;
-    taskbar_contrib taskbar  ;
-    sidebar_contrib sidebar  ;
-    widget_contrib widget  ;
+    std::vector<topbarContrib> topbars  ;
+    std::vector<taskbarContrib> taskbars  ;
+    std::vector<sidebarContrib> sidebars  ;
+    std::vector<widgetContrib> widgets  ;
+    std::vector<viewContrib> views;
+    std::vector<nodeContrib> nodes ;   
 
-    node_contrib node ;   
+    std::vector<pos_t> sideBarTabIndex;
+    
+    void addTopBarContrib(topbarContrib cb);
+    void addTaskbar(taskbarContrib cb);
+    void addsideBarTab(taskbarContrib cb);
+    void addSidebar(sidebarContrib cb);
+    void addView(viewContrib vc);
 
+    virtual void update();
+    virtual void resolveAction();
+    virtual void stateupdate();
     virtual void undo();
     virtual void redo();
+    virtual void nowdo();
 
 
     workload(); 
 
 }; // Workloads 
-#define HISTROY_SIZE 100;
-class modelling : workload {
+#define HISTORY_SIZE 100;
+#define HISTORY_MIN 40;
+template <typename action>
+struct state {
+    std::vector<action> s;
+    virtual void optim();
+     state<action> operator<<(action& a){
+        this->s.push_back(a);
+    };
+    void operator<<(state<action>& a)final{
+      *this<<a; 
+    };
+    virtual void operator>>(action& a);
+    void operator>>(state<action>& a) final {
+        *this>> a;
+    };
+    state(action as){this->s=new std::vector<action>{as};};
+};
+template<typename instr>
+struct actionBase {
+    instr data;
+    uint ty;
+        bool operator!=(action<instr>& lhs , action<instr>& rhs) final{
+            return (lhs.ty != rhs.ty);
+        };
+         bool operator==(action<instr>& lhs , action<instr>& rhs)final {
+            return (lhs.ty ==rhs.ty); 
+         };
+         virtual bool operator<=(action& lhs , action& rhs);
+        virtual void operator+(actionBase<instr>& lhs,actionBase<instr>& rhs){};
+};
+template <typename action,size_t size>
+class histvec {
+    action data[size];
+    uint startpt;
+    uint endpt;
+    uint laststart;
+    uint lastend;
+
+    state<action> sysstate;
+    void update(){// Get all actions up to point and updates;
+        this->laststart = this->startpt;
+        this->lastend=this->endpt;
+    };
+    std::vector<action> get(){
+        state<action> s;
+        s.push_back(this->data[this->startpt]);
+        for(int i =this->startpt+1; i<this->endpt;i++ ){
+            s.begin()<<this->data[i];
+        };
+    };
+    void updateState(std::vector<action>& s){
+        this->get()
+    };  
+    state get(){
+       state vec  ;
+    };
+
+
+    void undo(){this->point--;};
+    void redo(){this->point++;};
+    void nowdo(action act){
+        this->point++;
+        if(this->point>size){
+
+        };
+        this->data[this->point]=act;
+    };
+};
+
+class node_wl : public workload {
+//"T is time(task) , G is geom, V is vertex , F is frag , E is tessel, R is ray , eg TGVFERhumanInverseKinematic \n  Press \033[1m any \033[0m to close \n Press \033[1m Delete  \033[0m to never see this again "
+    enum type {
+            erase,
+            copy,
+            cut,
+            paste,
+            move,
+            connect,
+            // edit,
+    };
+    
+    typedef union {
+        uint copy;
+        uint cut ;
+        glm::vec2 move;
+        snode::edit edit;
+         
+    }instr ; 
+    struct action : actionBase<instr> {
+        instr data;
+        uint ty;
+        void operator<=()
+    };
+
+};
+node_wl node_worker;
+void contributeNode(uint nodety,  node s);
+
+class widgetux_wl : workload {
+    typedef struct {
+        std::vector<uint > groups; 
+    }selection ;
+    typedef union {
+        pos_t add;
+        pos_t erase ;
+        pos_t copy; 
+        glm::vec2 cut;
+        glm::vec2 paste;
+        glm::vec2 move;
+        glm::vec2 resize;
+        float rotate;
+    }instr;
+     struct action {
+        enum type {
+            add,
+            erase,
+            copy,
+            cut,
+            paste,
+            rotate,
+            resize,
+            resizeW,
+            resizeN,
+            resizeE,
+            resizeS,
+            resizeNW,
+            resizeNE,
+            resizeSE,
+            resizeSW,            
+            move,
+            selection
+        };
+        instr data;
+        uint ty;
+        
+
+        virtual bool operator<=(){
+            switch()
+        };
+        virtual bool operator>=();
+        virtual bool operator<();
+        virtual bool operator>();
+
+    };
+    canvas base ; // Base location
+    canvas current;
+    std::array<action,HISTORY_SIZE> history;
+    uint historyPt;
+    void nowdo(action a){
+        if(this->historypt>HISTROY_SIZE){
+            uint hispt = this->historypt;
+            this->base.update(this->history,HISTORY_MIN) ;
+            
+        };
+        this->historypt++;
+        this->history[this->historypt]= a ;};
+};
+
+
+class modelling : workload { // Includes: animation ,destruction, physics
     //  commands ;
     typedef struct selection {
         std::vector<uint > groups; 
@@ -98,49 +269,49 @@ class modelling : workload {
         selectionSurfaces Surfaces ;
         selectionPointGroups PointGroups;
     };
-    union instr {
-        bool add;
-        bool delete;
+   typedef union  {
         glm::vec3 move;
         glm::vec3 rotate;
+        
         float extrude;
         float chamfer;
         float fillet;
         int addpts; 
         float extend;
-    };
-    typedef struct action {
+    }instr;
+    typedef struct {
         enum type {
             add,
-            delete,
-            move,
+            erase,
+            copy,
+            cut,
+            paste,
             rotate,
+            resize,
+            move,
             extrude,
             chamfer,
             fillet,
             addpts,
             extend,
+            select
 
         };
         
         uint8_t ty ;
         instr data;
         selection s;
-
-
-
-        
     }action;
 
-    std::array<action >
+    std::array<action,HISOTRY_SIZE> history; 
 
 
     uint historypoint;
+    void resolveAction(action act );
+
     void Add();
     void del();
-    
     void redoAction(uint16_t histpt){
-
     }; 
     void unDoAction(uint16_t histpt){
 
@@ -165,6 +336,20 @@ class modelling : workload {
     // 
     
 };
+struct terrain_wl : workload { // Includes foliage, waters, destruction, physics
+
+};
+struct image_wl : workload { // Include animation ,
+
+};
+struct video_wl : workload { // 
+
+};
+struct scene_wl : workload { // This is for light, camera(with effects) and actor management 
+
+};
+
+
     class command {
         public:
         struct schema {
@@ -250,6 +435,8 @@ class modelling : workload {
         };
 
     };
-};
 
+void addWorkload(auto work_load){
+
+};
 #endif

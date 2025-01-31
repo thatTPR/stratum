@@ -403,10 +403,7 @@ class editor_global {
 editor_global ed_global ;
 };
 
-
 namespace workload {
-
-
 enum editor_workload {
     // Default
     Node=0 ,
@@ -416,7 +413,6 @@ enum editor_workload {
     Image=4,
     Video=5,
     Scene=6, 
-
     Max = 10 
 };
 
@@ -436,18 +432,6 @@ class canvas_wl : workload {
 class model_wl : workload {
 
 };
-class terrain_wl : workload {
-
-};
-class image_wl : workload {
-
-};
-class video_wl : workload {
-
-};
-class scene_wl : workload {
-
-};
 
 
 class workload_global {
@@ -462,4 +446,5 @@ class workload_global {
 
 workload_global work_global ; 
 
+};
 };

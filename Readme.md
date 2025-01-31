@@ -5,9 +5,8 @@ Rich Plugin Support
 
 Also support UX.
 
-Live Colab Support,
 
-Webassembly ready.
+[ ]Webassembly ready.
 
 True Type Font editing
 
@@ -58,10 +57,7 @@ SG
 |-inc (plugin interface)
 |-lib
 |   |-entity
-|   |-OpenAL
 |   |-Scontainers
-|   |-SDL2 (source)
-|   |-sfwgui
 |   |-stypes
 |   |-vk
 |   |-vk_

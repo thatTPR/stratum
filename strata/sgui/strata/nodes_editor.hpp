@@ -11,6 +11,8 @@
 #include <memory>
 using namespace events;
 
+namespace snode {
+
 
 template< typename T>
 struct reftype{
@@ -101,11 +103,11 @@ class ##name : pin<ty>  {\
     std::string name = "##name" ; \ 
 } ;\
 
-#define PIN_CLSS(ty,name,pinty ) {
+#define PIN_CLSS(ty,name,pinty ) { \
 class name : pin<ty>  {\
     std::string name = "##name" ; \ 
-    pintypes = pintype = pintypes::pinty;
-    glm::umat3x4 color = col_from_pin(pinty) ;
+    pintypes = pintype = pintypes::pinty; \
+    glm::umat3x4 color = col_from_pin(pinty) ; \
 } ;
 class node_canvas : public sgui::wi_canvas {
 
@@ -123,8 +125,17 @@ class node : virtual public widget { // Has mainexec
        // Every node defines this;
     typedef void (*func)(void) ;
 
-   
-    
+#ifdef STRATA_NODE_UNDO
+    typedef union  {
+        float fl ;
+    }ty;
+    typedef struct {
+        pin
+    } edit;
+    std::vector<edit> node;
+
+#endif 
+
     using inevtup = in_ev_tup;
     using inrestup = in_res_tup;
     using inmodtup = in_mod_tup;
@@ -292,15 +303,9 @@ return temp;
 
 
 // Has only resources and modifiers and one out
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class node_geom : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup> {
+template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_mods_tup >
+class node_geom : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup> ;
 
-};
-
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class node_geom : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup> {
-
-};
 template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
 class geom : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
 template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
@@ -326,7 +331,11 @@ class rmiss : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_
 template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
 class rcall : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
 
-struct node_geom
+
+template <typename inpins>
+class nodeFromPins {
+    node
+};
 class node_instance : public  node  {
 
     void process;
@@ -484,5 +493,7 @@ class branch : public node {
  *  @translate_unit 
  */
 class translate_unit { 
+
+};
 
 };

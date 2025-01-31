@@ -15,7 +15,7 @@ void contribute_type(std::type_index i, std::string name){
     ty_ind_map[i] = name;
 };
 
-namespace pins {
+namespace bnode {
   
     class type_ident {
         std::type_index index;
@@ -25,10 +25,11 @@ namespace pins {
     class rflct {
         virtual void ret();
     };
-    class strctre : public rflct{
+    class strct : public rflct{
+        public:
         std::string name;
         arr<std::type_ident> members;
-        std::string fabricate(){ std::string n;
+        std::string write(){ std::string n;
             for(int i=0;i<this->members.size();i++){
                 n+="typedef struct "+this->name+"{"
             };

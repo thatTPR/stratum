@@ -277,3 +277,43 @@ class node_expression : public dyn_node, public w_code {
 
     };
 };
+namespace math {
+class randmomize {
+
+};
+class perlin {
+
+};
+class simplex {
+
+};
+
+
+};
+
+namespace modelling {
+class translate : node {
+    std::tuple<pins::model> inrestup  ;
+    std::tuple<pins::translate> inrestup ;
+};
+class rotete : node {
+
+};
+class chamfer : node  {
+
+};
+class fillet : node {
+
+};
+class cut : node {
+
+};
+class tesselate : node {
+
+};
+class extend : node<> {
+
+};
+
+
+};
