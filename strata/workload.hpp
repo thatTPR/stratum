@@ -10,8 +10,70 @@
 #include <vector>
 #include <strata/workload.hpp>
 #include <strata/modules.hpp>
+#include <tuple>
 // From this file plugins can add app contribution;
 // Each of these classes have their own scope
+
+
+void getEntity();
+void getEntityByName();
+
+template 
+class nodeIndex {
+    auto t ;  
+    void size();
+    template <size_t pos, typename Node>
+    void regNode()
+    template<size_t pos>
+    void get(){
+        this->t get ;
+    };
+    
+    auto getNode(uint nodeInd ){
+
+    } ;
+    
+    template<size_t pos>auto get_vert();
+    template<size_t pos>auto get_frag();
+    template<size_t pos>auto get_geom();
+    template<size_t pos>auto get_tesc();
+    template<size_t pos>auto get_tese();
+    template<size_t pos>auto get_comp();
+    template<size_t pos>auto get_task();
+    template<size_t pos>auto get_mesh();
+    template<size_t pos>auto get_rgen();
+    template<size_t pos>auto get_rint();
+    template<size_t pos>auto get_rahit();
+    template<size_t pos>auto get_rchit();
+    template<size_t pos>auto get_rmiss();
+    template<size_t pos>auto get_rcall();
+    
+    auto all_vert();
+    auto all_frag();
+    auto all_geom();
+    auto all_tesc();
+    auto all_tese();
+    auto all_comp();
+    auto all_task();
+    auto all_mesh();
+    auto all_rgen();
+    auto all_rint();
+    auto all_rahit();
+    auto all_rchit();
+    auto all_rmiss();
+    auto all_rcall();
+    
+    static const init(){
+
+    };
+
+};
+
+// TODO TimeLine node (animation, audio and video)
+class widgetIndex {
+
+};
+
 
 class contrib [
     std::string name ;
@@ -25,21 +87,20 @@ class topbarContrib : contrib {
 };
 class taskbarContrib{
     public:
-
-    
 };
 
-class sideBarTab {
-    std::string name ;
-    imicon icon ;    
-    std::vector<uint> NodeIndex;
-    std::vector<>
-};
 class sidebarContrib{ // Sidebar with modes and status
     public:
     sideBarTab* sideBarTab;
     left ;
     right ;
+};
+
+class sideBarTab {
+    std::string name ;
+    imicon icon ;    
+    std::vector<uint> nodeIndex; 
+
 };
 
 class widgetContrib{
@@ -59,12 +120,14 @@ class workload {
     std::vector<topbarContrib> topbars  ;
     std::vector<taskbarContrib> taskbars  ;
     std::vector<sidebarContrib> sidebars  ;
+    std::vector<sideBarTab> sidebartab;
     std::vector<widgetContrib> widgets  ;
     std::vector<viewContrib> views;
     std::vector<nodeContrib> nodes ;   
 
     std::vector<pos_t> sideBarTabIndex;
     
+     
     void addTopBarContrib(topbarContrib cb);
     void addTaskbar(taskbarContrib cb);
     void addsideBarTab(taskbarContrib cb);

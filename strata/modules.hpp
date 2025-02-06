@@ -293,6 +293,23 @@ void readFile(const std::string& filename , const uint32_t* c , int* code_size) 
     file.read(buffer.data(), fileSize);
     c = reinterpret_cast<const uint32_t*>(buffer.data());
 };
+
+/*
+Shader Type	Abbreviation	Purpose
+Vertex Shader	VS	Transforms vertices, applies MVP matrices
+Tessellation Control Shader	TCS	Determines tessellation level
+Tessellation Evaluation Shader	TES	Computes final vertex positions
+Geometry Shader	GS	Modifies or generates geometry
+Fragment Shader	FS	Determines final pixel color
+Compute Shader	CS	General-purpose GPU processing
+Ray Generation Shader	rgen	Launches rays in ray tracing
+Any-Hit Shader	rahit	Processes potential ray hits
+Closest-Hit Shader	rchit	Determines shading for confirmed ray hits
+Miss Shader	rmiss	Handles cases where rays miss all objects
+Intersection Shader	rint	Custom intersection logic for complex shapes
+Amplification Shader	AS	Controls LOD and culling in new pipelines
+Mesh Shader	MS	Replaces Vertex + Geometry shaders for efficiency
+*/
 enum shader_type {
     all,
     gr,

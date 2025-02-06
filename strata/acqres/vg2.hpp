@@ -39,8 +39,13 @@ glm::dvec4 rgba16itorgbaf(glm::uvec4 s){vec4 t = s.xyzw ;t= t/0xFF; };
 struct filt {
     glm::dvec4 col;
     float weight;
+    float random ;
     float stabilize;
+    glm::dmat4 filt ;
+    static tinygltf::Value::Object detgltf(shape_at at);
+    static struct filt getgltf(tinygltf::Value at);
 };
+
 enum fe {
     color=1,
     striate=2,
@@ -51,6 +56,14 @@ enum fe {
     convolve=7,
     turbulence=8
 };
+void filt_color(im& i){};
+void filt_striate(im& i){};
+coid filt_fibrate(im& i){};
+coid filt_cybrate(im& i){};
+coid filt_perlin(im& i){};
+coid filt_simplex(im& i){};
+coid filt_convolve(im& i){};
+coid filt_turbulence(im& i){};
 struct shape_at ;
 struct shape_atv { // TODO make fe all one vector and adapt index, also add ats to g and add feRGBA glm::dmat4
     int animateMotionSize;
@@ -108,7 +121,7 @@ static tinygltf::Value::Object getgltf(shape_at at){
             ats["fe"]=tinygltf::Value(fei);
             return ats;          
     };
-     static shape_atv getgltf(tinygltf::Value ats) {
+     static shape_atv get(tinygltf::Value ats) {
         shape_atv s;
         std::vector<tinygltf::Value> animm ; animm = vals["animateMotion"].Get<tinygltf::Value::Array>();int sizem=0;
         for(tinygltf::Value t : animm){ 
