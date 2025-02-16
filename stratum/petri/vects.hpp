@@ -28,23 +28,17 @@ class arr {
         };
         return res;
     };
-    void clear(){
-        this->data = new T[s];
-    };
+    void clear(){this->data = new T[size];this->pos=0;};
     void swap(size_t pos1 ,size_t pos2){
         T temp = this->data[pos1];
         this->data[pos1] = this->data[pos2] ;
         this->data[pos2] = temp;
         delete temp;
     };
-    void move(size_t pos1 , size_t pos2){
-        this->swap(pos1,pos2); int add=0;
-        if(pos1<pos2){add=1;}
-        else {add=-1}
-        for( int i = pos1 + add ; i != pos2 ; i+=add )
-            this->swap(i-add,i);
-        };
-    arr<T,sizearr>& operator=(std::initializer_list<T> list){
+    void copy(size_t pos1 , size_t pos2){
+        this->data[pos2] = this->data[pos1];
+        this->swap(pos1,pos2); int add=0;};
+        arr<T,sizearr>& operator=(std::initializer_list<T> list){
         assert(list.size()==this->size)
         int i = 0 ;
         for(T val : list) {
@@ -61,13 +55,13 @@ class arr {
         };
     };
     arr() = default ;
-
+};
     #ifdef SWIZZLE_ARR
     using dim =sizearr ;
     #include "swizzle.def"
     #endif
 
-};
+
 
 template <typename T,size_t r=0, size_t c =0>
 class mat {

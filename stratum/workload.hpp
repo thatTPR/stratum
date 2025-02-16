@@ -18,7 +18,7 @@
 void getEntity();
 void getEntityByName();
 
-template 
+
 class nodeIndex {
     auto t ;  
     void size();
@@ -72,6 +72,7 @@ class nodeIndex {
 // TODO TimeLine node (animation, audio and video)
 class widgetIndex {
 
+
 };
 
 
@@ -87,6 +88,8 @@ class topbarContrib : contrib {
 };
 class taskbarContrib{
     public:
+
+
 };
 
 class sidebarContrib{ // Sidebar with modes and status
@@ -114,8 +117,17 @@ class viewContrib{
 class nodeContrib{
     public:
     
-};
+    bool exec ;
+    std::tuple<variable> modIn ;
+    std::tuple<variable> eventIn ; 
+    std::tuple<variable> resorceIn ; 
+    std::tuple<variable> modOut  ;
+    std::tuple<variable> eventOut  ;
+    std::tuple<variable> resorceOut  ; 
 
+    std::string expression ;
+
+};
 class workload {
     std::vector<topbarContrib> topbars  ;
     std::vector<taskbarContrib> taskbars  ;
@@ -332,33 +344,56 @@ class modelling : workload { // Includes: animation ,destruction, physics
         selectionSurfaces Surfaces ;
         selectionPointGroups PointGroups;
     };
+    enum ptType {
+        vertex,
+        
+    };
+
    typedef union  {
         glm::vec3 move;
         glm::vec3 rotate;
-        
+        glm::vec2 lineSet;        
+        glm::vec3 angleSet;
+
+        typedef struct  {
+            uint16_t size ;
+            glm::vec2* paintPath;
+        } paint ;
         float extrude;
-        float chamfer;
         float fillet;
-        int addpts; 
+        uint16_t index; 
         float extend;
     }instr;
     typedef struct {
         enum type {
-            add,
-            erase,
-            copy,
-            cut,
-            paste,
+            //Start  * These take primitives as well :
+            addPt,
+            addSurface,
+            addShape,
+            erasePt,
+            eraseSurface,
+            eraseShape,
+            coptPt,
+            copyeSurface,
+            copyeShape,
+            cutPt,
+            cutSurface,
+            cutShape,
+            pastePt,
+            pasteSurface,
+            pasteShape,
             rotate,
+            // End
+            lineSet,
+            angleSet,
             resize,
             move,
             extrude,
-            chamfer,
             fillet,
             addpts,
             extend,
+            paint, // For painting Modelling action
             select
-
         };
         
         uint8_t ty ;
@@ -400,7 +435,12 @@ class modelling : workload { // Includes: animation ,destruction, physics
     
 };
 struct terrain_wl : workload { // Includes foliage, waters, destruction, physics
-
+    typedef struct {
+        enum type {
+            addPoint, 
+            ad
+        };
+    }action;
 };
 struct image_wl : workload { // Include animation ,
 
@@ -499,7 +539,24 @@ struct scene_wl : workload { // This is for light, camera(with effects) and acto
 
     };
 
-void addWorkload(auto work_load){
 
+class plwl {// Plugin Workload ;
+
+};  
+
+class worklaodMan {
+    std::tuple<node_wl,widgetux_wl,modelling,terrain_wl,scene_wl,image_wl,video_wl> workloads;
+    std::vector<uint16_t> enables ; 
+    std::vector<plwl> plugins ;
+
+    void addWorkload(plwl* work_load) [this->plugins.push_back(work_load);];
 };
+
+
+workloadMan wlm;
+
+void addWorkload(plwl work_load){wlm.addWorkload(work_load);};
+
+
+
 #endif

@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <lib/glm/glm.hpp>
 #include <acqres/source.hpp>
-
+#include <strata/variables.hpp>
 
 struct animateMotion : prop{
     double dur=1; // ms
@@ -36,15 +36,6 @@ struct striate : prop{
 
 
 glm::dvec4 rgba16itorgbaf(glm::uvec4 s){vec4 t = s.xyzw ;t= t/0xFF; };
-struct filt {
-    glm::dvec4 col;
-    float weight;
-    float random ;
-    float stabilize;
-    glm::dmat4 filt ;
-    static tinygltf::Value::Object detgltf(shape_at at);
-    static struct filt getgltf(tinygltf::Value at);
-};
 
 enum fe {
     color=1,
@@ -56,14 +47,25 @@ enum fe {
     convolve=7,
     turbulence=8
 };
+struct filt {
+    glm::dvec4 col;
+    float weight;
+    float random ;
+    float stabilize;
+    glm::dmat4 filt ;
+};
+    static tinygltf::Value::Object detgltf(shape_at at);
+    static struct filt getgltf(tinygltf::Value filt){
+
+    };
 void filt_color(im& i){};
 void filt_striate(im& i){};
-coid filt_fibrate(im& i){};
-coid filt_cybrate(im& i){};
-coid filt_perlin(im& i){};
-coid filt_simplex(im& i){};
-coid filt_convolve(im& i){};
-coid filt_turbulence(im& i){};
+auto filt_fibrate(im& i , filt f  ){};
+auto filt_cybrate(im& i , filt f ){};
+auto filt_perlin(im& i , filt f ){};
+auto filt_simplex(im& i , filt f ){};
+auto filt_convolve(im& i , filt f ){};
+auto filt_turbulence(im& i , filt f ){};
 struct shape_at ;
 struct shape_atv { // TODO make fe all one vector and adapt index, also add ats to g and add feRGBA glm::dmat4
     int animateMotionSize;
