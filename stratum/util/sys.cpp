@@ -29,7 +29,6 @@ namespace texture {
     
     struct textureInfo {
         glm::uvec2 resulution ;
-        std::string name ;
         const char* suffix ;
         pipeline::stage stage ; 
         textureInfo(glm::uvec2 res, char* _name , char* _suffix, pipeline::stage _stage) : resolution(res), name(_name) , suffix(_suffix) , stage(_stage) {};
@@ -37,7 +36,7 @@ namespace texture {
     
     struct texture {
         textureInfo info ;
-        rgba_static_image image ;
+        image image ;
         virtual void rgba_static_image& get(){return image ;} ;
         texture(glm::uvec2 xy_res , std::string _name  ) : info.resolution(xy_res) , info.name(_name){};
         texture(glm::uvec2 xy_res , std::string _name , char* suffix) : info(textureInfo(xy_res, _name ,suffix)){};
@@ -76,9 +75,6 @@ namespace texture {
     struct opacity : texture {
         textureInfo info = textureInfo(void , void , "opacity", pipeline::stage.PS)  ; 
     };
-    struct heat : texture  { // TODO make it an advances feature
-        textureInfo info = textureInfo(void , void , "heat",  pipeline::stage.PS);
-    };
     struct bump : texture {
         textureInfo info = textureInfo(void , void , "bump",  pipeline::stage.PS); // Pixel Shader
     };
@@ -91,11 +87,11 @@ namespace texture {
     struct reflection_map : texture { // Can be taken from a reflection element in the case of static elements
         textureInfo info = textureInfo(void , void , "reflection",  pipeline::stage.PS); 
     };
-
-    struct reflection_elem : elem , texture {
-
+    
+    struct heat : texture  { // TODO make it an advances feature
+        textureInfo info = textureInfo(void , void , "heat",  pipeline::stage.PS);
     };
-
+    
     
     
     
@@ -115,7 +111,7 @@ namespace lod
     };
 
     
-    class atlas{ // Can contain uv's and a bunc
+    struct atlas{ // Can contain uv's and a bunc
         colorType tp  ;
         std::path p ; 
         std::vector<std::tuple<size_t , size_t, size_t , size_t> > sizes ; 
@@ -169,25 +165,22 @@ namespace lod
         };        
         atlas(std::path p , std::vector<std::pair<size_t , size_t> > sizes ) :  p(p) , sizes(sizes) {};
     };
-    class file_atlas {
+    struct file_atlas {
         std::vector<atlas> atlases;
 
         
     };
-    class lod {
-        atlasing a ;   
-        std::vector<> ref; 
-
-    };
     
     typedef enum LOD {
         Normal,
-        Imposter, // Looks like 3d image but always gets rendered at same angle
+        Downscaled, // All geometry gets reduced
+        LowPoly,
+        Imposter,        
         SpriteMap, // Simmillar to imposter but is not 3d in any way 
+        PointParticle
     } LOD;
-    void makeImposter();
     template <base >
-    class Lodsys {
+    struct Lodsys {
         bool ultra , high , medium ,low , sprite ;
     };
     
@@ -215,22 +208,22 @@ namespace quality
 
     };
     
-    class Qset {
+    struct Qset {
 
         std::string name ;
-        qen  value ;
-        qen Limit ;
-        qen wLimit; // Warning Limit
-        Qset(std::string name , )
+        QUALITY  value ;
+        QUALITY Limit ;
+        QUALITY wLimit; // Warning Limit
+        Qset(std::string name,  )
 
 
     };
     typedef std::pair<std::string, rgba_static_image > QualityCategory; 
-    class QualitySettings {
+    struct QualitySettings {
         std::vector<std::pair<QualityCategory  std::vector<Qset> > > contents;
     };
 
-    class quality {
+    struct quality {
         bool vSync ;
         typedef enum ANTI_ALIASING {
             bilinear, 
@@ -250,11 +243,11 @@ namespace quality
     };
     
 };
-class pos {
+struct pos {
     glm::fvec3 p;
     
 }
-class ori {
+struct ori {
     glm::fvec o;
     void rotate(glm::vec3 or){
         this->o.xyz = this->o.xyz + or.xyz
@@ -267,7 +260,7 @@ class ori {
     };
 };  
 
-class coords
+struct coords
 {
     virtual glm::fvec3 pos; // x y z
     virtual glm::fvec3 ori ;
@@ -289,30 +282,29 @@ class coords
 
 
 
-    class field ;
-    class Field_2d : field {
+    struct field ;
+    struct Field_2d : field {
         glm::fvec2 x ;
         glm::fvec2 y ;
         glm::angle phi ;
     }
     
-    class Field_3d : field {
+    struct Field_3d : field {
         glm::fvec3 x ;
         glm::fvec3 y ;
         glm::angle phi ;
         glm::angle theta ;
     };
-    class Field_Sphere_3d : field{
+    struct Field_Sphere_3d : field{
         glm::fvec3 x ;
         
     };
-    class Field_Sphere_2d : field {
+    struct Field_Sphere_2d : field {
         glm::vec<float,2,glm::defaultp> x ; 
     };
     
 
-// TODO allign correctly
-    class physics {
+    struct physics {
         bool gravity_override ;
         float gravity ;
         float air_current ;
@@ -321,51 +313,47 @@ class coords
     };
   
     template <DIM T, volume>
-    class physicsField {
+    struct physicsField {
         
         float gradient ; 
         physics properties ; 
     };
     
-    class distorsion_3d {
+    struct distorsion_3d {
         glm::fvec3 x ;
         glm::fvec3 y ;
         glm::fvec2 orientation ;
     };
-    class distortion_2d {
+    struct distortion_2d {
 
     };
 
-    class physics_constraint {
-        
-        glm::bvec3 xyz_pos_lock ;
-        glm::bvec3 xyx_rot_lock ; 
+    struct phsyics_constraint {
+        glm::bvec3 pos_lock ;
+        glm::bvec3 rot_lock ; 
     };
-    class physical_properties {
-        public:
+    struct physical_properties {
         
         float gravitational_mass  ;
         float inertial_mass ;
         // Normalised between 0 and 1 : with 1 meaning perfect elasticity and 0 meaning complete absorbtion ( no moving ⌈)
-        bool collision_enabled = true ;
-        unsigned float collision_dampening ; // Higher value means higher elasticity value above 1 means multiplied 
+        bool collision = true ;
+        float elasticity ; // Higher value means higher elasticity value above 1 means multiplied 
         
         float friction ;
         float refraction ; 
-        physical_properties(float _grav_mass, float _inert_mass , bool _collision_enabled , unsigned float _collision_dampening ,float _friction , float _refraction ): grav_mass(_grav_mass),inert_mass(_inert_mass),collision_enabled(_collision_enabled),collision_dampening(_collision_dampening) ,friction(_friction) ,refraction(_refraction){};
     };
-    class material_physical_properties {
+    struct material_physical_properties {
         bool dynamic
         
         float gravitational_density ;
         float inertial_density ;
 
-        bool collision_enabled = true ;
-        unsigned float collision_dampening ; // 
+        bool collision = true ;
+        float elasticity ;  // Higher value means higher elasticity value above 1 means multiplied  
 
         float friction ;
         float refraction ;
-        material_physical_properties(float _grav_mass, float _inert_mass , bool _collision_enabled , unsigned float _collision_dampening ,float _friction , float _refraction ): grav_mass(_grav_mass),inert_mass(_inert_mass),collision_enabled(_collision_enabled),collision_dampening(_collision_dampening) ,friction(_friction) ,refraction(_refraction){};
 
     };
 
@@ -374,87 +362,31 @@ class coords
 // Images can be rendered 
 
 // This materia rendering scheme can be applied to a mesh
-class material  {
+struct material  {
     
-    image::rgba_static_image normal = void;
-    image::rgba_static_image tangent = void  ;  
-    image::rgba_static_image Opacity_mask= void ;
-    color::rgba Base_Color = void;
-    color::rgb Subsurface_Color= void ;
-    color::rgba Emmisive_Color= void ;
-    float anisotropy = void; // Normalised between -1 and 1  with 0 meaning none
-    float Refraction=void;
-    unsigned float metallicity= void ;
-    unsigned float roughness= void ;
-    unsigned float specularity= void ;
-    unsigned float opacity= void ;
-    unsigned float Position_offset = void;
-    unsigned float Position_displacement = void;    
-    bool Clear_Coat = void;
-    bool Ambient_Occlusion = void;
+    color<rgba32f> Base_Color ;
+    color<rgba32f> Subsurface_Color ;
+    color<rgba32f> Emmissive_Color ;
+    color<rgba32f> ColorOpacity;
+    float anisotropy ; // Normalised between -1 and 1  with 0 meaning none
+    float Refraction;
+    unsigned float metallicity ;
+    unsigned float roughness ;
+    unsigned float specularity ;
+    unsigned float opacity ;
+    unsigned float Position_offset ;
+    unsigned float Position_displacement ;    
+    bool Clear_Coat ;
+    bool Ambient_Occlusion ;
 
-    
+
     unsigned float friction ;
-                
-    void set_normal(image::rgba_static_image var){
-        this->normal = var;
-    };                
-    void set_tangent(image::rgba_static_image var){
-        this->tangent = var ;
-    };                
-    void set_Opacity_mask(image::rgba_static_image var){
-        this->Opacity_mask = var ;
-    };                
-    void set_Base_Color(color::rgba var){
-        this->Base_Color = var ;
-    };                
-    void set_Subsurface_Color(color::rgb var){
-        this->Subsurface_Color = var ;
-    };                
-    void set_Emmisive_Color(color::rgba var){
-        this->Emmisive_Color = var ;
-    };                
-    void set_metallicity(unsigned float var){
-        this->metallicity = var ;
-    };                
-    void set_roughness(unsigned float var){
-        this->roughness = var ;
-    };                
-    void set_specularity(unsigned float var){
-        this->specularity = var ;
-    };                
-    void set_opacity(unsigned float opacity){
-        this->opacity = var ;
-    };                
-    void set_Position_offset(unsigned float var){
-        this->Position_offset = var ;
-    };                
-    void set_Position_displacement(unsigned float var){
-        this->Position_displacement = var ;
-    };                
-    void set_anisotropy(float var){
-        this->anisotropy = var ;
-    };                
-    void set_Refraction(float var){
-        this->Refraction = var ;
-    };                
-    void set_Clear_Coat(bool var){
-        this->Clear_Coat = var ;
-    };                    
-    void set_Ambient_Occlusion(bool var){
-        this->Ambient_Occlusion = var ;
-    };            
-    void parserGltf(std::string gltfMaterialPath){
+    phisical_properties 
+    void getFriction()
+    material load(parser p );
 
-    };
-
-    material(){
-
-    }
 };
-class particle  {
-    std::string name ;
-
+struct particle  {
     bool physics ;
     material_physical_properties ; 
     rgba base_color ;
@@ -465,37 +397,29 @@ class particle  {
     };
    
 };
-class fluid  {
-    unsigned float anisotropy = void; // Normalised between  -1 and 1  with 0 meaning none
-    color::rgba Base Color = void;
-    image::rgba_static_image normal = void;
-    image::rgba_static_image tangent = void;        
-    image::rgba_static_image opacity_mask = void;
-    color::rgba Emmisive Color = void;
-    unsigned float metallicity = void; 
-    unsigned float specularity = void;
-    unsigned float opacity = void;
-    unsigned float Viscosity = void;
-    unsigned float Surface_Tension = void;
+struct fluid  {
+    unsigned float anisotropy ; // Normalised between  -1 and 1  with 0 meaning none
+    color<rgba32f> Base Color ;
+    image::rgba_static_image normal ;
+    image::rgba_static_image tangent ;        
+    image::rgba_static_image opacity_mask ;
+    color<rgba32f> Emmissive Color ;
+    unsigned float metallicity ; 
+    unsigned float specularity ;
+    unsigned float opacity ;
+
+    unsigned float Viscosity ;
+    unsigned float Surface_Tension ;
     
 
-    fluid(){
-        
-        this- addDataIns(
-            {
-         
-                
-            }
-        )
-        
-        
-    }
+    fluid()      
+    
 };
-class fluidSource {
+struct fluidSource {
     fluid f ;
      
 };
-class particleSource {
+struct particleSource {
 
 };
 
@@ -526,14 +450,14 @@ struct physicsVertInfo {
     glm::dvec2 div_curl ; 
     glm::dvec3 grad ;
 };
-class fluidMesh {
+struct fluidMesh {
     std::vector<std::pair<vertex, > > vertices ;
     
     float turbulence ;
     double cycleSeconds;
 
 };
-class particleMesh { // Closed bounding box fill everything
+struct particleMesh { // Closed bounding box fill everything
     std::vector<vertex> vertices ; 
     std::vector<uint> bounding ;
     std::vector<uint> internal ;
@@ -555,9 +479,7 @@ struct armature {
     virtual void transform(){
     };
 
-    void setStartOrigin(){
-        this.start = NULL ; 
-    }
+    void setStartOrigin(){this.start = NULL ;     }
 };
 
 struct elemInfo {
@@ -567,18 +489,18 @@ struct elemInfo {
 
 
 template <DIM T>
-class elem { 
+struct elem { 
     std::vector<vertex<T>> vec ;
     std::vector<>
     std::vector<std::pair<elem* , std::pair<std::vector<uint>, std::vector>>   
 };
-class icon : elem {
+struct icon : elem {
 
 };
 
 
 template <DIM T>
-class model : elem<T> {
+struct model : elem<T> {
     std::string name ; 
 
     
@@ -596,12 +518,12 @@ class model : elem<T> {
     virtual void compile():
 
 };
-class flat_model : model<> {
+struct flat_model : model<> {
     std::string name ;
     double thickness ; 
 };
 
-class ngon_collection {
+struct ngon_collection {
     std::map<uint , std::vector<std::vector<uint>>> ngons ; 
     bool checkExists(uint size , std::vector<uint> &ngon_vertices){
         for(const auto &i : this->ngons[size]){
@@ -654,7 +576,7 @@ using triangle_strip_with_adjacency = std::vector<uint ,adjacency>
 using patch_list = std::vector<>  
 
 template <DIM S>
-class mesh {
+struct mesh {
 	std::vector<vertex<S>> vertices;
 
     std::vector<triangle_i> triangles ;
@@ -666,42 +588,42 @@ class mesh {
     
 };
 template <DIM S>
-class staticMesh : model { // Does 
+struct staticMesh : model { // Does 
 
 };
 template <DIM S>
-class dynamicMesh : model {
+struct dynamicMesh : model {
 
 };
 template <DIM S>
-class softBody : dynamicMesh {
+struct softBody : dynamicMesh {
 
 };
 template <DIM S>
-class cloth : dynamicMesh {
+struct cloth : dynamicMesh {
     std::vector<vertex> vertices;
     
 };
-class skeletalMesh : model {
+struct skeletalMesh : model {
 };
-class entity : dynamicMesh  
+struct entity : dynamicMesh  
 {
     virtual virtual render();
     virtual update();
 };
-class flora : entity {
+struct flora : entity {
 
 };
 // Actors are entities which can be possessed by controlSchemes
 
-class actor : entity 
+struct actor : entity 
 {
         mesh mainBody ; 
 };
-class fauna : entity {
+struct fauna : entity {
 
 };
-class human : actor , skeletalMesh 
+struct human : actor , skeletalMesh 
 {
     std::string name ;
 };
@@ -723,7 +645,7 @@ struct attach_points {
     std::vector<uint> verts ; 
 };
 
-class group { // Groups elements together in one shared animation unit .
+struct group { // Groups elements together in one shared animation unit .
     
     struct attach {
         typedef enum ATTACH_MODE {
@@ -753,13 +675,13 @@ class group { // Groups elements together in one shared animation unit .
     };
 
 };
-class component {
+struct component {
    
     std::string name; 
     std::vector<elem*> elements; 
     std::vector<group*> groups ;
 };
-        class collection {
+        struct collection {
             std::string name ;
             std::vector<elem*> elems ;
             std::vector<group*> groups ;
@@ -770,7 +692,7 @@ class component {
 namespace style {
 
     template <element T>
-    class style {
+    struct style {
         
     };
 
@@ -794,63 +716,63 @@ namespace camera {
         texel,
         vertex // For camera effects applied to 
     }EFFECT;
-    class perspective {
+    struct perspective {
         glm::uvec2 center ; 
         glm::uvec2 left ; 
         glm::uvec2 right ; 
         glm::uvec2 up  ;
         glm::uvec2 down ; 
     };
-    class orthoganal : perspective {
+    struct orthoganal : perspective {
 
     };
     struct effects {
         bool distance_blur; 
 
     };
-    class camera {
+    struct camera {
 
     };
 };
 
-class ThirdPerson {
+struct ThirdPerson {
     
 };
-class FirstPerson {
+struct FirstPerson {
 
 };
 
 
-class hud {
+struct hud {
 };
-class perspective {
+struct perspective {
     PERSPECTIVE v ;
 
 };
 template <DIM d>
-class cloud {
+struct cloud {
     
 };
 namespace sp
 {
-    class generator {
+    struct generator {
        
     };
-    class biome {
+    struct biome {
         std::string name ; 
         generator  ;
         
         std::vector<fauna> fauna ; 
     };
     template<generator gen>
-    class terrain {
+    struct terrain {
             std::vector<std::vector<>>; 
             gen generator ;
             uv uv ;  
          
     };
     template <DIM T>
-    class chunk
+    struct chunk
     {
         int size ; 
         glm::ivec3 ;
@@ -858,12 +780,12 @@ namespace sp
        
     };
     template <DIM T , size_t s >
-    class chunkingShape {
+    struct chunkingShape {
 
     };
     
     template <DIM T , size_t s  >
-    class sp  {
+    struct sp  {
        
          resourceParser ; 
         int maxDistance;
@@ -884,7 +806,7 @@ namespace sp
     };
 
     template <DIM T , size_t levels>
-    class planet : sp  {
+    struct planet : sp  {
         std::string name ; 
         std::vector<scene> scene ; 
         rayleigh rayleig_scattering
@@ -892,7 +814,7 @@ namespace sp
 
     };
     template <DIM T , size_t level>
-    class MegaStruct : planet {
+    struct MegaStruct : planet {
 
     };
    
@@ -901,16 +823,17 @@ namespace sp
 
 
 template <DIM d , sp space_part >
-class scene {
+struct scene {
     template <DIM d, glm::qualifier Q>
-    class lightSource {
+    struct lightSource {
         glm::vec<d,float , Q > position;
         glm::vec<d, float , >
     };
     template <DIM d>
-    class lightSourceChromatic  {
+    struct lightSourceChromatic  {
+
         glm::vec<d,float , glm::defaultp > position;
-        glm::vec<d , float> ; 
+        glm::vec<d , float,glm::defaultp> position; 
     };
     struct skybox {
         rgba_dyn_image images ;

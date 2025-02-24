@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GLTF_HPP
+#define GLTF_HPP
 #include "gltf.hpp"
 #include "source.hpp"
 #include "objects.hpp"
@@ -317,3 +318,5 @@ class glb : public gLtf {
 
 };
 
+
+#endif

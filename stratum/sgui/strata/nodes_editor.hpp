@@ -42,7 +42,8 @@ enum pintypes { // Icons for each // Ref,ptr, each
     res=1, // Resource
     mod=2  // modifier
 };
-constexpr glm::umat3x4 col_from_pinty(pintypes s=pintypes::res ){return (s==pintypes::event)?ev_col:res_col}
+constexpr glm::umat3x4 col_from_pinty(pintypes s=pintypes::res ){return (s==pintypes::event)?ev_col:res_col;};
+
 class node : private widget_base ;
 template<typename T , bool _expand>
 class pin : public widget{
@@ -98,17 +99,7 @@ class pinevent : public pin<T>{
     
 };
 
-#define PIN_CLSS(ty,name)
-class ##name : pin<ty>  {\
-    std::string name = "##name" ; \ 
-} ;\
 
-#define PIN_CLSS(ty,name,pinty ) { \
-class name : pin<ty>  {\
-    std::string name = "##name" ; \ 
-    pintypes = pintype = pintypes::pinty; \
-    glm::umat3x4 color = col_from_pin(pinty) ; \
-} ;
 class node_canvas : public sgui::wi_canvas {
 
 } ;
@@ -188,31 +179,19 @@ class node : virtual public widget { // Has mainexec
 
     uint right_pin_index[20];
     size_t right_size=0;
-    const uint32_t shader[] = {1,2,3} ; 
+    const uint32_t shader[] = {1,2,3} ;
+    
     void shader_init()final {
         impl.
     };
     void shader_exec() final {
-
-    };
-    
-    void _handle(){
-        for(int i = 0 ; i <this->in_ev_size ;i++){
-        for(int k = 0 ; i <this->in_mod_size;k++){
-            this->get_inev<i>().handle(&(this->get_in_mod<i>().d));
-        for(int j = 0 ; j <this->in_res_size;j++){
-            this->get_inmods<i>().handle(&(this->get_inres<i>().d);};
-        };};
-        this->shader_exec();
-        for(int i = 0 ; i <this->out_ev_size ;i++){this->get_outev<i>().handle(); };
-        for(int i = 0 ; i <this->out_res_size;i++){this->get_outres<i>().handle();};
-        for(int i = 0 ; i <this->out_mod_size;i++){this->get_outmods<i>().handle();};
-
         
     };
-    void handle()final{
-        this->_handle();
-    };
+   
+    virtual void execute(); // Executes
+    virtual void eventHandle();
+    
+ 
     struct node_uni {
         ivec4 text_size;//h,w,space,line
         bool exec;
@@ -224,8 +203,9 @@ class node : virtual public widget { // Has mainexec
         ivec4 pin_right[right_size];// h,w,type,pinned
         
     };
+    struct node_uni nodeUni ;
     void draw()final {
-        for(int i = 0 ; i<left.size;)
+        for(int i = 0 ; i<this->nodeUni.left_size;)
     };
     private:
     virtual  calc_bounds(ivec2 pos){
@@ -271,7 +251,7 @@ public:
         r = reinterpret_cast<decltype(s)>(this->data);
         std::cout<<r;
     };
-} ;
+    };
 
 template <typename Node , typename node>
 using node_cnat = node<std::tuple_cat<Node::inevtup,node::inevtup>,std::tuple_cat<Node::inrestup,node::inrestup>,std::tuple_cat<Node::inmodtup,node::inmodtup>,
@@ -342,6 +322,9 @@ class node_instance : public  node  {
     
 };
 
+class pNode { // PluginNode
+    void execute();
+};  
 
 class node_canvas : private canvas{
     std::vector<node*> childs ;

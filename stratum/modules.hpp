@@ -59,7 +59,7 @@ r8ui
 };
 
 template<image_formats imf>
-struct enu_vec        {
+struct color        {
      using ty = ivec4; };
 #ifdef ENU_VEC_STRATA_NO_GLM
 struct enu_vec<image_formats::rgba32f>        { using ty =dvec4;};

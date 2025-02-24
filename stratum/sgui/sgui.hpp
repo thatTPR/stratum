@@ -12,6 +12,7 @@ class canvasob : widget_base{
     std::vector<widget*> childs ; 
 
 };
+
 class canvas : public widget_base { // Uses SYS form backend to make dockign
         public:
         std::vector<canvasob> canvob; // Bound to wins accesses SYS
