@@ -104,7 +104,7 @@ class node_canvas : public sgui::wi_canvas {
 
 } ;
 
-
+struct emptyNode {using empty = 0 ;};
 // Template parameters are tuples of pins
 template <typename in_ev_tup,typename in_res_tup,typename in_mod_tup,
 typename out_ev_tup,typename out_res_tup,typename out_mod_tup>
@@ -149,9 +149,9 @@ class node : virtual public widget { // Has mainexec
     template <size_t n>
     auto get_inmod(size_t n){return std::get<n>(this->in_mods_pins);};    
 
-    auto get_inev(char n[]){for(int i=0;i<in_ev_size;i++;){auto t = std::get<i>(this->in_event_pins);if (t.name == n){return t};};};
-    auto get_inres(char n[]){for(int i=0;i<in_res_size;i++;){auto t = std::get<i>(this->in_res_pins);if (t.name == n){return t};};};
-    auto get_inmod(char n[]){for(int i=0;i<in_mods_size;i++;){auto t = std::get<i>(this->in_mods_pins);if (t.name == n){return t};};};    
+    auto get_inev(char n[]){for(int i=0;i<in_ev_size;i++;){auto t = std::get<i>(this->in_event_pins);if (t.name == n){return t;};return emptyNode;};};
+    auto get_inres(char n[]){for(int i=0;i<in_res_size;i++;){auto t = std::get<i>(this->in_res_pins);if (t.name == n){return t;};return emptyNode;};};
+    auto get_inmod(char n[]){for(int i=0;i<in_mods_size;i++;){auto t = std::get<i>(this->in_mods_pins);if (t.name == n){return t;};return emptyNode;};};    
 
     out_ev_tup out_event_pins;
     out_res_tup out_res_pins;

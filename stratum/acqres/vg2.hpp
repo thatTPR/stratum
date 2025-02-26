@@ -33,7 +33,7 @@ struct striate : prop{
 
 };*/
 
-
+// TODO make more modular (separate binar impl from gltf )
 
 glm::dvec4 rgba16itorgbaf(glm::uvec4 s){vec4 t = s.xyzw ;t= t/0xFF; };
 
