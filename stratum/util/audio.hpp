@@ -1,40 +1,6 @@
 #ifndef AUDIO_HPP
 #define AUDIO_HPP
-/*
-1. Time-Based Effects
-Reverb – Simulates sound reflections in a space, adding depth and ambiance.
-Delay – Repeats the sound after a short period, creating an echo effect.
-Chorus – Duplicates and slightly delays/modulates a sound to create a fuller effect.
-Flanger – Creates a swirling or jet-plane-like effect by modulating a delayed signal.
-Phaser – Uses phase shifting to create a sweeping, spacey effect.
-2. Dynamic Effects
-Compression – Reduces the dynamic range, making loud sounds quieter and quiet sounds louder.
-Limiter – Prevents audio from exceeding a set volume, avoiding distortion.
-Expander – Increases the dynamic range by making quiet sounds quieter.
-Gate (Noise Gate) – Mutes sound below a certain threshold to remove background noise.
-3. Modulation Effects
-Tremolo – Rapid volume changes create a wobbling effect.
-Vibrato – Rapid pitch variations create a warbling effect.
-Rotary Speaker (Leslie effect) – Simulates the rotating speaker sound for a swirling effect.
-Ring Modulation – Alters pitch by mixing the input with a synthesized signal.
-4. Pitch-Based Effects
-Pitch Shifting – Raises or lowers the pitch without affecting the speed.
-Harmonizer – Adds additional harmonized notes to the original sound.
-Auto-Tune – Corrects pitch errors or creates robotic vocal effects.
-5. Filter-Based Effects
-EQ (Equalization) – Adjusts the balance of frequencies to shape the tone.
-Wah-Wah – Sweeps a peak filter up and down the frequency spectrum.
-Bandpass, Lowpass, Highpass Filters – Remove specific frequency ranges.
-6. Distortion Effects
-Overdrive – Soft distortion that emulates a pushed tube amp.
-Distortion – More aggressive, used for rock and metal sounds.
-Fuzz – Extremely clipped and gritty distortion.
-Bitcrusher – Lowers sample rate and bit depth for a lo-fi, digital sound.
-7. Spatial Effects
-Panning – Moves sound left or right in the stereo field.
-Stereo Widening – Expands the stereo image for a bigger sound.
-3D Audio (Binaural Effects) – Creates an immersive spatial effect using phase and timing differences.
-*/
+
 
 
 #include <acqres/wav.hpp>

@@ -227,6 +227,25 @@ class histvec {
     };
 };
 
+struct selectContext {
+
+};
+
+template <typename tool>
+struct action {
+    tool::option
+};
+struct tool {
+    image icon ;
+    using ty = defT ; 
+    struct action ;
+    virtual void exec( selectContext* selection ,action act  );
+};  
+struct move {
+    image icon = ;
+};
+
+
 class node_wl : public workload {
 //"T is time(task) , G is geom, V is vertex , F is frag , E is tessel, R is ray , eg TGVFERhumanInverseKinematic \n  Press \033[1m any \033[0m to close \n Press \033[1m Delete  \033[0m to never see this again "
     enum type {
@@ -251,7 +270,9 @@ class node_wl : public workload {
         uint ty;
         void operator<=()
     };
-
+    std::vector<nodeEditor> nodeEditors ;
+    
+    selectContext selection; 
 };
 node_wl node_worker;
 void contributeNode(uint nodety,  node s);

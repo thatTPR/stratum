@@ -72,35 +72,35 @@ using namespace std:: ;
     };
    
 
-#define _r SG::reset
-#define _b SG::bold
-#define _f SG::faint
-#define _i SG::italic
-#define _u SG::underline
-#define _sb SG::slow_blink
-#define _rb SG::rapid_blink
-#define _rev SG::reverse
-#define _conceal SG::conceal
-#define _s SG::crossed // Strikethrough
+#define _r SG_reset
+#define _b SG_bold
+#define _f SG_faint
+#define _i SG_italic
+#define _u SG_underline
+#define _sb SG_slow_blink
+#define _rb SG_rapid_blink
+#define _rev SG_reverse
+#define _conceal SG_conceal
+#define _s SG_crossed // Strikethrough
 
    
    string bg(uint r, uint g ,uint b){
-                return   to_string(BG::BG_color) +";" + "2"+ ";"+ to_string(r)+";"+to_string(g)+ ";"+to_string(b)  ;
+                return   to_string(BG_color) +";" + "2"+ ";"+ to_string(r)+";"+to_string(g)+ ";"+to_string(b)  ;
 
    };
    string bg(uint n){
-                return   to_string(BG::BG_color) +";" + "5"+ ";"+ to_string(n)   ;
+                return   to_string(BG_color) +";" + "5"+ ";"+ to_string(n)   ;
     
    };
    string fg(uint r, uint g , uint b){
-        return    to_string(FG::fg_color)+";" + "2"+ ";"+ to_string(r)+";"+to_string(g)+ ";"+to_string(b)  ;  
+        return    to_string(FG_color)+";" + "2"+ ";"+ to_string(r)+";"+to_string(g)+ ";"+to_string(b)  ;  
     
    };
    string fg(uint n){
-        return  to_string(FG::fg_color)+";" + "5"+ ";"+ to_string(n) ;
+        return  to_string(FG_color)+";" + "5"+ ";"+ to_string(n) ;
    };
     string col(FG t){
-        if(t==FG::fg_color){
+        if(t==FG_color){
             throw("Color code not allowed");
             return NULL ;
         };
@@ -108,35 +108,23 @@ using namespace std:: ;
 
    };
    string col(BG t){
-         if(t==BG::BG_color){
+         if(t==BG_color){
             throw("Color code not allowed");
         }
             return to_string(t)   ;
    };
-   string sg(SG t){
-        return  to_string(t)  ;
-
-   };
-   string sgv(std::vector<SG> vec){
-      string res; 
-      for(SG v : vec){
-        res += sg(v) + ";" ; 
-        
-      };
-      res.pop_back();
-      return res ;
-   };
-   string sgr_compose(string s){
-    return  ascii_hex_c(ASCII_HEX::ESC)  +"["+ s + ENUM_TO_STR(ANSICODE::SGR);
-   };
+   
+    string sgr_compose(string s){
+     return HEX_C_ESC  +"["+ s + SGR;
+    };
 
  
-    template <typename... T >
-    auto sgr(T... args) {// 
-        std::string s = (sgr_compose(std::string(args)) + ... ) ;
-        
+    string sgr(int s ) {
+        std::string s = sgr_compose(std::string(s))  ;
         return s ;
- };
+    };
+   
+
 
 
 //  string operator"" _fmts(char* str , std::size_t ){
@@ -148,22 +136,11 @@ class ansis {
 
   vector<string> vec ; 
   vector<SG> sg_vec ; 
-  template <typename... T>
-  void operator()(T... args ){
-    sgr(args...)
-  };
-  string& operator<<( string& str){
-     this->vec.push_back(str);
-  };  
-  ansis& operator<<( string str){
-      this->vec.push_back(str);
-  };
-  ansis& operator<<( SG s){
-    
-  };
-  SG& operator<<(SG s){
-
-  };
+  void operator
+  void bg();
+  void fg();
+  void operator()(int s ){sgr(s);};
+ 
   
   // Example usage
 };
@@ -212,36 +189,36 @@ private :
           case _rev : {this->reverse = true; return sg(t); }
           case _conceal : {this->conceal = true; return sg(t); }
           case _s : {this->crossed = true; return sg(t); }
-          case SG::primary : {this->font = t; return sg(t); }
-          case SG::font_1 : {this->font = t; return sg(t); }
-          case SG::font_2 : {this->font = t; return sg(t); }
-          case SG::font_3 : {this->font = t; return sg(t); }
-          case SG::font_4 : {this->font = t; return sg(t); }
-          case SG::font_5 : {this->font = t; return sg(t); }
-          case SG::font_6 : {this->font = t; return sg(t); }
-          case SG::font_7 : {this->font = t; return sg(t); }
-          case SG::font_8 : {this->font = t; return sg(t); }
-          case SG::font_9 : {this->font = t; return sg(t); }
-          case SG::fraktur : {this->fraktur = true; return sg(t); }
-          case SG::bold_off : {this->bold = false; return sg(t); }
-          case SG::normal_intensity : {this->faint = false; return sg(t); }
-          case SG::italic_off : {this->italic = false; return sg(t); }
-          case SG::underline_off : {this->underline = false; return sg(t); }
-          case SG::blink_off : {this->blink = SG::blink_off; return sg(t); }
-          case SG::reverse_off : {this->reverse = false; return sg(t); }
-          case SG::reveal : {this->conceal = false; return sg(t); }
-          case SG::not_crossed : {this->crossed = false; return sg(t); }
-          case SG::framed : {this->framed = true; return sg(t); }
-          case SG::encircled : {this->encircled = true; return sg(t); }
-          case SG::overlined : {this->overlined = true; return sg(t); }
-          case SG::framed_off : {this->framed = false; this->encircled = false ; return sg(t); }
-          case SG::overlined_off : {this->overlined = false; return sg(t); }
-          case SG::ideogram_underline : {this->ideogram_underline = true; return sg(t); }
-          case SG::ideogram_double_underline : {this->ideogram_double_underline = true; return sg(t); }
-          case SG::ideogram_overline : {this->ideogram_overline = true; return sg(t); }
-          case SG::ideogram_double_overline : {this->ideogram_double_overline = true; return sg(t); }
-          case SG::ideogram_stress : {this->ideogram_stress = true; return sg(t); }
-          case SG::ideogram_off : {this->ideogram_off = true; return sg(t); }
+          case SG_primary : {this->font = t; return sg(t); }
+          case SG_font_1 : {this->font = t; return sg(t); }
+          case SG_font_2 : {this->font = t; return sg(t); }
+          case SG_font_3 : {this->font = t; return sg(t); }
+          case SG_font_4 : {this->font = t; return sg(t); }
+          case SG_font_5 : {this->font = t; return sg(t); }
+          case SG_font_6 : {this->font = t; return sg(t); }
+          case SG_font_7 : {this->font = t; return sg(t); }
+          case SG_font_8 : {this->font = t; return sg(t); }
+          case SG_font_9 : {this->font = t; return sg(t); }
+          case SG_fraktur : {this->fraktur = true; return sg(t); }
+          case SG_bold_off : {this->bold = false; return sg(t); }
+          case SG_normal_intensity : {this->faint = false; return sg(t); }
+          case SG_italic_off : {this->italic = false; return sg(t); }
+          case SG_underline_off : {this->underline = false; return sg(t); }
+          case SG_blink_off : {this->blink = SG::blink_off; return sg(t); }
+          case SG_reverse_off : {this->reverse = false; return sg(t); }
+          case SG_reveal : {this->conceal = false; return sg(t); }
+          case SG_not_crossed : {this->crossed = false; return sg(t); }
+          case SG_framed : {this->framed = true; return sg(t); }
+          case SG_encircled : {this->encircled = true; return sg(t); }
+          case SG_overlined : {this->overlined = true; return sg(t); }
+          case SG_framed_off : {this->framed = false; this->encircled = false ; return sg(t); }
+          case SG_overlined_off : {this->overlined = false; return sg(t); }
+          case SG_ideogram_underline : {this->ideogram_underline = true; return sg(t); }
+          case SG_ideogram_double_underline : {this->ideogram_double_underline = true; return sg(t); }
+          case SG_ideogram_overline : {this->ideogram_overline = true; return sg(t); }
+          case SG_ideogram_double_overline : {this->ideogram_double_overline = true; return sg(t); }
+          case SG_ideogram_stress : {this->ideogram_stress = true; return sg(t); }
+          case SG_ideogram_off : {this->ideogram_off = true; return sg(t); }
     }
   };
   public:

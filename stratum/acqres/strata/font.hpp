@@ -373,7 +373,7 @@ int16_t glyphDataFormat	 ; // 0 for current format.
     }TableDirectory
     uint32_t CalcTableChecksum(uint32 *Table, uint32 Length){
         uint32_t  Sum = 0L;
-        uint32_t * EndPtr = Table+((Lenfth+3) & ~3 )/ sizeof(uint32_t) ;
+        uint32_t * EndPtr = Table+((Length+3) & ~3 )/ sizeof(uint32_t) ;
         while(Table < EndPtr){Sum+=*Table++;};
         return Sum;
     };
@@ -471,13 +471,12 @@ int16_t glyphDataFormat	 ; // 0 for current format.
                 case font_tag("fpgm") : {in.read(reinterpret_cast<char*>(&(f->table[i]._fpgm)) , f->tr[i].length)};
                 case font_tag("glyf") : {in.read(reinterpret_cast<char*>(&(f->table[i]._glyf)) , f->tr[i].length)};
                 case font_tag("loca") : {in.read(reinterpret_cast<char*>(&(f->table[i]._loca)) , f->tr[i].length)};
-                
             };
         };
         
 
     };
-    typedef 
+
     typedef struct {
         float x,y; 
     }pts;
@@ -489,7 +488,7 @@ int16_t glyphDataFormat	 ; // 0 for current format.
     void textPathLoad(font* f, uint16_t strsize , wchar_t* str , path load    ){// TODO
 
     }   ; 
-];
+};
 
 typedef struct  [
     uint16_t x,y;

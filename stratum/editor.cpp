@@ -10,12 +10,11 @@
 #include <type_traits>
 #include <typeinfo>
 #include <theming.hpp>
-#include <../lib/sfwgui/sfwgui.h>
+#include <stratum/sgui/sgui.hpp>
 
 #include "editor/editor.hpp"
 
 #include "lib/vk/vulkan.hpp"
-#include "lib/SDL2/SDL2.h"
 #include "lib/sei_defs.hpp"
 #include "lib/sei.hpp"
 #include <vulkan.h>

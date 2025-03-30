@@ -156,7 +156,8 @@
         "vector_bool2_precision.hpp": "c",
         "__functional_base": "cpp",
         "__tuple": "cpp",
-        "__string": "cpp"
+        "__string": "cpp",
+        "__memory": "cpp"
     },
     "svg.preview.background": "custom"
 }

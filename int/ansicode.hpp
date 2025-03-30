@@ -86,8 +86,8 @@
     #define FG_MAGENTA 35
     #define FG_CYAN 36
     #define FG_WHITE 37
-    #define FG_fg_color 38 //	Set foreground color	Next arguments are 5;<n> or 2;<r>;<g>;<b>, see above
-    #define FG_fg_off 39 //	Default foreground color	implementation defined (according to standard)
+    #define FG_color 38 //	Set foreground color	Next arguments are 5;<n> or 2;<r>;<g>;<b>, see above
+    #define FG_off 39 //	Default foreground color	implementation defined (according to standard)
     //AIXTERM NON STANDARD
     #define FG_BRIGHT_BLACK 90
     #define FG_BRIGHT_RED 91
