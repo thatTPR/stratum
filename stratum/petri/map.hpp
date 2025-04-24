@@ -10,8 +10,15 @@ class pair {
     pair(f elf,s els) : f(elf) , s(els){}
 };
 
+template <typename T> 
+class less {
+    size_t dif ;
+    less(T a, T b){
+        
+    };
+};
 
-template <typename k,typename v,size_t size_buf=2>
+template <typename k,typename v, class cmp = >
 class map {    
     public:
     vect<k,size_buf> keys;

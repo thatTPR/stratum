@@ -1,0 +1,2 @@
+// Strata graph binary format
+

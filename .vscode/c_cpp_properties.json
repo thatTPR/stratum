@@ -10,8 +10,9 @@
                 // "C:/VulkanSDK/1.3.250.1/Include/**",
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/um",
                 "${workspaceFolder}/lib/emsdk/upstream/emscripten/system/include/",
-                "C:/Users/Alexandru.Popp/AppData/Local/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/",
+                "${userHome}/AppData/Local/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/",
                 "C:/llvm-project/libcxx/include/",
+                "${userHome}/src/OpenCL-SDK/install/include",
                 "${default}",
 
                 // "${workspaceFolder}/lib/SDL/include/SDL3"

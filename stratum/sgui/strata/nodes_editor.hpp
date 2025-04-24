@@ -37,31 +37,39 @@ glm::umat3x4 res_col={{200,50,25,200},
 glm::umat3x4 mod_com={200,50,25,200}; 
 
 
-enum pintypes { // Icons for each // Ref,ptr, each
+enum pintype { // Icons for each // Ref,ptr, each
     event=0,//
     res=1, // Resource
     mod=2  // modifier
 };
+enum pinsig {
+    in=0,
+    out=1,
+    inout=2,
+}
 constexpr glm::umat3x4 col_from_pinty(pintypes s=pintypes::res ){return (s==pintypes::event)?ev_col:res_col;};
 
+
 class node : private widget_base ;
-template<typename T , bool _expand>
+
+template<typename T , pinsig ps,pintype pt,>
 class pin : public widget{
     public:
-    constexpr bool expand = _expand; // Controls wheter or not widget can be expanded for editing  
+    pinsig sig = ps ;
+    pintype type = pt ;
+    bool expanded ; // Controls wheter or not widget can be expanded for editing  
     using ty=T;
-    using ref= pin<T,_pintype>;
-    using ptr=pin<T,_pintype>; 
+    using ref= pin<T,ps,pt>;
+    using ptr=pin<T,ps,pt>; 
     T d;
   glm::ivec4 bounds;
     using arrmeta = arrtype<T>;
     std::string name = typeid(T).name() ;
     
-    vectvect<uint> connects; // Nodes and their pins in node
-    pintypes pintype =pintypes::res;
+    std::vector<uint> connects; // Nodes and their pins in node
     glm::umat3x4 color = col_from_pin(pintypes::res);
     ivec4 data ; // h,w,pintype,pinned;
-    int32_t[0] pixel_shader_ptr;
+    
     virtual T& data_ref(){return (this->d);};
     virtual T* data_ptr(){return *(this->d);};
     virtual T data(){return this->d;};
@@ -81,19 +89,19 @@ class pin : public widget{
 
     
 };
-template <typename T>
-class pinres : pin<T>{
-    pintypes pintype = pintypes::res ;
+template <typename T,pinsig ps>
+class pinres : pin<T,ps,pintype::res>{
+    
     glm::umat3x4 color = col_from_pin(pintypes::res) ;
 };
-template <typename T, typename lhs>
-class pinmod: public pin<T> {
+template <typename T,pinsig ps>
+class pinmod: public pin<T,ps,pintype::mod> {
     
     template <typename T>
      void handle(T* resourced); // eg: resourced->field + this->d;
 };
-template <typename T>
-class pinevent : public pin<T>{
+template <typename T,pinsig ps>
+class pinevent : public pin<T,ps,pintype::event>{
         template <typename T>
     void handle(T* modd);    // Eg : modd->field + this->d;
     
@@ -106,72 +114,144 @@ class node_canvas : public sgui::wi_canvas {
 
 struct emptyNode {using empty = 0 ;};
 // Template parameters are tuples of pins
-template <typename in_ev_tup,typename in_res_tup,typename in_mod_tup,
-typename out_ev_tup,typename out_res_tup,typename out_mod_tup>
-class node : virtual public widget { // Has mainexec 
+
+
+#include <stratum/petri/reflect.hpp>
+
+class variables {
+    std::vector<reflect::refl> event ;
+    std::vector<reflect::refl> res ;
+    std::vector<reflect::refl> mod ; 
+
+    [[__noreturn]] void addRes(reflect::refl rd){
+        this->res.push_back(rd) ;
+    };
+    [[__noreturn]] void addEvent(reflect::refl rd){
+        this->event.push_back(rd) ;
+    };
+    [[__noreturn]] void addMod(reflect::refl rd){
+        this->mod.push_back(rd) ;
+    };
+
+};
+
+
+variables vars ;
+
+
+class reflnode : virtual public node {
+    std::string name = "node" ;
+    
+    clss_refl reflcls ;
+    void (*fp)(reflcls::strct) ;
+     ShaderModule module ;
+    
+
+    itreflect in ;
+    itreflect out ;
+
+    bool exec; 
+    std::vector<bool> incon;
+    std::vector<bool> outcon;
+
+    glm::vec2 inExec,outExec; 
+    std::vector<glm::vec2> inpos; 
+    std::vector<glm::vec2> outpos; 
+    void execute(){
+        fp(this->reflcls.strct);
+    };
+    void init(){
+        for(const auto& r : reflcls){
+            if(r.ps == pinsig::inout){
+                in.add<r::ty>(r.ptr,r.ps,r.type,r.name);
+                out.add<r::ty>(r.ptr,r.ps,r.type,r.name);
+            };
+            if(r.ps == pinsig::in){
+                in.add<r::ty>(r.ptr,r.ps,r.type,r.name);
+            };
+            if(r.ps == pinsig::out){
+                in.add<r::ty>(r.ptr,r.ps,r.type,r.name);
+            };
+        };
+    };
+
+
+    node(clss_refl _reflcls , void (*_fp)(reflcls::strct) ) : reflcls(_reflcls) , fp(_fp){this->init()}; 
+
+};
+
+
+class compNode {
+
+    std::string name = "Composite node" ;
+
+    std::vector<clss_refl> refclsvec;
+
+    itreflect in ;
+    itreflect out ;
+
+
+    auto getIn(size_t n){
+        for(const auto& i : this->in ){
+            if(!n){return i;};n--;
+        } ;
+    };
+    auto getOut(size_t n){
+        for(const auto& i : this->out ){
+            if(!n){return i;};n--;
+        } ;
+    };
+    
+    void execute(){
+        for(const auto& s : this->refclsvec){
+            a.fp(a.refcls.strct);
+        };
+    };
+    void init(){
+        for(const auto& refcls : refclsvec){
+        
+        for(const auto& r : reflcls){
+            if(r.ps == pinsig::inout){
+                in.add<r::ty>(r.ptr,r.ps,r.type,r.name);
+                out.add<r::ty>(r.ptr,r.ps,r.type,r.name);
+            };
+            if(r.ps == pinsig::in){
+                in.add<r::ty>(r.ptr,r.ps,r.type,r.name);
+            };
+            if(r.ps == pinsig::out){
+                in.add<r::ty>(r.ptr,r.ps,r.type,r.name);
+            };
+        };
+        };
+    };
+    compNode(reflnode a, reflnode b): refclsvec({a.reflcls,b.reflcls}){
+        this->init();
+    };
+    compNode(compnode a, reflnode b) {
+        this->refclsvec = a.refclsvec ;
+        this->refclsvec.push_back(b.refcls);
+        this->init();
+    };
+    compnode(compnode a, compnode b){
+        this->refclsvec = a.refclsvec ;
+        for(const auto & s : b.refclsvec){
+            this->refclsvec.push_back(s);
+        };
+        this->init();
+    };
+    
+};
+
+
+
+class node : virtual public widget { // Nodes 
     private:
-    char name[] = "node";
+    std::string name = "node";
     public:
     ivec4 bounds;
        // Every node defines this;
-    typedef void (*func)(void) ;
+    
 
-#ifdef STRATA_NODE_UNDO
-    typedef union  {
-        float fl ;
-    }ty;
-    typedef struct {
-        pin
-    } edit;
-    std::vector<edit> node;
-
-#endif 
-
-    using inevtup = in_ev_tup;
-    using inrestup = in_res_tup;
-    using inmodtup = in_mod_tup;
-    using outevtup = in_ev_tup;
-    using outrestup = in_res_tup;
-    using outmodtup = in_mod_tup;
-
-    in_ev_tup in_event_pins;
-    in_res_tup in_res_pins;
-    in_mod_tup in_mods_pins;
-
-    const size_t in_ev_size = std::tuple_size(in_ev_tup);
-    const size_t in_res_size= std::tuple_size(in_res_tup);
-    const size_t in_mod_size= std::tuple_size(in_mod_tup);
-   
-    template <size_t n>
-    auto get_inev(size_t n){return std::get<n>(this->in_event_pins);};
-    template <size_t n>
-    auto get_inres(size_t n){return std::get<n>(this->in_res_pins);};
-    template <size_t n>
-    auto get_inmod(size_t n){return std::get<n>(this->in_mods_pins);};    
-
-    auto get_inev(char n[]){for(int i=0;i<in_ev_size;i++;){auto t = std::get<i>(this->in_event_pins);if (t.name == n){return t;};return emptyNode;};};
-    auto get_inres(char n[]){for(int i=0;i<in_res_size;i++;){auto t = std::get<i>(this->in_res_pins);if (t.name == n){return t;};return emptyNode;};};
-    auto get_inmod(char n[]){for(int i=0;i<in_mods_size;i++;){auto t = std::get<i>(this->in_mods_pins);if (t.name == n){return t;};return emptyNode;};};    
-
-    out_ev_tup out_event_pins;
-    out_res_tup out_res_pins;
-    out_mod_tup out_mods_pins;
-    const size_t out_ev_size = std::tuple_size(out_ev_tup);
-    const size_t out_res_size= std::tuple_size(out_res_tup);
-    const size_t out_mod_size= std::tuple_size(out_mod_tup);
-    std::array<std::string, out_ev_size> out_ev_names;
-    std::array<std::string, out_res_size> out_res_names;
-    std::array<std::string, out_mod_size> out_mod_names;
-    template <size_t n>
-    auto get_outev(size_t n){return std::get<n>(this->out_event_pins);}
-    template <size_t n>
-    auto get_outres(size_t n){return std::get<n>(this->out_res_pins);}
-    template <size_t n>
-    auto get_outmod(size_t n){return std::get<n>(this->out_mods_pins);}    
-
-    auto get_outev(char n[]){for(int i=0;i<out_ev_size;i++;){auto t = std::get<i>(this->out_event_pins);if (t.name == n){return t};};};
-    auto get_outres(char n[]){for(int i=0;i<out_res_size;i++;){auto t = std::get<i>(this->out_res_pins);if (t.name == n){return t};};};
-    auto get_outmod(char n[]){for(int i=0;i<out_mods_size;i++;){auto t = std::get<i>(this->out_mods_pins);if (t.name == n){return t};};};    
 
     bool exec;
     uint left_pin_index[20] ;  // Points to nodes;
@@ -253,66 +333,10 @@ public:
     };
     };
 
-template <typename Node , typename node>
-using node_cnat = node<std::tuple_cat<Node::inevtup,node::inevtup>,std::tuple_cat<Node::inrestup,node::inrestup>,std::tuple_cat<Node::inmodtup,node::inmodtup>,
-std::tuple_cat<Node::outevtup,node::outevtup>,std::tuple_cat<Node::outrestup,node::outrestup>,std::tuple_cat<Node::outmodtup,node::outmodtup>> ;
-
-template <typename Node , typename node>
-node_cnat<Node,node> node_cnat_copy(Node a,node b){node_cnat<Node,node> temp;
-    int i,j;
-    for( i = 0;i<std::tuple_size<Node::inevtup>;i++){std::get<i>(temp.in_event_pins)=std::get<i>(a.in_event_pins);}; j =i;
-    for(;i<std::tuple_size<node::inevtup>+j;i++){std::get<i>(temp.in_event_pins)=std::get<i-j>(a.in_event_pins);};
-
-    for( i = 0;i<std::tuple_size<Node::inrestup>;i++){std::get<i>(temp.in_res_pins)=std::get<i>(a.in_res_pins);}; j =i;
-    for(;i<std::tuple_size<node::inrestup>+j;i++){std::get<i>(temp.in_res_pins)=std::get<i-j>(a.in_res_pins);};
-
-    for( i = 0;i<std::tuple_size<Node::inmodup>;i++){std::get<i>(temp.in_mod_pins)=std::get<i>(a.in_mod_pins);}; j =i;
-    for(;i<std::tuple_size<node::inmodup>+j;i++){std::get<i>(temp.in_mod_pins)=std::get<i-j>(a.in_mod_pins);};
-
-    for( i = 0;i<std::tuple_size<Node::outevtup>;i++){std::get<i>(temp.out_event_pins)=std::get<i>(a.out_event_pins);}; j =i;
-    for(;i<std::tuple_size<node::outevtup>+j;i++){std::get<i>(temp.out_event_pins)=std::get<i-j>(a.out_event_pins);};
-
-    for( i = 0;i<std::tuple_size<Node::outevtup>;i++){std::get<i>(temp.out_event_pins)=std::get<i>(a.out_event_pins);}; j =i;
-    for(;i<std::tuple_size<node::outevtup>+j;i++){std::get<i>(temp.out_event_pins)=std::get<i-j>(a.out_event_pins);};
-
-    for( i = 0;i<std::tuple_size<Node::outevtup>;i++){std::get<i>(temp.out_event_pins)=std::get<i>(a.out_event_pins);}; j =i;
-    for(;i<std::tuple_size<node::outevtup>+j;i++){std::get<i>(temp.out_event_pins)=std::get<i-j>(a.out_event_pins);};
-return temp;
-
-};
 
 
-// Has only resources and modifiers and one out
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_mods_tup >
-class node_geom : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup> ;
-
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class geom : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class tesc : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class tese : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class comp : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class task : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class mesh : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class rgen : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class rint : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class rahit : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class rchit : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class rmiss : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
-template <typename in_res_tup,typename  in_mods_tup , typename out_res_tup, typename out_res_tup,typename out_mods_tup >
-class rcall : public node<NULL,in_res_tup,in_mods_tup,NULL,out_res_tup,out_mods_tup>;
 
 
-template <typename inpins>
 class nodeFromPins {
     node
 };
@@ -326,7 +350,7 @@ class pNode { // PluginNode
     void execute();
 };  
 
-class node_canvas : private canvas{
+class nodeCanvas : private canvas{
     std::vector<node*> childs ;
     string file_path;
     string global_namespace;
@@ -334,96 +358,9 @@ class node_canvas : private canvas{
     enum fence_type {
         class=0,struct=1,namespace=2,function=3,;
     };
-    // /* Breaks the cpu most likely :
-    #ifdef STRATA_CAP_ENG_DYNAMIC_NODES
-    template <typename T>
-    void add_inevToNode(int pos){
-         node< std::tuple_cat<this->childs[pos]::inevtup,std::tuple<T>>,this->childs[pos]::inrestup,this->childs[pos]::inmodtup,>,
-        this->childs[pos]::outevtup,this->childs[pos]::outrestup,this->childs[pos]::outmodtup > temp;
-        for(uint i=0;i<std::tuple_size<this->childs[pos]::inevtup>();i++){
-            std::get<i>(temp.in_event_pins) = std::get<i>(*this->childs[pos].in_event_pins) ;
-        };
-        temp.in_res_pins = (*this->childs[pos]).in_res_pins;
-        temp.in_mod_pins = (*this->childs[pos]).in_mod_pins;
-        temp.out_event_pins = (*this->childs[pos]).out_event_pins;
-        temp.out_res_pins = (*this->childs[pos]).out_res_pins;
-        temp.out_mod_pins = (*this->childs[pos]).out_mod_pins;
-        this->childs[pos] = &temp;
-    };
-    template <typename T>
-    void add_inresToNode(int pos){
-        node< this->childs[pos]::inevtup,std::tuple_cat<this->childs[pos]::inrestup, std::tuple<T>>,this->childs[pos]::inmodtup,
-        this->childs[pos]::outevtup,this->childs[pos]::outrestup,this->childs[pos]::outmodtup > temp;
-        for(uint i=0;i<std::tuple_size<this->childs[pos]::inrestup>();i++){
-            std::get<i>(temp.in_res_pins) = std::get<i>(*this->childs[pos].in_res_pins) ;
-        };
-        temp.in_event_pins = (*this->childs[pos]).in_event_pins;
-        temp.in_mod_pins = (*this->childs[pos]).in_mod_pins;
-        temp.out_event_pins = (*this->childs[pos]).out_event_pins;
-        temp.out_res_pins = (*this->childs[pos]).out_res_pins;
-        temp.out_mod_pins = (*this->childs[pos]).out_mod_pins;
-        this->childs[pos] = &temp;
-
-    };
-    template <typename T>
-    void add_inmodToNode(int pos){
- node< this->childs[pos]::inevtup,this->childs[pos]::inrestup,std::tuple_cat<this->childs[pos]::inmodtup,std::tuple<T>>,
-        this->childs[pos]::outevtup,this->childs[pos]::outrestup,this->childs[pos]::outmodtup > temp;
-        for(uint i=0;i<std::tuple_size<this->childs[pos]::inmodtup>();i++){
-            std::get<i>(temp.in_mod_pins) = std::get<i>(*this->childs[pos].in_mod_pins) ;
-        };
-        temp.in_event_pins = (*this->childs[pos]).in_event_pins;
-        temp.in_res_pins = (*this->childs[pos]).in_res_pins;
-        temp.out_event_pins = (*this->childs[pos]).out_event_pins;
-        temp.out_res_pins = (*this->childs[pos]).out_res_pins;
-        temp.out_mod_pins = (*this->childs[pos]).out_mod_pins;
-        this->childs[pos] = &temp;
-    };
-    template <typename T>
-    void add_outresToNode(int pos){
-  node< this->childs[pos]::inevtup,this->childs[pos]::inrestup,this->childs[pos]::inmodtup,>,
-        std::tuple_cat<this->childs[pos]::outevtup,std::tuple<T>,this->childs[pos]::outrestup,this->childs[pos]::outmodtup > temp;
-        for(uint i=0;i<std::tuple_size<this->childs[pos]::outevtup>();i++){
-            std::get<i>(temp.out_event_pins) = std::get<i>(*this->childs[pos].out_event_pins) ;
-        };
-        temp.in_event_pins = (*this->childs[pos]).in_event_pins;
-        temp.in_res_pins = (*this->childs[pos]).in_res_pins;
-        temp.in_mod_pins = (*this->childs[pos]).in_mod_pins;
-        temp.out_res_pins = (*this->childs[pos]).out_res_pins;
-        temp.out_mod_pins = (*this->childs[pos]).out_mod_pins;
-        this->childs[pos] = &temp;
-    };
-    template <typename T>
-    void add_outmodToNode(int pos){
-         node< this->childs[pos]::inevtup,this->childs[pos]::inrestup,this->childs[pos]::inmodtup,
-        this->childs[pos]::outevtup,std::tuple_cat<this->childs[pos]::outrestup, std::tuple<T>>,this->childs[pos]::outmodtup > temp;
-        for(uint i=0;i<std::tuple_size<this->childs[pos]::outrestup>();i++){
-            std::get<i>(temp.out_res_pins) = std::get<i>(*this->childs[pos].out_res_pins) ;
-        };
-        temp.in_event_pins = (*this->childs[pos]).in_event_pins;
-        temp.in_res_pins = (*this->childs[pos]).in_res_pins;
-        temp.in_mod_pins = (*this->childs[pos]).in_mod_pins;
-        temp.out_event_pins = (*this->childs[pos]).out_event_pins;
-        temp.out_mod_pins = (*this->childs[pos]).out_mod_pins;
-        this->childs[pos] = &temp;
-    };
-    template <typename T>
-    void add_outevToNode(int pos){
-         node< this->childs[pos]::inevtup,this->childs[pos]::inrestup,this->childs[pos]::inmodtup,
-        this->childs[pos]::outevtup,this->childs[pos]::outrestup,std::tuple_cat<this->childs[pos]::outmodtup,std::tuple<T>> > temp;
-        for(uint i=0;i<std::tuple_size<this->childs[pos]::outmodtup>();i++){
-            std::get<i>(temp.out_mod_pins) = std::get<i>(*this->childs[pos].out_mod_pins) ;
-        };
-        temp.in_event_pins = (*this->childs[pos]).in_event_pins;
-        temp.in_res_pins = (*this->childs[pos]).in_res_pins;
-        temp.in_mod_pins = (*this->childs[pos]).in_mod_pins;
-        temp.out_event_pins = (*this->childs[pos]).out_event_pins;
-        temp.out_res_pins = (*this->childs[pos]).out_res_pins;
-        this->childs[pos] = &temp;
-    };
-    #endif
+    typedef std::vector<node*> selection ;
 // */
-    class fence : widget {
+    class fence : NodeEditorwidget {
         public:
         uint coord[4];
         node** nodes;

@@ -20,7 +20,7 @@ class DescriptorAllocatorSets {
 class Descriptor {
 
 };
-struct vk_impl : public gl_impl  {
+class vk_impl : public gl_impl  {
     public:
     bool nv = 0 ; // Takes prioriy ext; // else KHRl
     int size_t curdev;

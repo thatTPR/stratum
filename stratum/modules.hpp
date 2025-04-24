@@ -1,6 +1,10 @@
 #ifndef MODULES_HPP
 #define MODULES_HPP
 #include <typeindex>
+#include <cstddef>
+#include <math.h>
+#include <vector>
+#include <string>
 #include <petri/vecs.hpp>
 #include <petri/vects.hpp>
 #include <tuple>
@@ -228,13 +232,7 @@ struct image3D {
     image_format imf;
 
 };
-
-#include "spirv/layout.hpp"
-
-
-
-
-
+/* Not really needed with reflect
 template<typename... args>
 class ty_index_map  {
     public:
@@ -263,21 +261,19 @@ ONE(TY_INDEX_STR,COLORSFORM)
 ONE(COL_VF_STR,rgba32f,rgba16f,rg32f,rg16f,r11f_g11f_b10f,r32f,r16f,rgba16,rgb10_a2,rgba8,rg16,rg8,r16,r8,rgba16_snorm,rgba8_snorm,rg16_snorm,rg8_snorm,r16_snorm,r8_snorm,rgba32i,rgba16i,rgba8i,rg32i,rg16i,rg8i,r32i,r16i,r8i,rgba32ui,rgba16ui,rgb10_a2ui,rgba8ui,rg32ui,rg16ui,rg8ui,r32ui,r16ui,r8ui)
 
 };
+*/
 
 
 
-struct {
+#define IMS_FROM_COLORS_FORM(im,colors_form) im<colors_form> \
+ty_index_map< \
+/* Vecs */ \
+VECS,  \
+TY_IMF(COLORSFORM), \
+ONE(IMG_INSTS,COLORSFORM) \ // Images with all color fomat vecs
 
-};
- 
-#define IMS_FROM_COLORS_FORM(im,colors_form) im<colors_form>
-ty_index_map<
-// Vecs
-VECS,
-TY_IMF(COLORSFORM),
-ONE(IMG_INSTS,COLORSFORM) // Images with all color fomat vecs
-
-> type_ind({
+>
+ type_ind({
 ONE(TY_INDEX,VECS),
 ONE(TY_INDEX,TY_IMF(COLORS_FORM),
 ONE(TY_INDEX,ONE(IMG_INSTS,COLORSFORM))
@@ -292,7 +288,7 @@ void readFile(const std::string& filename , const uint32_t* c , int* code_size) 
     file.seekg(0);
     file.read(buffer.data(), fileSize);
     c = reinterpret_cast<const uint32_t*>(buffer.data());
-};
+}
 
 /*
 Shader Type	Abbreviation	Purpose
@@ -310,6 +306,7 @@ Intersection Shader	rint	Custom intersection logic for complex shapes
 Amplification Shader	AS	Controls LOD and culling in new pipelines
 Mesh Shader	MS	Replaces Vertex + Geometry shaders for efficiency
 */
+
 enum shader_type {
     all,
     gr,
@@ -330,31 +327,37 @@ enum shader_type {
 };
 
 struct shaderModule {
-    bool unib=false ,shab=false ;
-    void* ubo  ;  uint16_t ubosize; bool dynsUbo;
-    void* ssbo  ;  uint16_t ssbosize; bool dynsSsbo
+     
+    auto* ubo  ;bool unib=false  ; uint16_t ubosize; bool dynsUbo;
+    auto* ssbo  ;bool shab=false ;  uint16_t ssbosize; bool dynsSsbo;
     int code_size;
-    const uint32_t** code; // SPIR-V Moudule
-    char* entry_point;
-    char** entry_points; // all entry points
+    const uint32_t** code; // SPIR-V Module
+
+    std::vector<std::string> entry_points; // all entry points
     
 };
 
 
-template <shader_type st,typename ubo,typename ssbo>
-struct ShaderModule{
-    shader_type shad_ty= st;
+
+class ShaderModule {
+    shader_type shad_ty;
     size_t uni_size;
     size_t sssbo_size;
-    ubo unibuf;
-    char* code ; // SPIR-V module path;
-    ssbo ssbuf;
+    auto ubo;
+    auto ssbo;
+    std::string codePath ; // SPIR-V module path;
     shaderModule shadmod;
-    void read_code(){readFile(std::string(this->code),this->shadmod.code,&(this->shadmod.code_size); );
+    void read_code(){readFile(std::string(this->code),this->shadmod.code,&(this->shadmod.code_size); )};
     void bind(bool ubo_,bool ssbo_){
         if(ubo_){this->shadmod.unib=true ;this->shadmod.ubo = static_cast<void*>(&(this->unibuf));};
         if(ssbo_){this->shadmod.shab=true ;this->shadmod.ssbo = static_cast<void*>(&(this->unibuf));};
     };
+    ShaderModule(shader_type st) : shad_ty(st);
+};
+// TODO make node editor with inout support
+
+
+class kernModule : ShaderModule {
 };
 enum transform_image {
     none,
@@ -466,16 +469,133 @@ struct  rmiss_shmod : ShaderModule<shader_type::rmiss,_ubo,_ssbo>;
 template <typename _ubo,typename _ssbo> 
 struct  rcall_shmod : ShaderModule<shader_type::rcall,_ubo,_ssbo>;
 
-// TODO change to proper templating
-// TO be put in front of definition of template specialization
-#define STRATA_PARSE_RULE() 
-#define GET_SHADER_MEMBERS_DECORATOR(shaderMod ) STRATA_PARSE_RULE 
-
-
 
 struct LoadDomainInfo{glm::ivec2 coords, int view_distance , void chunks_distance,int fog };
 
 struct LoadWorldInfo{int index, glm::ivec3 coords };
 void load_world_domain(glm::ivec3 coords, int view_distance, );
+
+
+    const rgb BLACK(0, 0, 0);
+    const rgb WHITE(255, 255, 255);
+    const rgb RED(255, 0, 0);
+    const rgb GREEN(0, 255, 0);
+    const rgb BLUE(0, 0, 255);
+    const rgb YELLOW(255, 255, 0);
+    const rgb CYAN(0, 255, 255);
+    const rgb MAGENTA(255, 0, 255);
+    const rgb ORANGE(255, 165, 0);  
+    const rgb PURPLE(128, 0, 128); 
+    const rgb BROWN(139, 69, 19); 
+    const rgb PINK(255, 192, 203);  
+    const rgb GRAY(128, 128, 128);
+    const rgb LIME(0, 255, 0);      
+    const rgb TEAL(0, 128, 128);    
+    const rgb INDIGO(75, 0, 130);   
+    const rgb GOLD(255, 215, 0);    
+
+
+    template <uint length ,  typename T , glm::qualifier Q>
+    class image {
+        uint x ; 
+        uint y  ; 
+        std::mat<glm::vec<length,T ,Q> >  content ;  
+        
+        image(uint _x , uint _y) : x(_x) , y(_y){
+            
+        }
+    };
+
+    template <uint length , typename T , glm::prectision prec >
+    class dyn_image : image<length, T , prec  > {
+
+        virtual std::array<>
+    };
+    
+   
+    
+    template<colorType ct, size_t x ,size_t y>
+    using image = std::array<std::array<ct,x> ,y>;
+    template <colorType ct, size_t x , size_t y >
+    using rgba_static_arr = image<ct,x,y>;
+    template <size_t frames , colorType ct, size_t x , size_t y>
+    using rgba_dyn_arr = std::array<image<ct,x,y>,frames> ;
+    template <colorType ct, size_t x , size_t y>
+    using rgb_static_arr =  image<ct,x,y> ;
+    template <colorType ct,size_t frames, size_t x , size_t y>
+    using rgb_dyn_arr = std::array<image<ct,x,y>,frames> ;
+    
+
+    typedef std::vector<std::vector<rgba>>               rgba_static ; 
+    typedef std::vector<std::vector<std::array<rgba>>>   rgba_dyn ;
+    
+    typedef std::vector<std::vector<rgb>>                rgb_static ; 
+    typedef std::vector<std::vector<std::vector<rgb>>>   rgb_dyn ;
+    
+    union rgba_either {
+        rgba_static_image static_img,
+        rgba_dyn_image dyn_img
+    };
+
+
+    // Variables
+
+    enum normType {
+        loop,
+        ground,
+    }
+    template <typename T, T minimum, T maximum , normType nt>
+    class norm_val : T{
+        static const T min = minimum; 
+        static const T max = maximum ;
+        static const normType normty = nt; 
+        
+        T val ;
+        public:
+        virtual norm_val func(T res){
+            if constexpr ( nt == normType::loop){
+                return min+ ((res)-min)%(max-min)}
+            
+            if constexpr( nt == normType::ground){
+                return (res)>max ? max :( ( res)<min? min : res ); 
+            };
+        };
+        
+        norm_val operator+(norm_val& lhs, norm_val& rhs) override {
+            T res = lhs.val+rhs.val;
+           return func(res);
+        };
+        norm_val operator-(norm_val& lhs, norm_val& rhs) override {
+            T res = lhs.val-rhs.val;
+            return func(res) ;
+        };
+        norm_val operator*(norm_val& lhs, norm_val& rhs) override {
+            T res = lhs.val/rhs.val;
+           return func(res);
+        };
+        norm_val operator/(norm_val& lhs, norm_val& rhs) override {
+            T res = lhs.val/rhs.val;
+            return func(res) ;
+        };
+
+
+    };
+    template <typename T>
+    using radian = normval<T,0,M_PI,normType::loop>;
+    template <typename T>
+    using subunit = normval<T,0,1,normType::ground>;
+    template <typename T>
+    using zsubunit = normval<T,-1,1,normType::ground>;
+    
+    template <typename T>
+    class rangeValue  {
+        T val ;
+        T minimum ; 
+        T maximum ;
+        
+    };
+
+    
+
 
 #endif

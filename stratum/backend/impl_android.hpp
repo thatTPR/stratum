@@ -444,5 +444,5 @@ void initDisplay(){this->display.natwin=&(this->wins);this->display.init();};
         
     };
 };
-
+};
  #endif

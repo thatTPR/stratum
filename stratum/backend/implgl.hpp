@@ -1,5 +1,9 @@
 #include <vector>
-#include <strata/backend/modules.hpp>
+#include <stratum/modules.hpp>
+
+
+
+
 struct gpu_info {
 
     bool robustBufferAccess       ,  //Ensures bounds-checking for buffer accesses.
@@ -36,7 +40,7 @@ Features structure: VkPhysicalDeviceMultiviewFeatures.
 #define Buffer
 #define Size
 
-struct gl_impl {
+class gl_impl {
     public:
     std::vector<Pipeline> pipelines;
     std::vector<uint> winsurfaces;
@@ -59,10 +63,11 @@ struct gl_impl {
     std::vector<rmissModule> rmiss_modules;
     std::vector<rcallModule> rcall_modules;
     
+
+     
 virtual void createSwapChain();
 virtual void set_up_dev();
 virtual void create_fullscreen();
-virtual void updateUniform(device* dev, );
 virtual void get_gpu_info(gpu_info gpinfo);
 virtual _shader load_shader(const uint32_t shader[] );
 virtual bool shaderModule(shaderModule* module);
@@ -82,6 +87,7 @@ virtual int rahitModule(rahitModule* module);
 virtual int rchitModule(rchitModule* module);
 virtual int rmissModule(rmissModule* module);
 virtual int rcallModule(rcallModule* module);
+virtual void updateUniform(device* dev, shaderModule* m );
 void descriptor_set();
 void descriptor_pool();
 void create_swapchain();
@@ -110,6 +116,10 @@ using gl_impl= dx_impl ;
 #ifdef STRATA_GL
 #include <strata/backend/impl_gl.hpp>
 using gl_impl = gl_impl;
+#endif
+#ifdef IMPL_CL
+#include <strata/backend/impl_cl.hpp>
+using gl_impl = cl_impl ;
 #endif
 
 gl_impl gl;

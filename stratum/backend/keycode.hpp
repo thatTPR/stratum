@@ -110,7 +110,7 @@
 #define KC_MBUTTON	0x04 //	Middle mouse button
 #define KC_XBUTTON1	0x05 //	X1 mouse button
 #define KC_XBUTTON2	0x06 //	X2 mouse button
-//-	0x07	Reserved
+#define KC_MOUSEWHEEL 0x07
 #define KC_BACK	0x08 //	BACKSPACE key
 #define KC_TAB	0x09 //	TAB key
 //-	0x0A-0B	Reserved
@@ -155,7 +155,7 @@
 #define KC_LWIN	0x5B	//Left Windows key
 #define KC_RWIN	0x5C	//Right Windows key
 #define KC_APPS	0x5D	//Applications key
--	0x5E	Reserved
+// -	0x5E	Reserved
 #define KC_SLEEP	 0x5F // //	Computer Sleep key
 #define KC_NUMPAD0	 0x60 // //	Numeric keypad 0 key
 #define KC_NUMPAD1	 0x61 // //	Numeric keypad 1 key
@@ -197,11 +197,11 @@
 #define KC_F22	 0x85 //	F22 key
 #define KC_F23	 0x86 //	F23 key
 #define KC_F24	 0x87 //	F24 key
--	0x88-8F	Reserved
+// -	0x88-8F	Reserved
 #define KC_NUMLOCK	 0x90 //	NUM LOCK key
 #define KC_SCROLL	 0x91 //	SCROLL LOCK key
--	0x92-96	OEM specific
--	0x97-9F	Unassigned
+// -	0x92-96	OEM specific
+// -	0x97-9F	Unassigned
 #define KC_LSHIFT	 0xA0 //	Left SHIFT key
 #define KC_RSHIFT	 0xA1 //	Right SHIFT key
 #define KC_LCONTROL	 0xA2 //	Left CONTROL key
