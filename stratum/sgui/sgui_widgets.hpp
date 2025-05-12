@@ -42,32 +42,52 @@ namespace sgui {
        #define align_cenh         0b0011
        #define align_cenv         0b1100
        #define align_cen          0b1111
-    #define DOCKABLE             0b10000
-    #define LEAF                0b100000
-    #define 
-    class widget {
+
+    
+       #define SCROLL_HORI  0b01
+       #define SCROLL_VERTI 0b10
+       #define SCROLL_ALL   0b11
+       #define RESIZE_RIGHT 0b0001
+       #define RESIZE_LEFT  0b0010
+       #define RESIZE_UP    0b0100
+       #define RESIZE_DOWN  0b1000
+       #define RESIZE_SE    0b1001
+       #define RESIZE_WSE   0b1011
+       #define RESIZE_WS    0b1010
+       #define RESIZE_ALL   0b1111
+       
+       #define SALIGN_RIGHT  0b001  
+       #define SALIGN_LEFT   0b100 
+       #define SALIGN_UP     0b011 
+       #define SALIGN_DOWN   0b110
+       #define SALIGN_CENTER 0b111 
+       
+
+       class widget {
         public:
         widget* parent ;
-        canvas* canvas; // TODO maybe uint index;
-        uint flags ;
-        static constexpr char name[] = "widget base";
+        std::string wname = "WidgetBase";
+
+
+        struct attrib {
+            std::string name ;
+            glm::dvec4 color ;
+            uint8_t align;
+            uint8_t scroll;
+            bool leaf;
+            bool dockable;
+            widget* parent;
+         
+        } at;
+
+
         uint parent_pos;
         // uint pos; // position in canvas hierarchy
         uint childs_length=0;
-         static const char* name ;uint namesize; 
-        char* shader_bin ; // TODO shader module
-        uint shader_bin_size;
-        short uint8_t alignment=0;
-// #ifdef STRATA_CAP_DOCKING // TODO
-        constexpr bool dockable = true; // Means a widget can be moved to a different widget, including an auto-constructed new canvas outside the current window; 
-// #elif
-        // bool dockable = false;
-// #endif
+        ShaderModule sm ;
 
 
-        bool leaf = false; // Leafs can't move child widgets
-         int alignment(){return this->alignment;}; 
-         bool is_dockable(){return true;};
+         
         bool dragging=true;
         glm::ivec2 dragpos;
        void dragend(){this->dragging=false;};
@@ -291,7 +311,7 @@ namespace sgui {
     bool operator==widget* lhs,widget* rhs){
         return (lhs->flags == rhs->flags) && (lhs->name == rhs->name);
     };
-    widget(widget* parent,  bool dockable, bool leaf,short int alignment ){ // TODO modify constructors
+    widget(widget* parent,  bool dockable, bool leaf,short int alignment ){
             uint arr_size = sizeof(parent->childs)/sizeof(parent->childs[0]);
             this->parent= parent ;
             this->dockable = dockable;
@@ -332,28 +352,55 @@ namespace sgui {
             this->add_child(va_args(args,widget*));
         va_end(args);
     };
-
+    widget(std::initializer_list<sgui_attribute> ats){
+        for(const auto& s : ats){
+            s[this];
+        };
+    }
 
     };
+
     
-    #define SCROLL_HORI  0b01
-    #define SCROLL_VERTI 0b10
-    #define SCROLL_ALL   0b11
-    #define RESIZE_RIGHT 0b0001
-    #define RESIZE_LEFT  0b0010
-    #define RESIZE_UP    0b0100
-    #define RESIZE_DOWN  0b1000
-    #define RESIZE_SE    0b1001
-    #define RESIZE_WSE   0b1011
-    #define RESIZE_WS    0b1010
-    #define RESIZE_ALL   0b1111
-    
-    #define SALIGN_RIGHT  0b001  
-    #define SALIGN_LEFT   0b100 
-    #define SALIGN_UP     0b011 
-    #define SALIGN_DOWN   0b110
-    #define SALIGN_CENTER 0b111 
-    
+    class sgui_attribute {
+        public:
+        enum atty {
+            color=0,
+            align=1,
+            scroll=2
+            parent=3,
+            dockable=4,
+            leaf=5
+        };  
+        struct {
+            glm::dvec4 color ;
+            uint8_t align;
+            uint8_t scroll;
+            bool leaf;
+            bool dockable;
+            widget* parent; 
+        }data;
+        atty t;         
+        constexpr attribute operator=(auto c){this->data = c; };
+        constexpr void operator[](widget* w){
+            switch(this->t){
+                case atty::color :{w->color = this->data.color;};
+                case atty::align :{w->align = this->data.align;};
+                case atty::scroll :{w->scroll = this->data.scroll;};
+                case atty::parent :{w->parent = this->data.parent;};
+                case atty::dockable :{w->dockable = this->data.dockable;};
+                case atty::leaf : {w->leaf  = this->data.lead;};
+            }            
+         };
+        sgui_attribute(atty _t){
+            this->t = _t ;
+        }
+    };
+
+    shui_attribute Color(sgui_attribute::atty::color);
+    shui_attribute Parent(sgui_attribute::atty::align);
+    shui_attribute Align(sgui_attribute::atty::parent);
+    shui_attribute Dockable(sgui_attribute::atty::dockable);
+    shui_attribute Leaf(sgui_attribute::atty::leaf);
     class hlist : public widget { // Th
     public:
         bool resize_borders = true ;

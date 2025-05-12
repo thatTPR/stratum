@@ -646,6 +646,9 @@ class workloadMan : workload {
         
         void read(std::string installLocation){
 
+        }
+        void save(std::string installLocation){
+
         };
     };
     class settings {

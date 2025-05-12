@@ -307,58 +307,6 @@ Amplification Shader	AS	Controls LOD and culling in new pipelines
 Mesh Shader	MS	Replaces Vertex + Geometry shaders for efficiency
 */
 
-enum shader_type {
-    all,
-    gr,
-    vert,
-    frag,
-    geom,
-    tesc,
-    tese,
-    comp,
-    task,
-    mesh,
-    rgen,
-    rint,
-    rahit,
-    rchit,
-    rmiss,
-    rcall,
-};
-
-struct shaderModule {
-     
-    auto* ubo  ;bool unib=false  ; uint16_t ubosize; bool dynsUbo;
-    auto* ssbo  ;bool shab=false ;  uint16_t ssbosize; bool dynsSsbo;
-    int code_size;
-    const uint32_t** code; // SPIR-V Module
-
-    std::vector<std::string> entry_points; // all entry points
-    
-};
-
-
-
-class ShaderModule {
-    shader_type shad_ty;
-    size_t uni_size;
-    size_t sssbo_size;
-    auto ubo;
-    auto ssbo;
-    std::string codePath ; // SPIR-V module path;
-    shaderModule shadmod;
-    void read_code(){readFile(std::string(this->code),this->shadmod.code,&(this->shadmod.code_size); )};
-    void bind(bool ubo_,bool ssbo_){
-        if(ubo_){this->shadmod.unib=true ;this->shadmod.ubo = static_cast<void*>(&(this->unibuf));};
-        if(ssbo_){this->shadmod.shab=true ;this->shadmod.ssbo = static_cast<void*>(&(this->unibuf));};
-    };
-    ShaderModule(shader_type st) : shad_ty(st);
-};
-// TODO make node editor with inout support
-
-
-class kernModule : ShaderModule {
-};
 enum transform_image {
     none,
     rotate90,
@@ -414,60 +362,29 @@ struct image {
     sample_count sample =  sample_count::sample_1;
     image() = default { this->storage}
 };
-struct im_shaderModule : ShaderModule {
 
-    image im;
+
+struct Lsys {
+        
+    typedef int16_t number ;
+    typedef int16_t[3] vec ;
+    typedef int16_t[4] color ; // TODO add all texturing values;
+    typedef int16_t[2] complex;
+
+    enum {
+        color,
+        
+    };
+    uint8_t Vsize;
+    uint8_t omegaSize;
+    uint8_t PSize; 
+    int16_t* V ; // Alphabet
+    int16_t* omega; // Start
+    int16_t* P ; // Production rules
     
+
 };
 
-/*
-shaderModule
-vertModule
-fragModule
-geomModule
-tescModule
-teseModule
-compModule
-taskModule
-meshModule
-rgenModule
-rintModule
-rahitModule
-rchitModule
-rmissModule
-rcallModule*/
-template <typename _ubo,typename _ssbo> 
-struct  all_shmod : ShaderModule<shader_type::all,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  gr_shmod : ShaderModule<shader_type::gr,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  vert_shmod : ShaderModule<shader_type::vert,_ubo,_ssbo> ;
-template <typename _ubo,typename _ssbo> 
-struct  frag_shmod : ShaderModule<shader_type::frag,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  geom_shmod : ShaderModule<shader_type::geom,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  tesc_shmod : ShaderModule<shader_type::tesc,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  tese_shmod : ShaderModule<shader_type::tese,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  comp_shmod : ShaderModule<shader_type::comp,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  task_shmod : ShaderModule<shader_type::task,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  mesh_shmod : ShaderModule<shader_type::mesh,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  rgen_shmod : ShaderModule<shader_type::rgen,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  rint_shmod : ShaderModule<shader_type::rint,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  rahit_shmod : ShaderModule<shader_type::rahit,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  rchit_shmod : ShaderModule<shader_type::rchit,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  rmiss_shmod : ShaderModule<shader_type::rmiss,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-struct  rcall_shmod : ShaderModule<shader_type::rcall,_ubo,_ssbo>;
 
 
 struct LoadDomainInfo{glm::ivec2 coords, int view_distance , void chunks_distance,int fog };
@@ -596,6 +513,101 @@ void load_world_domain(glm::ivec3 coords, int view_distance, );
     };
 
     
+enum shader_type {
+    all,
+    gr,
+    vert,
+    frag,
+    geom,
+    tesc,
+    tese,
+    comp,
+    task,
+    mesh,
+    rgen,
+    rint,
+    rahit,
+    rchit,
+    rmiss,
+    rcall,
+};
 
+struct shaderModule {
+     
+    auto* ubo  ;bool unib=false  ; uint16_t ubosize; bool dynsUbo;
+    auto* ssbo  ;bool shab=false ;  uint16_t ssbosize; bool dynsSsbo;
+    int code_size;
+    const uint32_t** code; // SPIR-V Module
+
+    std::vector<std::string> entry_points; // all entry points
+    
+};
+
+
+
+class ShaderModule {
+    shader_type shad_ty;
+    size_t uni_size;
+    size_t sssbo_size;
+    std::string codePath ; // SPIR-V module path;
+    shaderModule shadmod;
+    std::vector<std::string> entry_points ;
+    uint entry ;
+    auto ubo;
+    auto ssbo;
+
+    void read_code(){readFile(std::string(this->code),this->shadmod.code,&(this->shadmod.code_size); )};
+    void bind(bool ubo_,bool ssbo_){
+        if(ubo_){this->shadmod.unib=true ;this->shadmod.ubo = static_cast<void*>(&(this->unibuf));};
+        if(ssbo_){this->shadmod.shab=true ;this->shadmod.ssbo = static_cast<void*>(&(this->unibuf));};
+    };
+    ShaderModule(shader_type st) : shad_ty(st);
+};
+// TODO make node editor with inout support
+
+template <typename _ubo,typename _ssbo> 
+using   all__shmod =  ShaderModule<shader_type::all,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   gr__shmod =  ShaderModule<shader_type::gr,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   vert__shmod =  ShaderModule<shader_type::vert,_ubo,_ssbo> ;
+template <typename _ubo,typename _ssbo> 
+using   frag__shmod =  ShaderModule<shader_type::frag,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   geom__shmod =  ShaderModule<shader_type::geom,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   tesc__shmod =  ShaderModule<shader_type::tesc,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   tese__shmod =  ShaderModule<shader_type::tese,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   comp__shmod =  ShaderModule<shader_type::comp,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   task__shmod =  ShaderModule<shader_type::task,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   mesh__shmod =  ShaderModule<shader_type::mesh,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   rgen__shmod =  ShaderModule<shader_type::rgen,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   rint__shmod =  ShaderModule<shader_type::rint,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   rahit__shmod =  ShaderModule<shader_type::rahit,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   rchit__shmod =  ShaderModule<shader_type::rchit,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   rmiss__shmod =  ShaderModule<shader_type::rmiss,_ubo,_ssbo>;
+template <typename _ubo,typename _ssbo> 
+using   rcall__shmod =  ShaderModule<shader_type::rcall,_ubo,_ssbo>;
+
+
+
+
+class PipeLineAdapter {
+    std::vector<ShaderModule*> points ;
+
+    
+    virtual void contribution(){
+
+    };
+};
 
 #endif

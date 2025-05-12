@@ -16,9 +16,33 @@ typedef uint24_t Offset24 ;
 typedef uint32_t Version16Dot16 ;
 
 
+template <typename T>
+void load(T* t , std::fstream* f){
+    f->read(reinterpret_cast<char*>(t)) ;
+};
+
+// #include <type_traits>
+// template <typename T, size_t si>
+// void ld(T* s,std::ifstream* fi){
+//     if constexpr(std::is_pointer<T>::value){
+//         fi->read(reinterpret_cast<char*>(s) , sizeof(s[0])* si)
+//     }
+//     else {
+//         fi->read(reinterpret_cast<char*>(s) , sizeof(s) )
+//     }
+// };
 
 
-namespace ttf [
+template <typename T>
+inline void ld(T* f, std::ifstream* fi, size_t s){
+    ld(&(f[0]),fi,sizeof(f[0])*s);
+};
+template <typename T>
+inline void ld(T* f, std::ifstream* fi){
+    fi->read(reinterpret_cas<char*>(f), sizeof(*f));
+};
+
+namespace ttf {
     //cmap	//Character to glyph mapping
     enum PlatformID {
         Unicode=0,
@@ -51,24 +75,48 @@ uint16_t length ; //	This is the length in bytes of the subtable.
 uint16_t language ; //	For requirements on use of the language field, see “Use of the language field in 'cmap' subtables” in this document.
 uint8_t glyphIdArray[256]//	An array that maps character codes to glyph index values.
     }f0;
+    template <>
+    void load<f0>(f0* f, std::ifsteam* fi){
+        ld(&(f->length),fi);
+        ld(&(f->length),fi);
+        ld(&(f->language),fi);
+        ld(&(f->glyphIdArray),fi);
+    };
     typedef struct {
         uint16_t firstCode; //	First valid low byte for this SubHeader.
         uint16_t entryCount; //	Number of valid low bytes for this SubHeader.
         int16_t idDelta; 
         uint16_t idRangeOffset; 
-
     }SubHeader;
+    
     typedef struct {
-        // uint16_t     format;	//Format number is set to 2.
+        uint16_t     format;	//Format number is set to 2.
         uint16_t length	    ; //,This is the length in bytes of the subtable.
         uint16_t language	; //,For requirements on use of the language field, see “Use of the language field in 'cmap' subtables” in this document.
         uint16_t subHeaderKeys[256];//	Array that maps high bytes into the subHeaders array: value is subHeaders index × 8.
         SubHeader*	subHeaders ;//	Variable-length array of SubHeader records.
         uint16_t* glyphIdArray	;//Variable-length array containing sub-arrays used for mapping the low byte of 2-byte
     }f2;
-
+    template <>
+    void load<f2>(f2* f, std::ifstream* fi ){
+        ld(&(f->length),fi);
+        ld(&(f->language),fi);
+        ld(&(f->subHeaderKeys),fi);
+        uint16_t km = f->subHeaderKeys[0];
+        for(const auto it : f->subHeaderKeys){
+            if(it>km){
+                km = it; 
+            };
+        };
+        ld(&(f->subHeaders),fi, sizeof(f->subHeaders[0]) *(f->km/8+1 ) ));
+        uint32_t s = 0 ;
+        for(const auto& it : f->subHeaders){
+            s+= it.entryCount;
+        };
+        ld(f->glyphIdArray,fi,s);
+    };
     typedef struct {
-        // uint16_t format;//	Format number is set to 4.
+         uint16_t format;//	Format number is set to 4.
         uint16_t length;//	This is the length in bytes of the subtable.
         uint16_t language;//	For requirements on use of the language field, see “Use of the language field in 'cmap' subtables” in this document.
         uint16_t segCountX2;//	2 × segCount.
@@ -82,16 +130,42 @@ uint8_t glyphIdArray[256]//	An array that maps character codes to glyph index va
         uint16_t *idRangeOffset;//[segCount];//	Offsets into glyphIdArray or 0
         uint16_t *glyphIdArray;//	Glyph index array (arbitrary length)
     }f4;
+    template <>
+    void load<f4>(f4* f, std::ifstream* fi){
+        uint16_t si = sizeof(f->format);
+        ld(&(f->length),fi, ); si+= sizeof(f->length);
+        ld(&(f->language),fi, ); si+= sizeof(f->language);
+        ld(&(f->segCountX2),fi, ); si+= sizeof(f->segCountX2);
+        ld(&(f->searchRange),fi, ); si+= sizeof(f->searchRange);
+        ld(&(f->entrySelector),fi, ); si+= sizeof(f->entrySelector);
+        ld(&(f->rangeShift),fi, ); si+= sizeof(f->rangeShift);
+        uint16_t segCount = f->segCountX2/2;
+        ld(&(f->endCode),fi, f->segCountX2); si += sizeof(f->endCode) ;
+        ld(&(f->reservedPad),fi); si += sizeof(f->reservedPad) ;
+        ld(&(f->startCode), fi,segCount); si+= sizeof(f->startCode) ; 
+        ld(&(f->idDelta) fi,segCount); si+= sizeof(f->idDelta) ;
+        ld(&(f->idRangeOffset),fi ,segCount); si+= sizeof(f->idRangeOffset)
+        uint16_t si_gidarr= length - si ;        
+        ld(&(f->glyphIdArray) ,fi, si_gidarr); 
 
+    };
     typedef struct {
     //    Type	Name	Description
-    // uint16_t format ;//	Format number is set to 6.
+    uint16_t format ;//	Format number is set to 6.
     uint16_t length ;//	This is the length in bytes of the subtable.
     uint16_t language ;//	For requirements on use of the language field, see “Use of the language field in 'cmap' subtables” in this document.
     uint16_t firstCode ;//	First character code of subrange.
     uint16_t entryCount ;//	Number of character codes in subrange.
     uint16_t *glyphIdArray;//[entryCount]	Array of glyph index values for character codes in the range.
     }f6 ;
+    template <>
+    void load<f6>(f4* f, std::ifstream* fi){
+        ld(&(f->length),fi, ); 
+        ld(&(f->language),fi, ); 
+        ld(&(f->firstCode),fi, ); 
+        ld(&(f->entryCount),fi, ); 
+        ld(&(f->glyphIdArray),fi, f->entryCount); 
+    };
 
     typedef struct {
         uint32_t startCharCode ;//	First character code in this group; note that if this group is for one or more 16-bit character codes (which is determined from the is32 array), this 32-bit value will have the high 16-bits set to zero
@@ -99,25 +173,42 @@ uint8_t glyphIdArray[256]//	An array that maps character codes to glyph index va
         uint32_t startGlyphID ;//	Glyph index corresponding to the starting character code
     }SequentialMapGroup;
     typedef struct {
-        // uint16_t format ;//	Subtable format; set to 8.
+        uint16_t format ;//	Subtable format; set to 8.
         uint16_t reserved ;//	Reserved; set to 0
         uint32_t length ;//	Byte length of this subtable (including the header)
         uint32_t language ;//	For requirements on use of the language field, see “Use of the language field in 'cmap' subtables” in this document.
-        uint8_t is32[8192];	Tightly packed array of bits (8K bytes total) indicating whether the particular 16-bit (index) value is the start of a 32-bit character code
-        uint32_t numGroups ;	Number of groupings which follow
+        uint8_t is32[8192];	//Tightly packed array of bits (8K bytes total) indicating whether the particular 16-bit (index) value is the start of a 32-bit character code
+        uint32_t numGroups ;//	Number of groupings which follow
         SequentialMapGroup	*groups;//[numGroups] ;//	Array of SequentialMapGroup records.
     }f8;
-    
+    template <>
+    void load<f8>(f8* f, std::ifstream* fi){
+        ld(&(f->reserved),fi);
+        ld(&(f->length),fi);
+        ld(&(f->language),fi);
+        ld(&(f->is32),fi);
+        ld(&(f->numGroups),fi);
+        ld(&(f->numGroups),fi,f->numGroups);
+    };
 
     typedef struct {
-        // uint16_t format  ; //	Subtable format; set to 10.
+        uint16_t format  ; //	Subtable format; set to 10.
         uint16_t reserved  ; //	Reserved; set to 0
         uint32_t length  ; //	Byte length of this subtable (including the header)
         uint32_t language  ; //	For requirements on use of the language field, see “Use of the language field in 'cmap' subtables” in this document.
         uint32_t startCharCode  ; //	First character code covered
         uint32_t numChars  ; //	Number of character codes covered
-        uint16_t glyphIdArray[];//	Array of glyph indices for the character codes covered
+        uint16_t *glyphIdArray;//	Array of glyph indices for the character codes covered
     }f10;
+    template <>
+    void load<f10>(f10* f, std::ifstream* fi){
+        ld(&(f->reserved),fi);
+        ld(&(f->length),fi);
+        ld(&(f->language),fi);
+        ld(&(f->startCharCode),fi);
+        ld(&(f->numChars),fi);
+        ld(&(f->glyphIdArray),fi,f->numChars);
+    };
 
     typedef struct {
         uint32_t startCharCode ; //	First character code in this group
@@ -126,13 +217,21 @@ uint8_t glyphIdArray[256]//	An array that maps character codes to glyph index va
 
     }SequentialMapGroup;
     typedef struct {
-        // uint16_t format ;//	Subtable format; set to 12.
+        uint16_t format ;//	Subtable format; set to 12.
         uint16_t reserved ;//	Reserved; set to 0
         uint32_t length ;//	Byte length of this subtable (including the header)
         uint32_t language ;//	For requirements on use of the language field, see “Use of the language field in 'cmap' subtables” in this document.
         uint32_t numGroups ;//	Number of groupings which follow
         SequentialMapGroup	*groups;//[numGroups]	Array of SequentialMapGroup records.
     }f12;
+    template <>
+    void load<f12>(f12* f, std::ifstream* fi){
+        ld(&(f->reserved),fi, );
+        ld(&(f->length),fi, );
+        ld(&(f->language),fi, );
+        ld(&(f->numGroups),fi, );
+        ld(&(f->groups),fi, f->numGroups );
+    };
 
     typedef struct {
         uint32_t startCharCode ;//	First character code in this group
@@ -140,13 +239,21 @@ uint8_t glyphIdArray[256]//	An array that maps character codes to glyph index va
         uint32_t glyphID ;//	Glyph index to be used for all the characters in the group’s
     }ConstantMapGroup;
     typedef struct {
-        // uint16_t format ;//	Subtable format; set to 13.
+        uint16_t format ;//	Subtable format; set to 13.
         uint16_t reserved ;//	Reserved; set to 0
         uint32_t length ;//	Byte length of this subtable (including the header)
         uint32_t language ;//	For requirements on use of the language field, see “Use of the language field in 'cmap' subtables” in this document.
         uint32_t numGroups ;//	Number of groupings which follow
         ConstantMapGroup	*groups;//[numGroups]	Array of ConstantMapGroup records.
     }f13;
+    template <>
+    void load<f13>(f13* f, std::ifstream* fi){
+        ld(&(f->reserved),fi ,  );
+        ld(&(f->length),fi ,  );
+        ld(&(f->language),fi ,  );
+        ld(&(f->numGroups),fi ,  );
+        ld(&(f->groups),fi, f->numGroups)) ;        
+    };
 
     typedef struct {
         uint24_t varSelector ;//	Variation selector
@@ -154,11 +261,17 @@ uint8_t glyphIdArray[256]//	An array that maps character codes to glyph index va
         Offset32	nonDefaultUVSOffset ;//	Offset from the start of the format 14 subtable to Non-Default UVS table. May be 0.
     }VariationSelector;
     typedef struct {
-        // uint16_t format; //	Subtable format; set to 14.
+        uint16_t format; //	Subtable format; set to 14.
         uint32_t length; //	Byte length of this subtable (including this header)
         uint32_t numVarSelectorRecords; //	Number of variation Selector Records
         VariationSelector	*varSelector;//[numVarSelectorRecords]	Array of VariationSelector records.
     }f14;
+    template <>
+    void load<f14>(f14* f, std::ifstream* fi){
+        ld(&(f->length),fi);
+        ld(&(f->numVarSelectorRecords),fi);
+        ld(&(f->varSelector),fi , f->numVarSelectorRecords );
+    };
 
     typedef union {
         f0 form0;
@@ -168,7 +281,8 @@ uint8_t glyphIdArray[256]//	An array that maps character codes to glyph index va
         f8 form8;
         f10 form10;
         f12 form12;
-        f13 form14;
+        f13 form13;
+        f14 from14 ;
     }cmap_format;
     typedef struct{
         uint24_t startUnicodeValue ;//	First value in this range
@@ -190,7 +304,18 @@ uint8_t glyphIdArray[256]//	An array that maps character codes to glyph index va
         EncodingRecord *encodingRecords;//[numTabes];
         cmap_ftable* ftable ;
     }cmap;
- 
+    
+
+    typedef struct {
+        uint16_t	version ; ///	Table version number—set to 0.
+        uint16_t	numBaseGlyphRecords ; ///	Number of BaseGlyph records.
+        Offset32	baseGlyphRecordsOffset ; ///	Offset to baseGlyphRecords array, from beginning of COLR table.
+        Offset32	layerRecordsOffset ; ///	Offset to layerRecords array, from beginning of COLR table.
+        uint16_t	numLayerRecords ; ///	Number of Layer records.
+    }COLR0
+    typedef union {
+
+    }COLR; 
     //head	//Font header
     typedef struct {
         uint16_t majorVersion ;//	Major version number of the font header table — set to 1.
@@ -378,7 +503,65 @@ int16_t glyphDataFormat	 ; // 0 for current format.
         return Sum;
     };
     typedef union  {
+/*avar
+BASE
+CBDT
+CBLC
+CFF
+CFF2
+cmap
+COLR
+CPAL
+cvar
+cvt
+DSIG
+EBDT
+EBLC
+EBSC
+fpgm
+fvar
+gasp
+GDEF
+glyf
+GPOS
+GSUB
+gvar
+hdmx
+head
+hhea
+hmtx
+HVAR
+JSTF
+kern
+loca
+LTSH
+MATH
+maxp
+MERG
+meta
+MVAR
+PCLT
+post
+prep
+sbix
+STAT
+SVG
+VDMX
+vhea
+vmtx
+VORG
+VVAR*/
+        avar _avar;
+        BASE _BASE;
+        CBDT _CBDT;
+        CBLC _CBLC;
+        CFF _CFF;
+        CFF2 _CFF2;
         cmap _cmap;
+        COLR _COLR;
+        CPAL _CPAL;
+        cvar _cvar;
+        cvt _cvt ; 
         head _head;
         hhea _hhea;
         hmtx _hmtx;
@@ -396,49 +579,53 @@ int16_t glyphDataFormat	 ; // 0 for current format.
         tableu* table;
 
     }font;
-
-    void load_cmap(font* f, cmap* cm, std::ifstream* in,uint ind){
-        pos_t p = in->tellg();
-        in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.version)) ,sizeof(uint16_t)) ;
-        in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.numTables)) ,sizeof(uint16_t)) ;
-        in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.encodingRecords)),sizeof(EncodingRecord * f->table[ind]._cmap.numTables));
-        
-        f->table[ind]._cmap.ftable = new cmap_ftable[cm->numTables]; 
-        for(int i = 0 ; i<cm->numTables;i++ ){
-            Offset32 offset = cm->encodingRecords[i].subtableOffset ;
-            uint16_t format;
-            in->read(reinterpret_cast<char*>(&format),sizeof(uint16_t));
-            f->table[ind]._cmap.ftable[i].format  = format;
+    template <>
+    void load<cmap>(cmap* f,std::ifstream* fi ){
+        ld(f->version ,fi);
+        ld(f->numTables ,fi);
+        ld(f->encodingRecords ,fi  ,  f->numTables );
+        for(int s = 0 ; s<f->numTables){
+            uint16_t format; 
+            fi->read(reinterpret_cast<char*>(&format), sizeof(uint16_t))
             switch(format){
-                case 0 : {in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.ftable[i].cmform.form0),sizeof(f0));break;);
-                case 2 : {  
-                    in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form2.length),sizeof(uint16_t))
-                    in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form2.language),sizeof(uint16_t))
-                    in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form2.subHeaderKeys),sizeof(uint16_t * 256))
-                    in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form2.),sizeof(uint16_t))
-                    
-                    ;break;};
-                case 4 : {in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form4));break;};
-                case 6 : {in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form6));break;};
-                case 8 : {in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form8));break;};
-                case 10 : {in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form10));break;};
-                case 12 : {in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form12));break;}; 
-                case 13 : {in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form13));break;}; 
-                case 14 : {in->read(reinterpret_cast<char*>(&(f->table[ind]._cmap.table[i].cmform.form14));break;}; 
+                case 0 : { f->form0.format = format; load<f0>(f->form0,fi); continue;};
+                case 2 : { f->form2.format = format; load<f2>(f->form2,fi); continue;};
+                case 4 : { f->form4.format = format; load<f4>(f->form4,fi); continue;};
+                case 6 : { f->form6.format = format; load<f6>(f->form6,fi); continue;};
+                case 8 : { f->form8.format = format; load<f8>(f->form8,fi); continue;};
+                case 10 :{ f->form10.format = format; load<f10>(f->form10,fi); continue;};
+                case 12 :{ f->form12.format = format; load<f12>(f->form12,fi); continue;}; 
+                case 13 :{ f->form13.format = format; load<f13>(f->form13,fi); continue;}; 
+                case 14 :{ f->from14.format = format; load<f14>(f->form14,fi); continue;}; 
             };
+      
         };
-    };
-    void load_head(font* f,head* h,std::ifstream* in, uint ind ){
 
     };
-    void load_hhea(font* f, );
-    void load_hmtx(font* f, );
-    void load_maxp(font* f, );
-    void load_name(font* f, );
-    void load_cvt(font* f, );
-    void load_fpgm(font* f, );
-    void load_glyf(font* f, );
-    void load_loca(font* f, );
+    template <>
+    void load<COLR>(COLR* f, std::ifstream fi){
+        
+        fi->read(reinterpret_cast<char*>(),sizeof(f->version));
+        switch()
+    };
+    template<>
+    void load<head>(head* h,std::ifstream fi);
+    template<>
+    void load<hhea>(hhea* h,std::ifstream*  fi);
+    template<>
+    void load<hmtx>(hmtx* h,std::ifstream*  fi);
+    template<>
+    void load<maxp>(maxp* h,std::ifstream*  fi);
+    template<>
+    void load<name>(name* h,std::ifstream*  fi);
+    template<>
+    void load<cvt>(cvt* h,std::ifstream*  fi);
+    template<>
+    void load<fpgm>(fpgm* h,std::ifstream*  fi);
+    template<>
+    void load<glyf>(glyf* h,std::ifstream*  fi);
+    template<>
+    void load<loca>(loca* h,std::ifstream*  fi);
 
     glyf getCharGlyf(font* f , char c){
         f->carmap.
@@ -453,24 +640,23 @@ int16_t glyphDataFormat	 ; // 0 for current format.
     void writeFont(char* path , font* f){
 
     };
-    void loadFont(char* path , font* f) {
-        std::ifstream in(std::string(path)) ;
-        in.read(reinterpret_cast<char*>(f->td);
-        f->tr = new TableRecord[f->td->numTables];
-        f->table = new tableu[f->td->numTables];
+    template <>
+    void load<font>( font* f, std::ifstream* fi) {
+        
+        ld(&(f->td),sizeof(f->td),fi;
+        ld(&(f->tr),fi,sizeof(f->tr[0]) * f->td->numtables));
         for(int i = 0 ; i < f->td.numTables;i++){
-            in.read(reinterpret_cast<char*>(&(f->tr[i])),sizeof(TableRecord));
             switch(f->tr[i].tableTag){
-                case font_tag("cmap") : {load_cmap(f,&(f->table[i]._cmap),&in,i);}; 
-                case font_tag("head") : {in.read(reinterpret_cast<char*>(&(f->table[i]._head)) , f->tr[i].length)};
-                case font_tag("hhea") : {in.read(reinterpret_cast<char*>(&(f->table[i]._hhea)) , f->tr[i].length)};
-                case font_tag("hmtx") : {in.read(reinterpret_cast<char*>(&(f->table[i]._hmtx)) , f->tr[i].length)};
-                case font_tag("maxp") : {in.read(reinterpret_cast<char*>(&(f->table[i]._maxp)) , f->tr[i].length)};
-                case font_tag("name") : {in.read(reinterpret_cast<char*>(&(f->table[i]._name)) , f->tr[i].length)};
-                case font_tag("cvt ") : {in.read(reinterpret_cast<char*>(&(f->table[i]._cvt)) , f->tr[i].length)};
-                case font_tag("fpgm") : {in.read(reinterpret_cast<char*>(&(f->table[i]._fpgm)) , f->tr[i].length)};
-                case font_tag("glyf") : {in.read(reinterpret_cast<char*>(&(f->table[i]._glyf)) , f->tr[i].length)};
-                case font_tag("loca") : {in.read(reinterpret_cast<char*>(&(f->table[i]._loca)) , f->tr[i].length)};
+                case font_tag("cmap") : {load<cmap>(f->table[i]._cmap, fi ); continue;}; 
+                case font_tag("head") : {load<head>(f->table[i]._head, fi ); continue;};
+                case font_tag("hhea") : {load<hhea>(f->table[i]._hhea, fi ); continue;};
+                case font_tag("hmtx") : {load<hmtx>(f->table[i]._hmtx, fi ); continue;};
+                case font_tag("maxp") : {load<maxp>(f->table[i]._maxp, fi ); continue;};
+                case font_tag("name") : {load<name>(f->table[i]._name, fi ); continue;};
+                case font_tag("cvt ") : {load<cvt>(f->table[i]._cvt, fi ); continue;};
+                case font_tag("fpgm") : {load<fpgm>(f->table[i]._fpgm, fi ); continue;};
+                case font_tag("glyf") : {load<glyf>(f->table[i]._glyf, fi ); continue;};
+                case font_tag("loca") : {load<loca>(f->table[i]._loca, fi ); continue;};
             };
         };
         
