@@ -105,7 +105,7 @@ struct polyLine {
     glm::dvec2* pts;
 };
 struct path {
-    
+    int8_t
 };
 struct textPath {
 

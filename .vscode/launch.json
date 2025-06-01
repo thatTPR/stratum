@@ -4,12 +4,16 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
+    
             "name": "(gdb) launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "enter program name, for example ${workspaceFolder}\\int\\xsvs\\SVGdocmozilla\\parsetags.exe",
+            "program": "C:\\Users\\Alexandru.Popp\\learn.microsoft.com\\en-us\\typography\\opentype\\spec\\fontget.exe",
             "MIMode": "gdb",
+            "args": ["cff2"],
+            "cwd" : "${workspaceFolder}",
             "miDebuggerPath": "gdb",
             "setupCommands": [
                 {

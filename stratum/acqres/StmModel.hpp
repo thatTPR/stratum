@@ -1,6 +1,6 @@
 // Tables
-#include <glm/glm.hpp>
-
+#include <glm/fwd.hpp>
+#include <cstdint>
 struct model {
     //primitives
     enum vertexTypes {
@@ -26,7 +26,7 @@ struct model {
         int8_t nameSize; 
         char* name ;
         bool loaded;
-        void loadSector(glM::uvec4 s){
+        void loadSector(glm::uvec4 s){
             
         };
     };
@@ -38,10 +38,10 @@ struct sgen { // Surface generation table
     enum noise {
         perlin,
         simplex,
-        
     };
-    uint8_t noiseMode;
-    uint8_t perlinSeed[255] ;
+    int8_t noiseMode;
+    lowp_int Seed[255] =  ;
 
+    
 
 };

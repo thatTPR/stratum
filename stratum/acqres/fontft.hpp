@@ -412,9 +412,14 @@ typedef union {
     typedef struct {
         CFF2head head;
     }CFF2;
-    template     void ld<CFF2>(CFF2* f , std::ifstream* fi){
+    
 
-    };
+
+
+
+
+
+    
     //cmap	//Character to glyph mapping
     enum PlatformID {
         Unicode=0,
@@ -1251,41 +1256,6 @@ typedef struct {
 }EBDT; 
 
 //EBLC
-
-
-/*/
-The bitDepth field of the BitmapSize record is used to specify the number of levels of gray used in the embedded bitmaps. The following bit depths are supported:
-
-Value	Description
-1	black/white
-2	4 levels of gray
-4	16 levels of gray
-8	256 levels of gray
-
-Bitmap flags
-
-The flags field of the BitmapSize record uses the following flags to indicate the direction of small glyph metrics: horizontal or vertical. The remaining bits are reserved.
-
-Bitmap flags enumeration
-
-Mask	Name	Description
-0x01	HORIZONTAL_METRICS	Horizontal
-0x02	VERTICAL_METRICS	Vertical
-0xFC	Reserved	For future use — set to 0.
-// The colorRef and bitDepth fields are reserved for future enhancements. For monochrome bitmaps they should have the values colorRef=0 and bitDepth=1.
-
-// Associated with the image data for every glyph in a strike is a set of glyph metrics. These glyph metrics describe bounding box height and width, as well as side bearing and advance width information. The following figures illustrate different metric values used for horizontal or vertical layout.
-
-// Glyph line-direction and cross-stream metrics for horizontal text
-// Metrics in horizontal text
-// Glyph line-direction and cross-stream metrics for vertical text
-// Metrics in vertical text
-// Glyph metrics can be found in one of two places. For ranges of glyphs (not necessarily the whole strike) whose metrics may be different for each glyph, the glyph metrics are stored along with the glyph image data in the EBDT table. Details of how this is done are described in the EBDT table chapter. For ranges of glyphs whose metrics are identical for every glyph, significant space can be saved by storing a single copy of the glyph metrics in the IndexSubTable in the EBLC.
-
-// There are also two different formats for glyph metrics: big glyph metrics and small glyph metrics. Big glyph metrics define metrics information for both horizontal and vertical layouts. This is important in fonts (such as Kanji) where both types of layout may be used. Small glyph metrics define metrics information for one layout direction only. Which direction applies, horizontal or vertical, is determined by the flags field in the BitmapSize record.
-
-*/
-
 typedef struct {
     uint16	firstGlyphIndex ;//	First glyph ID of this range.
     uint16	lastGlyphIndex ;//	Last glyph ID of this range (inclusive).
@@ -1293,8 +1263,10 @@ typedef struct {
 }IndexSubtableRecord;
 
 typedef struct {
-    IndexSubtableRecord	indexSubtableRecords;//[numberOfIndexSubtables ]	Array of IndexSubtableRecords.
+    IndexSubtableRecord*	indexSubtableRecords;//[numberOfIndexSubtables ]	Array of IndexSubtableRecords.
 }IndexSubtableList;
+ACQRES(IndexSubtableList)
+USE_ACQRES(IndexSubtableList);
 // The number of IndexSubtableRecord elements is specified by the numberOfIndexSubtables field in the BitmapSize record.
 
 // Records must be sorted by firstGlyphIndex, and records should not have overlapping glyph ID ranges.

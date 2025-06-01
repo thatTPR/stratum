@@ -157,7 +157,8 @@
         "__functional_base": "cpp",
         "__tuple": "cpp",
         "__string": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "__nullptr": "cpp"
     },
     "svg.preview.background": "custom"
 }
