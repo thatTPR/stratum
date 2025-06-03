@@ -45,7 +45,7 @@ void getTb(xmlParser* parser){
         if(parser->cur->value.size()<=2){return;};
         if(parser->cur->value.back().t==1  ){
              if(parser->cur->value.back().d.child->name != "p"){return;}; 
-            xmlParser::eltree el;if( parser->getChildByName(*parser->cur->value.back().d.child,"em",&el)){ 
+            xmlParser::eltree el;if( parser->getChildByName((parser->cur->value.back().d.child),"em",&el)){ 
                 parser->printTree(parser->cur->value.back().d.child);
                 bool foundTable = false;
                 auto cursize =  [&](xmlParser::eltree* el){int size=0 ; for(const auto p: el->value ) {
@@ -61,7 +61,7 @@ void getTb(xmlParser* parser){
                     }
                     else{return;};
 
-                        xmlParser::eltree head ; bool foundTable =  parser->getChildByName(*parser->cur->value.back().d.child,"thead", &head);
+                        xmlParser::eltree head ; bool foundTable =  parser->getChildByName(parser->cur->value.back().d.child,"thead", &head);
                         if(!foundTable){return;};
                         bool type=false ;bool name = false; bool description = false ;
                         for(auto it : head.value){
@@ -73,11 +73,11 @@ void getTb(xmlParser* parser){
                         };
 
                         if(! (type || name || description) ){return;} ;
-                        xmlParser::eltree body ; foundTable = parser->getChildByName(*parser->cur->value.back().d.child,"tbody",&body);
+                        xmlParser::eltree body ; foundTable = parser->getChildByName(parser->cur->value.back().d.child,"tbody",&body);
                         if(!foundTable){return;}
-                        std::vector<xmlParser::eltree> bodyCh = parser->getChildsByName(body,"tr");
+                        std::vector<xmlParser::eltree> bodyCh = parser->getChildsByName(&body,"tr");
                         for( xmlParser::eltree it : bodyCh ){
-                            std::vector<xmlParser::eltree> td = parser->getChildsByName(it,"td");
+                            std::vector<xmlParser::eltree> td = parser->getChildsByName(&it,"td");
                             if(td.size()<=3){
                                 table::field s ;
                                 if(td.size()>0 and td[0].value.size()>0){if(td[0].value.front().t == 0){s.type=it.value.front().d.str;};};
