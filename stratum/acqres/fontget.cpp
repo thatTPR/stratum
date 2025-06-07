@@ -43,13 +43,13 @@ void writeFile(std::ostream& of, table it){
 };
 void getTb(xmlParser* parser){
         if(parser->cur->value.size()<=2){return;};
-        if(parser->cur->value.back().t==1  ){
+        if(parser->cur->value.back().t==xmlParser::eltree::element::Tag::CHILD  ){
              if(parser->cur->value.back().d.child->name != "p"){return;}; 
             xmlParser::eltree el;if( parser->getChildByName((parser->cur->value.back().d.child),"em",&el)){ 
                 parser->printTree(parser->cur->value.back().d.child);
                 bool foundTable = false;
-                auto cursize =  [&](xmlParser::eltree* el){int size=0 ; for(const auto p: el->value ) {
-                    if(p.t==1){size++;};};return size;
+                auto cursize =  [&](xmlParser::eltree* el){int size=0 ; for(const auto& p: el->value ) {
+                    if(p.t==xmlParser::eltree::element::Tag::CHILD){size++;};};return size;
                 };
                 int currsize=  cursize(parser->cur);
                 xmlParser::eltree* current=  parser->cur;
@@ -57,15 +57,15 @@ void getTb(xmlParser* parser){
                 if(parser->cur->value.back().d.child->name == "table"){
                     table n ;
                     if(el.value.size() >0){
-                        if(el.value.front().t == 0){n.name= el.value.front().d.str;};
+                        if(el.value.front().t == xmlParser::eltree::element::Tag::STR){n.name= el.value.front().d.str;};
                     }
                     else{return;};
 
                         xmlParser::eltree head ; bool foundTable =  parser->getChildByName(parser->cur->value.back().d.child,"thead", &head);
                         if(!foundTable){return;};
                         bool type=false ;bool name = false; bool description = false ;
-                        for(auto it : head.value){
-                            if(it.t == 1){
+                        for(const xmlParser::eltree::element& it : head.value){
+                            if(it.t == xmlParser::eltree::element::Tag::CHILD){
                                 if(it.d.str == "Type"){type = true;} ;
                                 if(it.d.str == "Name"){name = true;} ;
                                 if(it.d.str == "Description"){description = true;} ;
@@ -80,8 +80,8 @@ void getTb(xmlParser* parser){
                             std::vector<xmlParser::eltree> td = parser->getChildsByName(&it,"td");
                             if(td.size()<=3){
                                 table::field s ;
-                                if(td.size()>0 and td[0].value.size()>0){if(td[0].value.front().t == 0){s.type=it.value.front().d.str;};};
-                                if(td.size()>1 and td[0].value.size()>0){if(td[1].value.front().t == 0){s.name=it.value.front().d.str;};};
+                                if(td.size()>0 and td[0].value.size()>0){if(td[0].value.front().t == xmlParser::eltree::element::Tag::STR){s.type=it.value.front().d.str;};};
+                                if(td.size()>1 and td[0].value.size()>0){if(td[1].value.front().t == xmlParser::eltree::element::Tag::STR){s.name=it.value.front().d.str;};};
 
                                 if(s.name.size()>0){
                                     size_t pos = s.name.find("[");
@@ -108,16 +108,16 @@ int main(int argc, char* argv[]){
     std::string in = std::string(argv[1]);
     std::string out = std::string(in+".hpp");
     std::cout<<"Crawling file: "<<in<<" to file: "<<out<<std::endl;
-    std::ifstream inf(in);
-    if(inf.is_open()){
-        std::cout<<in<<"Is open"<<std::endl;
-    }
     
     xmlParser p ;
     // p.parse(in);
     // p.print(&p.tree) ;
     ofs.open(out);
-    p.funcFeed(getTb,inf);
+    std::ifstream ins(in);
+    if(ins.is_open()){
+        std::cout<<"Opened file: "<<in<<std::endl;
+    }
+    p.funcFeed(getTb,ins);
     
     // for( table& it : vec ){
     //     writeFile(ofs,it);        

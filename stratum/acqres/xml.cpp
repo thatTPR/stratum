@@ -54,24 +54,21 @@ class elTree {
 };
 class xmlParser {
     public:
-     const std::string start = "<" ;
-     const std::string end = "/>" ;
-
-     const std::string estart = "</";
-     const std::string close  = ">" ;
-
-     const std::string equot = "&quot";
-     const std::string eapos = "&apos";
-     const std::string elt = "&lt";
-     const std::string egt = "&gt";
-     const std::string eamp = "&amp";
-
-     const std::string eq = "=";
-     const std::string quot = "\"";
-     const std::string apos = "\'";
-    //  const std::string lt = "<";
-    //  const std::string gt = ">";
-     const std::string amp = "&";
+      const std::string start = "<" ;
+      const std::string end = "/>" ;
+      const std::string estart = "</";
+      const std::string close  = ">" ;
+      const std::string equot = "&quot";
+      const std::string eapos = "&apos";
+      const std::string elt = "&lt";
+      const std::string egt = "&gt";
+      const std::string eamp = "&amp";
+      const std::string eq = "=";
+      const std::string quot = "\"";
+      const std::string apos = "\'";
+ //   const std::string lt = "<";
+ //   const std::string gt = ">";
+      const std::string amp = "&";
 
      typedef std::pair<std::string ,std::string > attribute;
 
@@ -81,26 +78,27 @@ class xmlParser {
         public:
         eltree* parent;
         std::string name ;
-        union elu {
-            public:
-            std::string str;
-            const eltree* child;
-            elu() {};
-            elu(const std::string& st) : str(st) {};
-            elu(const eltree* ch) : child(ch) {};
-            
-            ~elu() {delete this;};
-        };
         struct element {
-            int8_t t ; // 0:str , 1: el
-            elu d;
-            element() {};
-            element(const element& el) : t(el.t){
-                if(t==0){d.str=el.d.str;}
-                else {d.child = el.d.child;}
-            };
-            element(const std::string& str) : t(0), d(str){};
-            element(const eltree* child) : t(1), d(child){};
+
+            union elu {
+                  eltree* child;
+                  std::string str;
+                elu() {};
+                ~elu() {}
+            } d;
+            enum class Tag{STR,CHILD} t;
+            element(const element& el) : t(el.t) {
+                if(el.t==Tag::STR){new (&d.str) std::string(el.d.str);}
+                if(el.t==Tag::CHILD){d.child= el.d.child;}
+            }
+            element( element& el) : t(el.t) {
+                if(el.t==Tag::STR){new (&d.str) std::string(el.d.str);}
+                if(el.t==Tag::CHILD){d.child= el.d.child;}
+            }
+            element(const std::string& _str):  t(Tag::STR){ new (&d.str) std::string(_str) ;};
+            element(const eltree* _child) : t(Tag::CHILD){ d.child = const_cast<eltree*>(_child) ;};
+            element( std::string& _str) : t(Tag::STR){ new (&d.str) std::string(_str)  ;};
+            element( eltree* _child) : t(Tag::CHILD){ d.child = _child ;};
         };
         
         std::vector<attribute> attributes ;
@@ -113,21 +111,21 @@ class xmlParser {
     eltree tree ;
     bool val(eltree& el,std::string* res,int pos=0){
         for(const eltree::element& it : el.value){
-            if(it.t==0){*res = it.d.str;return true;};
+            if(it.t==eltree::element::Tag::STR){*res = it.d.str;return true;};
         };
         return false;
     };
     bool val(eltree& el,eltree* res,int pos=0){
         for(const eltree::element& it : el.value){
-            if(it.t==1){res =const_cast<eltree*>(it.d.child);return true;};
+            if(it.t==eltree::element::Tag::CHILD){res =const_cast<eltree*>(it.d.child);return true;};
         };
         return false;
     };
     
    
-    bool getChildByName(const eltree* el , std::string name , eltree* res){
+    bool getChildByName( const eltree* el , std::string name , eltree* res){
         for(const eltree::element& it : el->value){
-            if(it.t==0){continue;};
+            if(it.t==eltree::element::Tag::STR){continue;};
             if(it.d.child->name == name){
                 res = const_cast<eltree*>(it.d.child);
                 return true ;
@@ -138,7 +136,7 @@ class xmlParser {
     std::vector<eltree> getChildsByName(const eltree* el ,std::string name){
         std::vector<eltree> res;
         for(const eltree::element& it : el->value){
-            if(it.t == 0){continue;};
+            if(it.t == eltree::element::Tag::STR){continue;};
             if(it.d.child->name == name){
                 res.push_back(*(it.d.child));
           };
@@ -169,39 +167,49 @@ class xmlParser {
     eltree* cur = &tree;
     
     enum tok{
-        sp,
-        lt,
-        gt,
-        quotOpen,
-        apostOpen,
-        value,
-        ltEnd,
-        gtEnd,
-        eqs,
-        name,
-        id,
-        elStart,
-        elval,
-        el,
-        com
+        sp=0,
+        lt=1,
+        gt=2,
+        quotOpen=3,
+        apostOpen=4,
+        value=5,
+        ltEnd=6,
+        gtEnd=7,
+        eqs=8,
+        name=9,
+        id=10,
+        elStart=11,
+        elval=12,
+        el=13,
+        com=14
     };
-     struct lexe {
+    struct lexe {
         tok t;
         std::string d;
+        lexe() {};
+        lexe(lexe& l) : t(l.t)  {
+            d = std::string(l.d);
+        };
+        lexe(const lexe& l) : t(l.t)  {
+            d = std::string(l.d);
+        }
+
+        lexe(tok et,std::string ds){t=et;d=ds;};
+        ~lexe() {};
+        // lexe(tok et,std::string& ds){t=et;d=ds;};
     };
    
     list<lexe> lexq ;
-
+    xmlParser(){lexq.push_back({tok::el,"root"});}
     list<lexe>::iter lexqfind(tok t,list<lexe>::iter s){
-        list<lexe>::iter c(s);
-        for(; c; ++c){
+        for(list<lexe>::iter c(s); c; ++c){
             if(c->t  == t){return c;}
         };
         return lexq.end();
     };
     list<lexe>::iter lexqrfind(tok t, list<lexe>::iter s ){
-        list<lexe>::iter c(s); 
-        for(; c ; --c ){
+ 
+        for(list<lexe>::iter c(s); c ; --c ){
             if(c->t  == t){return c;}
         };
         return lexq.end();
@@ -241,7 +249,7 @@ class xmlParser {
         };
         return i;
     };
-    int lexDepth(){ list<lexe>::iter i = lexqrfind(tok::elStart,lexq.end()-1); int j = 1;
+    int lexDepth(){ list<lexe>::iter i = lexqrfind(tok::elStart,lexq.rbegin()); int j = 1;
         if(!i){return 0;};
         while( i ){ i= lexqrfind(tok::elStart,i) ; j++;};
         return j;
@@ -254,8 +262,9 @@ class xmlParser {
         PRINTQ(lexq)
         for(int i = 0 ; i < line.size();i++){
             if(lexq.back().t == tok::com){
-                if(line[i]=='>'){lexq.pop_back();};
-                continue;};
+                size_t pos = line.find(">");
+                if(pos){lexq.pop_back();i = pos;continue;}
+                else break;};
             auto lval = [&](int p){
                 std::string str;
                     if(p){str = line.substr(i,p-i+1) ; i = p;}
@@ -305,17 +314,15 @@ class xmlParser {
                     };
                 };
                 if(lexq.back().t == tok::elval){
-                        PRINTQ(lexq)
-                        const std::string s = lexq.back().d;
-                        const eltree::element  el= eltree::element(s) ;
-                        cur->value.push_back(eltree::element(el));
+                        // eltree::element el(lexq.back().d); 
+                        cur->value.push_back(eltree::element(lexq.back().d));
                         PRINT(";<")
                         lexq.pop_back();
                 };
                 PRINT(";<")
-                const eltree::element el= eltree::element(cur);
+                eltree* el= new eltree();
                 cur->value.push_back(el);
-                cur = const_cast<eltree*>(cur->value.back().d.child) ;
+                cur = el ;
                 lexq.push_back({tok::lt,"<"});
                 continue;
             };
@@ -324,25 +331,21 @@ class xmlParser {
                 if(k){cur->name = k->d ;
                     while(k){
                         k = lexqfind(tok::eqs, k);
-                        if(k){cur->attributes.push_back({ (j-1)->d,(j+1)->d});k=j+1;}
+                        if(k){cur->attributes.push_back({ (k-1)->d,(k+1)->d});++k;}
                     };
-                }; }
-                else {lexq.push_back({tok::el,""});};
+                }; 
                 lexq.erase(it,lexq.end());
             };
             if(line[i] == '/' && line[i+1]=='>'){PRINT(":/>") // />
-                list<lexe>::iter pos = lexqrfind(tok::lt , lexq.end()-1);
+                list<lexe>::iter pos = lexqrfind(tok::lt , lexq.rbegin());
                 if(pos){ltHandle(pos);};              
                 cur = cur->parent; 
                 i++;
-                lexq.push_back({tok::el,cur->name});
                 continue;
             };
             if(line[i] == '>' ){PRINT(":>") // >
-            
                 PRINTQ(lexq)
-                
-                for(list<lexe>::iter ite=lexq.end() ; ite;--ite) { PRINT("loop")
+                for(list<lexe>::iter ite=lexq.rbegin() ; ite;--ite) { PRINT("loop")
                     switch(ite->t){
                         case tok::lt : { 
                             ltHandle(ite);
@@ -372,11 +375,11 @@ class xmlParser {
                                         else {
                                             if(cur!=(cur->parent->value.front().d.child)){
                                                 list<eltree::element>::iter el = cur->parent->value.end()-1;
-                                                while(el->t != 1){--el;};
+                                                while(el->t != eltree::element::Tag::CHILD){--el;};
                                                 cur=const_cast<eltree*>(el->d.child);}
                                             else{cur=cur->parent;                                                                                              
                                                 list<eltree::element>::iter el=cur->parent->parent->value.end()-1;
-                                                while(el->t != 1){--el;};
+                                                while(el->t != eltree::element::Tag::CHILD){--el;};
                                             };
                                         }                                    
                                     }
@@ -429,17 +432,28 @@ class xmlParser {
         return false;
     };
     void parse(std::string filestr){
-        std::ifstream fi(filestr) ;
-        file =&fi;
+        file = new std::ifstream(filestr) ;
         while(feed());
     };
-    void funcFeed(void (*funct)(xmlParser*) , std::ifstream& filein){
-        file =&filein;
-        while(feed()){
+    void funcFeed(void (*funct)(xmlParser*)){
+          while(feed()){
             funct(this);
         };
-      
     };
+    void funcFeed(void (*funct)(xmlParser*) , std::ifstream& filein){
+        file = &filein ;    
+        funcFeed(funct);
+    };
+    void funcFeed(void (*funct)(xmlParser*) , std::string filein){
+        file = new std::ifstream(filein);
+        if(file->is_open()){
+            std::cout<<"Opened File:"<<filein;
+        }
+        else{std::cout<<"failed to open file";};
+        funcFeed(funct);    
+
+    };
+
 /*
     class pattern {
 
@@ -468,7 +482,7 @@ class xmlParser {
         if(el->value.size()>0){
             std::cout<<std::endl<<sp<<"childs:"<<std::endl;
         spacesi+=4;
-        for(const eltree::element& it : el->value){if(it.t == 1){print((it.d.child),spacesi);};};
+        for(const eltree::element& it : el->value){if(it.t == eltree::element::Tag::CHILD){print((it.d.child),spacesi);};};
         std::cout<<std::endl;
     };};
     void print(const eltree* el){
@@ -480,7 +494,7 @@ class xmlParser {
                 std::cout<<at.first<<"="<<at.second<<" ";  };
             std::cout<<">";int i=0;
             for(const eltree::element& it : el->value){
-                if(it.t == 0){
+                if(it.t == eltree::element::Tag::STR){
                     std::cout<<it.d.str;
                 }
                 else printTree((it.d.child));
@@ -492,8 +506,8 @@ class xmlParser {
         for(const attribute& at : el->attributes  ){file<<" "<<at.first<<"="<<at.second;};
         file<<">";
 
-        for(const eltree::element it : el->value){
-            if(it.t == 0){file<<it.d.str;}
+        for(const eltree::element& it : el->value){
+            if(it.t == eltree::element::Tag::STR){file<<it.d.str;}
             else {write(it.d.child,file);}
         };
         file<<"</"<<el->name<<">";

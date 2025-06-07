@@ -13,7 +13,7 @@
             "program": "C:\\Users\\Alexandru.Popp\\learn.microsoft.com\\en-us\\typography\\opentype\\spec\\fontget.exe",
             "MIMode": "gdb",
             "args": ["cff2"],
-            "cwd" : "${workspaceFolder}",
+            "cwd" : "C:\\Users\\Alexandru.Popp\\learn.microsoft.com\\en-us\\typography\\opentype\\spec\\",
             "miDebuggerPath": "gdb",
             "setupCommands": [
                 {
