@@ -1,0 +1,20 @@
+typedef struct {
+ uint16   majorVersion;
+ uint16   minorVersion;
+ Fixed   fontRevision;
+ uint32   checksumAdjustment;
+ uint32   magicNumber;
+ uint16   flags;
+ uint16   unitsPerEm;
+ LONGDATETIME   created;
+ LONGDATETIME   modified;
+ int16   xMin;
+ int16   yMin;
+ int16   xMax;
+ int16   yMax;
+ uint16   macStyle;
+ uint16   lowestRecPPEM;
+ int16   fontDirectionHint ;
+ int16   indexToLocFormat;
+ int16   glyphDataFormat;
+}/* glyphs that have contours. Glyphs with no contours should be ignored for the purposes of these calculations.only*/;

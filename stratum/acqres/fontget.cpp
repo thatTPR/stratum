@@ -19,7 +19,11 @@ void writeFile(std::ostream& of, table it){
             it.name.insert(pos,"/*");
             it.name+="*/";
         };
-
+        for(int i = 0 ; i < it.name.size();i++){
+            if(it.name[i] =='\''){
+                it.name.erase(it.name.begin());
+            }
+        };
         for(table::field& s :it.strct ){
             if(!s.name.empty()){
                 size_t pos = s.name.find("[");
@@ -45,7 +49,7 @@ void writeFile(std::ostream& of, table it){
                 of<<f.type<<"*   "<<f.name<<";";
                 use = true;
                 fbody+="arr("+f.name+", "+ f.index+ ");\n ";
-                of<<"//"<<f.index;
+                of<<"//"<<"["<<f.index<<"]";
             }
             else {
                 of<<f.type<<"   "<<f.name<<";";
@@ -77,7 +81,7 @@ void onep(int s , std::string str,  table* tb){
     };
 };
 void pattern(std::ifstream& ifs){
-    std::string three = "<p><em $val=0></em></p>\
+    std::string one= "<p><em $val=0></em></p>\
 <table>\
 <tbody>\
 <tr>\
@@ -90,7 +94,7 @@ void pattern(std::ifstream& ifs){
 </tr>\
 </tbody>\
 </table>" ;
-    std::string one = "<p><em $val = 0></em></p>\
+    std::string two = "<p><em $val = 0></em></p>\
 <table>\
 <thead>\
 <tr>\
@@ -105,7 +109,50 @@ void pattern(std::ifstream& ifs){
 </tr>\
 </tbody>\
 </table>" ;
-        std::string two = "<p><em $val = 0></em></p>\
+        std::string three = "<p><em $val = 0></em></p>\
+<table>\
+<tr>\
+<th>Type</th>\
+<th>Name</th>\
+</tr>\
+<tr $iter=1>\
+<td $val=2> </td>\
+<td $val=3> </td>\
+</tr>\
+</table>";
+
+std::string four = "<p><em $val=0></em></p>\
+<p><a></a></p>>\
+<table>\
+<tbody>\
+<tr>\
+<th>Type</th>\
+<th>Name</th>\
+</tr>\
+<tr $iter=1>\
+<td $val=2></td>\
+<td $val=3></td>\
+</tr>\
+</tbody>\
+</table>" ;
+
+std::string five = "<p><em $val=0></em></p>\
+<p><a></a></p>>\
+<table>\
+<tbody>\
+<tr>\
+<th>Type</th>\
+<th>Name</th>\
+</tr>\
+<tr $iter=1>\
+<td $val=2></td>\
+<td $val=3></td>\
+</tr>\
+</tbody>\
+</table>" ;
+
+std::string six = "<p><em $val = 0></em></p>\
+<p><a></a></p>>\
 <table>\
 <tr>\
 <th>Type</th>\
@@ -120,7 +167,10 @@ void pattern(std::ifstream& ifs){
     xmlParser::pattern<table> patone(one, &onep);
     xmlParser::pattern<table> pattwo(two, &onep);
     xmlParser::pattern<table> patthree(three, &onep);
-    std::vector<xmlParser::pattern<table>> patt = {patone,pattwo,patthree};
+    xmlParser::pattern<table> patfour(four, &onep);
+    xmlParser::pattern<table> patfive(five, &onep);
+    xmlParser::pattern<table> patsix(six, &onep);
+    std::vector<xmlParser::pattern<table>> patt = {patone,pattwo,patthree,patfour,patfive,patsix};
     xmlParser p ; p.feed<table>(patt,&execTable,ifs);  
 };
 

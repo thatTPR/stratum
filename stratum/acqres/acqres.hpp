@@ -103,12 +103,12 @@ template <typename> typename FOffOne , \
 template <typename> typename FOffArr , \
 template <typename> typename FOffMany > \
 void acqresf_##type \
-(type f, size_t* s,FOne one ,FArr arr,FOffOne offone,FOffArr offarr,FOffMany offmany  ) \
+(type* f, size_t* s,FOne one ,FArr arr,FOffOne offone,FOffArr offarr,FOffMany offmany  ) \
     /*
     
        return 
-       Func(&(f->sizeMember)) +
-        Func(&(f->memberTwo),f->sizeMember)+
+       Func(&(f->sizeMember)) ;
+        Func(&(f->memberTwo),f->sizeMember);
         OffF(&(f->memberThree),f->offset);
         OffF(&(f->memberArr),sizeMember,f->offset) 
         ; 
@@ -132,7 +132,7 @@ struct acqres{
     template<> size_t size<T>(T* s){
         size_t s = 0;
         std::vector<auto*> offset;
-        auto one = [&s]<typename A>(A* g,) {s+=size(g); };
+        auto one = [&s]<typename A>(A* g) {s+=size(g); };
         auto arr = [&s]<typename A>(A* g,size_t size) {
             for(int i = 0 ; i < size ; i++){
                 s+= size(g[i]);};
@@ -173,7 +173,7 @@ struct acqres{
         };
         return tot ;
    
-    };
+    
     
 
     template<> void ld<T>(T* f, std::ifstream* fi){
@@ -212,7 +212,11 @@ struct acqres{
     };   
 };
 
-
+#define one(n) 
+#define arr(n,c)
+#define offone(n,c)
+#define offarr(s,of,si)
+#define offmany(s,of,offs)
 
 
 

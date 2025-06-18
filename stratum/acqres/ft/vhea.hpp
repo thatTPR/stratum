@@ -1,0 +1,38 @@
+typedef struct {
+Version16Dot16   version;
+FWORD   ascent;
+FWORD   descent;
+FWORD   lineGap;
+UFWORD   advanceHeightMax;
+FWORD   minTop;
+FWORD   minBottom;
+FWORD   yMaxExtent;
+int16   caretSlopeRise;
+int16   caretSlopeRun;
+int16   caretOffset;
+int16   reserved;
+int16   reserved;
+int16   reserved;
+int16   reserved;
+int16   metricDataFormat;
+uint16   numOf;
+}VheaHeader,/* version 1.0*/;
+typedef struct {
+Version16Dot16   version;
+FWORD   vertTypoAscender;
+FWORD   vertTypoDescender;
+FWORD   vertTypoLineGap;
+UFWORD   advanceHeightMax;
+FWORD   minTop;
+FWORD   minBottom;
+FWORD   yMaxExtent;
+int16   caretSlopeRise;
+int16   caretSlopeRun;
+int16   caretOffset;
+int16   reserved;
+int16   reserved;
+int16   reserved;
+int16   reserved;
+int16   metricDataFormat;
+uint16   numOf;
+}VheaHeader,/* version 1.1*/;

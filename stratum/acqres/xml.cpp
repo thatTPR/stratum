@@ -504,10 +504,9 @@ class xmlParser {
                 };
                 iter=true;
                 list<eltree::element>::iter patIter = patt;
-                list<eltree::element>::iter elIter = el; 
-                for(++elIter; elIter ; ++elIter ){
-                    if(!dfsmatch(elIter,patIter,res)){return false;}
-                }
+                list<eltree::element>::iter elIter = el; ++elIter;
+                if(elIter){if(!dfsmatch(elIter,patIter,res)){return false;}}
+                else return true;
             }
             else if(patt->child->attributes.back().first == var){
                 int num = stoit(patt->child->attributes.back().second);
@@ -598,16 +597,19 @@ class xmlParser {
                 sc=1; last = ls; list<eltree::element>::iter lasts = last;
                 for(;last and sc<=it.patSize ;++last){lasts = last;sc++;};
                 last = lasts;
-            }
+            };
+            bool found = false;
             if(sc>= it.patSize and it.pat->value.front().child->name == ls->child->name){
                 if(last){
                     Ty res;
-                    if(it.matchPat(&res,ls)){cb(res);break;};}}
+                    if(it.matchPat(&res,ls)){cb(res); found = true;break;};}}
+                    if(found)break;
             };   
             if(!ls->child->value.empty() and childsnfed  ){
                     list<eltree::element>::iter lastc = ls->child->value.begin();
                     match<Ty>(pats,lastc,cb); childsnfed =false;
-            }
+            };
+            
     };
 };
    

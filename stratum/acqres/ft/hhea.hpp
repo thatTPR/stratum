@@ -1,0 +1,20 @@
+typedef struct {
+uint16   majorVersion;
+uint16   minorVersion;
+FWORD   ascender;
+FWORD   descender;
+FWORD   lineGap;
+UFWORD   advanceWidthMax;
+FWORD   minLeftSideBearing;
+FWORD   minRightSideBearing;
+FWORD   xMaxExtent;
+int16   caretSlopeRise;
+int16   caretSlopeRun;
+int16   caretOffset;
+int16   (reserved);
+int16   (reserved);
+int16   (reserved);
+int16   (reserved);
+int16   metricDataFormat;
+uint16   numberOfHMetrics;
+}/* glyphs that have contours. Glyphs with no contours should be ignored for the purposes of these calculations. All reserved areas must be set to 0.only*/;
