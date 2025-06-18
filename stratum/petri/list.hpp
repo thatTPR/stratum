@@ -2,7 +2,9 @@
 #define LIST_HPP
 #include <initializer_list>
 #include <type_traits>
-#include <iterator>
+#include <utility>
+
+
 template <typename T>
     class list {
         
@@ -24,8 +26,17 @@ template <typename T>
                 next=  r;
                 data = new T(data);
             };
+            
             node( node* pr,const T& d, node* r = nullptr) {
-                node(pr,const_cast<T&>(d),r);};
+                prev = pr ; next = r;
+                data = new T(data);
+            };
+            template <typename U>
+            node(node* _prev, U&& value, node* _next=nullptr) :  data((new T(std::forward<U>(value)))) // ✅ construct T from value
+             {
+                 prev=_prev;next=_next;
+             }
+           
             ~node(){
                 if(data){delete data;};
             };
@@ -40,35 +51,43 @@ template <typename T>
         node* last ;
 
 
-        list() {
+        void init(){
             first =new node();
             last = new node(nullptr,first);
-            
+        }
+        list() {
+            init();
         }
         // list() :Size(0){first = last ;};
         template <typename Ty >
         class iterator {
             public: 
             node* ptr;
+            iterator(Ty& f ){
+                ptr->data = &f;
+            }
             iterator(node* f) {
-                if(f){ptr = f; }
+                ptr = f; 
             };
             iterator(node f){
                 ptr = &f; 
             };
-           
+            
+            iterator<Ty> next(){return iterator<Ty>(ptr->next);};
+            iterator<Ty> prev(){return iterator<Ty>(ptr->prev);};
             node* get(){return ptr;};
             Ty* operator->(){return (ptr->data) ;};
             Ty& operator*(){return *(ptr->data);};
             bool operator==(iterator<Ty>& rhs){return ptr == rhs.ptr ;};
             // bool operator==(iterator<Ty> rhs){return ptr == rhs.ptr;};
+            // bool operator!=(iterator<Ty>& rhs){return ptr != rhs.ptr ;};
             bool operator!=(iterator<Ty>& rhs){return ptr != rhs.ptr ;};
             // bool operator!=(iterator<Ty> rhs){return ptr != rhs.ptr ;};
             void operator++(){ptr=ptr->next;};
             void operator--(){ptr=ptr->prev;};
-            
             iterator<Ty>& operator++(int){ptr=ptr->next;return *this;};
             iterator<Ty>& operator--(int){ptr=ptr->prev;return *this;};
+            
             size_t operator-(iterator<Ty>& rhs ){
                 size_t i = 0 ;
                 iterator<Ty>* t = this ;
@@ -85,7 +104,9 @@ template <typename T>
                 for(int h=s ; h ; h--){++(*this);} 
                 return *this;  
             };
-            explicit operator bool() const {return ptr != nullptr;};
+            explicit operator bool() const {
+                if(ptr){return true;} 
+                else return false;};
             // operator delete(){
             //     delete ptr;
             // };
@@ -107,7 +128,6 @@ template <typename T>
         using rev = reverse_iterator<T>;
         using const_rev = reverse_iterator<const T> ;
 
-        bool empty() const {return last->next == first;};
         T& back(){return  *(last->data);};
         T& front(){return *(first->data);};
         
@@ -129,6 +149,7 @@ template <typename T>
         iter rbegin() { return iter(last);}
         iter end(){ return iter(last)++ ;};
         iter begin(){ return iter(first);};
+        bool empty() const {return (last->next == first);};
         
         
         // iterator::operator bool() const {return this->ptr != last;};
@@ -146,6 +167,7 @@ template <typename T>
            return e - b ;
         };
         size_t size() const {
+            if(empty()){return 0;};
             return SIZE();
         };
 
@@ -156,45 +178,66 @@ template <typename T>
             };
         };
         void insert(T& val, iter& at ){
-            node* s = new node(at.get(),val,at.get()->next) ;
-            if(at->get()->next) at->get->next->prev = s; 
-            at->get()->next = s;            
+            node* s = new node(at.ptr,val,at.ptr->next) ;
+            if(at.ptr->next) at.ptr->next->prev = s; 
+            at.ptr->next = s;            
         };
-        template <typename Tyo>
-        void push(Tyo data){
-            if constexpr ( std::is_reference<Tyo>::value and std::is_pointer<typename std::remove_reference<Tyo>::type>::value ){
-                typename std::remove_reference<Tyo>::type d = data ;
-                 node* s = new node(last,*d);
+        
+       
+        // void push_back( T& data){
+        //         node* s = new node(last, data);
+        //         if(empty()){s->prev = nullptr;
+        //             last = s;
+        //             first= last;
+        //         }
+        //         else {
+        //             last->next= s;
+        //             last = last->next;}
+                    
+            
+        // };
+        void push_back(const T& data){
+                
+                node* s = new node(last, std::move(data));
                 if(empty()){s->prev = nullptr;
-                last = s;
-                first= last;
+                    last = s;
+                    first= last;
                 }
                 else {
-                last->next= s;
-                last = last->next;}
-                return;
-            };
-            node* s = new node(last, data);
-            if(empty()){s->prev = nullptr;
-                last = s;
-                first= last;
-            }
-            else {
-                last->next= s;
-                last = last->next;}
-
-            
+                    last->next= s;
+                    last = last->next;}            
         };
+        void push_back(T&& data){
 
-        // void push_back( T data){push<T>(data);};
-        void push_back( T& data){push<T&>(data);};
-        void push_back(const T& data){push<const T&>(data);};
+            node* s =new node(last,std::forward<T>(data),nullptr);
+                if(empty()){s->prev = nullptr;
+                    last = s;
+                    first= last;
+                }
+                else {
+                    last->next= s;
+                    last = last->next;}            
+        };
+        
+        // void push_back(T* data){
+        //     node* s =new node(last,*data,nullptr);
+        //         if(empty()){s->prev = nullptr;
+        //             last = s;
+        //             first= last;
+        //         }
+        //         else {
+        //             last->next= s;
+        //             last = last->next;}            
+        // };
+
+     
+        // void push_back(const T data){push<const T>(data);};
         
         // void push_back(std::initializer_list<auto> s){push_back(T(s));};
         inline void pop(){
-            if(last == first){
+            if(first == last){
                 delete first;
-                list();return;
+                init();return;
             }
             else 
             {
@@ -208,31 +251,59 @@ template <typename T>
             // if(empty()) {return ;};
             pop() ;
         };
-        void pop(iter& at){
-            iter en = end();
-            if(at == en){return;};
-            iter b =begin();
-            if(at!=b){
-                at.ptr->prev->next = at.ptr->next ;
+        void erase(iter& at){
+            if(at){
+                delete at.ptr;
             };
-            iter r = rend() ;
-            if(at!=r){
-                at.ptr->next->prev = at.ptr->prev;
+        };
+        void pop(iter& at){
+            iter prev=at?at-1:at;
+            iter next=at?at+1:at;
+            erase(at);
+            bool p = false; bool n=false;;
+            if(prev ){p=true;}
+            if(next){n=true;}
+            if(p and n){
+                prev.ptr->next = next.ptr;
+                next.ptr->prev = prev.ptr;
             }
-            delete at.ptr ;
+            else if(p){prev.ptr->next = nullptr;
+                last = prev.ptr;}
+                else if(n){next.ptr->prev = nullptr;
+                    first = prev.ptr;}
+                    else {init();}            
+
         };
         void pop(int at){
-           pop(iter_at(at));
+            pop(iter_at(at));
         };
+        
         void erase(iter from , iter to){
             iter c(from);
-            iter prev = from-1;
-            for(;c!=to;++c){pop(c);}
-            pop(from);
+            iter prev=from?from-1:from;
+            iter next=to?to+1:to;
+            for(node* n = c.ptr ;c!=next ;c = iter(n)){
+                if(n)n=n->next;
+                else break;
+                erase(c);
+            }
+            bool p = false; bool n=false;;
+            if(prev){p=true;}
+            if(next){n=true;}
+            if(p and n){
+                prev.ptr->next = next.ptr;
+                next.ptr->prev = prev.ptr;
+            }
+            else if(p){prev.ptr->next = nullptr;
+                last = prev.ptr;}
+            else if(n){next.ptr->prev = nullptr;
+                first = next.ptr;}
+            else {init();}            
+            
         };
         void clear(){
             if(!empty()){erase(begin(),end());};
-            this = list();
+            init();
         };
 
         T& operator[](int i){

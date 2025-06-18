@@ -1,6 +1,6 @@
 #ifndef ACQXML_CPP
 #define ACQXML_CPP
-#define MACROSP
+// #define MACROSP
 #ifdef MACROSP
 #define PRINT(s) std::cout<< s ;
 #define PRINTQ(S) print(S);
@@ -15,7 +15,9 @@
 #define PRINTE(S)
 #define PRINTT(E) printTree(E);
 #endif
+#include <algorithm>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <stdint.h>
 #include <stdexcept>
@@ -79,31 +81,33 @@ class xmlParser {
         eltree* parent;
         std::string name ;
         struct element {
-
-            union elu {
-                  eltree* child;
-                  std::string str;
-                elu() {};
-                ~elu() {}
-            } d;
-            enum class Tag{STR,CHILD} t;
-            element(const element& el) : t(el.t) {
-                if(el.t==Tag::STR){new (&d.str) std::string(el.d.str);}
-                if(el.t==Tag::CHILD){d.child= el.d.child;}
-            }
-            element( element& el) : t(el.t) {
-                if(el.t==Tag::STR){new (&d.str) std::string(el.d.str);}
-                if(el.t==Tag::CHILD){d.child= el.d.child;}
-            }
-            element(const std::string& _str):  t(Tag::STR){ new (&d.str) std::string(_str) ;};
-            element(const eltree* _child) : t(Tag::CHILD){ d.child = const_cast<eltree*>(_child) ;};
-            element( std::string& _str) : t(Tag::STR){ new (&d.str) std::string(_str)  ;};
-            element( eltree* _child) : t(Tag::CHILD){ d.child = _child ;};
+            std::string str;
+            eltree* child;
+            
+            element(const element& el)  {
+                str = el.str;
+                child= el.child;}
+            element( element& el)  {
+                str = el.str;
+                child= el.child;}
+        
+            element(const std::string& _str) { str = _str ;};
+            element( std::string& _str) { str = _str  ;};
+            element( eltree* _child) { child = _child ;};
         };
         
         std::vector<attribute> attributes ;
+        std::string str;
         list<element> value ;
-        
+        void clear(){
+            eltree* el ;
+            for(element& it : value){
+                it.child->clear();
+                it.str.clear();
+            };
+            name.clear();
+            attributes.clear();
+        };
         eltree() {};
         eltree(const eltree& _Et) : parent(_Et.parent),name(_Et.name),attributes(_Et.attributes) , value(_Et.value) {};
         
@@ -111,34 +115,32 @@ class xmlParser {
     eltree tree ;
     bool val(eltree& el,std::string* res,int pos=0){
         for(const eltree::element& it : el.value){
-            if(it.t==eltree::element::Tag::STR){*res = it.d.str;return true;};
+            *res = it.str;return true;
         };
         return false;
     };
     bool val(eltree& el,eltree* res,int pos=0){
         for(const eltree::element& it : el.value){
-            if(it.t==eltree::element::Tag::CHILD){res =const_cast<eltree*>(it.d.child);return true;};
+            res =(it.child);
         };
         return false;
     };
     
    
-    bool getChildByName( const eltree* el , std::string name , eltree* res){
+    bool getChildByName( const eltree* el , std::string name , eltree** res){
         for(const eltree::element& it : el->value){
-            if(it.t==eltree::element::Tag::STR){continue;};
-            if(it.d.child->name == name){
-                res = const_cast<eltree*>(it.d.child);
+            if(it.child->name == name){
+                *res = (it.child);
                 return true ;
             };
         };
         return false;
     };
-    std::vector<eltree> getChildsByName(const eltree* el ,std::string name){
-        std::vector<eltree> res;
+    std::vector<eltree*> getChildsByName(const eltree* el ,std::string name){
+        std::vector<eltree*> res;
         for(const eltree::element& it : el->value){
-            if(it.t == eltree::element::Tag::STR){continue;};
-            if(it.d.child->name == name){
-                res.push_back(*(it.d.child));
+            if(it.child->name == name){
+                res.push_back(it.child);
           };
         };
         return res;
@@ -195,12 +197,12 @@ class xmlParser {
         }
 
         lexe(tok et,std::string ds){t=et;d=ds;};
-        ~lexe() {};
+        
         // lexe(tok et,std::string& ds){t=et;d=ds;};
     };
    
     list<lexe> lexq ;
-    xmlParser(){lexq.push_back({tok::el,"root"});}
+    xmlParser(){tree.name = "root";  lexq.push_back({tok::el,std::string("root")});}
     list<lexe>::iter lexqfind(tok t,list<lexe>::iter s){
         for(list<lexe>::iter c(s); c; ++c){
             if(c->t  == t){return c;}
@@ -254,8 +256,8 @@ class xmlParser {
         while( i ){ i= lexqrfind(tok::elStart,i) ; j++;};
         return j;
     };
-    bool Strb = false;bool instart; bool inval=false; bool inel=false; bool inclose=false;
-    std::string stri ;
+    bool Strb = false;
+   
     void feed(std::string& line){
         PRINT(std::endl<<"feed: "<<line<<std::endl)
         PRINT("LS:"<<lexq.size()<<std::endl)
@@ -265,14 +267,19 @@ class xmlParser {
                 size_t pos = line.find(">");
                 if(pos){lexq.pop_back();i = pos;continue;}
                 else break;};
-            auto lval = [&](int p){
+            auto lval = [&](size_t p){
                 std::string str;
-                    if(p){str = line.substr(i,p-i+1) ; i = p;}
+                    if(p != std::string::npos){str = line.substr(i,p-i+1) ; i = p;}
                     else {
                         Strb = true;
                         str = line.substr(i);
                     };
-                    this->lexq.push_back({tok::value,str});
+                    switch(lexq.back().t ){
+                        case tok::elval : {lexq.back().d+=line[i]+str;break;}
+                        case tok::eqs : {lexq.push_back({tok::value,line[i]+str});break;}
+                        case tok::el : {lexq.push_back({tok::elval,line[i]+str});break;}
+                        case tok::value : {lexq.back().d+=line[i]+str;break;};
+                    };                    
             };
             if(Strb == true){
                 std::string str; size_t p ; 
@@ -280,50 +287,53 @@ class xmlParser {
                     case '\'' : {p =  line.find("\'");};
                     case '"' : {p = line.find("\"");};
                 };
-                if(p){str = line.substr(0,p); Strb = false;}
+                if(p != std::string::npos){str = line.substr(0,p); Strb = false;}
                 else {str = line; }   
                 lexq.back().d+=str;
                 continue ;
             };
             if(line[i]== '"'){PRINT(":\"")
-                if(lexq.back().t == tok::elval ){lexq.back().d+=line[i];};
-                if(lexq.back().t == tok::elStart){lexq.push_back({tok::elval,std::string()+line[i]});};
                 size_t p = line.find("\"",i+1);
                 lval(p);
                 continue;
             };
             if(line[i] == '\'' ){PRINT(":'")
-                if(lexq.back().t == tok::elval ){lexq.back().d+=line[i];};
-                if(lexq.back().t == tok::elStart){lexq.push_back({tok::elval,std::string()+line[i]});};
                 size_t p = line.find("\'",i+1);
                 lval(p);
                 continue;
             };
             if(line[i]== '='){PRINT(":=")
-                if(lexq.back().t == tok::elval ){stri+=line[i];};
-                if(lexq.back().t == tok::elStart){lexq.push_back({tok::elval,std::string()+line[i]});};
+                if(lexq.back().t == tok::elval ){lexq.back().d+=line[i];continue;};
+                if(lexq.back().t == tok::elStart){lexq.push_back({tok::elval,std::string()+line[i]});continue;};
                 lexq.push_back({tok::eqs,eq});
                 continue ;
             };
             if(line[i] == '<' ){PRINT(":<") // <
-                if(line[i+1] == '/'){ lexq.push_back({tok::ltEnd,""});i++;continue;};
+                if(line[i+1] == '/'){ 
+                    if(lexq.back().t == tok::elval){
+                        if(cur->value.empty()){cur->str = lexq.back().d;}
+                        else {cur->value.back().str =lexq.back().d;}
+                        lexq.pop_back();};
+                    lexq.push_back({tok::ltEnd,std::string()});i++;continue;};
                 if(line[i+1] == '!'){size_t pos = line.find(">",i+1);
                     if(pos){i=pos;continue;}
                     else{
-                        lexq.push_back({tok::com , ""});break;
+                        lexq.push_back({tok::com , std::string()});break;
                     };
                 };
                 if(lexq.back().t == tok::elval){
                         // eltree::element el(lexq.back().d); 
-                        cur->value.push_back(eltree::element(lexq.back().d));
+                        if(cur->value.empty()){cur->str = lexq.back().d;}
+                        else {cur->value.back().str=lexq.back().d;}
                         PRINT(";<")
                         lexq.pop_back();
                 };
                 PRINT(";<")
                 eltree* el= new eltree();
+                el->parent  = cur;
                 cur->value.push_back(el);
                 cur = el ;
-                lexq.push_back({tok::lt,"<"});
+                lexq.push_back({tok::lt,std::string("<")});
                 continue;
             };
             auto ltHandle = [&](list<lexe>::iter it){
@@ -331,7 +341,9 @@ class xmlParser {
                 if(k){cur->name = k->d ;
                     while(k){
                         k = lexqfind(tok::eqs, k);
-                        if(k){cur->attributes.push_back({ (k-1)->d,(k+1)->d});++k;}
+                        list<lexe>::iter prev = k;
+                        list<lexe>::iter next = k;
+                        if(k){cur->attributes.push_back({ (prev--)->d,(next++)->d});++k;}
                     };
                 }; 
                 lexq.erase(it,lexq.end());
@@ -350,45 +362,33 @@ class xmlParser {
                         case tok::lt : { 
                             ltHandle(ite);
                             lexq.push_back({tok::elStart,cur->name});
-                            lexq.push_back({tok::elval,""});
-                            break;                            
+                            lexq.push_back({tok::elval,std::string()});
+                            ite=lexq.begin() ;break;                            
                         };
                         case tok::ltEnd :{
                             list<lexe>::iter k = lexqfind(tok::name , ite);
                             if(k){
-                                PRINT("curName:"<<cur->name << " "<< (ite+1)->d<< " ")
-                                    int s = cur->parent->value.size()-1;
-                                    std::string estr = k->d;std::string dstr;
-                                    while(!( (estr==dstr) and (cur->name==estr) )){                                          
-                                        if(cur->name == estr){
-                                             k = lexqrfind(tok::elStart, k-1);
-                                            //  int j = lexqfind(tok::elval,k);
-                                            //  while(j){cur->data.value.push_back(lexq[j].d);
-                                            //          j = lexqfind(tok::elval,j);};
-                                            if(k){
-                                                dstr = k->d;
-                                                lexq.erase(k,lexq.end());
-                                                if(dstr == estr){break;};
-                                            }
-                                            else {lexq.erase(ite,lexq.end());break;};
-                                        }
-                                        else {
-                                            if(cur!=(cur->parent->value.front().d.child)){
-                                                list<eltree::element>::iter el = cur->parent->value.end()-1;
-                                                while(el->t != eltree::element::Tag::CHILD){--el;};
-                                                cur=const_cast<eltree*>(el->d.child);}
-                                            else{cur=cur->parent;                                                                                              
-                                                list<eltree::element>::iter el=cur->parent->parent->value.end()-1;
-                                                while(el->t != eltree::element::Tag::CHILD){--el;};
-                                            };
-                                        }                                    
-                                    }
+                                PRINT("curName:"<<cur->name << " "<< k->d<< " ")
+                                    std::string estr = k->d; 
+
+                                    for( ;k and !(k->t == tok::elStart and k->d == estr);--k){};
+                                    if(k){lexq.erase(k,lexq.end());}
+                                    else break;
+                                    for(list<eltree::element>::iter el = cur->parent->value.rbegin();
+                                    cur->name!=estr ;--el ){
+                                        if(!el){cur=cur->parent; el = cur->parent->value.rbegin();};
+                                        if(el->child->name == estr){
+                                            cur = el->child;
+                                        }                                        
+                                    };
+                                    
+                                    
                             }
                             else {k = lexqrfind(tok::elStart,ite); if(k){  lexq.erase(k,lexq.end());};};
-                            lexq.push_back({tok::elval,""});
+                            lexq.push_back({tok::elval,std::string()});
                             cur = cur->parent; 
                             PRINTQ(lexq)
-                            break;
+                            ite=lexq.begin();break;
                         };
                         
                     };
@@ -399,23 +399,22 @@ class xmlParser {
             // if(lexq.size()==0){continue;};
             if(isspace(line[i])){ PRINT("S")
                 switch(lexq.back().t){
-                    case tok::elval : {lexq.back().d+=line[i];continue;};
-                    case tok::value : {lexq.push_back({tok::sp,""});continue;};
-                    case tok::name : {lexq.push_back({tok::sp,""});continue;};
-                    case tok::sp : {continue;};
+                    case tok::elval : {lexq.back().d+=line[i];break;};
+                    case tok::value : {lexq.push_back({tok::sp,std::string()});break;};
+                    case tok::name : {lexq.push_back({tok::sp,std::string()});break;};
                 };
                 continue ;
             }
             else {PRINT("Ns")
                 switch(lexq.back().t){
-                    case tok::sp : {lexq.pop_back();lexq.push_back({tok::id,std::string()+line[i]});continue;}
-                    case tok::id : {lexq.back().d+=line[i];continue;};
-                    case tok::eqs : { lexq.push_back({tok::value,""});continue;};
-                    case tok::lt : {lexq.push_back({tok::name,std::string()+line[i]});continue;};
-                    case tok::name : {lexq.back().d+=line[i];continue;};
-                    case tok::value : {lexq.back().d+=line[i];continue;};
-                    case tok::elval : {lexq.back().d+=line[i];continue;};
-                    case tok::ltEnd : {lexq.push_back({tok::name,std::string()+line[i]});continue;};
+                    case tok::sp : {lexq.pop_back();lexq.push_back({tok::id,std::string()+line[i]});break;}
+                    case tok::id : {lexq.back().d+=line[i];break;};
+                    case tok::eqs : { lexq.push_back({tok::value,std::string()+line[i]});break;};
+                    case tok::lt : {lexq.push_back({tok::name,std::string()+line[i]});break;};
+                    case tok::name : {lexq.back().d+=line[i];break;};
+                    case tok::value : {lexq.back().d+=line[i];break;};
+                    case tok::elval : {lexq.back().d+=line[i];break;};
+                    case tok::ltEnd : {lexq.push_back({tok::name,std::string()+line[i]});break;};
                 };
                 continue;
             };
@@ -435,6 +434,8 @@ class xmlParser {
         file = new std::ifstream(filestr) ;
         while(feed());
     };
+
+   
     void funcFeed(void (*funct)(xmlParser*)){
           while(feed()){
             funct(this);
@@ -453,16 +454,185 @@ class xmlParser {
         funcFeed(funct);    
 
     };
-
-/*
-    class pattern {
-
+    void parseStr(std::string xml){
+        std::stringstream s(xml); 
+        while(std::getline(s,line)){
+            feed(line);
+        };
     };
+    template <typename T>
+    class pattern{
+        public:
+        xmlParser* p;
+        eltree* pat;
+        const std::string var = "$val"; // Followed by number giving index of ptr->to member
+        const std::string iterate = "$iter"; // // Followed by number giving index of ptr->to member
+        const std::string opor =  "&|";
+        size_t patSize =0 ; 
+        size_t matches = 0 ;
+        void (*funct)(int,std::string s, T*  ) ;
+        int stoit(std::string& s){
+            int i = 0 ;
+            for(char c : s){
+                int d = c-'0';
+                i=i*10+d;
+            } 
+            return i;
+        };  
+        
+        
+        bool dfsmatch(list<eltree::element>::iter el, list<eltree::element>::iter patt,T* res){
+            if(!patt  ){return true;}
+            if(!el){return false;}
+            if(el->child->name != patt->child->name){return false;};
+            bool iter = false;
+            if(!patt->child->value.empty()){
+                if(!patt->child->attributes.empty()){
+            if( patt->child->attributes.back().first == iterate){iter=true;
+                funct(stoit(patt->child->attributes.back().second),std::string(),res);
+            };};
+                if(el->child->value.empty()){return false;};
+                list<eltree::element>::iter patIter = patt->child->value.begin();
+                list<eltree::element>::iter elIter = el->child->value.begin(); 
+                if(!dfsmatch(elIter,patIter,res)){return false;};
+            }
+            if(!patt->child->attributes.empty()){;
+            if( patt->child->attributes.back().first == iterate){
+                if(!iter){
+                    int num = stoit(patt->child->attributes.back().second);
+                    funct(num,std::string(),res);
+                };
+                iter=true;
+                list<eltree::element>::iter patIter = patt;
+                list<eltree::element>::iter elIter = el; 
+                for(++elIter; elIter ; ++elIter ){
+                    if(!dfsmatch(elIter,patIter,res)){return false;}
+                }
+            }
+            else if(patt->child->attributes.back().first == var){
+                int num = stoit(patt->child->attributes.back().second);
+                std::string value =el->str;
+                value+=el->child->str;
+                for(eltree::element& it: el->child->value){
+                value+=it.str;}
+                funct(num,value,res);}
+            };
+            
+                if(!iter){
+                list<eltree::element>::iter  patti= patt;
+                list<eltree::element>::iter eli= el;
+                ++eli;++patti;
+                if(eli ) {if(!dfsmatch(eli,patti,res)){return false;}}
+                else if(patti){return false;}
+
+            }
+            return true;
+        };      
+        bool matchPat( T* res, list<eltree::element>::iter& l){
+            
+            list<eltree::element>::iter last = l;
+                       
+            list<eltree::element>::iter patlast = pat->value.begin();
+            if(!last){return false;};
+            
+            if(last->child->name == patlast->child->name ){
+                bool s  = dfsmatch(last,patlast,res);
+                if(s){
+                    return true;}
+                else return false; 
+            };
+            return false;
+    };
+        pattern(std::string xml , void (*f)(int,std::string,T* tb) ){
+            funct = f;
+            p = new xmlParser();
+            p->parseStr(xml);
+            pat = &p->tree;
+            patSize = 0;
+            for( eltree::element& it : pat->value  ){patSize++;}
+        };
+    };
+ 
+    bool open(list<eltree::element>::iter el){
+        if(el.next()){return false;};
+        list<lexe>::iter s = lexqrfind(tok::elStart,lexq.rbegin());
+        std::string parentName = el->child->parent->name;
+        for(;s;--s){
+            if(s->t == tok::elStart){
+                if(s->d == el->child->name){return parentName == s.prev()->d? true : false;}
+            }
+        }
+        return false;
+    };
+     bool lastEl(list<eltree::element>::iter el){
+        bool op = open(el);
+        if(op){
+                for(bool fd = feed();open(el); fd=feed()){};
+            if(el.next())return false;
+            else return true;
+        }
+        else {
+            if(el.next())return false;
+            else return true;
+        }
+    };
+
+    template <typename Ty>
+    void match(std::vector<pattern<Ty>>& pats,list<eltree::element>::iter l , void (*cb)(Ty) ){        
+        list<eltree::element>::iter ls = l;
+        for(;ls;++ls){
+            for(bool fd=feed();ls->child->name.length()==0 and fd ; fd=feed()){};
+            bool childsnfed= true;          
+            list<eltree::element>::iter last = ls;  
+            for(pattern<Ty>& it : pats){  
+            size_t sc=1;
+            last = ls;list<eltree::element>::iter lasts = last;
+            for(;last and sc<=it.patSize ;++last){lasts = last;sc++;};
+            last = lasts;
+            for( bool fd = feed();sc<it.patSize and !lastEl(last) and fd;fd = feed() ){ 
+                 if(!ls->child->value.empty() and childsnfed  ){
+                    list<eltree::element>::iter lastc = ls->child->value.begin();
+                    match<Ty>(pats,lastc,cb);childsnfed = false;
+                }
+                if( it.pat->value.front().child->name != ls->child->name){break;};
+                sc=1; last = ls; list<eltree::element>::iter lasts = last;
+                for(;last and sc<=it.patSize ;++last){lasts = last;sc++;};
+                last = lasts;
+            }
+            if(sc>= it.patSize and it.pat->value.front().child->name == ls->child->name){
+                if(last){
+                    Ty res;
+                    if(it.matchPat(&res,ls)){cb(res);break;};}}
+            };   
+            if(!ls->child->value.empty() and childsnfed  ){
+                    list<eltree::element>::iter lastc = ls->child->value.begin();
+                    match<Ty>(pats,lastc,cb); childsnfed =false;
+            }
+    };
+};
+   
+    template <typename T>
+    void feed(std::vector<pattern<T>>& pat, void (*cb)(T), std::ifstream& filein){ 
+        file = &filein;
+        list<eltree::element>::iter last = tree.value.begin();
+        while(feed()){
+            if(tree.value.size()>0){
+                last = tree.value.begin();
+                if(last)break;
+            }
+        };
+        // list<eltree::element>::iter parent(eltree::element(&tree));
+        match<T>(pat,last,cb);
+    };
+    template <typename T>
+    void feed(pattern<T>& pat, void (*cb)(T),std::ifstream& filein){
+        std::vector<pattern<T>> p  = {pat};
+        feed<T>(p,cb,filein);
+    };
+ 
     
-    std::vector<T> pattern(pattern p, void (*cb)() ) {
 
-    };
-*/
+
 
 
     void print(const eltree* el , size_t space){ 
@@ -482,22 +652,21 @@ class xmlParser {
         if(el->value.size()>0){
             std::cout<<std::endl<<sp<<"childs:"<<std::endl;
         spacesi+=4;
-        for(const eltree::element& it : el->value){if(it.t == eltree::element::Tag::CHILD){print((it.d.child),spacesi);};};
+        for(const eltree::element& it : el->value){print((it.child),spacesi);};};
         std::cout<<std::endl;
-    };};
+    };
     void print(const eltree* el){
         print(el,0);
     };
     void printTree(const eltree* el){
-            std::cout<<"<"<<el->name<<" ";
+            std::cout<<"<"<<el->name;
             for(const attribute& at : el->attributes){
-                std::cout<<at.first<<"="<<at.second<<" ";  };
+                std::cout<<" "<<at.first<<"="<<at.second;  };
             std::cout<<">";int i=0;
             for(const eltree::element& it : el->value){
-                if(it.t == eltree::element::Tag::STR){
-                    std::cout<<it.d.str;
-                }
-                else printTree((it.d.child));
+                std::cout<<it.str;
+                printTree((it.child));
+                
             };
             std::cout<<"</"<<el->name<<">"<<std::endl;
 };
@@ -506,9 +675,10 @@ class xmlParser {
         for(const attribute& at : el->attributes  ){file<<" "<<at.first<<"="<<at.second;};
         file<<">";
 
+        file<<el->str;
         for(const eltree::element& it : el->value){
-            if(it.t == eltree::element::Tag::STR){file<<it.d.str;}
-            else {write(it.d.child,file);}
+            file<<it.str;
+             write(it.child,file);
         };
         file<<"</"<<el->name<<">";
     };
@@ -519,7 +689,10 @@ class xmlParser {
 
     void searchFile();// TOOD
     // xmlParser(xmlParser& p) : cur() {};
-
+    ~xmlParser(){
+        lexq.clear();
+        tree.clear();
+    }
 };
 
 /*
