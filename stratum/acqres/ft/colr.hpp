@@ -1,22 +1,8 @@
 typedef struct {
-uint16   version;
-uint16   numBaseGlyphRecords;
-Offset32   baseGlyphRecordsOffset;
-Offset32   layerRecordsOffset;
-uint16   numLayerRecords;
-}COLR/* version 0:*/;
-typedef struct {
-uint16   version;
-uint16   numBaseGlyphRecords;
-Offset32   baseGlyphRecordsOffset;
-Offset32   layerRecordsOffset;
-uint16   numLayerRecords;
-Offset32   baseGlyphListOffset;
-Offset32   layerListOffset;
-Offset32   clipListOffset;
-Offset32   varIndexMapOffset;
-Offset32   itemVariationStoreOffset;
-}COLR/* version 1:*/;
+   uint16   glyphID;
+   uint16   paletteIndex;
+}Layer/* record:*/;
+
 typedef struct {
 uint16   glyphID;
 uint16   firstLayerIndex;
@@ -24,29 +10,25 @@ uint16   numLayers;
 }BaseGlyph/* record:*/;
 typedef struct {
 uint16   glyphID;
-uint16   paletteIndex;
-}Layer/* record:*/;
+Offset32   paintOffset;
+}BaseGlyphPaintRecord;
 typedef struct {
 uint32   numBaseGlyphPaintRecords;
 BaseGlyphPaintRecord*   baseGlyphPaintRecords;//[numBaseGlyphPaintRecords]
 }BaseGlyphList/* table:*/;
 ACQRES(BaseGlyphList/* table:*/){
-one(numBaseGlyphPaintRecords);
-arr(baseGlyphPaintRecords, numBaseGlyphPaintRecords);
+one((f.numBaseGlyphPaintRecords));
+arr(f.baseGlyphPaintRecords, f.numBaseGlyphPaintRecords);
  };
 USE_ACQRES(BaseGlyphList/* table:*/)
 
-typedef struct {
-uint16   glyphID;
-Offset32   paintOffset;
-}BaseGlyphPaintRecord:;
 typedef struct {
 uint32   numLayers;
 Offset32*   paintOffsets;//[numLayers]
 }LayerList/* table:*/;
 ACQRES(LayerList/* table:*/){
-one(numLayers);
-arr(paintOffsets, numLayers);
+one((f.numLayers));
+arr(f.paintOffsets, f.numLayers);
  };
 USE_ACQRES(LayerList/* table:*/)
 
@@ -56,9 +38,9 @@ uint32   numClips;
 Clip*   clips;//[numClips]
 }ClipList/* table:*/;
 ACQRES(ClipList/* table:*/){
-one(format);
-one(numClips);
-arr(clips, numClips);
+one((f.format));
+one((f.numClips));
+arr(f.clips, f.numClips);
  };
 USE_ACQRES(ClipList/* table:*/)
 
@@ -99,9 +81,9 @@ uint16   numStops;
 ColorStop*   colorStops;//[numStops]
 }ColorLine/* table:*/;
 ACQRES(ColorLine/* table:*/){
-one(extend);
-one(numStops);
-arr(colorStops, numStops);
+one((f.extend));
+one((f.numStops));
+arr(f.colorStops, f.numStops);
  };
 USE_ACQRES(ColorLine/* table:*/)
 
@@ -111,35 +93,35 @@ uint16   numStops;
 VarColorStop*   colorStops;//[numStops]
 }VarColorLine/* table:*/;
 ACQRES(VarColorLine/* table:*/){
-one(extend);
-one(numStops);
-arr(colorStops, numStops);
+one((f.extend));
+one((f.numStops));
+arr(f.colorStops, f.numStops);
  };
 USE_ACQRES(VarColorLine/* table:*/)
 
+enum Extend {
+EXTEND_PAD=0,
+EXTEND_REPEAT=1,
+EXTEND_REFLECT=2
+};
 typedef struct {
-0   EXTEND_PAD;
-1   EXTEND_REPEAT;
-2   EXTEND_REFLECT;
-}Extend/* enumeration:*/;
-typedef struct {
-uint8   format;
+// uint8   format;
 uint8   numLayers;
 uint32   firstLayerIndex;
-}PaintColrLayers/* table (format 1):*/;
+}colrf1;//PaintColrLayers
 typedef struct {
-uint8   format;
+// uint8   format;
 uint16   paletteIndex;
 F2DOT14   alpha;
-}PaintSolid/* table (format 2):*/;
+}colrf2;//PaintSolid table ;
 typedef struct {
-uint8   format;
+// uint8   format;
 uint16   paletteIndex;
 F2DOT14   alpha;
 uint32   varIndexBase;
-}PaintVarSolid/* table (format 3):*/;
+}colrf3;//PaintVarSolid/* table (format 3):*/;
 typedef struct {
-uint8   format;
+// uint8   format;
 Offset24   colorLineOffset;
 FWORD   x0;
 FWORD   y0;
@@ -147,9 +129,9 @@ FWORD   x1;
 FWORD   y1;
 FWORD   x2;
 FWORD   y2;
-}PaintLinearGradient/* table (format 4):*/;
+}colrf4;//PaintLinearGradient/* table (format 4):*/;
 typedef struct {
-uint8   format;
+// uint8   format;
 Offset24   colorLineOffset;
 FWORD   x0;
 FWORD   y0;
@@ -158,9 +140,9 @@ FWORD   y1;
 FWORD   x2;
 FWORD   y2;
 uint32   varIndexBase;
-}PaintVarLinearGradient/* table (format 5):*/;
+}colrf5;//PaintVarLinearGradient/* table (format 5):*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   colorLineOffset;
 FWORD   x0;
 FWORD   y0;
@@ -168,9 +150,9 @@ UFWORD   radius0;
 FWORD   x1;
 FWORD   y1;
 UFWORD   radius1;
-}PaintRadialGradient/* table (format 6):*/;
+}colrf6 ;//PaintRadialGradient:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   colorLineOffset;
 FWORD   x0;
 FWORD   y0;
@@ -179,43 +161,43 @@ FWORD   x1;
 FWORD   y1;
 UFWORD   radius1;
 uint32   varIndexBase;
-}PaintVarRadialGradient/* table (format 7):*/;
+}colrf7 ;//PaintVarRadialGradient:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   colorLineOffset;
 FWORD   centerX;
 FWORD   centerY;
 F2DOT14   startAngle;
 F2DOT14   endAngle;
-}PaintSweepGradient/* table (format 8):*/;
+}colrf8 ;//PaintSweepGradient:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   colorLineOffset;
 FWORD   centerX;
 FWORD   centerY;
 F2DOT14   startAngle;
 F2DOT14   endAngle;
 uint32   varIndexBase;
-}PaintVarSweepGradient/* table (format 9):*/;
+}colrf9 ;//PaintVarSweepGradient:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 uint16   glyphID;
-}PaintGlyph/* table (format 10):*/;
+}colrf10 ;//PaintGlyph:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 uint16   glyphID;
-}PaintColrGlyph/* table (format 11):*/;
+}colrf11 ;//PaintColrGlyph:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 Offset24   transformOffset;
-}PaintTransform/* table (format 12):*/;
+}colrf12 ;//PaintTransform:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 Offset24   transformOffset;
-}PaintVarTransform/* table (format 13):*/;
+}colrf13 ;//PaintVarTransform:*/;
 typedef struct {
 Fixed   xx;
 Fixed   yx;
@@ -234,166 +216,311 @@ Fixed   dy;
 uint32   varIndexBase;
 }VarAffine2x3/* table:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 FWORD   dx;
 FWORD   dy;
-}PaintTranslate/* table (format 14):*/;
+}colrf14 ;//PaintTranslate:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 FWORD   dx;
 FWORD   dy;
 uint32   varIndexBase;
-}PaintVarTranslate/* table (format 15):*/;
+}colrf15 ;//PaintVarTranslate:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scaleX;
 F2DOT14   scaleY;
-}PaintScale/* table (format 16):*/;
+}colrf16 ;//PaintScale:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scaleX;
 F2DOT14   scaleY;
 uint32   varIndexBase;
-}PaintVarScale/* table (format 17):*/;
+}colrf17 ;//PaintVarScale:*/;
 typedef struct {
-uint8   format;
-Offset24   paintOffset;
-F2DOT14   scaleX;
-F2DOT14   scaleY;
-FWORD   centerX;
-FWORD   centerY;
-}PaintScaleAroundCenter/* table (format 18):*/;
-typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scaleX;
 F2DOT14   scaleY;
 FWORD   centerX;
 FWORD   centerY;
-uint32   varIndexBase;
-}PaintVarScaleAroundCenter/* table (format 19):*/;
+}colrf18 ;//PaintScaleAroundCenter:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
+Offset24   paintOffset;
+F2DOT14   scaleX;
+F2DOT14   scaleY;
+FWORD   centerX;
+FWORD   centerY;
+uint32   varIndexBase;
+}colrf19 ;//PaintVarScaleAroundCenter:*/;
+typedef struct {
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scale;
-}PaintScaleUniform/* table (format 20):*/;
+}colrf20 ;//PaintScaleUniform:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scale;
 uint32   varIndexBase;
-}PaintVarScaleUniform/* table (format 21):*/;
+}colrf21 ;//PaintVarScaleUniform:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scale;
 FWORD   centerX;
 FWORD   centerY;
-}PaintScaleUniformAroundCenter/* table (format 22):*/;
+}colrf22 ;//PaintScaleUniformAroundCenter:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scale;
 FWORD   centerX;
 FWORD   centerY;
 uint32   varIndexBase;
-}PaintVarScaleUniformAroundCenter/* table (format 23):*/;
+}colrf23 ;//PaintVarScaleUniformAroundCenter:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   angle;
-}PaintRotate/* table (format 24):*/;
+}colrf24 ;//PaintRotate:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   angle;
 uint32   varIndexBase;
-}PaintVarRotate/* table (format 25):*/;
+}colrf25 ;//PaintVarRotate:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   angle;
 FWORD   centerX;
 FWORD   centerY;
-}PaintRotateAroundCenter/* table (format 26):*/;
+}colrf26 ;//PaintRotateAroundCenter:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   angle;
 FWORD   centerX;
 FWORD   centerY;
 uint32   varIndexBase;
-}PaintVarRotateAroundCenter/* table (format 27):*/;
+}colrf27 ;//PaintVarRotateAroundCenter:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
-}PaintSkew/* table (format 28):*/;
+}colrf28 ;//PaintSkew:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
 uint32   varIndexBase;
-}PaintVarSkew/* table (format 29):*/;
+}colrf29 ;//PaintVarSkew:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
 FWORD   centerX;
 FWORD   centerY;
-}PaintSkewAroundCenter/* table (format 30):*/;
+}colrf30 ;//PaintSkewAroundCenter:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   paintOffset;
 F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
 FWORD   centerX;
 FWORD   centerY;
 uint32   varIndexBase;
-}PaintVarSkewAroundCenter/* table (format 31):*/;
+}colrf31 ;//PaintVarSkewAroundCenter:*/;
 typedef struct {
-uint8   format;
+\\uint8   format;
 Offset24   sourcePaintOffset;
 uint8   compositeMode;
 Offset24   backdropPaintOffset;
-}PaintComposite/* table (format 32):*/;
+}colrf32 ;//PaintComposite:*/;
+enum CompositeMode {
+   COMPOSITE_CLEAR=0,
+   COMPOSITE_SRC=1,
+   COMPOSITE_DEST=2,
+   COMPOSITE_SRC_OVER=3,
+   COMPOSITE_DEST_OVER=4,
+   COMPOSITE_SRC_IN=5,
+   COMPOSITE_DEST_IN=6,
+   COMPOSITE_SRC_OUT=7,
+   COMPOSITE_DEST_OUT=8,
+   COMPOSITE_SRC_ATOP=9,
+   COMPOSITE_DEST_ATOP=10,
+   COMPOSITE_XOR=11,
+   COMPOSITE_PLUS=12,
+   COMPOSITE_SCREEN=13,
+   COMPOSITE_OVERLAY=14,
+   COMPOSITE_DARKEN=15,
+   COMPOSITE_LIGHTEN=16,
+   COMPOSITE_COLOR_DODGE=17,
+   COMPOSITE_COLOR_BURN=18,
+   COMPOSITE_HARD_LIGHT=19,
+   COMPOSITE_SOFT_LIGHT=20,
+   COMPOSITE_DIFFERENCE=21,
+   COMPOSITE_EXCLUSION=22,
+   COMPOSITE_MULTIPLY=23,
+   COMPOSITE_HSL_HUE=24,
+   COMPOSITE_HSL_SATURATION=25,
+   COMPOSITE_HSL_COLOR=26,
+   COMPOSITE_HSL_LUMINOSITY=27
+};
+
+union colrfu {
+   colrf1 f1;
+   colrf2 f2;
+   colrf3 f3;
+   colrf4 f4;
+   colrf5 f5;
+   colrf6 f6;
+   colrf7 f7;
+   colrf8 f8;
+   colrf9 f9;
+   colrf10 f10;
+   colrf11 f11;
+   colrf12 f12;
+   colrf13 f13;
+   colrf14 f14;
+   colrf15 f15;
+   colrf16 f16;
+   colrf17 f17;
+   colrf18 f18;
+   colrf19 f19;
+   colrf20 f20;
+   colrf21 f21;
+   colrf22 f22;
+   colrf23 f23;
+   colrf24 f24;
+   colrf25 f25;
+   colrf26 f26;
+   colrf27 f27;
+   colrf28 f28;
+   colrf29 f29;
+   colrf30 f30;
+   colrf31 f31;
+   colrf32 f32;
+}
+
 typedef struct {
-   ;
-0   COMPOSITE_CLEAR;
-1   COMPOSITE_SRC;
-2   COMPOSITE_DEST;
-3   COMPOSITE_SRC_OVER;
-4   COMPOSITE_DEST_OVER;
-5   COMPOSITE_SRC_IN;
-6   COMPOSITE_DEST_IN;
-7   COMPOSITE_SRC_OUT;
-8   COMPOSITE_DEST_OUT;
-9   COMPOSITE_SRC_ATOP;
-10   COMPOSITE_DEST_ATOP;
-11   COMPOSITE_XOR;
-12   COMPOSITE_PLUS;
-   ;
-13   COMPOSITE_SCREEN;
-14   COMPOSITE_OVERLAY;
-15   COMPOSITE_DARKEN;
-16   COMPOSITE_LIGHTEN;
-17   COMPOSITE_COLOR_DODGE;
-18   COMPOSITE_COLOR_BURN;
-19   COMPOSITE_HARD_LIGHT;
-20   COMPOSITE_SOFT_LIGHT;
-21   COMPOSITE_DIFFERENCE;
-22   COMPOSITE_EXCLUSION;
-23   COMPOSITE_MULTIPLY;
-   ;
-24   COMPOSITE_HSL_HUE;
-25   COMPOSITE_HSL_SATURATION;
-26   COMPOSITE_HSL_COLOR;
-27   COMPOSITE_HSL_LUMINOSITY;
-}CompositeMode/* enumeration:*/;
+   uint8 format;
+   colrfu f;
+}colrf;
+ACQRES(colrf){
+   one((f.format));
+   switch(f.format){
+      case 1: {one(f.f1);};
+      case 2: {one(f.f2);};
+      case 3: {one(f.f3);};
+      case 4: {one(f.f4);};
+      case 5: {one(f.f5);};
+      case 6: {one(f.f6);};
+      case 7: {one(f.f7);};
+      case 8: {one(f.f8);};
+      case 9: {one(f.f9);};
+      case 10: {one(f.f10);};
+      case 11: {one(f.f11);};
+      case 12: {one(f.f12);};
+      case 13: {one(f.f13);};
+      case 14: {one(f.f14);};
+      case 15: {one(f.f15);};
+      case 16: {one(f.f16);};
+      case 17: {one(f.f17);};
+      case 18: {one(f.f18);};
+      case 19: {one(f.f19);};
+      case 20: {one(f.f20);};
+      case 21: {one(f.f21);};
+      case 22: {one(f.f22);};
+      case 23: {one(f.f23);};
+      case 24: {one(f.f24);};
+      case 25: {one(f.f25);};
+      case 26: {one(f.f26);};
+      case 27: {one(f.f27);};
+      case 28: {one(f.f28);};
+      case 29: {one(f.f29);};
+      case 30: {one(f.f30);};
+      case 31: {one(f.f31);};
+      case 32: {one(f.f32);};
+   }
+}
+
+typedef struct {
+// uint16   version;
+uint16   numBaseGlyphRecords;
+Offset32   baseGlyphRecordsOffset;
+Offset32   layerRecordsOffset;
+uint16   numLayerRecords;
+// OffsetTables;
+BaseGlyph* baseGlyphRecords;
+Layer* layerRecords ;
+}COLR0;
+ACQRES(COLR0){
+   one((f.numBaseGlyphRecords));
+   one((f.baseGlyphRecordsOffset));
+   one((f.layerRecordsOffset));
+   one((f.numLayerRecords));
+   offarr((f.baseGlyphRecords),f.baseGlyphRecordsOffset,f.numBaseGlyphRecords);
+   offarr((f.layerRecords),f.layerRecordsOffset,f.numLayerRecords); 
+}
+USE_ACQRES(COLR1)
+typedef struct {
+// uint16   version;
+uint16   numBaseGlyphRecords;
+Offset32   baseGlyphRecordsOffset;
+Offset32   layerRecordsOffset;
+uint16   numLayerRecords;
+Offset32   baseGlyphListOffset;
+Offset32   layerListOffset;
+Offset32   clipListOffset;
+Offset32   varIndexMapOffset;
+Offset32   itemVariationStoreOffset;
+// OffsetTables;
+BaseGlyph* baseGlyphRecords;
+Layer* layerRecords ;
+BaseGlyphList baseGlyphList;
+LayerList layerList;
+ClipList clipList;
+}COLR1;
+ACQRES(COLR1){
+   one((f.numBaseGlyphRecords));
+   one((f.baseGlyphRecordsOffset));
+   one((f.layerRecordsOffset));
+   one((f.numLayerRecords));
+   one((f.baseGlyphListOffset));
+   one((f.layerListOffset));
+   one((f.clipListOffset));
+   one((f.varIndexMapOffset));
+   one((f.itemVariationStoreOffset));
+   offarr((f.baseGlyphRecords),f.baseGlyphRecordsOffset,f.numBaseGlyphRecords);
+   offarr((f.layerRecords),f.layerRecordsOffset,f.numLayerRecords);
+   offone((f.baseGlyphList),f.baseGlyphListOffset);
+   offone((f.layerList),f.layerListOffset);
+   offone((f.clipList),f.clipListOffset);
+}
+USE_ACQRES(COLR1)
+
+typedef struct {
+   uint16 version;
+   union  {
+   COLR0 c0;
+   COLR1 c1;
+} c;
+}COLR;
+ACQRES(COLR){
+   one((f.version));
+   switch(f.version){
+      case 0 : {one((f.c.c0));};
+      case 1 : (one((f.c.c1)););
+   };
+}
+USE_ACQRES(COLR)

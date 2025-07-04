@@ -318,7 +318,10 @@ template <typename T>
                 push_back(it);
             };
         };  
-        
+        void resize(int s){
+            int dif = s - size();
+            for(;dif;--dif){push(T());};
+        };
         void operator=(std::initializer_list<T>& inl){
             list(l);
         };

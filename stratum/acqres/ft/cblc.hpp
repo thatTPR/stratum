@@ -1,17 +1,7 @@
-typedef struct {
-uint16   majorVersion;
-uint16   minorVersion;
-uint32   numSizes;
-BitmapSize*   bitmapSizes;//[numSizes]
-}CblcHeader;
-ACQRES(CblcHeader){
-one(majorVersion);
-one(minorVersion);
-one(numSizes);
-arr(bitmapSizes, numSizes);
- };
-USE_ACQRES(CblcHeader)
-
+#ifndef FTCBLC_HPP
+#define FTCBLC_HPP
+#include "eblc.hpp"
+#include "ebdt.hpp"
 typedef struct {
 Offset32   indexSubtableListOffset;
 uint32   indexSubtableListSize;
@@ -25,4 +15,26 @@ uint8   ppemX;
 uint8   ppemY;
 uint8   bitDepth;
 int8   flags;
-}BitmapSize/* record*/;
+}BitmapSize;
+BitmapSize _BitmapSize ;
+ACQRES(BitmapSize){
+    one(f);
+    _BitmapSize = f;
+}
+USE_ACQRES(BitmapSize)
+
+typedef struct {
+uint16   majorVersion;
+uint16   minorVersion;
+uint32   numSizes;
+BitmapSize*   bitmapSizes;//[numSizes]
+}CBLC;
+ACQRES(CBLC){
+one(f.majorVersion);
+one(f.minorVersion);
+one(f.numSizes);
+arr(f.bitmapSizes, f.numSizes);
+ };
+USE_ACQRES(CBLC)
+
+#endif

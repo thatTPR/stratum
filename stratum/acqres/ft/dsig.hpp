@@ -1,33 +1,47 @@
-typedef struct {
-uint32   version;
-uint16   numSignatures;
-uint16   flags;
-SignatureRecord*   signatureRecords;//[numSignatures]
-}DsigHeader;
-ACQRES(DsigHeader){
-one(version);
-one(numSignatures);
-one(flags);
-arr(signatureRecords, numSignatures);
- };
-USE_ACQRES(DsigHeader)
+#ifndef FTDSIG_HPP
+#define FTDSIG_HPP
 
-typedef struct {
-uint32   format;
-uint32   length;
-Offset32   signatureBlockOffset;
-}SignatureRecord;
 typedef struct {
 uint16   reserved1;
 uint16   reserved2;
 uint32   signatureLength;
 uint8*   signature;//[signatureLength]
-}Signature/* Block Format 1*/;
-ACQRES(Signature/* Block Format 1*/){
-one(reserved1);
-one(reserved2);
-one(signatureLength);
-arr(signature, signatureLength);
+}SignatureBlockFormat1;
+ACQRES(SignatureBlockFormat1){
+one((f.reserved1));
+one((f.reserved2));
+one((f.signatureLength));
+arr(f.signature, f.signatureLength);
  };
-USE_ACQRES(Signature/* Block Format 1*/)
+USE_ACQRES(SignatureBlockFormat1)
 
+
+typedef struct {
+uint32   format;
+uint32   length;
+Offset32   signatureBlockOffset;
+// SignatureBlockFormat1;
+SignatureBlockFormat1 sbf;
+}SignatureRecord;
+
+typedef struct {
+uint32   version;
+uint16   numSignatures;
+uint16   flags;
+SignatureRecord*   signatureRecords;//[numSignatures]
+}DSIG;
+ACQRES(DSIG){
+    set((f.version));
+one((f.version));
+one((f.numSignatures));
+one((f.flags));
+if(!f.signatureRecords){f.signatureRecords=new SignatureRecord[f.numSignatures];};
+for(int i =0; i<f.numSigantures){
+    one((f.signatureRecords[i].format));
+    one((f.signatureRecords[i].length));
+    one((f.signatureRecords[i].signatureBlockOffset));
+    offone((f.signatureRecords[i].sbf),(f.signatureRecords[i].signatureBlockOffset));
+}
+};
+USE_ACQRES(DSIG)
+#endif

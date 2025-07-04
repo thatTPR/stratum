@@ -21,7 +21,7 @@ void writeFile(std::ostream& of, table it){
         };
         for(int i = 0 ; i < it.name.size();i++){
             if(it.name[i] =='\''){
-                it.name.erase(it.name.begin());
+                it.name.erase(it.name.begin()+i);
             }
         };
         for(table::field& s :it.strct ){
@@ -48,12 +48,12 @@ void writeFile(std::ostream& of, table it){
             if(!f.index.empty()){
                 of<<f.type<<"*   "<<f.name<<";";
                 use = true;
-                fbody+="arr("+f.name+", "+ f.index+ ");\n ";
+                fbody+="arr(f->"+f.name+", f->"+ f.index+ ");\n ";
                 of<<"//"<<"["<<f.index<<"]";
             }
             else {
                 of<<f.type<<"   "<<f.name<<";";
-                fbody+="one("+f.name+");\n";
+                fbody+="one(&(f->"+f.name+"));\n";
             }
             of<<std::endl;
 

@@ -1,14 +1,10 @@
+#ifndef FTMATH_HPP
+#define FTMATH_HPP
+#include "_fontTableCommon.hpp"
 typedef struct {
 FWORD   value;
 Offset16   deviceOffset;
 }MathValueRecord;
-typedef struct {
-uint16   majorVersion;
-uint16   minorVersion;
-Offset16   mathConstantsOffset;
-Offset16   mathGlyphInfoOffset;
-Offset16   mathVariantsOffset;
-}MATH/* Header*/;
 typedef struct {
 int16   scriptPercentScaleDown;
 int16   scriptScriptPercentScaleDown;
@@ -67,21 +63,17 @@ MathValueRecord   radicalKernBeforeDegree;
 MathValueRecord   radicalKernAfterDegree;
 int16   radicalDegreeBottomRaisePercent;
 }MathConstants/* table*/;
-typedef struct {
-Offset16   mathItalicsCorrectionInfoOffset;
-Offset16   mathTopAccentAttachmentOffset;
-Offset16   extendedShapeCoverageOffset;
-Offset16   mathKernInfoOffset;
-}MathGlyphInfo/* table*/;
+
+
 typedef struct {
 Offset16   italicsCorrectionCoverageOffset;
 uint16   italicsCorrectionCount;
 MathValueRecord*   italicsCorrection;//[italicsCorrectionCount]
 }MathItalicsCorrectionInfo/* table*/;
 ACQRES(MathItalicsCorrectionInfo/* table*/){
-one(italicsCorrectionCoverageOffset);
-one(italicsCorrectionCount);
-arr(italicsCorrection, italicsCorrectionCount);
+one((f.italicsCorrectionCoverageOffset));
+one((f.italicsCorrectionCount));
+arr(f.italicsCorrection, f.italicsCorrectionCount);
  };
 USE_ACQRES(MathItalicsCorrectionInfo/* table*/)
 
@@ -91,11 +83,50 @@ uint16   topAccentAttachmentCount;
 MathValueRecord*   topAccentAttachment;//[topAccentAttachmentCount]
 }MathTopAccentAttachment/* table*/;
 ACQRES(MathTopAccentAttachment/* table*/){
-one(topAccentCoverageOffset);
-one(topAccentAttachmentCount);
-arr(topAccentAttachment, topAccentAttachmentCount);
+one((f.topAccentCoverageOffset));
+one((f.topAccentAttachmentCount));
+arr(f.topAccentAttachment, f.topAccentAttachmentCount);
  };
 USE_ACQRES(MathTopAccentAttachment/* table*/)
+
+
+
+typedef struct {
+uint16   heightCount;
+MathValueRecord*   correctionHeight;//[heightCount]
+MathValueRecord*   kernValues;//[heightCount + 1]
+}MathKern/* table*/;
+ACQRES(MathKern/* table*/){
+one((f.heightCount));
+arr(f.correctionHeight, f.heightCount);
+ arr(f.kernValues, f.heightCount + 1);
+ };
+USE_ACQRES(MathKern/* table*/)
+
+typedef struct {
+Offset16   topRightMathKernOffset;
+Offset16   topLeftMathKernOffset;
+Offset16   bottomRightMathKernOffset;
+Offset16   bottomLeftMathKernOffset;
+
+MathKern topRightMathKern ;
+MathKern topLeftMathKern ;
+MathKern bottomRightMathKern ;
+MathKern bottomLeftMathKern ;
+
+}MathKernInfoRecord;
+ACQRES(MathKernInfoRecord){
+   one(f.topRightMathKernOffset);
+   one(f.topLeftMathKernOffset);
+   one(f.bottomRightMathKernOffset);
+   one(f.bottomLeftMathKernOffset);
+
+offone(f.topRightMathKern,f.topRightMathKernOffset);
+offone(f.topLeftMathKern,f.topLeftMathKernOffset);
+offone(f.bottomRightMathKern,f.bottomRightMathKernOffset);
+offone(f.bottomLeftMathKern,f.bottomLeftMathKernOffset);
+}
+USE_ACQRES(MathKernInfoRecord)
 
 typedef struct {
 Offset16   mathKernCoverageOffset;
@@ -103,29 +134,49 @@ uint16   mathKernCount;
 MathKernInfoRecord*   mathKernInfoRecords;//[mathKernCount]
 }MathKernInfo/* table*/;
 ACQRES(MathKernInfo/* table*/){
-one(mathKernCoverageOffset);
-one(mathKernCount);
-arr(mathKernInfoRecords, mathKernCount);
+one((f.mathKernCoverageOffset));
+one((f.mathKernCount));
+arr(f.mathKernInfoRecords, f.mathKernCount);
  };
 USE_ACQRES(MathKernInfo/* table*/)
 
 typedef struct {
-Offset16   topRightMathKernOffset;
-Offset16   topLeftMathKernOffset;
-Offset16   bottomRightMathKernOffset;
-Offset16   bottomLeftMathKernOffset;
-}MathKernInfoRecord;
+uint16   variantGlyph;
+UFWORD   advanceMeasurement;
+}MathGlyphVariantRecord;
 typedef struct {
-uint16   heightCount;
-MathValueRecord*   correctionHeight;//[heightCount]
-MathValueRecord*   kernValues;//[heightCount + 1]
-}MathKern/* table*/;
-ACQRES(MathKern/* table*/){
-one(heightCount);
-arr(correctionHeight, heightCount);
- arr(kernValues, heightCount + 1);
+uint16   glyphID;
+UFWORD   startConnectorLength;
+UFWORD   endConnectorLength;
+UFWORD   fullAdvance;
+uint16   partFlags;
+}GlyphPart/* record*/;
+typedef struct {
+MathValueRecord   italicsCorrection;
+uint16   partCount;
+GlyphPart*   partRecords;//[partCount]
+}GlyphAssembly/* table*/;
+ACQRES(GlyphAssembly/* table*/){
+one(f.italicsCorrection);
+one(f.partCount);
+arr(f.partRecords, f.partCount);
  };
-USE_ACQRES(MathKern/* table*/)
+USE_ACQRES(GlyphAssembly/* table*/)
+
+typedef struct {
+Offset16   glyphAssemblyOffset;
+uint16   variantCount;
+MathGlyphVariantRecord*   mathGlyphVariantRecords;//[variantCount]
+/// @brief
+GlyphAssembly glyphAssembly;
+}MathGlyphConstruction/* table*/;
+ACQRES(MathGlyphConstruction/* table*/){
+one((f.glyphAssemblyOffset));
+one((f.variantCount));
+arr(f.mathGlyphVariantRecords, f.variantCount);
+offone(f.glyphAssembly,f.glyphAssemblyOffset); 
+};
+USE_ACQRES(MathGlyphConstruction/* table*/)
 
 typedef struct {
 UFWORD   minConnectorOverlap;
@@ -135,56 +186,84 @@ uint16   vertGlyphCount;
 uint16   horizGlyphCount;
 Offset16*   vertGlyphConstructionOffsets;//[vertGlyphCount]
 Offset16*   horizGlyphConstructionOffsets;//[horizGlyphCount]
+
+Coverage vertGlyphCoverage;
+Coverage horizGlyphCoverage;
+MathGlyphConstruction* vertGlyphConstruction;
+MathGlyphConstruction* horizGlyphConstruction;
 }MathVariants/* table*/;
 ACQRES(MathVariants/* table*/){
-one(minConnectorOverlap);
-one(vertGlyphCoverageOffset);
-one(horizGlyphCoverageOffset);
-one(vertGlyphCount);
-one(horizGlyphCount);
-arr(vertGlyphConstructionOffsets, vertGlyphCount);
- arr(horizGlyphConstructionOffsets, horizGlyphCount);
+one((f.minConnectorOverlap));
+one((f.vertGlyphCoverageOffset));
+one((f.horizGlyphCoverageOffset));
+one((f.vertGlyphCount));
+one((f.horizGlyphCount));
+arr(f.vertGlyphConstructionOffsets, f.vertGlyphCount);
+ arr(f.horizGlyphConstructionOffsets, f.horizGlyphCount);
+ offone(f.vertGlyphCoverage,f.vertGlyphCoverageOffset);
+ offone(f.horizGlyphCoverage,f.horizGlyphCoverageOffset);
+ offmany(f.vertGlyphConstruction,f.vertGlyphConstructionOffsets,f.vertGlyphCount);
+ offmany(f.horizGlyphConstruction,f.horizGlyphConstructionOffsets,f.horizGlyphCount);
  };
 USE_ACQRES(MathVariants/* table*/)
 
-typedef struct {
-Offset16   glyphAssemblyOffset;
-uint16   variantCount;
-MathGlyphVariantRecord*   mathGlyphVariantRecords;//[variantCount]
-}MathGlyphConstruction/* table*/;
-ACQRES(MathGlyphConstruction/* table*/){
-one(glyphAssemblyOffset);
-one(variantCount);
-arr(mathGlyphVariantRecords, variantCount);
- };
-USE_ACQRES(MathGlyphConstruction/* table*/)
+
 
 typedef struct {
-uint16   variantGlyph;
-UFWORD   advanceMeasurement;
-}MathGlyphVariantRecord;
-typedef struct {
-MathValueRecord   italicsCorrection;
-uint16   partCount;
-GlyphPart*   partRecords;//[partCount]
-}GlyphAssembly/* table*/;
-ACQRES(GlyphAssembly/* table*/){
-one(italicsCorrection);
-one(partCount);
-arr(partRecords, partCount);
- };
-USE_ACQRES(GlyphAssembly/* table*/)
+Offset16   mathItalicsCorrectionInfoOffset;
+Offset16   mathTopAccentAttachmentOffset;
+Offset16   extendedShapeCoverageOffset;
+Offset16   mathKernInfoOffset;
 
+/// @brief 
+MathItalicsCorrectionInfo mathItalicsCorrectionInfo;
+MathTopAccentAttachment mathTopAccentAttachment;
+Coverage extendedShapeCoverage;
+MathKernInfo mathKernInfo;
+}MathGlyphInfo/* table*/;
+ACQRES(MathGlyphInfo){
+one(mathItalicsCorrectionInfoOffset);
+one(mathTopAccentAttachmentOffset);
+one(extendedShapeCoverageOffset);
+one(mathKernInfoOffset);
+
+offone(f.mathItalicsCorrectionInfo,f.mathItalicsCorrectionInfoOffset);
+offone(f.mathTopAccentAttachment,f.mathTopAccentAttachmentOffset);
+offone(f.extendedShapeCoverage,f.extendedShapeCoverageOffset);
+offone(f.mathKernInfo,f.mathKernInfoOffset);
+}
+USE_ACQRES(MathGlyphInfo)
+
+/*
+ {
+'math'	//Script tag to be used for features in math layout. The only language system supported with this tag is the default language system.
+'ssty' //
+'flac' //Flattened Accent Forms
+'dtls'	//Dotless Forms
+
+}OpenType Layout tags for math processing */
 typedef struct {
-uint16   glyphID;
-UFWORD   startConnectorLength;
-UFWORD   endConnectorLength;
-UFWORD   fullAdvance;
-uint16   partFlags;
-}GlyphPart/* record*/;
-typedef struct {
-''math'   Script tag to be used for features in math layout. The only language system supported with this tag is the default language system.;
-   Math Script-style Alternates;
-   Flattened Accent Forms;
-   Dotless Forms;
-}OpenType/* Layout tags for math processing*/;
+uint16   majorVersion;
+uint16   minorVersion;
+Offset16   mathConstantsOffset;
+Offset16   mathGlyphInfoOffset;
+Offset16   mathVariantsOffset;
+/// @brief 
+MathConstants mathConstants;
+MathGlyphInfo mathGlyphInfo;
+MathVariants mathVariants;
+
+}MATH;
+ACQRES(MATH){
+   one(f.majorVersion);
+   one(f.minorVersion);
+   one(f.mathConstantsOffset);
+   one(f.mathGlyphInfoOffset);
+   one(f.mathVariantsOffset);
+
+   offone(f.mathConstants,f.mathConstantsOffset);
+   offone(f.mathGlyphInfo,f.mathGlyphInfoOffset);
+   offone(f.mathVariants,f.mathVariantsOffset);
+}
+USE_ACQRES(MATH)
+#endif

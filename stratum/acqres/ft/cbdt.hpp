@@ -1,55 +1,66 @@
+#ifndef FTCBDT_HPP
+#define FTCBDTT_HPP
+#include "_glyphMetrics.hpp"
+#include "eblc.hpp"
+
+
+typedef struct {
+SmallGlyphMetrics   glyphMetrics;
+uint32   dataLen;
+uint8*   data;//[dataLen]
+}GlyphBitmapFormat17;
+ACQRES(GlyphBitmapFormat17){
+one(f.glyphMetrics);
+one(f.dataLen);
+arr(f.data, f.dataLen);
+ };
+USE_ACQRES(GlyphBitmapFormat17)
+
+typedef struct {
+BigGlyphMetrics   glyphMetrics;
+uint32   dataLen;
+uint8*   data;//[dataLen]
+}GlyphBitmapFormat18;
+ACQRES(GlyphBitmapFormat18){
+one(f.glyphMetrics);
+one(f.dataLen);
+arr(f.data, f.dataLen);
+ };
+USE_ACQRES(GlyphBitmapFormat18)
+
+typedef struct {
+uint32   dataLen;
+uint8*   data;//[dataLen]
+}GlyphBitmapFormat19;
+ACQRES(GlyphBitmapFormat19){
+one(f.dataLen);
+arr(f.data, f.dataLen);
+ };
+USE_ACQRES(GlyphBitmapFormat19)
+
+typedef struct {
+    union {
+        GlyphBitmapFormat17 f17;
+        GlyphBitmapFormat18 f18;
+        GlyphBitmapFormat19 f19;
+    }f;
+
+}GlyphBitmapFormat;
+
 typedef struct {
 uint16   majorVersion;
 uint16   minorVersion;
-}CbdtHeader;
-typedef struct {
-uint8   height;
-uint8   width;
-int8   horiBearingX;
-int8   horiBearingY;
-uint8   horiAdvance;
-int8   vertBearingX;
-int8   vertBearingY;
-uint8   vertAdvance;
-}BigGlyphMetrics/* record*/;
-typedef struct {
-uint8   height;
-uint8   width;
-int8   bearingX;
-int8   bearingY;
-uint8   advance;
-}SmallGlyphMetrics/* record*/;
-typedef struct {
-smallGlyphMetrics   glyphMetrics;
-uint32   dataLen;
-uint8*   data;//[dataLen]
-}GlyphBitmapFormat17/* table*/;
-ACQRES(GlyphBitmapFormat17/* table*/){
-one(glyphMetrics);
-one(dataLen);
-arr(data, dataLen);
- };
-USE_ACQRES(GlyphBitmapFormat17/* table*/)
+        GlyphBitmapFormat form;
+    }CBDT;
+    ACQRES(CBDT){
+one(f.majorVersion);
+one(f.minorVersion);
+        switch(){ // Uses f
+            
+        }
+        one((f.form));
 
-typedef struct {
-bigGlyphMetrics   glyphMetrics;
-uint32   dataLen;
-uint8*   data;//[dataLen]
-}GlyphBitmapFormat18/* table*/;
-ACQRES(GlyphBitmapFormat18/* table*/){
-one(glyphMetrics);
-one(dataLen);
-arr(data, dataLen);
- };
-USE_ACQRES(GlyphBitmapFormat18/* table*/)
+    };
+    USE_ACQRES(CBDT)
 
-typedef struct {
-uint32   dataLen;
-uint8*   data;//[dataLen]
-}GlyphBitmapFormat19/* table*/;
-ACQRES(GlyphBitmapFormat19/* table*/){
-one(dataLen);
-arr(data, dataLen);
- };
-USE_ACQRES(GlyphBitmapFormat19/* table*/)
-
+#endif

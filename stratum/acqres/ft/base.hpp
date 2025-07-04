@@ -1,16 +1,30 @@
+#ifndef FTBASE_HPP
+#define FTBASE_HPP
 typedef struct {
 uint16   majorVersion;
 uint16   minorVersion;
 Offset16   horizAxisOffset;
 Offset16   vertAxisOffset;
-}BASE/* Header, version 1.0*/;
+}BASE10/* Header, version 1.0*/;
 typedef struct {
 uint16   majorVersion;
 uint16   minorVersion;
 Offset16   horizAxisOffset;
 Offset16   vertAxisOffset;
 Offset32   itemVarStoreOffset;
-}BASE/* Header, version 1.1*/;
+}BASE11/* Header, version 1.1*/;
+
+typedef struct {
+        base10 b10;
+        Offset32   itemVarStoreOffset;
+         
+}basehead;
+ACQRES(basehead){
+    one((f.b10));
+    switch(f.b10.minorVersion){
+        case 1 : {one((f.iterVarStoreOffset));};
+    };
+}
 typedef struct {
 Offset16   baseTagListOffset;
 Offset16   baseScriptListOffset;
@@ -20,8 +34,8 @@ uint16   baseTagCount;
 Tag*   baselineTags;//[baseTagCount]
 }BaseTagList/* table*/;
 ACQRES(BaseTagList/* table*/){
-one(baseTagCount);
-arr(baselineTags, baseTagCount);
+one((f.baseTagCount));
+arr(f.baselineTags, f.baseTagCount);
  };
 USE_ACQRES(BaseTagList/* table*/)
 
@@ -30,8 +44,8 @@ uint16   baseScriptCount;
 BaseScriptRecord*   baseScriptRecords;//[baseScriptCount]
 }BaseScriptList/* table*/;
 ACQRES(BaseScriptList/* table*/){
-one(baseScriptCount);
-arr(baseScriptRecords, baseScriptCount);
+one((f.baseScriptCount));
+arr(f.baseScriptRecords, f.baseScriptCount);
  };
 USE_ACQRES(BaseScriptList/* table*/)
 
@@ -40,48 +54,36 @@ Tag   baseScriptTag;
 Offset16   baseScriptOffset;
 }BaseScriptRecord;
 typedef struct {
+Tag   baseLangSysTag;
+Offset16   minMaxOffset;
+}BaseLangSys /*record*/;
+typedef struct {
 Offset16   baseValuesOffset;
 Offset16   defaultMinMaxOffset;
 uint16   baseLangSysCount;
 BaseLangSys*   baseLangSysRecords;//[baseLangSysCount]
-}BaseScript/* table*/;
+}BaseScript ;///*table*/;
 ACQRES(BaseScript/* table*/){
-one(baseValuesOffset);
-one(defaultMinMaxOffset);
-one(baseLangSysCount);
-arr(baseLangSysRecords, baseLangSysCount);
+one((f.baseValuesOffset));
+one((f.defaultMinMaxOffset));
+one((f.baseLangSysCount));
+arr(f.baseLangSysRecords, f.baseLangSysCount);
  };
-USE_ACQRES(BaseScript/* table*/)
+USE_ACQRES(BaseScript /*table*/)
 
-typedef struct {
-Tag   baseLangSysTag;
-Offset16   minMaxOffset;
-}BaseLangSys/* record*/;
+
 typedef struct {
 uint16   defaultBaselineIndex;
 uint16   baseCoordCount;
 Offset16*   baseCoordOffsets;//[baseCoordCount]
-}BaseValues/* table*/;
+}BaseValues /*table*/;
 ACQRES(BaseValues/* table*/){
-one(defaultBaselineIndex);
-one(baseCoordCount);
-arr(baseCoordOffsets, baseCoordCount);
+one((f.defaultBaselineIndex));
+one((f.baseCoordCount));
+arr(f.baseCoordOffsets, f.baseCoordCount);
  };
 USE_ACQRES(BaseValues/* table*/)
 
-typedef struct {
-Offset16   minCoordOffset;
-Offset16   maxCoordOffset;
-uint16   featMinMaxCount;
-FeatMinMax*   featMinMaxRecords;//[featMinMaxCount]
-}MinMax/* table*/;
-ACQRES(MinMax/* table*/){
-one(minCoordOffset);
-one(maxCoordOffset);
-one(featMinMaxCount);
-arr(featMinMaxRecords, featMinMaxCount);
- };
-USE_ACQRES(MinMax/* table*/)
 
 typedef struct {
 Tag   featureTag;
@@ -103,269 +105,115 @@ uint16   format;
 int16   coordinate;
 Offset16   deviceOffset;
 }BaseCoordFormat3/* table: Design units plus Device or VariationIndex table*/;
-typedef struct {
-    ;
-00010000   0x00010000;
-0008   HorizontalAxisTable;
-010C   VerticalAxisTable;
-    ;
-0004   HorizBaseTagList;
-0012   HorizBaseScriptList;
-    ;
-0003   3;
-68616E67   ''hang';
-6964656F   ''ideo';
-726F6D6E   ''romn';
-    ;
-0004   4;
-*   baseScriptRecords;//[0]
-6379726C   ''cyrl';
-001A   HorizCyrillicBaseScriptTable;
-*   baseScriptRecords;//[1]
-6465766E   ''devn';
-0060   HorizDevanagariBaseScriptTable;
-*   baseScriptRecords;//[2]
-68616E69   ''hani';
-008A   HorizHanBaseScriptTable;
-*   baseScriptRecords;//[3]
-6C61746E   ''latn';
-00B4   HorizLatinBaseScriptTable;
-}Example/* 1*/;
-ACQRES(Example/* 1*/){
-one();
-one(0x00010000);
-one(HorizontalAxisTable);
-one(VerticalAxisTable);
-one();
-one(HorizBaseTagList);
-one(HorizBaseScriptList);
-one();
-one(3);
-one(''hang');
-one(''ideo');
-one(''romn');
-one();
-one(4);
-arr(baseScriptRecords, 0);
- one(''cyrl');
-one(HorizCyrillicBaseScriptTable);
-arr(baseScriptRecords, 1);
- one(''devn');
-one(HorizDevanagariBaseScriptTable);
-arr(baseScriptRecords, 2);
- one(''hani');
-one(HorizHanBaseScriptTable);
-arr(baseScriptRecords, 3);
- one(''latn');
-one(HorizLatinBaseScriptTable);
+
+typedef struct  {
+        BaseCoordFormat1 f1;
+        uint16 referenceGlyph;
+        uint16 baseCoordPoint;
+        Offset16   deviceOffset;
+        BaseCoordFormat2 to2(){BaseCoordFormat2 f; f.format = f1.format;f.coordinate=f1.coordinate;f.referenceGlyph =referenceGlyph;f.baseCoordPoint =baseCoordPoint;return f;  };
+        BaseCoordFormat2 to3(){BaseCoordFormat3 f; f.format = f1.format;f.coordinate=f1.coordinate;f.deviceOffset = deviceOffset;return f;};
+        
+}BaseCoordFormat;
+ACQRES(BaseCoordFormat) {
+one(f.f1);
+switch(f.f1.format){
+case 2 : {
+    
+    one((f.referenceGlypth));
+    one((f.baseCoordPoint));
 };
-USE_ACQRES(Example/* 1*/)
+case 3 : {
+    one((f.deviceOffset));
+    };
+} ;
+};
+USE_ACQRES(BaseCoordFormat)
 
 typedef struct {
-    ;
-000C   HorizCyrillicBaseValuesTable;
-0022   HorizCyrillicDefault;
-0001   1;
-*   baseLangSysRecords;//[0]
-52555320   “RUS ”;
-0030   HorizRussianMinMaxTable;
-}Example/* 2*/;
-ACQRES(Example/* 2*/){
-one();
-one(HorizCyrillicBaseValuesTable);
-one(HorizCyrillicDefault);
-one(1);
-arr(baseLangSysRecords, 0);
- one(“RUS ”);
-one(HorizRussianMinMaxTable);
-};
-USE_ACQRES(Example/* 2*/)
+Offset16   minCoordOffset;
+Offset16   maxCoordOffset;
+uint16   featMinMaxCount;
+FeatMinMax*   featMinMaxRecords;//[featMinMaxCount]
+}MinMax/* table*/;
+ACQRES(MinMax/* table*/){
+one((f.minCoordOffset));
+one((f.maxCoordOffset));
+one((f.featMinMaxCount));
+arr(f.featMinMaxRecords, f.featMinMaxCount);
+ };
+USE_ACQRES(MinMax/* table*/)
+
+
+ typedef struct {
+        MinMax d;
+        BaseCoordFormat min;
+        BaseCoordFormat max;
+        BaseCoordFormat* Mincoord ;
+        BaseCoordFormat* Maxcoord ;
+    }MinMaxBox;
+    ACQRES(MinMaxBox) {
+        one((f.d)) ;
+        offone((f.min) ,f.d.minCoordOffset) ; 
+        offone((f.max) ,f.d.maxCoordOffset) ;
+        arr(f.Mincoord,f.d.featMinMaxCount);
+        arr(f.Maxcoord,f.d.featMinMaxCount);
+        for(int i = 0 ; i < f.d.featMinMaxCount){
+            offone((f.Mincoord[i]),f.d.featMinMaxRecords[i].minCoordOffset);
+            offone((f.Maxcoord[i]),f.d.featMinMaxRecords[i].maxCoordOffset);
+        };
+    };
+
 
 typedef struct {
-   ;
-0002   2;
-0003   3;
-000A   HorizHangingBaseCoordForCyrl;
-000E   HorizIdeographicBaseCoordForCyrl;
-0012   HorizRomanBaseCoordForCyrl;
-   ;
-0001   1;
-05DC   1500;
-    ;
-0001   1;
-FEE0   -288;
-    ;
-0001   1;
-0000   0;
-}Example/* 3A*/;
-typedef struct {
-hanging   1500;
-roman   0;
-ideographic   -288;
-}Example/* 3B: Identical baseline values*/;
-typedef struct {
-hanging   1788;
-roman   288;
-ideographic   0;
-}Example/* 3B: Assigned baseline values with default baselines at 0*/;
-typedef struct {
-    ;
-0006   HorizCyrillic;
-000A   HorizCyrillic;
-0000   0;
-    ;
-0001   1;
-FF38   -200;
-    ;
-0001   1;
-0674   1652;
-    ;
-000E   HorizRussianLangSys;
-0012   HorizRussianLangSys;
-0001   1;
-*   featMinMaxRecords;//[0]
-7469746C   ''titl';
-0016   HorizRussianFeature;
-001A   HorizRussianFeature;
-   ;
-0001   1;
-FF08   -248;
-    ;
-0001   1;
-06A4   1700;
-    ;
-0001   1;
-FED8   -296;
-    ;
-0001   1;
-06D8   1752;
-}Example/* 4A*/;
-ACQRES(Example/* 4A*/){
-one();
-one(HorizCyrillic);
-one(HorizCyrillic);
-one(0);
-one();
-one(1);
-one(-200);
-one();
-one(1);
-one(1652);
-one();
-one(HorizRussianLangSys);
-one(HorizRussianLangSys);
-one(1);
-arr(featMinMaxRecords, 0);
- one(''titl');
-one(HorizRussianFeature);
-one(HorizRussianFeature);
-one();
-one(1);
-one(-248);
-one();
-one(1);
-one(1700);
-one();
-one(1);
-one(-296);
-one();
-one(1);
-one(1752);
-};
-USE_ACQRES(Example/* 4A*/)
+        BaseScript baseScript ;
+        BaseValues baseValues;
+        BaseCoordFormat* baseCoordValues;
+        MinMaxBox* minMax;
+    }BaseScriptBox;
+    ACQRES(BaseScriptBox) {
+        one((f.baseScript));
+        offone((f.baseValues),f.baseScript.baseValuesOffset);
+        for(int i = 0 ; i < f.baseValues.baseCoordCount){
+            offone((f.baseCoordValues[i]),f.baseScript.baseValuesOffset + f.baseValues.baseCoordOffsets[i]);
+        };
+        for(int i = 0 ; i < f.baseScript.baseLangSysCount;i++){
+            one((f.minMax[i]))
+        };
+    };
+    USE_ACQRES(BaseScriptBox)
+    typedef struct  {
+        Axis ax;
+        BaseTagList baseTagList;
+        BaseScriptList baseScriptList;
+        BaseScriptBox* baseScript ; 
+        
+    }AxisBox;
+    ACQRES(AxisBox) {
+        one((f.ax));
+        if(f.ax.baseTagListOffset != NULL){
+            offone((f.baseTagList),f.ax.baseTagListOffset);
+        };
+        offone((f.baseScriptList),f.ax.baseScriptListOffset);
+        for(int i =0 ; i < f.baseScriptList.baseScriptCount;i++){
+            offone((f.baseScript[i]),f.baseScriptList.baseScriptRecords[i].baseScriptOffset);
+        };
+    }
+    USE_ACQRES(AxisBox) 
+    typedef struct {
+        basehead head;
+        AxisBox hori ;    
+        AxisBox verti ;
 
-typedef struct {
-    ;
-0000   NULL;
-000C   HorizCyrillicDefault;
-0001   1;
-*   baseLangSysRecords;//[0]
-52555320   ''RUS ';
-001A   HorizRussian;
-    ;
-0006   HorizCyrillic;
-000A   HorizCyrillic;
-0000   0;
-    ;
-0001   1;
-FF38   -200;
-    ;
-0001   1;
-0674   1652;
-    ;
-0000   NULL;
-0000   NULL;
-0001   1;
-*   featMinMaxRecords;//[0]
-7469746C   ''titl';
-000E   HorizRussianFeature;
-0012   HorizRussianFeature;
-    ;
-0001   1;
-FED8   -296;
-    ;
-0001   1;
-06D8   1752;
-}Example/* 4B*/;
-ACQRES(Example/* 4B*/){
-one();
-one(NULL);
-one(HorizCyrillicDefault);
-one(1);
-arr(baseLangSysRecords, 0);
- one(''RUS ');
-one(HorizRussian);
-one();
-one(HorizCyrillic);
-one(HorizCyrillic);
-one(0);
-one();
-one(1);
-one(-200);
-one();
-one(1);
-one(1652);
-one();
-one(NULL);
-one(NULL);
-one(1);
-arr(featMinMaxRecords, 0);
- one(''titl');
-one(HorizRussianFeature);
-one(HorizRussianFeature);
-one();
-one(1);
-one(-296);
-one();
-one(1);
-one(1752);
-};
-USE_ACQRES(Example/* 4B*/)
+    }BASE;
+    ACQRES(BASE) {
+        one((f.head));
+        if(f.head.b10.minorVersion == 1){
+            one((f.head.b11.itemVarStoreOffset));
+        };
+        offone((f.hori),f.head.horiAxisOffset);
+        offone((f.hori),f.head.vertAxisOffset);
+    };
+    USE_ACQRES(BASE)
 
-typedef struct {
-    ;
-0001   1;
-FEE8   -280;
-}Example/* 5*/;
-typedef struct {
-    ;
-0002   2;
-FEE8   -280;
-0128   IntegralSignGlyphID;
-0043   67;
-}Example/* 6*/;
-typedef struct {
-    ;
-0003   3;
-    -280;
-000C   HorizMathMin;
-    ;
-000B   11;
-000F   15;
-0001   1;
-    1;
-    1;
-    1;
-    1;
-5540   1;
-}Example/* 7*/;
+    #endif

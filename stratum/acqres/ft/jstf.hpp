@@ -1,58 +1,27 @@
-typedef struct {
-uint16   majorVersion;
-uint16   minorVersion;
-uint16   jstfScriptCount;
-JstfScriptRecord*   jstfScriptRecords;//[jstfScriptCount]
-}JSTF/* header*/;
-ACQRES(JSTF/* header*/){
-one(majorVersion);
-one(minorVersion);
-one(jstfScriptCount);
-arr(jstfScriptRecords, jstfScriptCount);
- };
-USE_ACQRES(JSTF/* header*/)
+#ifndef FTJSTF_HPP
+#define FTJSTF_HPP
+#include "gpos.hpp"
+#include "gsub.hpp"
 
-typedef struct {
-Tag   jstfScriptTag;
-Offset16   jstfScriptOffset;
-}JstfScriptRecord;
-typedef struct {
-Offset16   extenderGlyphOffset;
-Offset16   defJstfLangSysOffset;
-uint16   jstfLangSysCount;
-JstfLangSysRecord*   jstfLangSysRecords;//[jstfLangSysCount]
-}JstfScript/* table*/;
-ACQRES(JstfScript/* table*/){
-one(extenderGlyphOffset);
-one(defJstfLangSysOffset);
-one(jstfLangSysCount);
-arr(jstfLangSysRecords, jstfLangSysCount);
- };
-USE_ACQRES(JstfScript/* table*/)
-
-typedef struct {
-Tag   jstfLangSysTag;
-Offset16   jstfLangSysOffset;
-}JstfLangSysRecord;
 typedef struct {
 uint16   glyphCount;
 uint16*   extenderGlyphs;//[glyphCount]
-}ExtenderGlyph/* table*/;
-ACQRES(ExtenderGlyph/* table*/){
-one(glyphCount);
-arr(extenderGlyphs, glyphCount);
- };
-USE_ACQRES(ExtenderGlyph/* table*/)
+}ExtenderGlyph;
+ACQRES(ExtenderGlyph){
+one(f.glyphCount);
+arr(f.extenderGlyphs, f.glyphCount);
+};
+USE_ACQRES(ExtenderGlyph)
 
 typedef struct {
-uint16   jstfPriorityCount;
-Offset16*   jstfPriorityOffsets;//[jstfPriorityCount]
-}JstfLangSys/* table*/;
-ACQRES(JstfLangSys/* table*/){
-one(jstfPriorityCount);
-arr(jstfPriorityOffsets, jstfPriorityCount);
+uint16   lookupCount;
+Offset16*   lookupOffsets;//[lookupCount]
+}JstfMax;
+ACQRES(JstfMax){
+one(f.lookupCount);
+arr(f.lookupOffsets, f.lookupCount);
  };
-USE_ACQRES(JstfLangSys/* table*/)
+USE_ACQRES(JstfMax)
 
 typedef struct {
 Offset16   gsubShrinkageEnableOffset;
@@ -64,148 +33,116 @@ Offset16   gsubExtensionEnableOffset;
 Offset16   gsubExtensionDisableOffset;
 Offset16   gposExtensionEnableOffset;
 Offset16   gposExtensionDisableOffset;
-Offset16   extensionJstfMaxOffset;
-}JstfPriority/* table*/;
+Offset16   extensionJstfMaxOffset; 
+
+JstfModList gsubShrinkageEnable;
+JstfModList gsubShrinkageDisable;
+JstfModList gposShrinkageEnable;
+JstfModList gposShrinkageDisable;
+JstfMax shrinkageJstfMax;
+JstfModList gsubExtensionEnable;
+JstfModList gsubExtensionDisable;
+JstfModList gposExtensionEnable;
+JstfModList gposExtensionDisable;
+JStfMax extensionJstfMax;
+}JstfPriority;
+ACQRES(JstfPriority){
+    one(f.gsubShrinkageEnableOffset);
+    one(f.gsubShrinkageDisableOffset);
+    one(f.gposShrinkageEnableOffset);
+    one(f.gposShrinkageDisableOffset);
+    one(f.shrinkageJstfMaxOffset);
+    one(f.gsubExtensionEnableOffset);
+    one(f.gsubExtensionDisableOffset);
+    one(f.gposExtensionEnableOffset);
+    one(f.gposExtensionDisableOffset);
+    one(f.extensionJstfMaxOffset);
+
+    offone(f.gsubShrinkageEnable,f.gsubShrinkageEnableOffset);
+    offone(f.gsubShrinkageDisable,f.gsubShrinkageDisableOffset);
+    offone(f.gposShrinkageEnable,f.gposShrinkageEnableOffset);
+    offone(f.gposShrinkageDisable,f.gposShrinkageDisableOffset);
+    offone(f.shrinkageJstfMax,f.shrinkageJstfMaxOffset);
+    offone(f.gsubExtensionEnable,f.gsubExtensionEnableOffset);
+    offone(f.gsubExtensionDisable,f.gsubExtensionDisableOffset);
+    offone(f.gposExtensionEnable,f.gposExtensionEnableOffset);
+    offone(f.gposExtensionDisable,f.gposExtensionDisableOffset);
+    offone(f.extensionJstfMax,f.extensionJstfMaxOffset);
+}
+USE_ACQRES(JstfPriority)
+
+typedef struct {
+uint16   jstfPriorityCount;
+Offset16*   jstfPriorityOffsets;//[jstfPriorityCount]
+JstfPriority* jstfPriority;
+}JstfLangSys;
+ACQRES(JstfLangSys){
+one(f.jstfPriorityCount);
+arr(f.jstfPriorityOffsets, f.jstfPriorityCount);
+offmany(f.jstfPriority,f.jstfPriorityOffsets,f.jstfPriorityCount);
+};
+USE_ACQRES(JstfLangSys)
+typedef struct {
+Tag   jstfLangSysTag;
+Offset16   jstfLangSysOffset;
+
+JstfLangSys jstfLangSys;
+}JstfLangSysRecord;
+ACQRES(JstfLangSysRecord){
+    one(f.jstfLangSysTag);
+    one(f.jstfLangSysOffset);
+    offone(f.jstfLangSys,f.jstfLangSysOffset);
+}
+USE_ACQRES(JstfLangSysRecord)
+typedef struct {
+Offset16   extenderGlyphOffset;
+Offset16   defJstfLangSysOffset;
+uint16   jstfLangSysCount;
+
+JstfLangSysRecord*   jstfLangSysRecords;//[jstfLangSysCount]
+/// @brief
+ExtenderGlyph extenderGlyph;
+JstfLangSys jstfLangSys;
+}JstfScript;
+ACQRES(JstfScript){
+one((f.extenderGlyphOffset));
+one((f.defJstfLangSysOffset));
+one((f.jstfLangSysCount));
+arr(f.jstfLangSysRecords, f.jstfLangSysCount);
+offone(f.extenderGlyph,f.extenderGlyphOffset);
+offone(f.jstfLangSys,f.defJstfLangSysOffset); 
+};
+USE_ACQRES(JstfScript)
 typedef struct {
 uint16   lookupCount;
 uint16*   lookupIndices;//[lookupCount]
-}JstfModList/* table*/;
-ACQRES(JstfModList/* table*/){
-one(lookupCount);
-arr(lookupIndices, lookupCount);
+}JstfModList;
+ACQRES(JstfModList){
+one((f.lookupCount));
+arr(f.lookupIndices, f.lookupCount);
  };
-USE_ACQRES(JstfModList/* table*/)
+USE_ACQRES(JstfModList)
 
 typedef struct {
-uint16   lookupCount;
-Offset16*   lookupOffsets;//[lookupCount]
-}JstfMax/* table*/;
-ACQRES(JstfMax/* table*/){
-one(lookupCount);
-arr(lookupOffsets, lookupCount);
- };
-USE_ACQRES(JstfMax/* table*/)
+Tag   jstfScriptTag;
+Offset16   jstfScriptOffset; 
+}JstfScriptRecord;
 
 typedef struct {
-    ;
-00010000   0x00010000;
-0001   1;
-*   jstfScriptRecords;//[0]
-74686169   ''thai';
-000C   ThaiScript;
-}Example/* 1*/;
-ACQRES(Example/* 1*/){
-one();
-one(0x00010000);
-one(1);
-arr(jstfScriptRecords, 0);
- one(''thai');
-one(ThaiScript);
+uint16   majorVersion;
+uint16   minorVersion;
+uint16   jstfScriptCount;
+JstfScriptRecord*   jstfScriptRecords;//[jstfScriptCount]
+JstfScript* jstfScript ;
+}JSTF;
+ACQRES(JSTF){
+one(f.majorVersion);
+one(f.minorVersion);
+one(f.jstfScriptCount);
+arr(f.jstfScriptRecords, f.jstfScriptCount);
+if(!f.jstfScript){f.jstfScript=new JstfScript[f.jstfScriptCount];};
+for(int i=0;i<f.jstfScriptCount;i++){offone(f.jstfScript[i],f.jstfScriptRecords[i].jstfScriptOffset);} 
 };
-USE_ACQRES(Example/* 1*/)
+USE_ACQRES(JSTF)
 
-typedef struct {
-    ;
-000C   ArabicExtenders;
-0012   ArabicDefJstfLangSys;
-0001   1;
-*   jstfLangSysRecords;//[0]
-50455220   “FAR ”;
-0018   FarsiJstfLangSys;
-    ;
-0002   2;
-01D3   TatweelGlyphID;
-01D4   LongTatweelGlyphID;
-    ;
-0002   2;
-000A   ArabicScriptJstfPriority1;
-001E   ArabicScriptJstfPriority2;
-    ;
-0001   1;
-002C   FarsiLangJstfPriority1;
-}Example/* 2*/;
-ACQRES(Example/* 2*/){
-one();
-one(ArabicExtenders);
-one(ArabicDefJstfLangSys);
-one(1);
-arr(jstfLangSysRecords, 0);
- one(“FAR ”);
-one(FarsiJstfLangSys);
-one();
-one(2);
-one(TatweelGlyphID);
-one(LongTatweelGlyphID);
-one();
-one(2);
-one(ArabicScriptJstfPriority1);
-one(ArabicScriptJstfPriority2);
-one();
-one(1);
-one(FarsiLangJstfPriority1);
-};
-USE_ACQRES(Example/* 2*/)
-
-typedef struct {
-    ;
-0028   EnableGSUBLookupsToShrink;
-0000   NULL;
-0000   NULL;
-0000   NULL;
-0000   NULL;
-0000   NULL;
-0038   DisableGSUBLookupsToExtend;
-0000   NULL;
-0000   NULL;
-0000   NULL;
-    ;
-0000   NULL;
-0000   NULL;
-0000   NULL;
-001C   DisableGPOSLookupsToShrink;
-0000   NULL;
-0000   NULL;
-0000   NULL;
-002C   EnableGPOSLookupsToExtend;
-0000   NULL;
-0000   NULL;
-    ;
-0003   3;
-002E   46;
-0035   53;
-0063   99;
-    ;
-0003   3;
-006C   108;
-006E   110;
-0070   112;
-    ;
-0003   3;
-002E   46;
-0035   53;
-0063   99;
-    ;
-0003   3;
-006C   108;
-006E   110;
-0070   112;
-}Example/* 3*/;
-typedef struct {
-    ;
-0001   1;
-0004   WordSpaceExpandLookup;
-    ;
-0001   1;
-0000   0x0000;
-0001   1;
-0008   WordSpaceExpandSubtable;
-    ;
-0001   1;
-0008   WordSpaceCoverage;
-0004   0x0004;
-0168   360;
-    ;
-0001   1;
-0001   1;
-0022   WordSpaceGlyphID;
-}Example/* 4*/;
+#endif

@@ -1,4 +1,4 @@
-typedef struct {
+/*enum Numerical value encoding {
 32 to 246   -107 to 107;
 247 to 250   108 to 1131;
 251 to 254   -1131 to -108;
@@ -6,7 +6,7 @@ typedef struct {
 255   -32768 to (32768 - 1/65536);
 29   -(2^31) to (2^31 - 1);
 30   any real number;
-}Numerical/* value encoding*/;
+};*/
 typedef struct {
 uint32   count;
 uint8   offsetSize;
@@ -14,10 +14,10 @@ Offset8  Offset16  Offset24  Offset32*   offsets;//[count+1]
 uint8   data;
 }INDEX/* table*/;
 ACQRES(INDEX/* table*/){
-one(count);
-one(offsetSize);
-arr(offsets, count+1);
- one(data);
+one((f.count));
+one((f.offsetSize));
+arr(f.offsets, f.count+1);
+ one((f.data));
 };
 USE_ACQRES(INDEX/* table*/)
 
@@ -32,8 +32,8 @@ uint8   format;
 uint8*   fontDICTIDs;//[numGlyphs]
 }FontDICTSelectFormat0/* table*/;
 ACQRES(FontDICTSelectFormat0/* table*/){
-one(format);
-arr(fontDICTIDs, numGlyphs);
+one((f.format));
+arr(f.fontDICTIDs, f.numGlyphs);
  };
 USE_ACQRES(FontDICTSelectFormat0/* table*/)
 
@@ -44,10 +44,10 @@ Range3*   ranges;//[numRanges]
 uint16   sentinel;
 }FontDICTSelectFormat3/* table*/;
 ACQRES(FontDICTSelectFormat3/* table*/){
-one(format);
-one(numRanges);
-arr(ranges, numRanges);
- one(sentinel);
+one((f.format));
+one((f.numRanges));
+arr(f.ranges, f.numRanges);
+ one((f.sentinel));
 };
 USE_ACQRES(FontDICTSelectFormat3/* table*/)
 
@@ -62,10 +62,10 @@ Range4*   ranges;//[numRanges]
 uint32   sentinel;
 }FontDICTSelectFormat4/* table*/;
 ACQRES(FontDICTSelectFormat4/* table*/){
-one(format);
-one(numRanges);
-arr(ranges, numRanges);
- one(sentinel);
+one((f.format));
+one((f.numRanges));
+arr(f.ranges, f.numRanges);
+ one((f.sentinel));
 };
 USE_ACQRES(FontDICTSelectFormat4/* table*/)
 
@@ -78,8 +78,8 @@ uint16   length;
 uint8*   data;//[length]
 }VariationStore/* table*/;
 ACQRES(VariationStore/* table*/){
-one(length);
-arr(data, length);
+one((f.length));
+arr(f.data, f.length);
  };
 USE_ACQRES(VariationStore/* table*/)
 

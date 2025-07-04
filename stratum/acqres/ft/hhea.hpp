@@ -1,3 +1,5 @@
+#ifndef FTHHEA_HPP
+#define FTHHEA_HPP
 typedef struct {
 uint16   majorVersion;
 uint16   minorVersion;
@@ -11,10 +13,11 @@ FWORD   xMaxExtent;
 int16   caretSlopeRise;
 int16   caretSlopeRun;
 int16   caretOffset;
-int16   (reserved);
-int16   (reserved);
-int16   (reserved);
-int16   (reserved);
+int16   reserved1;
+int16   reserved2;
+int16   reserved3;
+int16   reserved4;
 int16   metricDataFormat;
 uint16   numberOfHMetrics;
-}/* glyphs that have contours. Glyphs with no contours should be ignored for the purposes of these calculations. All reserved areas must be set to 0.only*/;
+}hhea;
+#endif

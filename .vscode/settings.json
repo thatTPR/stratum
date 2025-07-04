@@ -158,7 +158,9 @@
         "__tuple": "cpp",
         "__string": "cpp",
         "__memory": "cpp",
-        "__nullptr": "cpp"
+        "__nullptr": "cpp",
+        "x": "cpp",
+        "__refstring": "cpp"
     },
     "svg.preview.background": "custom"
 }
