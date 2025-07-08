@@ -2,6 +2,17 @@
 #define FTCBLC_HPP
 #include "eblc.hpp"
 #include "ebdt.hpp"
+enum bitDepth {
+    blackWhite=1,	
+    gray4=2,	
+    gray16=4,	
+    gray256=8
+};
+enum BitMapFlags {
+HORIZONTAL_METRICS=0x01,    //Horizontal
+VERTICAL_METRICS=0x02,	    //Vertical
+Reserved=0xFC //For future use — set to 0.
+};
 typedef struct {
 Offset32   indexSubtableListOffset;
 uint32   indexSubtableListSize;
@@ -24,17 +35,12 @@ ACQRES(BitmapSize){
 USE_ACQRES(BitmapSize)
 
 typedef struct {
-uint16   majorVersion;
-uint16   minorVersion;
-uint32   numSizes;
-BitmapSize*   bitmapSizes;//[numSizes]
+EBLCh eblc;
+CBDT* cbdt;
+
 }CBLC;
 ACQRES(CBLC){
-one(f.majorVersion);
-one(f.minorVersion);
-one(f.numSizes);
-arr(f.bitmapSizes, f.numSizes);
- };
-USE_ACQRES(CBLC)
+    one(f.eblc);
+}
 
 #endif

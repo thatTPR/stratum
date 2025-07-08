@@ -3,17 +3,19 @@
 #include "glyf.hpp"
 #include "head.hpp"
 typedef struct {
-Offset16*   offsets;//[numGlyphs + 1]
+Offset16*   offsets;//[numGlyphs + 1] // OFfset/2
+
 }Short;
 ACQRES(Short){size_t s = _numGlyphs+1;
 arr(f.offsets,s);
 
  };
-USE_ACQRES(Short/* format*/)
+USE_ACQRES(Short)
 
 typedef struct {
 Offset32*   offsets;//[numGlyphs + 1]
-}Long/* format*/;
+
+}Long;
 ACQRES(Long){size_t s =  _numGlyphs+1;
 arr(f.offsets,s);
  };

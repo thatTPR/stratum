@@ -1,5 +1,6 @@
-
-	
+#ifndef FTGLYF_HPP
+#define FTGLYF_HPP
+	#include <vector>
 enum SimpleGlyphFlags{
 ON_CURVE_POINT=0x01,//Bit 0: If set, the point is on the curve; otherwise, it is off the curve.
 X_SHORT_VECTOR=0x02,//Bit 1: If set, the corresponding x-coordinate is 1 byte long, and the sign is determined by the X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR flag. If not set, its interpretation depends on the X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR flag: If that other flag is set, the x-coordinate is the same as the previous x-coordinate, and no element is added to the xCoordinates array. If both flags are not set, the corresponding element in the xCoordinates array is two bytes and interpreted as a signed integer. See the description of the X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR flag for additional information.
@@ -23,7 +24,7 @@ uint8*   flags;// [variable]
 uint16 flagNum;
 uint16 xCoordNum;
 uint16 yCoordNum;
-
+uint8* flag;
 }SimpleGlyph;
 size_t size<SimpleGlyph>(SimpleGlyph& f){
    size_t s = _numberOfCountours * sizeof(f.endPtsOfContours[0]);
@@ -51,11 +52,13 @@ for(int i=0;i<lastEndPt;i++){
    else {if(lastFlag & Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR){};
    else{f.yCoordNum+=2};}
    if(f.flags[i] & OVERLAP_SIMPLE) {}
-   if(f.flags[i] & REPEAT_FLAG){
-      i++;
-      if(i>=lastEndPt){throw std::runtime_error("Font Read error: SimpleGlyph flags array too big");}
-      ld(f.flags[i],fi);   
-      };
+   if(f.flags[i] & REPEAT_FLAG){ // Next Bytes number of repeats
+      if(i+1>=lastEndPt){throw std::runtime_error("Font Read error: SimpleGlyph flags array too big");}
+      ld(f.flags[i+1],fi);
+      size_t times = f.flags[i+1];
+      for(int j=0;j<f.flags[i+1];j++){f.flag[f.flagNum+2+i+j]=f.flags[i];}
+      f.flagNum+=times;
+   };
    f.flagNum++;
    }
    f.xCoordinates = new int8[f.xCoordNum] ;uint fit=0;
@@ -89,7 +92,11 @@ template<> void wr<SimpleGlyph>(SimpleGlyph& f, std::ofstream* fi){
    wr(f.instructions,f.instructionLength,fi);
    wr(f.flags,f.flagNum);
    uint16 x,y;x=0;y=0;
-   for(int i =0 ; i<f.flagNum;i++){wr(f.flags[i],fi);}
+   for(int i =0 ; i<f.flagNum;i++){
+      wr(f.flags[i],fi);
+      if(f.flags[i]& REPEAT_FLAG){wr(f.flags[i+1],fi);
+         i+=f.flags[i+1];
+      }};
    for(int i=0 ; i< f.xCoordNum;i++){wr(f.xCoordinates[i],fi);}
    for(int i=0 ; i< f.yCoordNum;i++){wr(f.yCoordinates[i],fi);}
 };
@@ -115,7 +122,7 @@ uint16   glyphIndex;
 /*uint8, int8 , uint16 or */int16   argument1;
 /*uint8, int8 , uint16 or */int16   argument2;
 // [transform data]   ;
-}ComponentGlyphg;
+}CGlyph;
 ACQRES(CGlyph){
 one(f.flags);
       one(f.glyphIndex);
@@ -125,8 +132,8 @@ one(f.flags);
          int8 arg1=f.argument1 ;int8 arg2=f.argument2;one(arg1),one(arg2);f.argument1 = arg1;f.argument2=arg2;};
          else {uint8 arg1=f.argument1 ;uint8 arg2=f.argument2;one(arg1),one(arg2);f.argument1 = arg1;f.argument2=arg2;}
       }
-}
-USE_ACQRES(CGlyph)
+};
+USE_ACQRES(CGLyph)
 typedef struct {
    CGlyph* var;
    uint16 numInstr;
@@ -153,10 +160,10 @@ int16   yMax;
 union {
    ComponentGlyph cg;
    SimpleGlyph sg;
-}glyff;
+}f;
 
-}glyf;
-ACQRES(glyf){
+}glyfHead;
+ACQRES(glyfHead){
    one(f.numberOfCountours);
    _numberOfCountours = f.numberOfContours;
    one(f.glyphIndex);
@@ -165,7 +172,48 @@ ACQRES(glyf){
    one(f.xMax);
    one(f.yMax);
 
-   if(numberOfContours<0){one(f.glyff.cg);};
-   else {one(f.glyff.sg);};
+   if(numberOfContours>=0){one(f.f.sg);};
+   else {one(f.f.cg);};
 };
-USE_ACQRES(glyf)
+USE_ACQRES(glyfHead)
+
+typedef struct {
+   glyfHead* descriptions;
+   size_t s;
+
+   glyfHead& loca(Offset16 rs){
+      Offset32 rrs=s*2;
+      // return descriptions[0]+rrs
+      size_t sc=0;
+      for(int i=0;i<s;i++){
+         if(rrs==sc){return descriptions[i];}
+         sc+=size(descriptions[i]);
+      };
+   };
+   glyfHead& loca(Offset32 rs){
+      size_t sc=0;
+      for(int i=0;i<s;i++){
+         if(s==sc){return descriptions[i];}
+         sc+=size(descriptions[i]);
+      };
+   };
+}glyf;
+void ld<glyf>(glyf f, std::ifstream* fi){
+   std::vector<glyfHead> vec;
+   uint32 len=_length-4;
+   uint16 l=0;int i=0;
+   do{
+   glyfHead desc=f.descriptions[i];
+   l += size(desc);
+   one(desc);
+   vec.push_back(desc);i++;
+   }while(l<len);
+   f.descriptions=vec.data();
+   f.s=i;
+};
+void wr<glyf>(glyf f, std::ofstream* fi){
+   for(int i=0;i<f.s;i++){
+      wr(f.descriptions[i].fi);
+   };
+};
+#endif

@@ -105,9 +105,9 @@ ExtenderGlyph extenderGlyph;
 JstfLangSys jstfLangSys;
 }JstfScript;
 ACQRES(JstfScript){
-one((f.extenderGlyphOffset));
-one((f.defJstfLangSysOffset));
-one((f.jstfLangSysCount));
+one(f.extenderGlyphOffset);
+one(f.defJstfLangSysOffset);
+one(f.jstfLangSysCount);
 arr(f.jstfLangSysRecords, f.jstfLangSysCount);
 offone(f.extenderGlyph,f.extenderGlyphOffset);
 offone(f.jstfLangSys,f.defJstfLangSysOffset); 

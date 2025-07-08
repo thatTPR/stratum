@@ -9,12 +9,12 @@ uint8   horiAdvance;
 int8   vertBearingX;
 int8   vertBearingY;
 uint8   vertAdvance;
-}BigGlyphMetrics/* record*/;
+}BigGlyphMetrics;
 typedef struct {
 uint8   height;
 uint8   width;
 int8   bearingX;
 int8   bearingY;
 uint8   advance;
-}SmallGlyphMetrics/* record*/;
+}SmallGlyphMetrics;
 #endif

@@ -145,23 +145,27 @@ typedef struct {
 uint16   startGlyphID;
 uint16   glyphCount;
 uint16*   classValues;//[glyphCount]
-}ClassDefFormat1/* table: Class array*/;
+}ClassDefFormat1;
 ACQRES(ClassDefFormat1/* table: Class array*/){
-one((f.format));
-one((f.startGlyphID));
-one((f.glyphCount));
+one(f.format);
+one(f.startGlyphID);
+one(f.glyphCount);
 arr(f.classValues, f.glyphCount);
  };
 USE_ACQRES(ClassDefFormat1/* table: Class array*/)
-
+typedef struct {
+uint16   startGlyphID;
+uint16   endGlyphID;
+uint16   class;
+}ClassRange;
 typedef struct {
 // uint16   format;
 uint16   classRangeCount;
 ClassRange*   classRangeRecords;//[classRangeCount]
-}ClassDefFormat2/* table: Class ranges*/;
+}ClassDefFormat2;
 ACQRES(ClassDefFormat2/* table: Class ranges*/){
-one((f.format));
-one((f.classRangeCount));
+one(f.format);
+one(f.classRangeCount);
 arr(f.classRangeRecords, f.classRangeCount);
  };
 USE_ACQRES(ClassDefFormat2/* table: Class ranges*/)
@@ -183,11 +187,7 @@ ACQRES(ClassDef){
 }
 USE_ACQRES(ClassDef)
 
-typedef struct {
-uint16   startGlyphID;
-uint16   endGlyphID;
-uint16   class;
-}ClassRange/* record*/;
+
 typedef struct {
 uint16   sequenceIndex;
 uint16   lookupListIndex;

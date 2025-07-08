@@ -21,13 +21,13 @@ uint16*   colorRecordIndices;//[numPalettes]
 ColorRecord* colorRecords // [numColorRecords]
 }CPAL0;
 ACQRES(CPAL0){
-one((f.version));
-one((f.numPaletteEntries));
-one((f.numPalettes));
-one((f.numColorRecords));
-one((f.colorRecordsArrayOffset));
+one(f.version);
+one(f.numPaletteEntries);
+one(f.numPalettes);
+one(f.numColorRecords);
+one(f.colorRecordsArrayOffset);
 arr(f.colorRecordIndices, f.numPalettes);
-offarr((f.colorRecords),f.colorRecordsArrayOffset,f.numColorRecords)
+offarr(f.colorRecords,f.colorRecordsArrayOffset,f.numColorRecords)
 };
 USE_ACQRES(CPAL0)
 
@@ -41,25 +41,27 @@ uint16*   colorRecordIndices;//[numPalettes]
 Offset32   paletteTypesArrayOffset;
 Offset32   paletteLabelsArrayOffset;
 Offset32   paletteEntryLabelsArrayOffset;//
-//
-uint32*	paletteTypes//[numPalettes];
+/// 
 ColorRecord* colorRecords; // [numColorRecords]
+uint32*	paletteTypes;//[numPalettes];
+uint16* paletteLabels;//[numPalettes];
 uint16*	paletteEntryLabels;//[numPaletteEntries]	
-
+    
 }CPAL1;
 ACQRES(CPAL1){
-one((f.version));
-one((f.numPaletteEntries));
-one((f.numPalettes));
-one((f.numColorRecords));
-one((f.colorRecordsArrayOffset));
+one(f.version);
+one(f.numPaletteEntries);
+one(f.numPalettes);
+one(f.numColorRecords);
+one(f.colorRecordsArrayOffset);
 arr(f.colorRecordIndices, f.numPalettes);
- one((f.paletteTypesArrayOffset));
-one((f.paletteLabelsArrayOffset));
-one((f.paletteEntryLabelsArrayOffset));
-offarr((f.paletteTypes),f.paletteTypesArrayOffset,f.numPalettes);
-offarr((f.colorRecords),f.colorRecordsArrayOffset,f.numColorRecords);
-offarr((f.paletteEntryLabels),f.paletteEntryLabelsArrayOffset,f.numPaletteEntries);
+ one(f.paletteTypesArrayOffset);
+one(f.paletteLabelsArrayOffset);
+one(f.paletteEntryLabelsArrayOffset);
+offarr(f.colorRecords,f.colorRecordsArrayOffset,f.numColorRecords);
+offarr(f.paletteTypes,f.paletteTypesArrayOffset,f.numPalettes);
+offarr(f.paletteLabel,f.paletteLabelsArrayOffset,f.numPalettes);
+offarr(f.paletteEntryLabels,f.paletteEntryLabelsArrayOffset,f.numPaletteEntries);
 };
 USE_ACQRES(CPAL1)
 
@@ -69,12 +71,19 @@ typedef struct {
         CPAL0 f0;
         CPAL1 f1;
     }c;
+    ColorRecord get(uint16 palI ){
+        switch(f.version){
+        case 0 : {return c.f0.colorRecords[palI];);};
+        case 1 : {return c.f1.colorRecords[palI];};
+    }
+        
+    };
 }CPAL;
 ACQRES(CPAL){
-    one((f.version));
+    one(f.version);
     switch(f.version){
-        case 0 : {one((F.c.f0));};
-        case 1 : {one((F.c.f1));};
+        case 0 : {one(F.c.f0);};
+        case 1 : {one(F.c.f1);};
     }
 }
 USE_ACQRES(CPAL)

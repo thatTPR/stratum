@@ -15,11 +15,11 @@ uint16   majorVersion;
 uint16   minorVersion;
 uint32   numSizes;
 BitmapScale*   strikes;//[numSizes]
-}EBSC/* table*/;
+}EBSC;
 ACQRES(EBSC){
-one((f.majorVersion));
-one((f.minorVersion));
-one((f.numSizes));
+one(f.majorVersion);
+one(f.minorVersion);
+one(f.numSizes);
 arr(f.strikes, f.numSizes);
  };
 USE_ACQRES(EBSC)

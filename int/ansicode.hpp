@@ -168,4 +168,3 @@
 
 // 90–97, //	Set bright foreground color	aixterm (not in standard)
 // 100–107, //	Set bright background color	aixterm (not in standard)
-

@@ -38,12 +38,12 @@ arr(f.data, f.dataLen);
  };
 USE_ACQRES(GlyphBitmapFormat19)
 
-typedef struct {
-    union {
+typedef union {
+    
         GlyphBitmapFormat17 f17;
         GlyphBitmapFormat18 f18;
         GlyphBitmapFormat19 f19;
-    }f;
+
 
 }GlyphBitmapFormat;
 
@@ -55,10 +55,12 @@ uint16   minorVersion;
     ACQRES(CBDT){
 one(f.majorVersion);
 one(f.minorVersion);
-        switch(){ // Uses f
-            
-        }
-        one((f.form));
+        switch(_ebdtFormat){ 
+            case 17:{one(f.form.f17);}
+            case 18:{one(f.form.f18);}
+            case 19:{one(f.form.f19);}
+        };
+        one(f.form);
 
     };
     USE_ACQRES(CBDT)

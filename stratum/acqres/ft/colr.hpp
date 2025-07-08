@@ -1,13 +1,13 @@
 typedef struct {
    uint16   glyphID;
    uint16   paletteIndex;
-}Layer/* record:*/;
+}Layer;
 
 typedef struct {
 uint16   glyphID;
 uint16   firstLayerIndex;
 uint16   numLayers;
-}BaseGlyph/* record:*/;
+}BaseGlyph;
 typedef struct {
 uint16   glyphID;
 Offset32   paintOffset;
@@ -15,89 +15,115 @@ Offset32   paintOffset;
 typedef struct {
 uint32   numBaseGlyphPaintRecords;
 BaseGlyphPaintRecord*   baseGlyphPaintRecords;//[numBaseGlyphPaintRecords]
-}BaseGlyphList/* table:*/;
-ACQRES(BaseGlyphList/* table:*/){
-one((f.numBaseGlyphPaintRecords));
+}BaseGlyphList;
+ACQRES(BaseGlyphList){
+one(f.numBaseGlyphPaintRecords);
 arr(f.baseGlyphPaintRecords, f.numBaseGlyphPaintRecords);
  };
-USE_ACQRES(BaseGlyphList/* table:*/)
+USE_ACQRES(BaseGlyphList)
 
 typedef struct {
 uint32   numLayers;
 Offset32*   paintOffsets;//[numLayers]
-}LayerList/* table:*/;
-ACQRES(LayerList/* table:*/){
-one((f.numLayers));
+}LayerList;
+ACQRES(LayerList){
+one(f.numLayers);
 arr(f.paintOffsets, f.numLayers);
  };
-USE_ACQRES(LayerList/* table:*/)
+USE_ACQRES(LayerList)
 
 typedef struct {
-uint8   format;
-uint32   numClips;
-Clip*   clips;//[numClips]
-}ClipList/* table:*/;
-ACQRES(ClipList/* table:*/){
-one((f.format));
-one((f.numClips));
-arr(f.clips, f.numClips);
- };
-USE_ACQRES(ClipList/* table:*/)
+// uint8   format;
+FWORD   xMin;
+FWORD   yMin;
+FWORD   xMax;
+FWORD   yMax;
+}ClipBoxFormat1;
+typedef struct {
+// uint8   format;
+FWORD   xMin;
+FWORD   yMin;
+FWORD   xMax;
+FWORD   yMax;
+uint32   varIndexBase;
+}ClipBoxFormat2;
+typedef struct {
+   uint8 format;
+   union {
+      ClipBoxFormat1 f1;
+      ClipBoxFormat2 f2;
+   }f;
 
+}ClipBoxFormat;
+ACQRES(ClipBoxFormat){
+   one(f.format);
+   switch(f.format){
+      case 1 :{one(f.f1);}
+      case 2 :{one(f.f2);}
+   }
+}
+USE_ACQRES(ClipBoxFormat)
 typedef struct {
 uint16   startGlyphID;
 uint16   endGlyphID;
 Offset24   clipBoxOffset;
-}Clip/* record:*/;
+//
+ClipBoxFormat clipBox;
+
+}Clip;
+ACQRES(Clip){
+   one(f.startGlyphID);
+   one(f.endGlyphID);
+   one(f.clipBoxOffset);
+   offone(f.clipBox,f.clipBoxOffset)
+}
+USE_ACQRES(Clip)
 typedef struct {
 uint8   format;
-FWORD   xMin;
-FWORD   yMin;
-FWORD   xMax;
-FWORD   yMax;
-}ClipBoxFormat1/* table, static clip box:*/;
-typedef struct {
-uint8   format;
-FWORD   xMin;
-FWORD   yMin;
-FWORD   xMax;
-FWORD   yMax;
-uint32   varIndexBase;
-}ClipBoxFormat2/* table, variable clip box:*/;
+uint32   numClips;
+Clip*   clips;//[numClips]
+}ClipList;
+ACQRES(ClipList){
+one(f.format);
+one(f.numClips);
+arr(f.clips, f.numClips);
+ };
+USE_ACQRES(ClipList)
+
 typedef struct {
 F2DOT14   stopOffset;
 uint16   paletteIndex;
 F2DOT14   alpha;
-}ColorStop/* record:*/;
+}ColorStop;
 typedef struct {
 F2DOT14   stopOffset;
 uint16   paletteIndex;
 F2DOT14   alpha;
 uint32   varIndexBase;
-}VarColorStop/* record:*/;
+}VarColorStop;
 typedef struct {
 uint8   extend;
 uint16   numStops;
 ColorStop*   colorStops;//[numStops]
-}ColorLine/* table:*/;
-ACQRES(ColorLine/* table:*/){
-one((f.extend));
-one((f.numStops));
+}ColorLine;
+ACQRES(ColorLine){
+one(f.extend);
+one(f.numStops);
 arr(f.colorStops, f.numStops);
  };
-USE_ACQRES(ColorLine/* table:*/)
+USE_ACQRES(ColorLine)
 
 typedef struct {
 uint8   extend;
 uint16   numStops;
 VarColorStop*   colorStops;//[numStops]
-}VarColorLine/* table:*/;
-ACQRES(VarColorLine/* table:*/){
-one((f.extend));
-one((f.numStops));
+}VarColorLine;
+ACQRES(VarColorLine){
+one(f.extend);
+one(f.numStops);
 arr(f.colorStops, f.numStops);
  };
-USE_ACQRES(VarColorLine/* table:*/)
+USE_ACQRES(VarColorLine)
 
 enum Extend {
 EXTEND_PAD=0,
@@ -119,7 +145,7 @@ typedef struct {
 uint16   paletteIndex;
 F2DOT14   alpha;
 uint32   varIndexBase;
-}colrf3;//PaintVarSolid/* table (format 3):*/;
+}colrf3;//PaintVarSolid;
 typedef struct {
 // uint8   format;
 Offset24   colorLineOffset;
@@ -129,7 +155,7 @@ FWORD   x1;
 FWORD   y1;
 FWORD   x2;
 FWORD   y2;
-}colrf4;//PaintLinearGradient/* table (format 4):*/;
+}colrf4;//PaintLinearGradient;
 typedef struct {
 // uint8   format;
 Offset24   colorLineOffset;
@@ -140,7 +166,7 @@ FWORD   y1;
 FWORD   x2;
 FWORD   y2;
 uint32   varIndexBase;
-}colrf5;//PaintVarLinearGradient/* table (format 5):*/;
+}colrf5;//PaintVarLinearGradient;
 typedef struct {
 \\uint8   format;
 Offset24   colorLineOffset;
@@ -205,7 +231,7 @@ Fixed   xy;
 Fixed   yy;
 Fixed   dx;
 Fixed   dy;
-}Affine2x3/* table:*/;
+}Affine2x3;
 typedef struct {
 Fixed   xx;
 Fixed   yx;
@@ -214,7 +240,7 @@ Fixed   yy;
 Fixed   dx;
 Fixed   dy;
 uint32   varIndexBase;
-}VarAffine2x3/* table:*/;
+}VarAffine2x3;
 typedef struct {
 \\uint8   format;
 Offset24   paintOffset;
@@ -417,7 +443,7 @@ typedef struct {
    colrfu f;
 }colrf;
 ACQRES(colrf){
-   one((f.format));
+   one(f.format);
    switch(f.format){
       case 1: {one(f.f1);};
       case 2: {one(f.f2);};
@@ -463,14 +489,31 @@ uint16   numLayerRecords;
 // OffsetTables;
 BaseGlyph* baseGlyphRecords;
 Layer* layerRecords ;
+   get(uint16 gid){
+      int n = numBaseGlyphRecords/2;
+      int i ;
+      for(i=n;n>=1;){
+         if(baseGlyphRecords[i].glyphID == gid){
+            ColorRecord* crs = new ColorRecord[baseGlyphRecords[i].numLayers]; 
+            for(int j =baseGlyphRecords[i].firstLayerIndex,j<baseGlyphRecords[i].numLayers;j++){
+               if(layerRecords[j].glyphID==gid){
+                  crs[j]=fcur->cpal().get(layerRecords[j].paletteIndex);}
+            } 
+            
+         };
+         n=n/2;
+         if(baseGlyphRecords[i].glyphID> gid) {i-=n; }
+         else(baseGlyphRecords[i].glyphID<gid){i+=n;};
+      }
+    } ;
 }COLR0;
 ACQRES(COLR0){
-   one((f.numBaseGlyphRecords));
-   one((f.baseGlyphRecordsOffset));
-   one((f.layerRecordsOffset));
-   one((f.numLayerRecords));
-   offarr((f.baseGlyphRecords),f.baseGlyphRecordsOffset,f.numBaseGlyphRecords);
-   offarr((f.layerRecords),f.layerRecordsOffset,f.numLayerRecords); 
+   one(f.numBaseGlyphRecords);
+   one(f.baseGlyphRecordsOffset);
+   one(f.layerRecordsOffset);
+   one(f.numLayerRecords);
+   offarr(f.baseGlyphRecords,f.baseGlyphRecordsOffset,f.numBaseGlyphRecords);
+   offarr(f.layerRecords,f.layerRecordsOffset,f.numLayerRecords); 
 }
 USE_ACQRES(COLR1)
 typedef struct {
@@ -490,22 +533,25 @@ Layer* layerRecords ;
 BaseGlyphList baseGlyphList;
 LayerList layerList;
 ClipList clipList;
+    get(uint16 gid){
+      
+    } ;
 }COLR1;
 ACQRES(COLR1){
-   one((f.numBaseGlyphRecords));
-   one((f.baseGlyphRecordsOffset));
-   one((f.layerRecordsOffset));
-   one((f.numLayerRecords));
-   one((f.baseGlyphListOffset));
-   one((f.layerListOffset));
-   one((f.clipListOffset));
-   one((f.varIndexMapOffset));
-   one((f.itemVariationStoreOffset));
-   offarr((f.baseGlyphRecords),f.baseGlyphRecordsOffset,f.numBaseGlyphRecords);
-   offarr((f.layerRecords),f.layerRecordsOffset,f.numLayerRecords);
-   offone((f.baseGlyphList),f.baseGlyphListOffset);
-   offone((f.layerList),f.layerListOffset);
-   offone((f.clipList),f.clipListOffset);
+   one(f.numBaseGlyphRecords);
+   one(f.baseGlyphRecordsOffset);
+   one(f.layerRecordsOffset);
+   one(f.numLayerRecords);
+   one(f.baseGlyphListOffset);
+   one(f.layerListOffset);
+   one(f.clipListOffset);
+   one(f.varIndexMapOffset);
+   one(f.itemVariationStoreOffset);
+   offarr(f.baseGlyphRecords,f.baseGlyphRecordsOffset,f.numBaseGlyphRecords);
+   offarr(f.layerRecords,f.layerRecordsOffset,f.numLayerRecords);
+   offone(f.baseGlyphList,f.baseGlyphListOffset);
+   offone(f.layerList,f.layerListOffset);
+   offone(f.clipList,f.clipListOffset);
 }
 USE_ACQRES(COLR1)
 
@@ -515,12 +561,18 @@ typedef struct {
    COLR0 c0;
    COLR1 c1;
 } c;
+   voi get(uint16 gid){
+       switch(version){
+      case 0 : {return c.c0.get(gid);};
+      case 1 : (return c.c1.get(gid););
+   };
+   };
 }COLR;
 ACQRES(COLR){
-   one((f.version));
+   one(f.version);
    switch(f.version){
-      case 0 : {one((f.c.c0));};
-      case 1 : (one((f.c.c1)););
+      case 0 : {one(f.c.c0);};
+      case 1 : (one(f.c.c1););
    };
 }
 USE_ACQRES(COLR)

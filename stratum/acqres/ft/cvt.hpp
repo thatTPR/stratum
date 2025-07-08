@@ -5,6 +5,7 @@ typedef struct {
     FWORD* items;
 }cvt;
 ACQRES(cvt){
-    arr((f.items),_sizeTable/2)
+    uint16 sizeTable=_length/2
+    arr(f.items,sizeTable);
 }
 #endif

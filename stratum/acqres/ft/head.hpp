@@ -50,7 +50,7 @@ Bit 6: Extended (if set to 1)
 Bits 7 – 15: Reserved (set to 0).*/
  uint16   lowestRecPPEM;
  int16   fontDirectionHint ;
- int16   indexToLocFormat;
+ int16   indexToLocFormat;//	0 for short offsets (Offset16), 1 for long (Offset32).
  int16   glyphDataFormat;
 }head /* glyphs that have contours. Glyphs with no contours should be ignored for the purposes of these calculations.only*/;
 ACQRES(head){

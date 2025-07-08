@@ -1,12 +1,18 @@
 #ifndef FTKERN_HPP
 #define FTKERN_HPP
 #include "_fontTableCommon.hpp"
+#include <algorithm>
 typedef struct {
 uint16   left;
 uint16   right;
 FWORD   value;
-}KernPair/* record*/;
+}KernPair;
 
+bool cmp(KernPair& l,KernPair& r){
+        uint32 lhs = l.left<<16 +l.right;
+        uint32 rhs = r.left<<16 +r.right;
+        return lhs<rhs;
+};
 
 typedef struct {
 uint16   nPairs;
@@ -14,12 +20,31 @@ uint16   searchRange;
 uint16   entrySelector;
 uint16   rangeShift;
 KernPair*   kernPairs;//[nPairs]
+void sort(){
+    
+    bool b =true;
+    while(b){b=false;
+        for(int i=0;i<nPairs;i++){
+            if(!cmp(kernPairs[nPairs-2-i],kernPairs[nPairsi-1-i])){
+                KernPair tmp;
+                tmp = kernPairs[nPairs-2-i];kernPairs[nPairs-2-i]=kernPairs[nPairs-1-i];kernPairs[nPairs-1-i]=tmp;
+                b =true;
+            }
+            if(!cmp(kernPairs[i],kernPairs[i+1])){
+                KernPair tmp;
+                tmp = kernPairs[i];kernPairs[i]=kernPairs[i+1];kernPairs[i+1]=tmp;
+                b =true;
+            }
+        }
+    };
+   
+};
 }KernSubtableFormat0;
 ACQRES(KernSubtableFormat0){
-one((f.nPairs));
-one((f.searchRange));
-one((f.entrySelector));
-one((f.rangeShift));
+one(f.nPairs);
+one(f.searchRange);
+one(f.entrySelector);
+one(f.rangeShift);
 arr(f.kernPairs, f.nPairs);
  };
 USE_ACQRES(KernSubtableFormat0)
@@ -28,15 +53,15 @@ USE_ACQRES(KernSubtableFormat0)
 typedef struct {
 uint16	firstGlyph ;//	First glyph in class range.
 uint16	nGlyphs ;//	Number of glyph in class range.
-ClassDef classDef;
+uint16* classValue;
 }kernClassHead;
 ACQRES(kernClassHead){
     one(f.firstGlyph);
     one(f.nGlyphs);
-    one(f.classDef);
+    arr(f.classValue,f.nGlyphs);
 }
 USE_ACQRES(kernClassHead)
-typedef struct { // TODO maybe check offset dtypes
+typedef struct {
 uint16   rowWidth;
 Offset16   leftClassOffset;
 Offset16   rightClassOffset;
@@ -78,20 +103,66 @@ union {
 }KernSub;
 ACQRES(KernSub){
     one(f.version);
-    one(f.llength);
+    one(f.length);
     one(f.coverage);
     switch(f.version){
         case 0 : {one(f.f.f0);};
         case 2 : {one(f.f.f2);};
     }
-
+    f.length =size(f);
 }
 USE_ACQRES(KernSub)
 typedef struct {
 uint16   version;
 uint16   nTables;
 KernSub* s;
+    int16 getPair(uint16 gid ,uint16 gid2 ){
+        KenrPair p ;p.left=gid;p.right=gid2;
+        for(int i=0;i<nTables;i++){
+            switch(s[i].version){
+                case 0 :{                
+                int n=s[i].f0.nPairs/2;int i=0;
+                for(int j=s[i].f0.nPairs/2;i<s[i].f0.entrySelector,;i++){
+                if(s[i].f0.kernPairs[j].left==gid and s[i].f0.kernPairs[j].right==gid2){
+                    return s[i].f0.kernPairs[j].nGlyphs;};
+                n=n/2;
+                    if(s[i].f0.kernPairs[j].left < gid ){
+                        j+=n;
+                    }
+                    else if(s[i].f0.kernPairs[j].left==gid) {
+                        if(s[i].f0.kernPairs[j].right<gid2){
+                            j+=n;
+                        }
+                        else {j-=n;}
+                    }
+                    else {j-=n;};
+                }
+            }};
+            case 2 : {
+                uint16 lg ;
+                    if(s[i].f2.leftClass.firstGlyph<= gid){
+                        uint16 dif = gid - s[i].f2.leftClass.firstGlyph;
+                        if(dif < s[i].f2.leftClass.nGlyphs){
+                            lg=s[i].f2.leftClass.classValue[dif];
+                        }
+                        else {
+                            continue;
+                        };};
 
+                uint16 rg ;
+               if(s[i].f2.rightClass.firstGlyph<= gid2){
+                        uint16 dif = gid - s[i].f2.rightClass.firstGlyph;
+                        if(dif < s[i].f2.rightClass.nGlyphs){
+                            lg=s[i].f2.rightClass.classValue[dif];
+                        }
+                        else {
+                            continue;
+                        };};
+                return *(s[i].f2.kerningArray + lg + rg); 
+            }
+        };
+        return 0;
+    };
 }kern;
 ACQRES(kern){
     one(f.version);
