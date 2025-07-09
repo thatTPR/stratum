@@ -63,7 +63,7 @@ uint8_t rgb_to_ansi_256(glm::uvec3 v){
     return 16 + 36 * r_idx + 6 * g_idx + b_idx;};
 
     typedef struct {
-std::string s;
+std::string str;
 ansiFormat* fs;
 }formatStr;
 formatStr ansiStrip(std::string s){

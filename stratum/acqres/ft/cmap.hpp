@@ -4,10 +4,10 @@
 #include <math.h>
 #include <string>
 template <typename charT,typename InT,typename cmapT>
-void cmapnglyphId(cmapT& p,std::basic_string<charT> c,size_t* s, InT* res ,InT(*ptr)(cmapT,charT )){
-    *s=c.size();
+void cmapnglyphId(cmapT& p,charT start,charT end,size_t* s, InT* res ,InT(*ptr)(cmapT,charT )){
+    *s=end-start+1;
     res = new uint8[*s];
-    for(int i=0;i<*s;i++){res[i]=ptr(p,c[i]);}
+    for(InT i=start;i<=end;i++){res[i-start]=ptr(p,c[i]);}
 };
 typedef struct {
     uint16   firstCode;
@@ -22,10 +22,12 @@ typedef struct {
 uint16   length;
 uint16   language;
 uint8   glyphIdArray[256];//[256]
+uint16 getRangeNum(){return 1;  };
 }cmapSubFormat0;
+
 uint8 cmap0glyphId(cmapSubFormat0& p,char c){return p.glyphIdArray[c];};
-void cmap0glyphIds(cmapSubFormat0& p,std::basic_string<char> c,size_t* s, uint8* res ){
-    cmapnglyphId<char,uint8,cmapSubFormat0>(p,c,s,res,&cmap0glyphId);
+void cmap0glyphIds(cmapSubFormat0& p,char start,char end,size_t* s, uint8* res ){
+    cmapnglyphId<char,uint8,cmapSubFormat0>(p,start,end,s,res,&cmap0glyphId);
 };
 typedef struct {
 // uint16   format;
@@ -40,6 +42,12 @@ uint16 mshk;
 uint16 numSub;
 uint16 ngid;
 uint16 maxSubHeaderKeys(){uint16 m=0;for(int i=0;i<256;i++){if(m<subHeaderKeys[i])m=subHeaderKeys[i];};};
+uint16 getRangeNum(){uint16 n=0;
+    for(int i=0;i<numSub;i++){
+        n+=subHeaders[i].entryCount;
+    };
+    return n;
+  };
 }cmapSubFormat2;
 
 template <typename charT>
@@ -57,8 +65,8 @@ uint16 cmap2glyphId(cmapSubFormat2& f,charT c){
     }
 };
 template <typename charT>
-void cmap2glyphIds(cmapSubFormat2& p,std::basic_string<charT> c,size_t* s, uint16* res){
-    cmapnglyphId<charT,uint16,cmapSubFormat2>(p,c,s,res,&cmap2glyphId);
+void cmap2glyphIds(cmapSubFormat2& p,charT start,charT end,size_t* s, uint16* res){
+    cmapnglyphId<charT,uint16,cmapSubFormat2>(p,start,end,start,end,res,&cmap2glyphId);
 };
 ACQRES(cmapSubFormat2){
 // one((f.format));
@@ -108,6 +116,15 @@ uint16*   glyphIdArray;//[ ]
     uint16 glyphId(int8 c){ *(idRangeOffset[i]/2
             + (c - startCode[i])
             + idRangeOffset[i])};
+
+    uint16 getRangeNum(){
+        uint16 n=0;
+        for(int i=0;i<segCountX2/2;i++){
+            n+=endCode[i]-startCode[i]+1;
+        }
+        return n;
+      };
+
 }cmapSubFormat4;
 ACQRES(cmapSubFormat4){
 // one((f.format));
@@ -153,8 +170,8 @@ uint16 cmap4glyphId(cmapSubFormat4& p, charT c){
 };
 
 template <typename charT>
-void cmap4glyphIds(cmapSubFormat4& p,std::basic_string<charT> c,size_t* s, uint16* res){
-    cmapnglyphId<charT,uint16,cmapSubFormat4>(p,c,s,res,&cmap4glyphId);
+void cmap4glyphIds(cmapSubFormat4& p,charT start,charT end,size_t* s, uint16* res){
+    cmapnglyphId<charT,uint16,cmapSubFormat4>(p,start,end,s,res,&cmap4glyphId);
 };
 
 typedef struct {
@@ -164,6 +181,8 @@ uint16   language;
 uint16   firstCode;
 uint16   entryCount;
 uint16*   glyphIdArray;//[entryCount]
+uint16 getRangeNum(){return entryCount;  };
+
 }cmapSubFormat6;
 template <typename charT>
 ACQRES(cmapSubFormat6){
@@ -184,8 +203,8 @@ uint16 cmap6glyphId(cmapSubFormat6& p, charT c){
     return 0;
 };
 template <typename charT>
-void cmap6glyphIds(cmapSubFormat6& p,std::basic_string<charT> c,size_t* s, uint16* res){
-    cmapnglyphId<charT,uint16,cmapSubFormat6>(p,c,s,res,&cmap6glyphId);
+void cmap6glyphIds(cmapSubFormat6& p,charT start,charT end,,size_t* s, uint16* res){
+    cmapnglyphId<charT,uint16,cmapSubFormat6>(p,start,end,s,res,&cmap6glyphId);
 };
 
 
@@ -203,6 +222,15 @@ uint32   language;
 uint8*   is32;//[8192]
 uint32   numGroups;
 SequentialMapGroup*   groups;//[numGroups]
+uint16 getRangeNum(){uint16 n=0;
+    for (int i = 0; i < numGroups; i++)
+    {
+        n+=groups[i].endCharCode-groups[i].startCharCode+1;
+    }
+    return n;
+    
+  };
+
 }cmapSubFormat8;
 ACQRES(cmapSubFormat8){
 // one((f.format));
@@ -228,8 +256,8 @@ uint32 cmap8glyphId(cmapSubFormat8& p, charT c){
     return 0;
 };
 template <typename charT>
-void cmap8glyphIds(cmapSubFormat8& p,std::basic_string<charT> c,size_t* s, uint16* res){
-    cmapnglyphId<charT,uint16,cmapSubFormat8>(p,c,s,res,&cmap8glyphId);
+void cmap8glyphIds(cmapSubFormat8& p,charT start,charT end,,size_t* s, uint16* res){
+    cmapnglyphId<charT,uint16,cmapSubFormat8>(p,start,end,s,res,&cmap8glyphId);
 };
 
 typedef struct {
@@ -239,7 +267,9 @@ uint32   length;
 uint32   language;
 uint32   startCharCode;
 uint32   numChars;
-uint16*   glyphIdArray;
+uint16*   glyphIdArray;//[numChars]
+uint16 getRangeNum(){return numChars;}
+
 }cmapSubFormat10;
 ACQRES(cmapSubFormat10){
     one(f.reserved);
@@ -258,8 +288,8 @@ uint32 cmap10glyphId(cmapSubFormat10& p, charT c){
     return 0;
 };
 template <typename charT>
-void cmap10glyphIds(cmapSubFormat10& p,std::basic_string<charT> c,size_t* s, uint16* res){
-    cmapnglyphId<charT,uint16,cmapSubFormat10>(p,c,s,res,&cmap10glyphId);
+void cmap10glyphIds(cmapSubFormat10& p,charT start,charT end,,size_t* s, uint16* res){
+    cmapnglyphId<charT,uint16,cmapSubFormat10>(p,start,end,s,res,&cmap10glyphId);
 };
 
 
@@ -270,6 +300,14 @@ uint32   length;
 uint32   language;
 uint32   numGroups;
 SequentialMapGroup*   groups;//[numGroups]
+uint16 getRangeNum(){uint16 n=0;
+    for (int i = 0; i <numGroups; i++)
+    {
+        n+=groups[i].endCharCode-groups[i].startCharCode+1;
+    }
+    return n;
+}
+
 }cmapSubFormat12;
 ACQRES(cmapSubFormat12){
 // one((f.format));
@@ -291,8 +329,8 @@ uint32 cmap12glyphId(cmapSubFormat12& p, charT c){
     return 0;
 };
 template <typename charT>
-void cmap12glyphIds(cmapSubFormat12& p,std::basic_string<charT> c,size_t* s, uint16* res){
-    cmapnglyphId<charT,uint16,cmapSubFormat12>(p,c,s,res,&cmap13glyphId);
+void cmap12glyphIds(cmapSubFormat12& p,charT start,charT end,,size_t* s, uint16* res){
+    cmapnglyphId<charT,uint16,cmapSubFormat12>(p,start,end,s,res,&cmap13glyphId);
 };
 
 typedef struct {
@@ -307,6 +345,8 @@ uint32   length;
 uint32   language;
 uint32   numGroups;
 ConstantMapGroup*   groups;//[numGroups]
+uint16 getRangeNum(){return numGroups;}
+
 }cmapSubFormat13;
 ACQRES(cmapSubFormat13){
 // one((f.format));
@@ -327,8 +367,8 @@ uint32 cmap13glyphId(cmapSubFormat13& p, charT c){
     return 0;
 };
 template <typename charT>
-void cmap13glyphIds(cmapSubFormat13& p,std::basic_string<charT> c,size_t* s, uint16* res){
-    cmapnglyphId<charT,uint16,cmapSubFormat13>(p,c,s,res,&cmap13glyphId);
+void cmap13glyphIds(cmapSubFormat13& p,charT start,charT end,,size_t* s, uint16* res){
+    cmapnglyphId<charT,uint16,cmapSubFormat13>(p,start,end,s,res,&cmap13glyphId);
 };
 typedef struct {
 uint24   unicodeValue;
@@ -402,7 +442,7 @@ offone(f.nonDefaultUVS[f.varSelector[i].nonDefaultUVSI],f.varSelector[i].nonDefa
 };};
 USE_ACQRES(cmapSubFormat14)
 template <typename charT>
-void cmap14glyphIds(cmapSubFormat14& p,std::basic_string<charT> c,size_t* s, uint16* res){
+void cmap14glyphIds(cmapSubFormat14& p,charT start,charT end,,size_t* s, uint16* res){
     
     std::vector<uint16> ret;
     #define DEFUVS(i) f.varSelector[i].defualtUVS
@@ -502,6 +542,24 @@ USE_ACQRES(cmapHeader)
 typedef struct {
     cmapHeader head;
     cmapSubFormat* tables;
+    void getRanges(uint16* s,uint16* starts,uint16* ends){
+        int n=0;
+        for(int i=0;i<head.numTables;i++){
+            switch(tables[i].format){
+                case 0 : {n+=getRangeNum();break;}
+                case 2 : {n+=getRangeNum();break;}
+                case 4 : {n+=getRangeNum();break;}
+                case 6 : {n+=getRangeNum();break;}
+                case 8 : {n+=getRangeNum();break;}
+                case 10 : {n+=getRangeNum();break;}
+                case 12 : {n+=getRangeNum();break;}
+                case 13 : {n+=getRangeNum();break;}
+                case 14 : {n+=getRangeNum();break;}
+            }
+        }
+        *s=n;
+
+    };
 }cmap;
 ACQRES(cmap){
     one(f.head);
@@ -526,7 +584,7 @@ case 14 : {return cmap14GlyphId(f.f.f14,c);};
     }
 };
 template <typename charT, typename uintT>
- cmapSubGlyphIds(cmapSubFormat& f,std::basic_string<CharT>  c,uintT* r,size_t* s){
+ cmapSubGlyphIds(cmapSubFormat& f,charT start ,charT end,uintT* r,size_t* s){
     switch(f.format){
 case 0 :  {return cmap0GlyphIds(f.f.f0,c,s,s,r);};
 case 2 :  {return cmap2GlyphIds(f.f.f2,c,s,s,r);};
@@ -549,7 +607,7 @@ uintT cmapGlyphId(cmap* cm, charT c  ){
 };
 
 template <typename charT>
-void cmapGlyphIds(cmap* cm,std::basic_string<charT> o,  size_t* s,uint32* r   ){
+void cmapGlyphIds(cmap* cm,charT start,charT end,  size_t* s,uint32* r   ){
     *s=0;
     for(int i=0;i<numTables;i++){
         

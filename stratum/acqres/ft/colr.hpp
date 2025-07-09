@@ -1,36 +1,7 @@
-typedef struct {
-   uint16   glyphID;
-   uint16   paletteIndex;
-}Layer;
-
-typedef struct {
-uint16   glyphID;
-uint16   firstLayerIndex;
-uint16   numLayers;
-}BaseGlyph;
-typedef struct {
-uint16   glyphID;
-Offset32   paintOffset;
-}BaseGlyphPaintRecord;
-typedef struct {
-uint32   numBaseGlyphPaintRecords;
-BaseGlyphPaintRecord*   baseGlyphPaintRecords;//[numBaseGlyphPaintRecords]
-}BaseGlyphList;
-ACQRES(BaseGlyphList){
-one(f.numBaseGlyphPaintRecords);
-arr(f.baseGlyphPaintRecords, f.numBaseGlyphPaintRecords);
- };
-USE_ACQRES(BaseGlyphList)
-
-typedef struct {
-uint32   numLayers;
-Offset32*   paintOffsets;//[numLayers]
-}LayerList;
-ACQRES(LayerList){
-one(f.numLayers);
-arr(f.paintOffsets, f.numLayers);
- };
-USE_ACQRES(LayerList)
+#ifndef FTCOLR_HPP
+#define FTCOLR_HPP
+#include "_fontVarCommon.hpp"
+#include "cpal.hpp"
 
 typedef struct {
 // uint8   format;
@@ -130,23 +101,31 @@ EXTEND_PAD=0,
 EXTEND_REPEAT=1,
 EXTEND_REFLECT=2
 };
-typedef struct {
+union colrfu;
+ struct colrf1 {
 // uint8   format;
 uint8   numLayers;
 uint32   firstLayerIndex;
-}colrf1;//PaintColrLayers
-typedef struct {
+};//PaintColrLayers
+ struct colrf2 {
 // uint8   format;
 uint16   paletteIndex;
 F2DOT14   alpha;
-}colrf2;//PaintSolid table ;
-typedef struct {
+void get(colorFT* cft,uint16* s){
+   ColorRecord cr = ftcur->CPAL().get(paletteIndex);
+   cft[*s].color= glm::uvec4(cr.eed,cr.green,cr.blue,cr.alpha);
+   cft[*s].alpha=alpha;
+   cft[*s].sizeColr=0;
+   *s=*s+1;
+}; 
+};//PaintSolid table ;
+struct colrf3 {
 // uint8   format;
 uint16   paletteIndex;
 F2DOT14   alpha;
 uint32   varIndexBase;
-}colrf3;//PaintVarSolid;
-typedef struct {
+};//PaintVarSolid;
+ struct colrf4 {
 // uint8   format;
 Offset24   colorLineOffset;
 FWORD   x0;
@@ -155,8 +134,20 @@ FWORD   x1;
 FWORD   y1;
 FWORD   x2;
 FWORD   y2;
-}colrf4;//PaintLinearGradient;
-typedef struct {
+ColorLine colorLine;
+};//PaintLinearGradient;
+ACQRES(colrf4){
+   one(f.colorLineOffset);
+   one(f.x0);
+   one(f.y0);
+   one(f.x1);
+   one(f.y1);
+   one(f.x2);
+   one(f.y2);
+   offone(f.colorLine,f.colorLineOffset);
+};
+USE_ACQRES(colrf4)
+struct colrf5 {
 // uint8   format;
 Offset24   colorLineOffset;
 FWORD   x0;
@@ -166,8 +157,21 @@ FWORD   y1;
 FWORD   x2;
 FWORD   y2;
 uint32   varIndexBase;
-}colrf5;//PaintVarLinearGradient;
-typedef struct {
+VarColorLine colorLine;
+};//PaintVarLinearGradient;
+ACQRES(colrf5){
+   one(f.colorLineOffset);
+   one(f.x0);
+   one(f.y0);
+   one(f.x1);
+   one(f.y1);
+   one(f.x2);
+   one(f.y2);
+   one(f.varIndexBase);
+   offone(f.colorLine,f.colorLineOffset);
+};
+USE_ACQRES(colrf5)
+struct colrf6 {
 \\uint8   format;
 Offset24   colorLineOffset;
 FWORD   x0;
@@ -176,8 +180,20 @@ UFWORD   radius0;
 FWORD   x1;
 FWORD   y1;
 UFWORD   radius1;
-}colrf6 ;//PaintRadialGradient:*/;
-typedef struct {
+ColorLine colorLine;
+};//PaintRadialGradient:*/;
+ACQRES(colrf6){
+   one(f.colorLineOffset);
+   one(f.x0);
+   one(f.y0);
+   one(f.radius0);
+   one(f.x1);
+   one(f.y1);
+   one(f.radius1);
+   offone(f.colorLine,f.colorLineOffset);
+}
+USE_ACQRES(colrf6)
+struct colrf7 {
 \\uint8   format;
 Offset24   colorLineOffset;
 FWORD   x0;
@@ -187,16 +203,41 @@ FWORD   x1;
 FWORD   y1;
 UFWORD   radius1;
 uint32   varIndexBase;
-}colrf7 ;//PaintVarRadialGradient:*/;
-typedef struct {
+VarColorLine colorLine;
+};//PaintVarRadialGradient:*/;
+ACQRES(colrf7){
+      one(f.colorLineOffset);
+   one(f.x0);
+   one(f.y0);
+   one(f.radius0);
+   one(f.x1);
+   one(f.y1);
+   one(f.radius1);
+   one(f.varIndexBase);
+   offone(f.colorLine,f.colorLineOffset);
+}
+USE_ACQRES(colrf7)
+
+struct colrf8 {
 \\uint8   format;
 Offset24   colorLineOffset;
 FWORD   centerX;
 FWORD   centerY;
 F2DOT14   startAngle;
 F2DOT14   endAngle;
-}colrf8 ;//PaintSweepGradient:*/;
-typedef struct {
+ColorLine colorLine;
+};//PaintSweepGradient:*/;
+ACQRES(colrf7){
+   one(f.colorLineOffset);
+   one(f.centerX);
+   one(f.centerY);
+   one(f.startAngle);
+   one(f.endAngle);
+   offone(f.colorLine,f.colorLineOffset);
+}
+USE_ACQRES(colrf6)
+
+struct colrf9 {
 \\uint8   format;
 Offset24   colorLineOffset;
 FWORD   centerX;
@@ -204,27 +245,30 @@ FWORD   centerY;
 F2DOT14   startAngle;
 F2DOT14   endAngle;
 uint32   varIndexBase;
-}colrf9 ;//PaintVarSweepGradient:*/;
-typedef struct {
+VarColorLine colorLine;
+};//PaintVarSweepGradient:*/;
+ACQRES(colrf9){
+one(f.colorLineOffset);
+one(f.centerX);
+one(f.centerY);
+one(f.startAngle);
+one(f.endAngle);
+one(f.varIndexBase);
+offone(f.colorLine,colorLineOffset);
+}
+USE_ACQRES(colrf9)
+ struct colrf10 {
 \\uint8   format;
 Offset24   paintOffset;
 uint16   glyphID;
-}colrf10 ;//PaintGlyph:*/;
-typedef struct {
+// SpecialHandle
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintGlyph:*/;
+struct colrf11 {
 \\uint8   format;
 uint16   glyphID;
-}colrf11 ;//PaintColrGlyph:*/;
-typedef struct {
-\\uint8   format;
-Offset24   paintOffset;
-Offset24   transformOffset;
-}colrf12 ;//PaintTransform:*/;
-typedef struct {
-\\uint8   format;
-Offset24   paintOffset;
-Offset24   transformOffset;
-}colrf13 ;//PaintVarTransform:*/;
-typedef struct {
+};//PaintColrGlyph:*/;
+typedef struct  {
 Fixed   xx;
 Fixed   yx;
 Fixed   xy;
@@ -232,7 +276,7 @@ Fixed   yy;
 Fixed   dx;
 Fixed   dy;
 }Affine2x3;
-typedef struct {
+typedef struct  {
 Fixed   xx;
 Fixed   yx;
 Fixed   xy;
@@ -241,123 +285,171 @@ Fixed   dx;
 Fixed   dy;
 uint32   varIndexBase;
 }VarAffine2x3;
-typedef struct {
+struct colrf12  {
+\\uint8   format;
+Offset24   paintOffset;
+Offset24   transformOffset;
+Affine2x3 transform;
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+
+} ;//PaintTransform:*/;
+ACQRES(colrf12){
+   one(f.paintOffset);
+   one(f.transformOffset);
+   offone(f.transform,f.transformOffset);
+}
+USE_ACQRES(colrf12)
+struct colrf13  {
+\\uint8   format;
+Offset24   paintOffset;
+Offset24   transformOffset;
+VarAffine2x3 transform;
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintVarTransform:*/;
+ACQRES(colrf13){
+   one(f.paintOffset);
+   one(f.transformOffset);
+   offone(f.transform,f.transformOffset);
+}
+USE_ACQRES(colrf13)
+ struct colrf14  {
 \\uint8   format;
 Offset24   paintOffset;
 FWORD   dx;
 FWORD   dy;
-}colrf14 ;//PaintTranslate:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintTranslate:*/;
+ struct colrf15  {
 \\uint8   format;
 Offset24   paintOffset;
 FWORD   dx;
 FWORD   dy;
 uint32   varIndexBase;
-}colrf15 ;//PaintVarTranslate:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+
+};//PaintVarTranslate:*/;
+struct colrf16  {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scaleX;
 F2DOT14   scaleY;
-}colrf16 ;//PaintScale:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+
+};//PaintScale:*/;
+struct colrf17 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scaleX;
 F2DOT14   scaleY;
 uint32   varIndexBase;
-}colrf17 ;//PaintVarScale:*/;
-typedef struct {
-\\uint8   format;
-Offset24   paintOffset;
-F2DOT14   scaleX;
-F2DOT14   scaleY;
-FWORD   centerX;
-FWORD   centerY;
-}colrf18 ;//PaintScaleAroundCenter:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+
+};//PaintVarScale:*/;
+struct colrf18{
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scaleX;
 F2DOT14   scaleY;
 FWORD   centerX;
 FWORD   centerY;
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintScaleAroundCenter:*/;
+ struct colrf19  {
+\\uint8   format;
+Offset24   paintOffset;
+F2DOT14   scaleX;
+F2DOT14   scaleY;
+FWORD   centerX;
+FWORD   centerY;
 uint32   varIndexBase;
-}colrf19 ;//PaintVarScaleAroundCenter:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+} ;//PaintVarScaleAroundCenter:*/;
+struct colrf20  {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scale;
-}colrf20 ;//PaintScaleUniform:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+
+};//PaintScaleUniform:*/;
+struct colrf21{
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scale;
 uint32   varIndexBase;
-}colrf21 ;//PaintVarScaleUniform:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintVarScaleUniform:*/;
+struct colrf22 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scale;
 FWORD   centerX;
 FWORD   centerY;
-}colrf22 ;//PaintScaleUniformAroundCenter:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintScaleUniformAroundCenter:*/;
+ struct colrf23 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   scale;
 FWORD   centerX;
 FWORD   centerY;
 uint32   varIndexBase;
-}colrf23 ;//PaintVarScaleUniformAroundCenter:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+} ;//PaintVarScaleUniformAroundCenter:*/;
+struct colrf24 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   angle;
-}colrf24 ;//PaintRotate:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintRotate:*/;
+struct colrf25 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   angle;
 uint32   varIndexBase;
-}colrf25 ;//PaintVarRotate:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintVarRotate:*/;
+struct colrf26 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   angle;
 FWORD   centerX;
 FWORD   centerY;
-}colrf26 ;//PaintRotateAroundCenter:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintRotateAroundCenter:*/;
+struct colrf27 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   angle;
 FWORD   centerX;
 FWORD   centerY;
 uint32   varIndexBase;
-}colrf27 ;//PaintVarRotateAroundCenter:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintVarRotateAroundCenter:*/;
+struct colrf28 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
-}colrf28 ;//PaintSkew:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintSkew:*/;
+struct colrf29 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
 uint32   varIndexBase;
-}colrf29 ;//PaintVarSkew:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintVarSkew:*/;
+struct colrf30 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
 FWORD   centerX;
 FWORD   centerY;
-}colrf30 ;//PaintSkewAroundCenter:*/;
-typedef struct {
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+};//PaintSkewAroundCenter:*/;
+struct colrf31 {
 \\uint8   format;
 Offset24   paintOffset;
 F2DOT14   xSkewAngle;
@@ -365,13 +457,8 @@ F2DOT14   ySkewAngle;
 FWORD   centerX;
 FWORD   centerY;
 uint32   varIndexBase;
-}colrf31 ;//PaintVarSkewAroundCenter:*/;
-typedef struct {
-\\uint8   format;
-Offset24   sourcePaintOffset;
-uint8   compositeMode;
-Offset24   backdropPaintOffset;
-}colrf32 ;//PaintComposite:*/;
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+paintOffset);};
+} ;//PaintVarSkewAroundCenter:*/;
 enum CompositeMode {
    COMPOSITE_CLEAR=0,
    COMPOSITE_SRC=1,
@@ -402,6 +489,14 @@ enum CompositeMode {
    COMPOSITE_HSL_COLOR=26,
    COMPOSITE_HSL_LUMINOSITY=27
 };
+
+struct colrf32 {
+\\uint8   format;
+Offset24   sourcePaintOffset;
+uint8   compositeMode;
+Offset24   backdropPaintOffset;
+colrfu* get(colrfu* start,uint16 index){return (&start[index]+sourcePaintOffset);};
+};//PaintComposite:*/;
 
 union colrfu {
    colrf1 f1;
@@ -479,6 +574,55 @@ ACQRES(colrf){
       case 32: {one(f.f32);};
    }
 }
+typedef struct {
+   uint16   glyphID;
+   uint16   paletteIndex;// CPAL table entry
+}Layer;
+
+typedef struct {
+uint16   glyphID;
+uint16   firstLayerIndex;
+uint16   numLayers;
+}BaseGlyph;
+typedef struct {
+uint16   glyphID;
+Offset32   paintOffset;
+}BaseGlyphPaintRecord;
+typedef struct {
+uint32   numBaseGlyphPaintRecords;
+BaseGlyphPaintRecord*   baseGlyphPaintRecords;//[numBaseGlyphPaintRecords]
+colrf* paintTables;
+}BaseGlyphList;
+ACQRES(BaseGlyphList){
+one(f.numBaseGlyphPaintRecords);
+arr(f.baseGlyphPaintRecords, f.numBaseGlyphPaintRecords);
+int numPaintTables=0;
+uint16* indPtTb = new uint16[f.numBaseGlyphPaintRecords]; 
+for(int i=0;i<f.numBaseGlyphPaintRecords;i++){int j;
+   for(j=0;j<i;j++){
+      if(f.baseGlyphPaintRecords[j].paintOffset==f.baseGlyphPaintRecords[i].paintOffset){break;}
+   };
+   if(j<i){continue;};
+   numPaintTables++;
+};
+if(!f.paintTables){f.paintTables=new colrf[numPaintTables];}
+for(int i=0;i<f.numBaseGlyphPaintRecords;i++){
+   arr(f.paintTables,numPaintTables)
+};
+ };
+USE_ACQRES(BaseGlyphList)
+
+typedef struct {
+uint32   numLayers;
+Offset32*   paintOffsets;//[numLayers]
+colrf* paintTables;
+}LayerList;
+ACQRES(LayerList){
+one(f.numLayers);
+arr(f.paintOffsets, f.numLayers);
+offmany(f.paintTables,f.paintOffset,f.numLayers);
+};
+USE_ACQRES(LayerList)
 
 typedef struct {
 // uint16   version;
@@ -489,22 +633,35 @@ uint16   numLayerRecords;
 // OffsetTables;
 BaseGlyph* baseGlyphRecords;
 Layer* layerRecords ;
-   get(uint16 gid){
+   void get(uint16 gid, colorFT* cft, uint16* s){
+      int m ;
       int n = numBaseGlyphRecords/2;
       int i ;
+      ColorRecord* crs ;
       for(i=n;n>=1;){
-         if(baseGlyphRecords[i].glyphID == gid){
-            ColorRecord* crs = new ColorRecord[baseGlyphRecords[i].numLayers]; 
-            for(int j =baseGlyphRecords[i].firstLayerIndex,j<baseGlyphRecords[i].numLayers;j++){
+         if(baseGlyphRecords[i].glyphID == gid){m=baseGlyphRecords[i].numLayers;
+             crs = new ColorRecord[m]; 
+            for(int j =baseGlyphRecords[i].firstLayerIndex,j<=m;j++){
                if(layerRecords[j].glyphID==gid){
                   crs[j]=fcur->cpal().get(layerRecords[j].paletteIndex);}
             } 
-            
+            break;
+
          };
          n=n/2;
          if(baseGlyphRecords[i].glyphID> gid) {i-=n; }
          else(baseGlyphRecords[i].glyphID<gid){i+=n;};
       }
+      *s=m;
+       cft = colorFT[m] ;
+      for(int i=0;i<m;i++){
+         cft[i].sizeColr = 1;
+         cft[i].flags = 0x1;
+         
+         cft[i].color=glm::uvec4(crs[i].red,crs[i].green,crs[i].blue,crs[i].alpha);
+      }
+
+
     } ;
 }COLR0;
 ACQRES(COLR0){
@@ -529,13 +686,125 @@ Offset32   varIndexMapOffset;
 Offset32   itemVariationStoreOffset;
 // OffsetTables;
 BaseGlyph* baseGlyphRecords;
-Layer* layerRecords ;
+Layer* layerRecords ;// [numLayerRecords]
 BaseGlyphList baseGlyphList;
 LayerList layerList;
 ClipList clipList;
-    get(uint16 gid){
-      
-    } ;
+DeltaSetIndexMap deltaSetIndexMap;
+ItemVariationStore itemVariationStore;
+
+
+void get(uint16 gid, colorFT* cft, uint16* s){
+   uint16 firstlyr , numlyr;int n = numlyr;
+   for(int i=0;i<numBaseGlyphRecords;i++){
+      if(gid == baseGlyphRecords[i].glyphID ){
+         firstlyr=baseGlyphRecords[i].firstLayerIndex;
+         numlyr=baseGlyphRecords[i].numLayers;
+      }
+   }
+   ColorRecord* crs = new ColorRecord[numlyr];
+   for(int j=firstlyr;j<=numlyr;j++){
+      crs[j]=fcur->cpal().get(fcur.layerRecords[i].paletteIndex);
+   };
+   colrf* paint;
+   int half=baseGlyphList.numBaseGlyphPaintRecords/2;
+   for(int i=half;half>=1;){
+      if(baseGlyphList.baseGlyphPaintRecords[i].glyphID == gid){
+         colrf* paint = &baseGlyphList+baseGlyphList.baseGlyphPaintRecords[i].paintOffset;
+         break;
+      }
+      half=half>1?half/2:1;
+      if(baseGlyphList.baseGlyphPaintRecords[i].glyphID > gid){i-=half;}
+      if(baseGlyphList.baseGlyphPaintRecords[i].glyphID < gid){i+=half;}
+   }
+   uint16 numColr;
+   auto getNumLyr =[&](colrf* p){
+      if(p->format==1){ uint32 num = p->f.f1.numLayers; 
+      for(int i=p->f.f1.firstLayerIndex ;i<num;i++){
+         num+=getNumLyr(&layerList.paintTables[i]);
+      };
+      return numLayers;
+      };
+      return 0;
+   };
+   uint32 numLyr = getNumLyr(paint);
+   cft = new colorFT[numLyr];
+      colorFT* subGlyph ;uint16* subGlyphsSize;
+
+   auto getColr =[&](colrf* f,colorFT* cft, uint16* s){
+      if(paint->format == 1){
+         for(int i = f->f.f1.firstLayerIndex;i<f->f.f1.numLayers +f->f.f1.firstLayerIndex -1;i++){
+            uint16 n = getNumLyr(&layerList.paintTables[i]);
+            cft[i-f->f.f1.firstLayerIndex].sizeColr = n;
+            cft[i-f->f.f1.firstLayerIndex].flags = new uint32[n];
+            cft[i-f->f.f1.firstLayerIndex].values = new glm::uvec4[n];
+            getColr(&layerList.paintTables[i],cft,s);
+         }
+      }
+      if()
+      else {*s++;
+         switch(f->format ){
+         case 2:{f->f.f2.get(colorFT* cft,s);*cft.flags[s]|= colorFT::flags::solid_fill;*s++ }//[x]
+         case 3:{f->f.f3
+   
+         ColorRecord cr = ftcur->CPAL().get(paletteIndex);
+   cft[*s].color= glm::uvec4(cr.red,cr.green,cr.blue,cr.alpha);
+   cft[*s].alpha=f->f.f3.alpha;
+   cft[*s].sizeColr;
+   
+         switch(deltaSetIndexMap.format){
+            case 0 :{deltaSetIndexMap.f0;};
+            case 1 :{deltaSetIndexMap.f1.}
+         } 
+
+         //[f->f.f3->varIndexBase);
+            *cft.flags[s]|=colorFT::flags::var | colorFT::flags::solid_fil ;
+}
+         case 4:{*cft.flags[s]|=colorFT::flags::linear_gradient;}
+         case 5:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::linear_gradient;}
+         case 6:{*cft.flags[s]|=colorFT::flags::radial_gradient;}
+         case 7:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::radial_gradient;}
+         case 8:{*cft.flags[s]|=colorFT::flags::sweep_gradient;}
+         case 9:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::sweep_gradient;}
+         case 10:{f->f.f10.get(colorFT* cft,s);}
+         case 11:{*cft.subGlyphs[s]=f->f.f11.glyphID;
+                   *cft.flags[s]|=colorFT::flags::subGlyph;  }
+         case 12:{*cft.flags[s]|=colorFT::flags::affine;}
+         case 13:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::affine;}
+         case 14:{*cft.flags[s]|=colorFT::flags::translate;}
+         case 15:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::translate;}
+         case 16:{*cft.flags[s]|=colorFT::flags::scale;}                      
+         case 17:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::scale;}
+         case 18:{*cft.flags[s]|=colorFT::flags::scale | colroFT::flags::center;}                      
+         case 19:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::scale | colroFT::flags::center;}
+         case 20:{*cft.flags[s]|=colorFT::flags::scale_uniform;}                      
+         case 21:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::scale_uniform;}
+         case 22:{*cft.flags[s]|=colorFT::flags::scale_uniform |colorFT::flags::center ;}                      
+         case 23:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::scale_uniform |colorFT::flags::center ;}
+         case 24:{*cft.flags[s]|=colorFT::flags::rotate  ;}                                                             
+         case 25:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::rotate  ;}                                       
+         case 26:{*cft.flags[s]|=colorFT::flags::rotate |colorFT::flags::center ;}                                                           
+         case 27:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::rotate |colorFT::flags::center ;}                                     
+         case 28:{*cft.flags[s]|=colorFT::flags::skew  ;}                                             
+         case 29:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::skew  ;}                       
+         case 30:{*cft.flags[s]|=colorFT::flags::skew |colorFT::flags::center ;}                      
+         case 31:{*cft.flags[s]|=colorFT::flags::var | colorFT::flags::skew |colorFT::flags::center ;}
+         case 32:{*cft.flags[s]!=colorFT::flags::composite;}
+         };
+      };
+   };
+   uint16 s=0;
+   getColr(paint,cft,&s);
+
+   s=numLyr;
+   // Merge SubGlyphs
+   colorFT* res;
+   uint16* resSize;
+
+   for(int i=0 ; i<)
+
+
+};
 }COLR1;
 ACQRES(COLR1){
    one(f.numBaseGlyphRecords);
@@ -549,9 +818,11 @@ ACQRES(COLR1){
    one(f.itemVariationStoreOffset);
    offarr(f.baseGlyphRecords,f.baseGlyphRecordsOffset,f.numBaseGlyphRecords);
    offarr(f.layerRecords,f.layerRecordsOffset,f.numLayerRecords);
-   offone(f.baseGlyphList,f.baseGlyphListOffset);
+   offarr(f.baseGlyphList,f.baseGlyphListOffset,);
    offone(f.layerList,f.layerListOffset);
    offone(f.clipList,f.clipListOffset);
+   offone(f.deltaSetIndexMap,f.varIndexMapOffset;
+   offone(f.itemVariationStore,f.itemVariationStoreOffset;
 }
 USE_ACQRES(COLR1)
 
@@ -576,3 +847,4 @@ ACQRES(COLR){
    };
 }
 USE_ACQRES(COLR)
+#endif

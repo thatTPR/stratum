@@ -317,9 +317,109 @@ while (Table < EndPtr)
     Sum += *Table++;
 return Sum;
 }
-    typedef struct {
+
+
+
+struct colorFT  {
+    enum flags {
+        var=0x10,//second value in values[i] ;
+        
+        repeat=0x20,
+        subGlyph=0x30
+        center=0x40,//First value in values[i] unless var is set then
+        solid_fill=0x1,
+        linear_gradient=0x2,
+        radial_gradient=0x4,
+        sweep_gradient=0x7,
+        affine=0x8,// Takes two values
+        // Must be at end
+        translate=0xA,
+        rotate=0xB,
+        scale=0xC,
+        scale_uniform=0xD,
+        skew=0xE,
+        composite=0xF // If this flags is on the first value in value[i] is the sourceIndex and second is backdropIndex;
+    };
+    glm::uvec4 color;
+
+    uint16 alpha;
+    uint16 sizeColr;
+
+    uint16 sizeSubGlyphs;
+    uint16* subGlyphIDS;
+    uint32* flags;
+    glm::uvec4* values;
+    
+};
+enum PTflags {
+    onCurve=0x1,
+    delta=0x2,
+    signX=0x4,
+    signY=0x8,
+    overlap=0x10
+};
+typedef struct{
+    uint16 glyphID;
+    coord pos;
+    int16   numberOfContours;
+    int16   xMin;
+    int16   yMin;
+    int16   xMax;
+    int16   yMax;
+    colorFT colors;
+    uint8* endPts ;// [numberOfContours]
+    uint16 advanceWidth ;
+    int16 lsb;
+    uint16 sizeContour;
+    glm::uvec2* contours;/// [sizeContour]
+    PTflags* flags;//[sizeContour] 
+    righSideBearing(font* f){return advanceWidth - (lsb + f->head().xMax - f->head().xMin);}
+}glyfft;
+struct glyffftprim {
+    coord pos;
+    int16 nStrips;
+    int16 nFans;
+    
+    colorFT* colors;//[nstrips]
+
+
+    void glyfft();
+};  
+
+template <typename charT>
+struct ftrange {
+    glyfft* range;
+    charT* start,end;
+    uint16 size;
+    
+    uint16 startGlyphID;
+};
+
+
+     struct font {
         TableDirectory td ;
         tableu* table;
+
+        std::vector<ftrange<char>> cglyfs ;
+        std::vector<ftrange<wchar_t>> wcglyf;
+        
+        template <typename charT>
+        uint16 getGid(charT c){
+            uint16 res=0;
+            for(int j=0;i<f->cglyfs.size();j++){
+                if(f->cglyfs[j].start<=fstr.c and f->cglyfs[j].start>=fstr.c ){
+                    left = f->cglyfs[j].range[fstr.c -f->cglyfs[j].start]; 
+                }
+            }
+            if(!left){
+            for(int j=0;i<f->wcglyfs.size();j++){
+                if(f->wcglyfs[j].start<=fstr.c and f->wcglyfs[j].start>=fstr.c ){
+                    left = f->wcglyfs[j].range[fstr.c -f->wcglyfs[j].start]; 
+                }
+            };
+            }
+            return res;
+        };
 
         int avarI, BASEI, CBDTI, CBLCI, CFFI, CFF2I, cmapI, COLRI, CPALI, cvarI, cvtI, DSIGI, EBDTI, EBLCI, EBSCI, fpgmI, fvarI, gaspI, GDEFI, glyfI, GPOSI, GSUBI, gvarI, hdmxI, headI, hheaI, hmtxI, HVARI, JSTFI, kernI, locaI, LTSHI, MATHI, maxpI, MERGI, metaI, MVARI, nameI, os2I, PCLTI, postI, prepI, sbixI, STATI, SVGI, VDMXI, vheaI, vmtxI, VORGI, VVAR;
         avarI=-1;BASEI=-1;CBDTI=-1;CBLCI=-1;CFFI=-1;CFF2I=-1;cmapI=-1;COLRI=-1;CPALI=-1;cvarI=-1;cvtI=-1;DSIGI=-1;EBDTI=-1;EBLCI=-1;EBSCI=-1;fpgmI=-1;fvarI=-1;gaspI=-1;GDEFI=-1;glyfI=-1;GPOSI=-1;GSUBI=-1;gvarI=-1;hdmxI=-1;headI=-1;hheaI=-1;hmtxI=-1;HVARI=-1;JSTFI=-1;kernI=-1;locaI=-1;LTSHI=-1;MATHI=-1;maxpI=-1;MERGI=-1;metaI=-1;MVARI=-1;nameI=-1;os2I=-1;PCLTI=-1;postI=-1;prepI=-1;sbixI=-1;STATI=-1;SVGI=-1;VDMXI=-1;vheaI=-1;vmtxI=-1;VORGI=-1;VVARI=-1;cmap& cmap(){return table[cmapI]._cmap; }
@@ -375,164 +475,7 @@ return Sum;
     VORG& VORG(){return table[VORGI]._VORG;};
     VVAR& VVAR(){return table[VVARI]._VVAR;};
     
-     
-    void setGLYF(glyf& g){
-
-        Offset32* offsets = new Offset32[g.s];
-        offsets[0]=0;
-        for(int i=1;i<g.s;i++){
-            offsets[i]=offsets[i-1]+sizeof(g[i]);
-        };
-        if(head().indexToLocFormat==0){
-            Offset16* offs = new Offset16[g.s];
-            for(int i=0;i<g.s;i++){offs[i]=offsets[i]/2;}
-            loca().f.s=offs;}
-            else { loca().f.l=offsets;};
-    };
-    void setCOLR(COLR& c){//TODO
-
-    };
-
-    template <typename Tb>
-    void addTable(Tb table,int index){
-        
-    };
-    }font;
-    font* ftcur;
-    ACQRES(font){
-        ftcur = &f;
-        one(f.td);
-        int headI=-1;
-        int16 xMin,yMin,xMax,yMax;xMin=-8192;yMin=-8192;xMax=8192;yMax=8192;
-        if(!f.table){f.table = new tableu[f.td.numTables];};
-        for(_ftTBI  =0 ; i <f.td.numTables){
-            if(f.td.tableRecords[i].tableTag== Tag("glyf")){
-               #define GLYF_TABLE f.table[f.td.tableRecords[i].index]._glyf
-               if(GLYF_TABLE.xMin<xMin){xMin=GLYF_TABLE.xMin;}   
-               if(GLYF_TABLE.yMin<yMin){yMin=GLYF_TABLE.yMin;}   
-               if(GLYF_TABLE.xMax>xMax){xMax=GLYF_TABLE.xMax;}   
-               if(GLYF_TABLE.yMax>xMax){xMax=GLYF_TABLE.yMax;}   
-            }
-            if(f.td.tableRecords[i].tableTag== Tag("head")){headI=f.td.tableRecords[i].index;};
-            switch(f.td.tableRecords[i].tableTag){
-                #define TABLE_RECORD(tag,member) case font_tag(tag):{offone((f.table[i]._##member),f.td.tableRecords[i].offset);f.td.tableRecords[i].length=size(f.table[i]._##member);f.##memberI=i;};
-            TAG_MEMBER(TABLE_RECORD)          
-            }
-        }
-        if(headI>=0){
-        f.table[headI]._head.xMin=xMin;
-        f.table[headI]._head.yMin=yMin;
-        f.table[headI]._head.xMax=xMax;
-        f.table[headI]._head.xMax=xMax;
-        }
-    }   
-    USE_ACQRES(font)
-
-
-void reduce(fontcollection& fc){
-    size<TTChead>(fc);
-};
-fontcollection makeCollection(font* f,size_t num){
-    fontcollection ret;ret.numFonts=num;
-    ret.tableDirectories = TableDirectories[num];size_t numTables=0;
-    for(int i=0;i<num;i++){ret.tableDirectories[i]=f[i].td;numTables+=f[i].td.numTables;};
-    ret.tbs = new tableu[numTables];int k=0;
-    for(int i=0;i<num;i++){ // make joinCollection
-        for(int j=0;j<ret.tableDirectories[i].numTables;j++){
-            ret.tbs[k]=f[i].table[j];k++;
-        }
-    };
-    size<TTChead>(ret);
-};
-font getFont(fontcollection* fc,uint tdIndex){
-    font f;size_t tableNum;f.td=fc->tableDirectories[tdIndex];
-    f.table = new tableu[fc->tableDirectories[tdIndex].numTables];
-    for(int i=0;i<fc->tableDirectories[tdIndex].numTables;i++){
-        f.table[i]=fc->tbs[fc->tableDirectories[tdIndex].tableRecords[i]];
-        f.td.tableRecords[i].index=i;
-    };
-    return f;
-};
-
-#include "fontansi.hpp"
-#include <algorithm>
-
-typedef struct {
-    uint16 em; // Size of space
-    bool kern; // shrink spaces between faces
-    bool color;
-}options;
-typedef glm::uvec2 coord;
-typedef struct  {
-    glm::vec4 gradient;
-    glm::vec4 color;
-}colorFT;
-enum PTflags {
-    onCurve=0x1,
-    delta=0x2,
-    signX=0x4,
-    signY=0x8,
-    overlap=0x10
-};
-typedef struct{
-    coord pos;
-    int16   numberOfContours;
-    int16   xMin;
-    int16   yMin;
-    int16   xMax;
-    int16   yMax;
-    colorFT* colors;// [numberOfContours]
-    uint8* endPts ;// [numberOfContours]
-    uint16 advanceWidth ;
-    int16 lsb;
-    uint16 sizeContour;
-    coord* contours;/// [sizeContour]
-    PTflags* flags;//[sizeContour] 
-    righSideBearing(font* f){return advanceWidth - (lsb + f->head().xMax - f->head().xMin);}
-}glyfft;
-struct glyffftprim {
-    coord pos;
-    int16 nStrips;
-    int16 nFans;
-    
-    colorFT* colors;//[nstrips]
-
-    
-};  
-
-template <typename charT>
-struct ftvec {
-    glyfft* line;
-    charT* str;
-    uint16 size;
-    uint16 em;
-
-};
-
-template <typename charT>
- using facemap = std::map<charT,glyfvec> ; 
-
-// template <typename charT>
-// ftvec loadRange(font* f, charT start,charT end ){
-    
-// };
-template <typename charT>
-std::basic_string<charT> orderAllStr(std::string s){
-std::basic_string<charT> ordered  = s;
-std::sort(ordered.begin(),ordered.end());
-int isSame=-1;
-for(int i=1;i<ordered.size();i++;){
-    if(ordered[i-1]==ordered[i]){
-    isSame=(isSame==-1)?i:isSame;}
-    else {
-        if(isSame){erase(ordered.begin()+isSame,ordered.begin()+i);}
-        isSame = -1;
-    };
-};
-return ordered;
-};
-
-glyfft fromGlyfHead(glyfHead& gh){
+    glyfft fromGlyfHead(glyfHead& gh){
     glyfft res;
     res.numberOfContours = gh.numberOfContours;
     res.xMin = gh.xMin;
@@ -576,68 +519,176 @@ glyfft fromGlyfHead(glyfHead& gh){
     }
 }
 template <typename charT>
-ftvec<charT> loadGlyphs(std::basic_string<charT> str, font* f,options opts){
-uint32* r;size_t s;ftvec<charT> res; std::vector<glyfft> re; 
-if(f->cmapI>=0 and f->locaI>=0 and f->glyfI>=0){
-    cmapGlyphIds<charT>(&(f->table[cmapI]._cmap),str,&s,r);
-        // Loca
-        if(_indexToLocFormat==0){
-            for(int i=0; i < s;i++){glyfHead gh = f->glyf().loca(f->loca().f.s.offsets[r[i]]);
-                re.push_back(fromGlyfHead(gh));
-                re.back().advanceWidth=f->hmtx().hMetrics[r[i]].advanceWidth;
-                re.back().lsb=f->hmtx().hMetrics[r[i]].lsb;
-                 
+void loadGlyphs(uint16 size, charT* start, charT *end,options opts){
+
+if(cmapI>=0 and locaI>=0 and glyfI>=0){
+    
+    for(int i=0;i<s;i++){uint32* r;size_t s;
+        std::vector<glyfft> re; 
+        cmapGlyphIds<charT>(&(table[cmapI]._cmap),start,end,&s,r);
+        // Loca                
+        if(_indexToLocFormat==0){ // Loca
+            for(int j=0 ; j <s;j++ ){
+                glyfHead gh = glyf().loca(loca().f.s.offsets[r[j]]);
+                re.push_back(fromGlyfHead(gh));re.back().glyphID = r[j];
+                re.back().advanceWidth=hmtx().hMetrics[r[j]].advanceWidth;
+                re.back().lsb=hmtx().hMetrics[r[j]].lsb;
             }
-        }
-        else {
-            for(int i=0; i < s;i++){glyfHead gh = f->glyf().loca(f->loca().f.l.offsets[r[i]]);
-                                re.push_back(fromGlyfHead(gh));                
+            else {
+                for(int j=0;j<s;j++){
+                    glyfHead gh = glyf().loca(loca().f.s.offsets[r[j]]);
+                    re.push_back(fromGlyfHead(gh),r[j]);re.back().glyphID = r[j];   
+                }
             };            
         }
-        
+        ftrange fr ;
+        fr.range = re.data();
+        fr.start = start[i];re.end=end[i];re.size=s;
+        if constexpr( std::is_same<charT,char>::value){cglyphs.push_back(fr);} 
+        if( constexpr (std::is_same<charT,whcar_t>::value)){wcglyphs.push_back(fr);}
     }
-    res.line=re.data();
-    res.str=str;
     res.size=s;
-    if(f->hmtxI and f->hheaI){
-        res.line[0].coord=0;
-        if(opts.kerning){
-            for(int i=1;i<s;i++){
-                int16 k = f->kern().getPair(r[i-1],r[i]);
-                res.line[i].coord =res.line[i].coord[i-1]+ f->hmtx().hMetrics[r[i-1]].advanceWidth +f->hmtx().hMetrics[r[i]].lsb + k ;
-            };
-        }
-        else {
-            for(int i=1;i<s;i++){
-                // Make sure all characters are 1 em in width
-                res.line[i].coord =res.line[i].coord[i-1]+ f->hmtx().hMetrics[r[-1]].advanceWidth ;
-            };
-        }
-
-    }
-    if(opts.color and f->COLRI and f->CPALI){
+    if(opts.color and COLRI and CPALI){
         for(int i =0 ;i<s;i++){
-            
+            // TODO
         }  
     };
-    return res;
-
-
+    
+    
 };
+        
+       
+        void loadAll(options opts=NULL){
+            uint16 numRanges;
+            uint16* starts;uint16* ends;
+            cmap().getRanges(&numRanges,starts,ends);
+            loadGlyphs(numRanges,starts,ends,opts);
+        };
+
+    void setGLYF(glyf& g){
+
+        Offset32* offsets = new Offset32[g.s];
+        offsets[0]=0;
+        for(int i=1;i<g.s;i++){
+            offsets[i]=offsets[i-1]+sizeof(g[i]);
+        };
+        if(head().indexToLocFormat==0){
+            Offset16* offs = new Offset16[g.s];
+            for(int i=0;i<g.s;i++){offs[i]=offsets[i]/2;}
+            loca().f.s=offs;}
+            else { loca().f.l=offsets;};
+    };
+    void setCOLR(COLR& c){//TODO
+
+    };
+
+    template <typename Tb>
+    void addTable(Tb table,int index){
+        
+    };
+
+
+    };
+    font* ftcur;
+    ACQRES(font){
+        ftcur = &f;
+        one(f.td);
+        int headI=-1;
+        int16 xMin,yMin,xMax,yMax;xMin=-8192;yMin=-8192;xMax=8192;yMax=8192;
+        if(!f.table){f.table = new tableu[f.td.numTables];};
+        for(_ftTBI  =0 ; i <f.td.numTables){
+            if(f.td.tableRecords[i].tableTag== Tag("glyf")){
+               #define GLYF_TABLE f.table[f.td.tableRecords[i].index]._glyf
+               if(GLYF_TABLE.xMin<xMin){xMin=GLYF_TABLE.xMin;}   
+               if(GLYF_TABLE.yMin<yMin){yMin=GLYF_TABLE.yMin;}   
+               if(GLYF_TABLE.xMax>xMax){xMax=GLYF_TABLE.xMax;}   
+               if(GLYF_TABLE.yMax>xMax){xMax=GLYF_TABLE.yMax;}   
+            }
+            if(f.td.tableRecords[i].tableTag== Tag("head")){headI=f.td.tableRecords[i].index;};
+            switch(f.td.tableRecords[i].tableTag){
+                #define TABLE_RECORD(tag,member) case font_tag(tag):{offone((f.table[i]._##member),f.td.tableRecords[i].offset);f.td.tableRecords[i].length=size(f.table[i]._##member);f.##memberI=i;};
+            TAG_MEMBER(TABLE_RECORD)          
+            }
+        }
+        if(headI>=0){
+        f.table[headI]._head.xMin=xMin;
+        f.table[headI]._head.yMin=yMin;
+        f.table[headI]._head.xMax=xMax;
+        f.table[headI]._head.xMax=xMax;
+        }
+    }   
+    USE_ACQRES(font)
+
+
+void reduce(fontcollection& fc){
+    size<TTChead>(fc);
+};
+fontcollection makeCollection(font* f,size_t num){// TODO make it correct
+    fontcollection ret;ret.numFonts=num;
+    ret.tableDirectories = TableDirectories[num];size_t numTables=0;
+    for(int i=0;i<num;i++){ret.tableDirectories[i]=f[i].td;numTables+=f[i].td.numTables;};
+    ret.tbs = new tableu[numTables];int k=0;
+    for(int i=0;i<num;i++){ // make joinCollection
+        for(int j=0;j<ret.tableDirectories[i].numTables;j++){
+            ret.tbs[k]=f[i].table[j];k++;
+        }
+    };
+    size<TTChead>(ret);
+};
+font getFont(fontcollection* fc,uint tdIndex){
+    font f;size_t tableNum;f.td=fc->tableDirectories[tdIndex];
+    f.table = new tableu[fc->tableDirectories[tdIndex].numTables];
+    for(int i=0;i<fc->tableDirectories[tdIndex].numTables;i++){
+        f.table[i]=fc->tbs[fc->tableDirectories[tdIndex].tableRecords[i]];
+        f.td.tableRecords[i].index=i;
+    };
+    return f;
+};
+
+#include "fontansi.hpp"
+#include <algorithm>
+
+typedef struct {
+    uint16 em; // Size of space
+    bool kern; // shrink spaces between faces
+    bool color;
+}options;
+
 template <typename charT>
-ftvec vectorize(font* f,std::basic_string<charT> ansistr,options opts){
+ using facemap = std::map<charT,glyfvec> ; 
+
+template <typename charT>
+ftrange vectorize(font* f,std::basic_string<charT> ansistr,options opts){
     using strT=std::basic_string<charT>;
     int i;
     strT s;
     formatStr fstr= ansiStrip(s);
-    ftvec<charT> res;
+    ftrange<charT> res;
     if(f->cmapI>=0 and f->locaI>=0 and f->glyfI>=0){
-        res=loadGlyphs(str,f,opts);
+        res=f->loadGlyphs(str,f,opts);
     }
-    
+    res.range[0].coord = glm::uvec2(0,0);
+    if(f->hmtxI and f->hheaI){
+        for(int i=1;i<fstr.str.size();i++){
+            uint16 left=f->getGid(str[i-1]);
+            uint16 right=f->getGid(str[i]);
+        if(opts.kerning){
+                int16 k = kern().getPair(left,right);
+                res.line[i].pos =res.range[i-1].pos+ f->hmtx().hMetrics[left].advanceWidth +f->hmtx().hMetrics[right].lsb + k ;
+        }
+        else {
+            for(int i=1;i<fstr.str.size();i++){
+                // Make sure all characters are 1 em in width
+                res.range[i].pos =res.range[i-1].coord+em ;
+            };
+        }
+        }
+    };
+
     res.em = opts.em;
     // colors
     
+    return res;
 };
 
 

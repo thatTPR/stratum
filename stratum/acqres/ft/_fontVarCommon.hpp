@@ -15,8 +15,8 @@ Offset16   dataOffset;
 TupleVariationHeader*   tupleVariationHeaders;//[tupleVariationCount]
 }GlyphVariationData/* header:*/;
 ACQRES(GlyphVariationData/* header:*/){
-one((f.tupleVariationCount));
-one((f.dataOffset));
+one(f.tupleVariationCount);
+one(f.dataOffset);
 arr(f.tupleVariationHeaders, f.tupleVariationCount);
  };
 USE_ACQRES(GlyphVariationData/* header:*/)
@@ -44,9 +44,9 @@ uint16   mapCount;
 uint8*   mapData;//[variable]
 }DeltaSetIndexMapf0;
 ACQRES(DeltaSetIndexMapf0){
-one((f.format));
-one((f.entryFormat));
-one((f.mapCount));
+one(f.format);
+one(f.entryFormat);
+one(f.mapCount);
 arr(f.mapData, f.variable);
  };
 USE_ACQRES(DeltaSetIndexMapf0/* format 0:*/)
@@ -58,9 +58,9 @@ uint32   mapCount;
 uint8*   mapData;//[variable]
 }DeltaSetIndexMapf1;
 ACQRES(DeltaSetIndexMapf1){
-one((f.format));
-one((f.entryFormat));
-one((f.mapCount));
+one(f.format);
+one(f.entryFormat);
+one(f.mapCount);
 arr(f.mapData, f.variable);
  };
 USE_ACQRES(DeltaSetIndexMapf1)
@@ -74,10 +74,10 @@ typedef struct {
 
 }DeltaSetIndexMap ;
 ACQRES(DeltaSetIndexMap){
-   one((f.format));
+   one(f.format);
    switch(f.format){
-      case 0:{one((f.u.f0));}
-      case 1:{one((f.u.f1));}
+      case 0:{one(f.u.f0);}
+      case 1:{one(f.u.f1);}
    }
 };
 typedef struct {
@@ -91,9 +91,9 @@ uint16   regionCount;
 VariationRegion*   variationRegions;//[regionCount]
 }VariationRegionList;
 ACQRES(VariationRegionList:){
-one((f.axisCount));
+one(f.axisCount);
 _axisCount = f.axisCount;
-one((f.regionCount));
+one(f.regionCount);
 arr(f.variationRegions, f.regionCount);
  };
 USE_ACQRES(VariationRegionList)
@@ -120,9 +120,9 @@ uint16*   regionIndexes;//[regionIndexCount]
 DeltaSet*   deltaSets;//[itemCount]
 }ItemVariationData;
 ACQRES(ItemVariationData){
-one((f.itemCount));
-one((f.wordDeltaCount));_worldDeltaCount = f.worldDeltaCount;
-one((f.regionIndexCount));_regionIndexCount = f.regionIndexCount;
+one(f.itemCount);
+one(f.wordDeltaCount);_worldDeltaCount = f.worldDeltaCount;
+one(f.regionIndexCount);_regionIndexCount = f.regionIndexCount;
 arr(f.regionIndexes, f.regionIndexCount);
 
 arr(f.deltaSets, f.itemCount);
@@ -137,9 +137,9 @@ Offset32*   itemVariationDataOffsets;//[itemVariationDataCount]
 ItemVariationData* itemVariationData;//[itemVariationDataCount]
 }ItemVariationStore;
 ACQRES(ItemVariationStore){
-one((f.format));
-one((f.variationRegionListOffset));
-one((f.itemVariationDataCount));
+one(f.format);
+one(f.variationRegionListOffset);
+one(f.itemVariationDataCount);
 arr(f.itemVariationDataOffsets, f.itemVariationDataCount);
 if(!f.itemVariationData){f.itemVariationData = new ItemVariationData[f.itemVariationDataCount];};
 for(int i=0;i<f.itemVatiationDataCount;i++){offone(f.itemVariationData[i],f.itemVariationDataOffsets[i]);};
