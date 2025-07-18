@@ -160,7 +160,8 @@
         "__memory": "cpp",
         "__nullptr": "cpp",
         "x": "cpp",
-        "__refstring": "cpp"
+        "__refstring": "cpp",
+        "algo": "cpp"
     },
     "svg.preview.background": "custom"
 }

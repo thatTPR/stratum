@@ -2,8 +2,10 @@
 #define FTLOCA_HPP
 #include "glyf.hpp"
 #include "head.hpp"
+
+// indexed by glyphID
 typedef struct {
-Offset16*   offsets;//[numGlyphs + 1] // OFfset/2
+Offset16*   offsets;//[numGlyphs + 1] // offset[i]=Offset/2
 
 }Short;
 ACQRES(Short){size_t s = _numGlyphs+1;
@@ -27,6 +29,7 @@ typedef struct {
         Short s;
         Long l;
     }f;
+
 }loca;
 ACQRES(loca){
     switch(_indexToLocFormat){

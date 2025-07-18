@@ -2,10 +2,16 @@
 #define STRATA_FONT_HPP
 #include <cstdint>
 #include <stdexcept>
+#include <cstddef>
+#include <type_traits>
+#include <vector>
 #include <string>
+#include <petri/defs>
+#include <glm/glm.hpp>
 namespace ttf {
 
-typedef uint8_t[3] uint24_t ;
+typedef uint32_t IndexP;
+
  typedef signed long Fixed; 
     typedef uint32_t Tag ;
     // typedef uint8_t[4] Tag ;
@@ -19,7 +25,7 @@ typedef uint8_t[3] uint24_t ;
     typedef uint8_t Offset8 ;
     typedef uint16_t Offset16 ;
     typedef uint32_t Offset32 ;
-    // typedef uint24_t Offset24 ;
+    typedef uint24_t Offset24 ;
     typedef uint32_t Version16Dot16 ;
     
     typedef int16_t int16 ;
@@ -49,6 +55,220 @@ typedef uint8_t[3] uint24_t ;
     
     void font_tag(Tag i, char* s){Tag r=i;s[0] = (char)(r>>24) ; s[1] = (char)(r>>16); s[2] = (char)(r>>8); s[3]=(char)(r);}
    
+
+struct colorFT  {
+    glm::uvec4 color;
+
+    uint16 alpha;
+
+    uint16 subGlyphSize;
+    uint16* baseGlyphs;
+    uint32* flags;
+    uint16 sizeLayers;
+    colrf<varValueBase>* layers;
+    uint16 sizeValues;
+    colrf<varValueBase>* values;
+    
+};
+
+
+
+struct glyfft{
+    uint16 glyphID;
+    coord pos;
+    int16   numberOfContours;
+    int16   xMin;
+    int16   yMin;
+    int16   xMax;
+    int16   yMax;
+    colorFT colors;
+    uint16* endPts ;// [numberOfContours]
+    uint16 advanceWidth ;
+    int16 lsb;
+    uint16 sizeContour;
+    glm::ivec2* contours;/// [sizeContour]
+    bool* onCurve;//[sizeContour] 
+    int16 righSideBearing(font* f){return advanceWidth - xMax ;}
+    int16 width(font* f){return xMax-xMin;}
+    void popContour(uint index){
+         numberOfContours--;
+        uint16 dif = (endPts[index] - endPts[index-1]);
+        uint8 sizeContour -= dif;
+        for(int i=endPts[index-1]+1;i<=endPts[index] and i<sizeContour;i++){
+            contours[i]=contours[i+dif];
+        };
+        for(int i=index ;i<numberOfContours;i++ )
+        {
+            endPts[i]=endPts[i+1];
+        }
+    };
+    void addPt(uint indContour,int indPt,glm::uvec2 pt,bool onCurve ){
+        sizeContour++;
+        uint index =indContour==0?indPt:endPts[indContour-1]+indPt;
+        glm::uvec2* cont = new glm::uvec2[sizeContour];
+        bool* fl = new bool[sizeContour]; 
+        cont[index] = pt; 
+        fl[endPts[indContour-1] + indPt] = onCurve;
+        for(int i=0;i<index;i++){
+            cont[i]=countours[i];
+            fl[i]=flags[i];
+        };
+        
+        for(int i=index+1;i<sizeContour;i++){
+            cont[i]=countours[i-1];
+            fl[i]=flags[i-1]
+        };
+        contours=cont;
+        onCurve=fl;
+        for(int i=indContour;i<numberOfContours;i++){endPts[i]++;};
+    };
+    void popPt(uint indContour,int indPt){
+        for(int i=endPts[indContour-1] + indPt;i<sizeContour;i++){
+            cont[i]=countours[i+1];
+            onCurve[i]=onCurve[i+1];
+        };
+    };
+    void addContour(uint index){
+        numberOfContours++;
+        uint8 nendpt = endPts[index];
+        uint8* enp = new uint16[numberOfContours];
+        for(int i=0;i<=index;i++){
+            enp[i]=endPts[i];
+        };
+        for(int i=index+1;i<numberOfContours;i++){
+            enp[i]=enp[i-1];
+        };
+    };
+    void addPtAndContour(uint index,glm::uvec2 pt,bool onCurve){
+        addContour(index);
+        addPt(index,0,pt,unCurve);
+    };
+    void fromGlyfHead(glyfHead* gh){
+    glyfft res;
+    numberOfContours = gh->numberOfContours;
+    xMin = gh->xMin;
+    yMin = gh->yMin;
+    xMax = gh->xMax;
+    yMax = gh->yMax;
+    sizeContour= gh->f.sg.xCoordNum>gh->f.sg.yCoordNum?gh->f.sg.xCoordNum:gh->f.sg.yCoordNum;
+    if(gh->numberOfContours>=0){
+        endPts=uint16[numberOfContours];
+        for(int i=0;numberOfContours;i++){endPts[i] = gh->f.sg.endPtsOfContours[i];}
+
+        for(int i=0;i<gh->f.sg.flagNum;i++){
+            if(gh->f.sg.flag[i] &( X_SHORT_VECTOR | X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR ) ){sizeContour++;continue;}
+            if(gh->f.sg.flag[i] &( Y_SHORT_VECTOR | Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR ) ){sizeContour++;};
+        };
+        contours = new coord[sizeContour]; int x,y;x=0;y=0;
+        flags = new PTflags[sizeContour]  ;
+        for(int i=0;i<gh->f.sg.flagNum;i++){
+            onCurve[j] =0;
+            
+             onCurve[fn]|=(gh->f.sg.flag[i] & ON_CURVE_POINT)?true:0;
+             
+                if(gh->f.sg.flag[i] & ( X_SHORT_VECTOR )){
+                    if(gh->f.sg.flag[i]& X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR ){
+                        contours[x].x =gh->f.sg.xCoordinates[j];
+                    }
+                    else {contours[x].x =-gh->f.sg.xCoordinates[j];}
+                }
+                else {
+                    if(gh->f.sg.flag[i]& X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR ){
+                        contours[fn].x =contours[y-1];--x;
+                    }
+                    else {
+                        contours[fn].x = gh->f.sg.xCoordinates[j]<<8 + gh->f.sg.xCoordinates[j];
+                    }
+                }
+                if(gh->f.sg.flag[fn] & ( Y_SHORT_VECTOR )){
+                    if(gh->f.sg.flag[fn]& Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR ){
+                        contours[fn].y =gh->f.sg.yCoordinates[j];
+                    }
+                    else {contours[fn].y =-gh->f.sg.yCoordinates[j];}
+                }
+                else {
+                    if(gh->f.sg.flag[fn]& Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR ){
+                        contours[fn].y =contours[y-1];--y;
+                    }
+                    else {
+                        contours[fn].y = gh->f.sg.xCoordinates[y]<<8 + gh->f.sg.xCoordinates[y];
+                    }
+                };
+             if(! (gh->f.sg.flags[i] & (X_SHORT_VECTOR | X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR))){
+                contours[fn].x += contours[fn-1].x;};
+             if(! (gh->f.sg.flags[i] & (Y_SHORT_VECTOR | Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR))){
+                contours[fn].y += contours[fn-1].y;};
+            x++;y++;
+        };
+    }
+    else {
+        
+    }
+}
+    glyfHead get(){
+        glyfHead gh;
+        gh.numberOfContours=numberOfContours;
+gh.xMin=xMin;
+gh.yMin=yMin;
+gh.xMax=xMax;
+gh.yMax=yMax;
+gh.f.sg.endPtsOfContours = endPts;
+
+gh.f.sg.flags = new uint8[sizeContour];
+gh.f.sg.flagNum = sizeContour;
+gh.f.sg.xCoordinates = new int8[sizeContour];
+gh.g.sg.yCooridnates = new int8[sizeContour];
+for(int i=0;i<sizeContour;i++){
+    gh.f.sg.flags[i]=0;
+    if(onCurve[i]){gh.f.sg.flags[i]|= ON_CURVE_POINT ;}
+        gh.f.sg.flags!=X_SHORT_VECTOR | Y_SHORT_VECTOR ;
+    if(contours[i].x>=0){gh.f.sg.flags[i] |= X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR ;gh.f.sg.xCoordinates[i]=contours[i].x;}
+    else {gh.f.sg.xCoordinates[i]=-contours[i].x;}
+    if(contours[i].y>=0){gh.f.sg.flags[i] |= Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR ; gh.f.sg.yCoordinates[i]=contours[i].y;}
+    else { gh.f.sg.yCoordinates[i]=-contours[i].y;}
+
+};
+return gh;
+};
+};
+struct glyfftprim { // To convert to primitives
+    coord pos;
+    int16 nStrips;
+    int16 nFans;
+
+    int16* nStripsPts;//Triangle+2
+    int16* nFansPts;//
+
+    glm::ivec2* strips;//nStripsPts 
+    glm::ivec2* fan; // n
+    
+    colorFT* colors;//[nstrips]
+
+
+    void from(glyfft g){
+
+    };
+};  
+
+template <typename charT>
+struct ftrange {
+    glyfft* range;
+    charT start,end;
+    uint16 size;
+    
+    uint16 startGlyphID;
+
+};
+
+template <typename charT>
+struct glyffrange {
+    charT starc , endc;
+    uint16 startGlyphId;
+    
+};
+struct font;
+font* ftcur;
+
 #include <stratum/acqres/acqres.hpp>
 
 #include <stratum/acqres/ft/avar.hpp> //[x]
@@ -155,6 +375,7 @@ typedef uint8_t[3] uint24_t ;
         VORG _VORG;
         VVAR _VVAR;
     }tableu;
+
 
 #define TAG_MEMBER(macro)\
 macro("avar",avar)\
@@ -320,106 +541,58 @@ return Sum;
 
 
 
-struct colorFT  {
-    enum flags {
-        var=0x10,//second value in values[i] ;
-        
-        repeat=0x20,
-        subGlyph=0x30
-        center=0x40,//First value in values[i] unless var is set then
-        solid_fill=0x1,
-        linear_gradient=0x2,
-        radial_gradient=0x4,
-        sweep_gradient=0x7,
-        affine=0x8,// Takes two values
-        // Must be at end
-        translate=0xA,
-        rotate=0xB,
-        scale=0xC,
-        scale_uniform=0xD,
-        skew=0xE,
-        composite=0xF // If this flags is on the first value in value[i] is the sourceIndex and second is backdropIndex;
-    };
-    glm::uvec4 color;
-
-    uint16 alpha;
-    uint16 sizeColr;
-
-    uint16 sizeSubGlyphs;
-    uint16* subGlyphIDS;
-    uint32* flags;
-    glm::uvec4* values;
-    
-};
-enum PTflags {
-    onCurve=0x1,
-    delta=0x2,
-    signX=0x4,
-    signY=0x8,
-    overlap=0x10
-};
-typedef struct{
-    uint16 glyphID;
-    coord pos;
-    int16   numberOfContours;
-    int16   xMin;
-    int16   yMin;
-    int16   xMax;
-    int16   yMax;
-    colorFT colors;
-    uint8* endPts ;// [numberOfContours]
-    uint16 advanceWidth ;
-    int16 lsb;
-    uint16 sizeContour;
-    glm::uvec2* contours;/// [sizeContour]
-    PTflags* flags;//[sizeContour] 
-    righSideBearing(font* f){return advanceWidth - (lsb + f->head().xMax - f->head().xMin);}
-}glyfft;
-struct glyffftprim {
-    coord pos;
-    int16 nStrips;
-    int16 nFans;
-    
-    colorFT* colors;//[nstrips]
-
-
-    void glyfft();
-};  
-
-template <typename charT>
-struct ftrange {
-    glyfft* range;
-    charT* start,end;
-    uint16 size;
-    
-    uint16 startGlyphID;
-};
-
 
      struct font {
         TableDirectory td ;
         tableu* table;
 
+        constexpr bool wcb = std::is_same<wchar_t,char16_t> wcb; 
         std::vector<ftrange<char>> cglyfs ;
         std::vector<ftrange<wchar_t>> wcglyf;
+        std::enable_if<std::is_same<wchar_t,char16_t> wcb, std::vector<ftrange<char16_t>>>  c16glyf;
+        std::vector<std::vector<char32_t>> c32glyf;
+
         
-        template <typename charT>
-        uint16 getGid(charT c){
+        template <typename charT> 
+        uint16 getGid(charT c);
+template <>uint16 getGid(char c){
             uint16 res=0;
             for(int j=0;i<f->cglyfs.size();j++){
                 if(f->cglyfs[j].start<=fstr.c and f->cglyfs[j].start>=fstr.c ){
-                    left = f->cglyfs[j].range[fstr.c -f->cglyfs[j].start]; 
+                    return f->cglyfs[j].startGlyphId  f->cglyfs[j].range[fstr.c -f->cglyfs[j].end]; 
                 }
-            }
-            if(!left){
-            for(int j=0;i<f->wcglyfs.size();j++){
-                if(f->wcglyfs[j].start<=fstr.c and f->wcglyfs[j].start>=fstr.c ){
-                    left = f->wcglyfs[j].range[fstr.c -f->wcglyfs[j].start]; 
-                }
-            };
             }
             return res;
         };
+template <>uint16 getGid(wchar_t c){
+            uint16 res=0;
+            for(int j=0;i<f->wcglyfs.size();j++){
+                if(f->wcglyfs[j].start<=fstr.c and f->wcglyfs[j].start>=fstr.c ){
+                    return  f->wcglyfs[j].startGlyphId+ f->wcglyfs[j].range[fstr.c -f->wcglyfs[j].start]; 
+                }
+            }
+            return res;
+        };
+template <>uint16 getGid(char16_t c){
+        if constexpr (std::is_same<wchar_t,char16_t>::value ){return getGid<wchar_t>(c);};
+             uint16 res=0;
+            for(int j=0;i<f->c16glyfs.size();j++){
+                if(f->c16glyfs[j].start<=fstr.c and f->c16glyfs[j].start>=fstr.c ){
+                    return  f->c16glyfs[j].startGlyphId+ f->c16glyfs[j].range[fstr.c -f->c16glyfs[j].start]; 
+                }
+            }
+            return res;
+        };
+template <>uint16 getGid(char32_t c){
+             uint16 res=0;
+            for(int j=0;i<f->c32glyfs.size();j++){
+                if(f->c32glyfs[j].start<=fstr.c and f->c32glyfs[j].start>=fstr.c ){
+                    return  f->c32glyfs[j].startGlyphId+ f->c32glyfs[j].range[fstr.c -f->c32glyfs[j].start]; 
+                }
+            }
+            return res;
+        };
+
 
         int avarI, BASEI, CBDTI, CBLCI, CFFI, CFF2I, cmapI, COLRI, CPALI, cvarI, cvtI, DSIGI, EBDTI, EBLCI, EBSCI, fpgmI, fvarI, gaspI, GDEFI, glyfI, GPOSI, GSUBI, gvarI, hdmxI, headI, hheaI, hmtxI, HVARI, JSTFI, kernI, locaI, LTSHI, MATHI, maxpI, MERGI, metaI, MVARI, nameI, os2I, PCLTI, postI, prepI, sbixI, STATI, SVGI, VDMXI, vheaI, vmtxI, VORGI, VVAR;
         avarI=-1;BASEI=-1;CBDTI=-1;CBLCI=-1;CFFI=-1;CFF2I=-1;cmapI=-1;COLRI=-1;CPALI=-1;cvarI=-1;cvtI=-1;DSIGI=-1;EBDTI=-1;EBLCI=-1;EBSCI=-1;fpgmI=-1;fvarI=-1;gaspI=-1;GDEFI=-1;glyfI=-1;GPOSI=-1;GSUBI=-1;gvarI=-1;hdmxI=-1;headI=-1;hheaI=-1;hmtxI=-1;HVARI=-1;JSTFI=-1;kernI=-1;locaI=-1;LTSHI=-1;MATHI=-1;maxpI=-1;MERGI=-1;metaI=-1;MVARI=-1;nameI=-1;os2I=-1;PCLTI=-1;postI=-1;prepI=-1;sbixI=-1;STATI=-1;SVGI=-1;VDMXI=-1;vheaI=-1;vmtxI=-1;VORGI=-1;VVARI=-1;cmap& cmap(){return table[cmapI]._cmap; }
@@ -475,49 +648,7 @@ struct ftrange {
     VORG& VORG(){return table[VORGI]._VORG;};
     VVAR& VVAR(){return table[VVARI]._VVAR;};
     
-    glyfft fromGlyfHead(glyfHead& gh){
-    glyfft res;
-    res.numberOfContours = gh.numberOfContours;
-    res.xMin = gh.xMin;
-    res.yMin = gh.yMin;
-    res.xMax = gh.xMax;
-    res.yMax = gh.yMax;
-    res.sizeContour= gh.f.sg.xCoordNum>gh.f.sg.yCoordNum?gh.f.sg.xCoordNum:gh.f.sg.yCoordNum;
-    if(gh.numberOfContours>=0){
-        res.endPts=uint8[res.numberOfContours];
-        for(int i=0;i<gh.f.sg.flagNum;i++){
-            if(gh.f.sg.flag[i] &( X_SHORT_VECTOR | X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR ) ){res.sizeContour++;continue;}
-            if(gh.f.sg.flag[i] &( Y_SHORT_VECTOR | Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR ) ){res.sizeContour++;};
-        };
-        res.contours = new coord[res.sizeContour]; int x,y;x=0;y=0;
-        for(int i=1;i<res.sizeContour;i++){
-            res.endPts[i] = gh.f.sg.endPtsOfContours[0]; int fn=0;
-            for(int j =0;j<res.xCoordNum;j++){
-                if(gh.f.sg.flag[fn] & ( X_SHORT_VECTOR | X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR )){
-                --j;}
-                res.contours[j].x =gh.f.sg.xCoordinates[j];
-                ++fn;
-            }
-            fn=0;
-            for(int j =0;j<res.yCoordNum;j++){
-                if(gh.f.sg.flag[fn] & ( Y_SHORT_VECTOR | Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR )){
-                --j;}
-                res.contours[j].y =gh.f.sg.yCoordinates[j];
-                ++fn;
-            }
-            res.flags = new PTflags[res.sizeContour;]  ;
-            for(int j=0;j<res.sizeContour;j++){
-                res.flags[j] =0;
-                res.flags[j]|=(gh.f.sg.flag[j] & ON_CURVE)?onCurve:0;
-                
-                
-            };
-        };
-    }
-    else {
-        
-    }
-}
+    
 template <typename charT>
 void loadGlyphs(uint16 size, charT* start, charT *end,options opts){
 
@@ -529,23 +660,35 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
         // Loca                
         if(_indexToLocFormat==0){ // Loca
             for(int j=0 ; j <s;j++ ){
-                glyfHead gh = glyf().loca(loca().f.s.offsets[r[j]]);
-                re.push_back(fromGlyfHead(gh));re.back().glyphID = r[j];
-                re.back().advanceWidth=hmtx().hMetrics[r[j]].advanceWidth;
-                re.back().lsb=hmtx().hMetrics[r[j]].lsb;
+                glyfHead* gh = glyf().loca(loca().f.s.offsets[r[j]]);
+                glyfft ftr;ftr.fromGlyfHead(gh);ftr.glyphID = r[j];
+                re.push_back(ftr);
+                
             }
             else {
                 for(int j=0;j<s;j++){
-                    glyfHead gh = glyf().loca(loca().f.s.offsets[r[j]]);
-                    re.push_back(fromGlyfHead(gh),r[j]);re.back().glyphID = r[j];   
+                    glyfHead* gh = glyf().loca(loca().f.s.offsets[r[j]]);
+                    glyfft ftr;ftr.fromGlyfHead(gh);ftr.glyphID = r[j];
+                    re.push_back(ftr);   
                 }
             };            
         }
+        
+       if(hmtxI>=0 and hheaI>=0){
+                re.back().advanceWidth=hmtx().hMetrics[r[j]].advanceWidth;
+                re.back().lsb=hmtx().hMetrics[r[j]].lsb;}
+
         ftrange fr ;
         fr.range = re.data();
         fr.start = start[i];re.end=end[i];re.size=s;
-        if constexpr( std::is_same<charT,char>::value){cglyphs.push_back(fr);} 
-        if( constexpr (std::is_same<charT,whcar_t>::value)){wcglyphs.push_back(fr);}
+        if constexpr(std::is_same<charT,char>::value){cglyphs.push_back(fr);} 
+        if constexpr(std::is_same<charT,wchar_t>::value){wcglyphs.push_back(fr);}
+        if constexpr(std::is_same<charT,char16_t>::value ){
+            if constexpr(std::is_same<wchar_t,char16_t>::value){
+                wcglyphs.push_back(fr);}
+            else c16glyph.push_back(fr);
+            }
+        if constexpr(std::is_same<charT,char32_t>::value){wcglyphs.push_back(fr);}
     }
     res.size=s;
     if(opts.color and COLRI and CPALI){
@@ -555,6 +698,7 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
     };
     
     
+};
 };
         
        
@@ -587,9 +731,8 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
         
     };
 
-
-    };
-    font* ftcur;
+     };
+    // font* ftcur;
     ACQRES(font){
         ftcur = &f;
         one(f.td);
@@ -652,6 +795,7 @@ typedef struct {
     uint16 em; // Size of space
     bool kern; // shrink spaces between faces
     bool color;
+    uint16 lineSize;
 }options;
 
 template <typename charT>
@@ -667,23 +811,30 @@ ftrange vectorize(font* f,std::basic_string<charT> ansistr,options opts){
     if(f->cmapI>=0 and f->locaI>=0 and f->glyfI>=0){
         res=f->loadGlyphs(str,f,opts);
     }
-    res.range[0].coord = glm::uvec2(0,0);
-    if(f->hmtxI and f->hheaI){
+    else {
+        throw std::string("no cmap or loca or glyf");
+    }
+    res.range[0].pos = glm::uvec2(opts.em,0);
+    if(f->hmtxI>=0 and f->hheaI>=0){
         for(int i=1;i<fstr.str.size();i++){
+            res.range[i].pos=glm::uvec2(0,0);
             uint16 left=f->getGid(str[i-1]);
             uint16 right=f->getGid(str[i]);
         if(opts.kerning){
                 int16 k = kern().getPair(left,right);
-                res.line[i].pos =res.range[i-1].pos+ f->hmtx().hMetrics[left].advanceWidth +f->hmtx().hMetrics[right].lsb + k ;
+                res.line[i].pos.x =res.range[i-1].pos.x+ res.range[i-1].advanceWidth +res.range[i].lsb + k ;
         }
         else {
             for(int i=1;i<fstr.str.size();i++){
                 // Make sure all characters are 1 em in width
-                res.range[i].pos =res.range[i-1].coord+em ;
+                int16 dif = (opts.em-(res.range[i].xMax - res.range[i].xMin))/2;
+                dif=dif>0?dif:-dif;
+                res.range[i].pos.x =res.range[i-1].pos.x+ opts.em + dif;
             };
         }
         }
-    };
+    }
+    else {throw std::string("no hmtx or hheai tables");};
 
     res.em = opts.em;
     // colors

@@ -71,7 +71,12 @@ typedef struct {
       DeltaSetIndexMapf0 f0;     
       DeltaSetIndexMapf0 f1;     
    }u;
-
+   void get(uint32* mapCount , uint8* mapData){
+      switch(format){
+         case 0 : {mapCount = &u.f0.mapCount;mapData=u.f0.mapData;}
+         case 1 : {mapCount = &u.f1.mapCount;mapData=u.f1.mapData;}
+      }
+   };
 }DeltaSetIndexMap ;
 ACQRES(DeltaSetIndexMap){
    one(f.format);
@@ -84,7 +89,7 @@ typedef struct {
 0x0F   INNER_INDEX_BIT_COUNT_MASK;
 0x30   MAP_ENTRY_SIZE_MASK;
 0xC0   Reserved;
-}entryFormat/* field masks:*/;
+}entryFormat;
 typedef struct {
 uint16   axisCount;
 uint16   regionCount;
@@ -112,39 +117,7 @@ F2DOT14   peakCoord;
 F2DOT14   endCoord;
 }RegionAxisCoordinates;
 
-typedef struct {
-uint16   itemCount;
-uint16   wordDeltaCount;
-uint16   regionIndexCount;
-uint16*   regionIndexes;//[regionIndexCount]
-DeltaSet*   deltaSets;//[itemCount]
-}ItemVariationData;
-ACQRES(ItemVariationData){
-one(f.itemCount);
-one(f.wordDeltaCount);_worldDeltaCount = f.worldDeltaCount;
-one(f.regionIndexCount);_regionIndexCount = f.regionIndexCount;
-arr(f.regionIndexes, f.regionIndexCount);
 
-arr(f.deltaSets, f.itemCount);
- };
-USE_ACQRES(ItemVariationData)
-typedef struct {
-uint16   format;
-Offset32   variationRegionListOffset;
-uint16   itemVariationDataCount;
-Offset32*   itemVariationDataOffsets;//[itemVariationDataCount]
-
-ItemVariationData* itemVariationData;//[itemVariationDataCount]
-}ItemVariationStore;
-ACQRES(ItemVariationStore){
-one(f.format);
-one(f.variationRegionListOffset);
-one(f.itemVariationDataCount);
-arr(f.itemVariationDataOffsets, f.itemVariationDataCount);
-if(!f.itemVariationData){f.itemVariationData = new ItemVariationData[f.itemVariationDataCount];};
-for(int i=0;i<f.itemVatiationDataCount;i++){offone(f.itemVariationData[i],f.itemVariationDataOffsets[i]);};
- };
-USE_ACQRES(ItemVariationStore)
 uint16 _regionIndexCount;
 
 
@@ -190,5 +163,43 @@ ACQRES(DeltaSet){
 }
 USE_ACQRES(DeltaSet)
 
+
+typedef struct {
+uint16   itemCount;
+uint16   wordDeltaCount;
+uint16   regionIndexCount;
+uint16*   regionIndexes;//[regionIndexCount]
+DeltaSet*   deltaSets;//[itemCount]
+}ItemVariationData;
+ACQRES(ItemVariationData){
+one(f.itemCount);
+one(f.wordDeltaCount);_worldDeltaCount = f.worldDeltaCount;
+one(f.regionIndexCount);_regionIndexCount = f.regionIndexCount;
+arr(f.regionIndexes, f.regionIndexCount);
+if(!f.deltaSets){d.deltaSets=new DeltaSet[f.itemCount];};
+for(int i=0;i<f.itemCount;i++){
+   _regionIndexCount
+   one(f.deltaSets[i]);
+
+};
+ };
+USE_ACQRES(ItemVariationData)
+typedef struct {
+uint16   format;
+Offset32   variationRegionListOffset;
+uint16   itemVariationDataCount;
+Offset32*   itemVariationDataOffsets;//[itemVariationDataCount]
+
+ItemVariationData* itemVariationData;//[itemVariationDataCount]
+}ItemVariationStore;
+ACQRES(ItemVariationStore){
+one(f.format);
+one(f.variationRegionListOffset);
+one(f.itemVariationDataCount);
+arr(f.itemVariationDataOffsets, f.itemVariationDataCount);
+if(!f.itemVariationData){f.itemVariationData = new ItemVariationData[f.itemVariationDataCount];};
+for(int i=0;i<f.itemVatiationDataCount;i++){offone(f.itemVariationData[i],f.itemVariationDataOffsets[i]);};
+ };
+USE_ACQRES(ItemVariationStore)
 
 #endif

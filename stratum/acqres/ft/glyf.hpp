@@ -18,88 +18,60 @@ uint16   instructionLength;
 uint8*   instructions;//[instructionLength]
 uint8*   flags;// [variable]
 
-/*uint16 or*/ int8   *xCoordinates;
-/*uint16 or*/ int8   *yCoordinates;
+/*uint8 or int16*/ int8   *xCoordinates;
+/*uint8 or int16*/ int8   *yCoordinates;
 // No ldwr
 uint16 flagNum;
 uint16 xCoordNum;
 uint16 yCoordNum;
 uint8* flag;
 }SimpleGlyph;
-size_t size<SimpleGlyph>(SimpleGlyph& f){
-   size_t s = _numberOfCountours * sizeof(f.endPtsOfContours[0]);
-   s+= sizeof(f.instructionsLength);
-   s+= sizeof(f.instructions[0])* f.instructionLength;
-   s+=sizeof(f.flags[0])* f.flagNum;
-   s+=sizeof(f.xCoordinates[0])* f.xCoordNum;
-   s+=sizeof(f.yCoordinates[0])* f.yCoordNum;
-   return s;
-};
-void ld<SimpleGlyph>(SimpleGlyph& f,std::ifstream* fi){
-ld(f.endPtsOfCountours,_numberOfCountours,fi);
-ld(f.instructionLength,fi);
-ld(f.instructions,f.instructionLength,fi);
-int lastEndPt = f.endPtsOfContours[_numberOfCountours-1];
-f.flags = new uint8[lastEndPt];
-f.flagNum = 0;
-f.xCoordNum = 0;f.yCoordNum = 0;
-for(int i=0;i<lastEndPt;i++){
-   ld(f.flags[i],fi);   
-   if(f.flags[i] & X_SHORT_VECTOR){ f.xCoordNum++; } 
-   else {if(lastFlag & X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR){};
+ACQRES(SimpleGlyph){
+   arr(f.endPtsOfContours,_numberOfContours);
+   one(f.instructionLength);
+   arr(f.instructions,f.instructionLength);
+   bool flag=true;
+   f.xCoordNum=0;f.yCoordNum=0;
+   if(!f.flags ){f.flags=new uint8[f.endPtsOfContours[_numberOfContours-1]];};
+   for(int i=0;i<f.flagNum;i++){
+      one(f.flags[i]);
+      if(f.flags[i] & X_SHORT_VECTOR){ f.xCoordNum++; } 
+   else {if(f.flags[i] & X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR){};
    else {f.xCoordNum+=2}; }
    if(f.flags[i] & Y_SHORT_VECTOR) {f.yCoordNum++; }
-   else {if(lastFlag & Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR){};
+   else {if(f.flags[i] & Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR){};
    else{f.yCoordNum+=2};}
-   if(f.flags[i] & OVERLAP_SIMPLE) {}
+   // if(f.flags[i] & OVERLAP_SIMPLE) {}
    if(f.flags[i] & REPEAT_FLAG){ // Next Bytes number of repeats
-      if(i+1>=lastEndPt){throw std::runtime_error("Font Read error: SimpleGlyph flags array too big");}
-      ld(f.flags[i+1],fi);
-      size_t times = f.flags[i+1];
-      for(int j=0;j<f.flags[i+1];j++){f.flag[f.flagNum+2+i+j]=f.flags[i];}
-      f.flagNum+=times;
+      if(i+1>=f.endPtsOfContours[_numberOfContours-1]){throw std::runtime_error("Font Read error: SimpleGlyph flags array too big");}
+     
    };
    f.flagNum++;
    }
-   f.xCoordinates = new int8[f.xCoordNum] ;uint fit=0;
-for(int i =0 ; i<f.xCoordNum;i++){
-   
-   if(f.flags[fit] & X_SHORT_VECTOR){ 
+   if(!f.xCoordinates ){f.xCoordinates = new int8[f.xCoordNum]} ;uint fit=0;
+   for(int i =0 ; i<f.xCoordNum;i++){
+   if(f.flags[fit] & X_SHORT_VECTOR){ one(f.xCoordinates[i]);
       if(f.flags[fit] & X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR) {} 
     else {f.xCoordinates[i]= -f.xCoordinates[i];}}
-    else {if(f.flags[fit] & X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR){f.xCoordinates[i]=f.xCoordinates.[i-1];}
-         else{ld(f.xCoordinates[i],fi);
-            ld(f.xCoordinates[i],fi)
+    else {if(f.flags[fit] & X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR){i--}
+         else{one(f.xCoordinates[i]);i++;
+            one(f.xCoordinates[i]);
          }}
          fit++;
 }
-   fit=0;
+      if(!f.yCoordinates ){f.yCoordinates = new int8[f.yCoordNum]} ;uint fit=0;
    for(int i=0;i<f.yCoordNum;i++){
-      if(f.flags[fit] & Y_SHORT_VECTOR){ ld(f.yCoordinates[i],fi);
+      if(f.flags[fit] & Y_SHORT_VECTOR){ one(f.yCoordinates[i]);
       if(f.flags[fit] & Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR) {} 
     else {f.yCoordinates[i]= -f.yCoordinates[i];}}
     else {if(f.flags[fit] & Y_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR){f.yCoordinates[i]=f.yCoordinates.[i-1];}
-         else{ld(f.yCoordinates[i],fi);
-            ld(f.yCoordinates[i],fi)
+         else{one(f.yCoordinates[i]);
+            one(f.yCoordinates[i])
          }}
          fit++;
-   }
-
+      }
 };
-template<> void wr<SimpleGlyph>(SimpleGlyph& f, std::ofstream* fi){
-   wr(f.endPtsOfCountours,_numberOfCountours,fi);
-   wr(f.instructionLength,fi);
-   wr(f.instructions,f.instructionLength,fi);
-   wr(f.flags,f.flagNum);
-   uint16 x,y;x=0;y=0;
-   for(int i =0 ; i<f.flagNum;i++){
-      wr(f.flags[i],fi);
-      if(f.flags[i]& REPEAT_FLAG){wr(f.flags[i+1],fi);
-         i+=f.flags[i+1];
-      }};
-   for(int i=0 ; i< f.xCoordNum;i++){wr(f.xCoordinates[i],fi);}
-   for(int i=0 ; i< f.yCoordNum;i++){wr(f.yCoordinates[i],fi);}
-};
+USE_ACQRES(SimpleGlyph)
 enum ComponentGlyphflags {
    ARG_1_AND_2_ARE_WORDS = 0x0001,    // Bit 0: If this is set, the arguments are 16-bit (uint16 or int16); otherwise, they are bytes (uint8 or int8).
    ARGS_ARE_XY_VALUES = 0x0002,       // Bit 1: If this is set, the arguments are signed xy values; otherwise, they are unsigned point numbers.
@@ -119,38 +91,64 @@ enum ComponentGlyphflags {
 typedef struct {
 uint16   flags;
 uint16   glyphIndex;
-/*uint8, int8 , uint16 or */int16   argument1;
-/*uint8, int8 , uint16 or */int16   argument2;
-// [transform data]   ;
+union {
+   struct {
+      /*uint8, int8 , uint16 or */int16   argument1;
+      /*uint8, int8 , uint16 or */int16   argument2;
+   }arg16;
+   uint16 arg1and2;
+
+}args;
+F2DOT14  scale;
+        F2DOT14  xscale;    /* Format 2.14 */
+        F2DOT14  scale01;   /* Format 2.14 */
+        F2DOT14  scale10;   /* Format 2.14 */
+        F2DOT14  yscale;    /* Format 2.14 */
+
+    
 }CGlyph;
-ACQRES(CGlyph){
-one(f.flags);
-      one(f.glyphIndex);
-      if(f.flags & ARG_1_AND_2_ARE_WORDS){if(f.flags & ARGS_ARE_XY_VALUES){one(f.argument1),one(f.argument2);}
-                                          else {uint16 arg1= f.argument1; uint16 arg2=f.argument1;one(arg1);one(arg2);f.argument1=arg1;f.argument2=arg2;};}
-      else {if(f.flags & ARGS_ARE_XY_VALUES){
-         int8 arg1=f.argument1 ;int8 arg2=f.argument2;one(arg1),one(arg2);f.argument1 = arg1;f.argument2=arg2;};
-         else {uint8 arg1=f.argument1 ;uint8 arg2=f.argument2;one(arg1),one(arg2);f.argument1 = arg1;f.argument2=arg2;}
-      }
-};
-USE_ACQRES(CGLyph)
-typedef struct {
-   CGlyph* var;
+
+typedef std::vector<CGlyph> CGlyphC;
+struct ComponentGlyph {
+   CGlyphC rec;
    uint16 numInstr;
-   uint8* instr; //[numInstr]
-}ComponentGlyph;
+    uint8 instr[numInstr];
+};
 ACQRES(ComponentGlyph){
-   int index=0;
-   do {
-      one(f.var[i]);
-      index++;
-   }while(f.flags & MORE_COMPONENTS);
-   if(f.flags& WE_HAVE_INSTRUCTIONS){
-      one(f.numInstr);
-      arr(f.instr,f.numInstr);
-   }
+  int i=-1;
+do {
+   i++;
+   if(f.rec.size()<=i){
+      f.push_back(CGlyph());
+   };
+    one(f.rec[i].flags) ;
+    one(f.rec[i].glyphIndex);
+    if ( f.rec[i].flags & ARG_1_AND_2_ARE_WORDS) {
+    one(f.rec[i].args.arg16.argument1);
+    one(f.rec[i].args.arg16.argument2);
+    } else {
+        one(f.rec[i].args.arg1and2); /* (arg1 << 8) | arg2 */
+    }
+    if ( flags & WE_HAVE_A_SCALE ) {
+        one(f.rec[i].scale);    /* Format 2.14 */
+    } else if ( flags & WE_HAVE_AN_X_AND_Y_SCALE ) {
+        one(f.rec[i].xscale);    /* Format 2.14 */
+        one(f.rec[i].yscale);    /* Format 2.14 */
+    } else if ( flags & WE_HAVE_A_TWO_BY_TWO ) {
+        one(f.rec[i].xscale);    /* Format 2.14 */
+        one(f.rec[i].scale01);   /* Format 2.14 */
+        one(f.rec[i].scale10);   /* Format 2.14 */
+        one(f.rec[i].yscale);    /* Format 2.14 */
+    }
+} while ( f.flags & MORE_COMPONENTS )
+if (flags & WE_HAVE_INSTRUCTIONS){
+    one(f.rec[i].numInstr);
+    arr(f.rec[i].instr,f.numInstr);
 }
+
+};
 USE_ACQRES(ComponentGlyph)
+
 typedef struct {
 int16   numberOfContours;
 int16   xMin;
@@ -182,20 +180,10 @@ typedef struct {
    size_t s;
 
    glyfHead& loca(Offset16 rs){
-      Offset32 rrs=s*2;
-      // return descriptions[0]+rrs
-      size_t sc=0;
-      for(int i=0;i<s;i++){
-         if(rrs==sc){return descriptions[i];}
-         sc+=size(descriptions[i]);
-      };
+      return (*this+rs*2);
    };
    glyfHead& loca(Offset32 rs){
-      size_t sc=0;
-      for(int i=0;i<s;i++){
-         if(s==sc){return descriptions[i];}
-         sc+=size(descriptions[i]);
-      };
+      return (*this+rs);
    };
 }glyf;
 void ld<glyf>(glyf f, std::ifstream* fi){

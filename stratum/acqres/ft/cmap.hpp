@@ -609,8 +609,7 @@ uintT cmapGlyphId(cmap* cm, charT c  ){
 template <typename charT>
 void cmapGlyphIds(cmap* cm,charT start,charT end,  size_t* s,uint32* r   ){
     *s=0;
-    for(int i=0;i<numTables;i++){
-        
+    for(int i=0;i<numTables;i++){  
         cmapSubGlyphIds(cm->tables[i],o,s,r);
         if(s>=0){return ;};
     };
@@ -618,8 +617,8 @@ void cmapGlyphIds(cmap* cm,charT start,charT end,  size_t* s,uint32* r   ){
 
 template <typename charT>
 uint32 cmapGlyphIds(cmap* cm, size_t numRanges,charT *rangeStarts,charT *rangeEnd   ){
-    for(int i=0;i<numTables;i++){
-
+    for(int i=0;i<numRnages;i++){
+        
     };
 };
 

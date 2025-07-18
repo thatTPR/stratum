@@ -1,0 +1,15 @@
+#include <functional>
+template <typename T>
+T bsearch(T* arr,size_t s, std::functional<int(T&)> cmp){
+   int m = s/2;
+   for(int i=m;m>=1;){
+        int d = cmp(arr[i]) 
+      if(d==0){
+        return arr[i];
+      }
+      m/=2;
+      if (d>0){i+=m;}
+      else{i-=m;}
+      
+   }
+};

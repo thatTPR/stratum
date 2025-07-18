@@ -1,10 +1,13 @@
-
-typedef struct {
+#ifndef FTCPAL_HPP
+#define FTCPAL_HPP
+struct ColorRecord{
 uint8   blue;
 uint8   green;
 uint8   red;
 uint8   alpha;
-}ColorRecord;
+    glm::uvec4 get(){return glm::uvec4(red,green,blue,alpha);}
+    ColorRecord(glm::uvec4& g) : blue(g.r),green(g.g), red(g.r),alpha(g.a) {};   
+};
 enum PaletteFlags{
 	USABLE_WITH_LIGHT_BACKGROUND=0x0001,//	Bit 0: palette is appropriate to use when displaying the font on a light background such as white.
 	USABLE_WITH_DARK_BACKGROUND=0x0002,//	Bit 1: palette is appropriate to use when displaying the font on a dark background such as black.
@@ -87,3 +90,5 @@ ACQRES(CPAL){
     }
 }
 USE_ACQRES(CPAL)
+
+#endif

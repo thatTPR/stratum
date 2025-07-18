@@ -1,0 +1,58 @@
+struct uint24_t {
+     uint8_t bytes[3];
+
+    uint24_t() : bytes{0, 0, 0} {}
+
+    uint24_t(uint32_t value) {
+        set(value);
+    }
+
+    // Conversion to 32-bit
+    operator uint32_t() const {
+        return (static_cast<uint32_t>(bytes[2]) << 16) |
+               (static_cast<uint32_t>(bytes[1]) << 8) |
+               bytes[0];
+    }
+
+    // Correct prefix increment
+    uint24_t& operator++() {
+        uint32_t temp = static_cast<uint32_t>(*this);
+        temp = (temp + 1) & 0xFFFFFF; // Clamp to 24 bits
+        set(temp);
+        return *this;
+    }
+
+    // Optional: postfix increment
+    uint24_t operator++(int) {
+        uint24_t copy = *this;
+        ++(*this);
+        return copy;
+    }
+    uint24_t& operator--() {
+        uint32_t temp = static_cast<uint32_t>(*this);
+        temp = (temp - 1) & 0xFFFFFF; // Clamp to 24 bits
+        set(temp);
+        return *this;
+    }
+
+    // Optional: postfix increment
+    uint24_t operator--(int) {
+        uint24_t copy = *this;
+        --(*this);
+        return copy;
+    }
+
+    // Correct assignment from uint32_t
+    uint24_t& operator=(uint32_t value) {
+        set(value);
+        return *this;
+    }
+
+private:
+    void set(uint32_t value) {
+        value &= 0xFFFFFF;
+        bytes[0] = static_cast<uint8_t>(value);
+        bytes[1] = static_cast<uint8_t>(value >> 8);
+        bytes[2] = static_cast<uint8_t>(value >> 16);
+    }
+};
