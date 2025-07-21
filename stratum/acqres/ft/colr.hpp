@@ -71,17 +71,19 @@ one(f.numClips);
 arr(f.clips, f.numClips);
  };
 USE_ACQRES(ClipList)
+#define COND_IS_SAME(t1,t1) std::conditional<std::is_same<VarIndex,varIndBase>::value,t1,t2>::type
 
+template <typename varIndexBase>
 struct ColorStop {
 F2DOT14   stopOffset;
-uint16   paletteIndex;
+COND_IS_SAME(uint16,glm::uvec4)   paletteIndex;
 F2DOT14   alpha;
 };
 template <typename VarIndex>
 struct VarColorStop {
 F2DOT14   stopOffset;
-uint16   paletteIndex;
-F2DOT14   alpha;
+COND_IS_SAME(uint16,glm::uvec4)   paletteIndex;
+COND_IS_SAME(F2DOT14,float)   alpha;
 VarIndex   varIndexBase;
 
 };
@@ -102,6 +104,7 @@ struct VarColorLine {
 uint8   extend;
 uint16   numStops;
 VarColorStop<varIndBase>*   colorStops;//[numStops]
+
 };
 ACQRES(VarColorLine<varIndBase>){
 one(f.extend);
@@ -124,7 +127,7 @@ float alphaval(F2DOT14 f){
 };
 template <typename T>
 void getCpal(T* colf, colorFT* cf){
-   ColorRecord cr = ftcur->CPAL().get(colf->paletteIndex);
+   ColorRecord cr = CPAL().get(colrf->paletteIndex);
    cf->color= glm::uvec4(cr.red,cr.green,cr.blue,cr.alpha);
    cf->alpha=colf->alpha;
 };
@@ -143,14 +146,14 @@ return r;\
 // uint8   format;
 uint8   numLayers;
 uint32   firstLayerIndex;
+
 };//PaintColrLayers
-#define COND_IS_SAME(t1,t1) std::conditional<std::is_same<VarIndex,varIndBase>::value,t1,t2>::type
 template <typename VarIndex>
  struct colrf2 {
 // uint8   format;
 COND_IS_SAME(uint16,glm::uvec4)   paletteIndex;
 COND_IS_SAME(F2DOT14,float)   alpha;
-
+corlf2<varValueBase> get(){corlf2<varValueBase> r;r.paletteIndex=CPAL().get(paletteIndex).get();r.alpha=alphaval(alpha);}
 };//PaintSolid table ;
 template <typename VarIndex> // Uint32 or struct{uint16,uint8*}
 struct colrf3 {
@@ -158,6 +161,7 @@ struct colrf3 {
 COND_IS_SAME(uint16,glm::uvec4)  paletteIndex;
 F2DOT14   alpha;
 VarIndex   varIndexBase;
+corlf4<varValueBase> get(){corlf4<varValueBase> r;r.paletteIndex=CPAL().get(paletteIndex).get();r.alpha=alphaval(alpha);}
 };//PaintVarSolid;
 #define TEMPLATE_TYPE_OFFSET std::enable_if<std::is_same<VarIndex,varIndBase>::value,Offset24>::type
 #define TEMPLATE_IND_OFFSET COND_IS_SAME(Offset24,IndexP)
@@ -311,6 +315,7 @@ template <typename VarIndex>
 TEMPLATE_IND_OFFSET paintOffset;
 uint16   glyphID;
 // SpecialHandle
+COLRF_GET(10,paintOffset,glyphID)
 colrfu* get(colrf<varIndBase>* start,uint16 index){return (&start[index]+paintOffset);};
 };//PaintGlyph:*/;
 
@@ -341,7 +346,7 @@ VarAffine2x3<varValueBase> operator=(decltype(*this)& l){
 };
 template < typename SCOLR>
 colrf<varIndBase>* getPaintOffset(SCOLR& start){
-   return (&start+start.paintOffset);
+   return (&start-sizeof(uint8)+start.paintOffset);
 };
 #define TEMPLATE_PAINT_OFFSET Offset24
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
@@ -569,7 +574,7 @@ struct colrf32 {
 TEMPLATE_IND_OFFSET sourcePaintOffset;
 uint8   compositeMode;
 TEMPLATE_IND_OFFSET backdropPaintOffset;
-colrfu* get(colrfu<varIndBase>* start,uint16 index){return (&start[index]+sourcePaintOffset);};
+CORLF_GET(32,sourcePaintoffset,compositeMode,backdropPaintOffset)
 };//PaintComposite:*/;
 
 
@@ -661,11 +666,11 @@ Layer* layerRecords ;
 
       BaseGlyph Bg = bsearch<BaseGlyph>(baseGlyphRecords,numBaseGlyphRecords,cmpBg);       
       // GetNumGlyphs;
-      result.baseGlyphs=new colrf<varValueBase>[result.subGlyphSize];
+      result.baseGlyphs=new colrf<varValueBase>[result.numbaseGlyphs];
       for(int i=res.firstLayerIndex;i<res.numLayers-1+res.firstLayerIndex;i++)
       {
          result.baseGlyphs[i].format=2;
-         result.baseGlyphs[i].f.f2.paletteIndex= ftcur->CPAL().get(layerRecords[i].paletteIndex).get();  
+         result.baseGlyphs[i].f.f2.paletteIndex= CPAL().get(layerRecords[i].paletteIndex).get();  
       }
       return result;
    };
@@ -702,7 +707,30 @@ DeltaSetIndexMap deltaSetIndexMap;
 ItemVariationStore itemVariationStore;
 
 
-
+colrf<varValueBase> get(colrf<varIndBase>& cfvar){
+   colrf<varValueBase> r;r.format=cfvar.format;
+   #define GET_COLRF_CASE(n) case n : {r.f.f##n=cfvar.f.f##n.get();break;}
+   #define GET_COLRF_VAR_CASE(n) case n :{r.f.f##n=cfvar.f.f##n.get();r.f.f##n.varIndexBase=varIndexBaseCopy(cfvar.f.f##n.varIndexBase);break;}
+   switch (cfvar.format)
+   {
+      case 1 :{r.f.f1= cfvar.f.f1;break;}
+      case 5 :{r.f.f5=cfvar.f.f5.get();r.f.f5.varIndexBase=varIndexBaseCopy(cfvar.f.f5.varIndexBase);r.f.f5.colorLine=varColorLineCopy(cfvar.f.f5.colorLine);break;}
+      case 7 :{r.f.f7=cfvar.f.f7.get();r.f.f7.varIndexBase=varIndexBaseCopy(cfvar.f.f7.varIndexBase);r.f.f7.colorLine=varColorLineCopy(cfvar.f.f7.colorLine);break;}
+      case 9 :{r.f.f9=cfvar.f.f9.get();r.f.f9.varIndexBase=varIndexBaseCopy(cfvar.f.f9.varIndexBase);r.f.f9.colorLine=varColorLineCopy(cfvar.f.f9.colorLine);break;}
+      case 11 : {r.f.f11=cfvar.f.f11;break};
+      REPEAT(GET_COLRF_VAR_CASE,3,15,17,19,21,23,25,27,29,31)
+      case 13 :{r.f.f13=cfvar.f.f13.get();r.f.f13.transform.varIndexBase=varIndexBaseCopy(cfvar.f.f13.transform.varIndexBase);break};
+      REPEAT(GET_COLRF_CASE,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32)              
+   }
+return r;
+};
+colrf<varValueBase>* getLayers(colrf1& f , size_t* s){
+   *s=f.numLayers;
+   colrf<varValueBase>* r = new colrf<varValueBase>[*s];
+   for(int i=f.firstLayerIndex;i<*s;i++){
+      r[i]=get(layerList.paintTables[i]);
+   } ;
+};
 varValueBase varIndexBaseCopy(uint32 s){
 varValueBase b;
 switch(deltaSetIndexMap.format){
@@ -711,6 +739,16 @@ switch(deltaSetIndexMap.format){
 };              
 };
 
+VarColorLine<varValueBase> varColorLineCopy(VarColorLine<varIndBase>& l){
+   VarColorLine<varValueBase> r;
+   r.extend=l.extend;r.numStops=l.numStops;
+   r.colorStops=new VarColorStop<varValueBase>[r.numStops];
+   for(int i=0;i<r.numStops;i++){
+      r.colorStops[i].paletteIndex=CPAL().get(l.colorStops[i].paletteIndex).get();
+      r.colorStops[i].alpha=alphaval(l.colorStops[i].alpha);
+      r.colorStops[i].varIndexBase=varColorLineCopy(l.colorStops[i].varIndexBase);
+   }
+}
 
 colorFT get( uint16 gid){
      colorFT result ;
@@ -720,14 +758,14 @@ colorFT get( uint16 gid){
          BaseGlyph res ;res.glyphID=gid;
 
       res= bsearch<BaseGlyph>(baseGlyphRecords,numBaseGlyphRecords,cmpBg);
-      result.subGlyphSize = res.numLayers;
+      result.numbaseGlyphs = res.numLayers;
       result.baseGlyphs=res.
       // GetNumGlyphs;
-      result.baseGlyphs=new colrf<varValueBase>[result.subGlyphSize];
+      result.baseGlyphs=new colrf<varValueBase>[result.numbaseGlyphs];
       for(int i=res.firstLayerIndex;i<res.numLayers-1+res.firstLayerIndex;i++)
       {
          result.baseGlyphs[i].format=2;
-         result.baseGlyphs[i].f.f2.paletteIndex= ftcur->CPAL().get(layerRecords[i].paletteIndex).get();  
+         result.baseGlyphs[i].f.f2.paletteIndex= CPAL().get(layerRecords[i].paletteIndex).get();  
       }
    } 
 // BaseGlyphList
@@ -738,27 +776,14 @@ BaseGlyphPaintRecord a = bsearch<BaseGlyphPaintRecord>(baseGlyphList.baseGlyphPa
 colrf<varIndBase>* colrTable = (&baseGlyphList + baseGlyphList.paintOffset);
 
 // LayerList 
-      auto get = [&](colrf<varIndBase>& cfvar, size_t s){
-         colrf<varValueBase> r;r.format=cfvar.format;
-         #define GET_COLRF_CASE(n) case n : {r.f##n=cfvar.f##n.get();}
-         switch (cfvar.format)
-         {
-            case 1 :{r.f1= cfvar.f1;break;}
-            case 2 :{r.f2.paletteIndex=ftcur->CPAL().get(cfvar.f2.paletteIndex).get();r.f2.alpha=alphaval(cfvar.f2.alpha);break;};
-            case 3 :{r.f2.paletteIndex=ftcur->CPAL().get(cfvar.f3.paletteIndex).get();r.f2.varIndexBase= varIndexBaseCopy(cfvar.varIndexBase)}
-            
-            REPEAT(GET_COLRF_CASE,4,6,8,14)
-            case 5 :{r.f5=cfvar.f5.get(); ;}
-            case 7 :{r.f7=cfvar.f7.get();} 
-            case 9 :{}
-         
-         
-         }
-      };
-      result.layers=new colrf<varValueBase>[layerList.numLayers];
-      for(int i=0;i<layerList.numLayers;i++){
-         result.layers[i]=
-      };
+
+   colrf<varValueBase> colrStart = get(colrTable);
+   if(colrStart.format==1){
+      size_t s;
+      result.values = getLayers(colrStart.f.f1,&s);  
+      result.numValues=s;
+   }
+   else (colrStart.format==32)
 
 
    

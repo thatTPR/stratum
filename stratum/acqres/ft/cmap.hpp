@@ -584,7 +584,7 @@ case 14 : {return cmap14GlyphId(f.f.f14,c);};
     }
 };
 template <typename charT, typename uintT>
- cmapSubGlyphIds(cmapSubFormat& f,charT start ,charT end,uintT* r,size_t* s){
+uintT cmapSubGlyphIds(cmapSubFormat& f,charT start ,charT end,uintT* r,size_t* s){
     switch(f.format){
 case 0 :  {return cmap0GlyphIds(f.f.f0,c,s,s,r);};
 case 2 :  {return cmap2GlyphIds(f.f.f2,c,s,s,r);};

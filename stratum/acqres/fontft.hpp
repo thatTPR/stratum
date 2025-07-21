@@ -54,25 +54,43 @@ typedef uint32_t IndexP;
     return i;};
     
     void font_tag(Tag i, char* s){Tag r=i;s[0] = (char)(r>>24) ; s[1] = (char)(r>>16); s[2] = (char)(r>>8); s[3]=(char)(r);}
-   
+   #include <petri/vect.hpp>
+struct glyfbm {
+    uint16 glyphID;
+    coord pos;
+    int16   xMin;
+    int16   yMin;
+    int16   xMax;
+    int16   yMax;
+    uint16 height,width;
+    glm::uvec4 color;
+    float alpha ;
+    uint32 size;
+    glm::uvec4* bitmap;
+    void blit(uint16 xOffset,uint16 yOffset,glyfm& bm){
+        for(int i=xOffset;i<width;i++){
+            for(int j=yOffset;j<height){
+                if((i-xOffset)*bm.width+j-yOffset > bm.size){return;}
+                bitmap[i*width+j]=bm.bitmap[(i-xOffset)*bm.width+j-yOffset];
+            };
+        }
+    };
+};  
 
 struct colorFT  {
     glm::uvec4 color;
-
-    uint16 alpha;
-
-    uint16 subGlyphSize;
+    float alpha;
+    uint16 numbaseGlyphs;
     uint16* baseGlyphs;
-    uint32* flags;
-    uint16 sizeLayers;
+    uint16 numLayers;
     colrf<varValueBase>* layers;
-    uint16 sizeValues;
+    uint16 numValues;
     colrf<varValueBase>* values;
+
+    ALIAS_VECT(colrf<varValueBase>,uint16,layers,numLayers)
+    ALIAS_VECT(colrf<varValueBase>,uint16,values,numValues)
     
 };
-
-
-
 struct glyfft{
     uint16 glyphID;
     coord pos;
@@ -266,115 +284,6 @@ struct glyffrange {
     uint16 startGlyphId;
     
 };
-struct font;
-font* ftcur;
-
-#include <stratum/acqres/acqres.hpp>
-
-#include <stratum/acqres/ft/avar.hpp> //[x]
-#include <stratum/acqres/ft/base.hpp> //[x]
-#include <stratum/acqres/ft/cbdt.hpp> //[]
-#include <stratum/acqres/ft/cblc.hpp> //[]
-#include <stratum/acqres/ft/cff.hpp> //[]
-#include <stratum/acqres/ft/cff2.hpp> //[]
-#include <stratum/acqres/ft/cmap.hpp> //[x]
-#include <stratum/acqres/ft/colr.hpp> //[x]
-#include <stratum/acqres/ft/cpal.hpp> //[x]
-#include <stratum/acqres/ft/cvar.hpp> //[x]
-#include <stratum/acqres/ft/cvt.hpp> //[x]
-#include <stratum/acqres/ft/dsig.hpp> //[x]
-#include <stratum/acqres/ft/ebdt.hpp> //[x]
-#include <stratum/acqres/ft/eblc.hpp> //[x]
-#include <stratum/acqres/ft/ebsc.hpp> //[x]
-#include <stratum/acqres/ft/fpgm.hpp> //[x]
-#include <stratum/acqres/ft/fvar.hpp> //[x]
-#include <stratum/acqres/ft/gasp.hpp> //[x]
-#include <stratum/acqres/ft/gdef.hpp> //[x]
-#include <stratum/acqres/ft/glyf.hpp> //[x]
-#include <stratum/acqres/ft/gpos.hpp> //[x]
-#include <stratum/acqres/ft/gsub.hpp> //[x]
-#include <stratum/acqres/ft/gvar.hpp> //[x]
-#include <stratum/acqres/ft/hdmx.hpp> //[x]
-#include <stratum/acqres/ft/head.hpp> //[x]
-#include <stratum/acqres/ft/hhea.hpp> //[x]
-#include <stratum/acqres/ft/hmtx.hpp> //[x]
-#include <stratum/acqres/ft/hvar.hpp> //[x]
-// #include <stratum/acqres/ft/ibmfc.hpp> //[]
-#include <stratum/acqres/ft/jstf.hpp> //[x]
-#include <stratum/acqres/ft/kern.hpp> //[x]
-#include <stratum/acqres/ft/loca.hpp> //[x]
-#include <stratum/acqres/ft/ltsh.hpp> //[x]
-#include <stratum/acqres/ft/math.hpp> //[x]
-#include <stratum/acqres/ft/maxp.hpp> //[x]
-#include <stratum/acqres/ft/merg.hpp> //[x]
-#include <stratum/acqres/ft/meta.hpp> //[x]
-#include <stratum/acqres/ft/mvar.hpp> //[x]
-#include <stratum/acqres/ft/name.hpp> //[x]
-#include <stratum/acqres/ft/ompl.hpp> //[y]
-#include <stratum/acqres/ft/os2.hpp> //[x]
-#include <stratum/acqres/ft/pclt.hpp> //[x]
-#include <stratum/acqres/ft/post.hpp> //[x]
-#include <stratum/acqres/ft/prep.hpp> //[x]
-#include <stratum/acqres/ft/sbix.hpp> //[x]
-#include <stratum/acqres/ft/stat.hpp> //[x]
-#include <stratum/acqres/ft/svg.hpp> //[x]
-#include <stratum/acqres/ft/vdmx.hpp> //[x]
-#include <stratum/acqres/ft/vhea.hpp> //[x]
-#include <stratum/acqres/ft/vmtx.hpp> //[x]
-#include <stratum/acqres/ft/vorg.hpp> //[x]
-#include <stratum/acqres/ft/vvar.hpp> //[x]
-  typedef union  {
-        avar _avar;
-        BASE _BASE;
-        CBDT _CBDT;
-        CBLC _CBLC;
-        CFF _CFF;
-        CFF2 _CFF2;
-        cmap _cmap;
-        COLR _COLR;
-        CPAL _CPAL;
-        cvar _cvar;
-        cvt _cvt;
-        DSIG _DSIG;
-        EBDT _EBDT;
-        EBLC _EBLC;
-        EBSC _EBSC;
-        fpgm _fpgm;
-        fvar _fvar;
-        gasp _gasp;
-        GDEF _GDEF;
-        glyf _glyf;
-        GPOS _GPOS;
-        GSUB _GSUB;
-        gvar _gvar;
-        hdmx _hdmx;
-        head _head;
-        hhea _hhea;
-        hmtx _hmtx;
-        HVAR _HVAR;
-        JSTF _JSTF;
-        kern _kern;
-        loca _loca;
-        LTSH _LTSH;
-        MATH _MATH;
-        maxp _maxp;
-        MERG _MERG;
-        meta _meta;
-        MVAR _MVAR;
-        name _name;  
-        os2 _os2;
-        PCLT _PCLT;
-        post _post;
-        prep _prep;
-        sbix _sbix;
-        STAT _STAT;
-        SVG _SVG;
-        VDMX _VDMX;
-        vhea _vhea;
-        vmtx _vmtx;
-        VORG _VORG;
-        VVAR _VVAR;
-    }tableu;
 
 
 #define TAG_MEMBER(macro)\
@@ -430,8 +339,64 @@ macro("VORG",VORG)\
 macro("VVAR",VVAR)\
 
 
+#include <stratum/acqres/acqres.hpp>
+
+  typedef union  {
+        avar _avar;
+        BASE _BASE;
+        CBDT _CBDT;
+        CBLC _CBLC;
+        CFF _CFF;
+        CFF2 _CFF2;
+        cmap _cmap;
+        COLR _COLR;
+        CPAL _CPAL;
+        cvar _cvar;
+        cvt _cvt;
+        DSIG _DSIG;
+        EBDT _EBDT;
+        EBLC _EBLC;
+        EBSC _EBSC;
+        fpgm _fpgm;
+        fvar _fvar;
+        gasp _gasp;
+        GDEF _GDEF;
+        glyf _glyf;
+        GPOS _GPOS;
+        GSUB _GSUB;
+        gvar _gvar;
+        hdmx _hdmx;
+        head _head;
+        hhea _hhea;
+        hmtx _hmtx;
+        HVAR _HVAR;
+        JSTF _JSTF;
+        kern _kern;
+        loca _loca;
+        LTSH _LTSH;
+        MATH _MATH;
+        maxp _maxp;
+        MERG _MERG;
+        meta _meta;
+        MVAR _MVAR;
+        name _name;  
+        os2 _os2;
+        PCLT _PCLT;
+        post _post;
+        prep _prep;
+        sbix _sbix;
+        STAT _STAT;
+        SVG _SVG;
+        VDMX _VDMX;
+        vhea _vhea;
+        vmtx _vmtx;
+        VORG _VORG;
+        VVAR _VVAR;
+    }tableu;
+    /// @brief otff //[]
+
+
 uint16 _ftTBI;// Table Inex
-/// @brief otff //[]
 uint32 _length ;
 typedef struct {
 Tag   tableTag;
@@ -485,7 +450,7 @@ one(f.dsigOffset);
 USE_ACQRES(TTCHeader2)
 
 
-typedef struct {
+struct TTChead  { // TODO
     Tag   ttcTag;
 uint16   majorVersion;
 uint16   minorVersion;
@@ -498,7 +463,7 @@ Offset32*   tableDirectoryOffsets;//[numFonts]
     tableu* tbs ;//[ td.numTables]
 
  
-}TTChead;
+};
 ACQRES(TTChead){
 one(f.ttcTag);
 one(f.majorVersion);
@@ -538,13 +503,69 @@ while (Table < EndPtr)
     Sum += *Table++;
 return Sum;
 }
-
-
-
-
+#define REPEAT(macro)
+#define REPEAT(macro,a) macro(a)
+#define REPEAT(macro,a,...) macro(a) REPEAT(macro,__VA_ARG__)
      struct font {
-        TableDirectory td ;
+                TableDirectory td ;
         tableu* table;
+
+        #define TBINDEX(m) int ##mI=-1;m& m(){return table[##mI]._##;};
+        REPEAT(TBINDEX,avar, BASE, CBDT, CBLC, CFF, CFF2, cmap, COLR, CPAL, cvar, cvt, DS,G, EBDT, EBLC, EBSC, fpgm, fvar, gasp, GDEF, glyf, GPOS, GSUB, gvar, hdmx, head, hhea, hmtx, HVAR, JSTF, kern, loca, LTSH, MATH, maxp, MERG, meta, MVAR, name, os2, PCLT, post, prep, sbix, STAT, SVG, VDMX, vhea, vmtx, VORG, VVAR)
+     
+        #include "ft/avar.hpp" //[x]
+#include "ft/base.hpp" //[x]
+#include "ft/ebsc.hpp" //[x]
+    #include "ft/ebdt.hpp" //[x]
+    #include "ft/eblc.hpp" //[x]
+
+#include "ft/cbdt.hpp" //[]
+#include "ft/cblc.hpp" //[]
+#include "ft/cff.hpp" //[]
+#include "ft/cff2.hpp" //[]
+#include "ft/cmap.hpp" //[x]
+#include "ft/loca.hpp" //[x]
+    #include "ft/colr.hpp" //[x]
+    #include "ft/cpal.hpp" //[x]
+    #include "ft/cvar.hpp" //[x]
+    #include "ft/cvt.hpp" //[x]
+    #include "ft/dsig.hpp" //[x]
+    #include "ft/fpgm.hpp" //[x]
+    #include "ft/fvar.hpp" //[x]
+    #include "ft/gasp.hpp" //[x]
+    #include "ft/gdef.hpp" //[x]
+    #include "ft/glyf.hpp" //[x]
+    #include "ft/gpos.hpp" //[x]
+    #include "ft/gsub.hpp" //[x]
+    #include "ft/gvar.hpp" //[x]
+    #include "ft/hdmx.hpp" //[x]
+    #include "ft/head.hpp" //[x]
+    #include "ft/hhea.hpp" //[x]
+    #include "ft/hmtx.hpp" //[x]
+    #include "ft/hvar.hpp" //[x]
+    // #include "ft/ibmfc.hpp" //[]
+    #include "ft/jstf.hpp" //[x]
+    #include "ft/kern.hpp" //[x]
+    #include "ft/ltsh.hpp" //[x]
+    #include "ft/math.hpp" //[x]
+    #include "ft/maxp.hpp" //[x]
+    #include "ft/merg.hpp" //[x]
+    #include "ft/meta.hpp" //[x]
+    #include "ft/mvar.hpp" //[x]
+    #include "ft/name.hpp" //[x]
+    #include "ft/ompl.hpp" //[y]
+    #include "ft/os2.hpp" //[x]
+    #include "ft/pclt.hpp" //[x]
+    #include "ft/post.hpp" //[x]
+    #include "ft/prep.hpp" //[x]
+    #include "ft/sbix.hpp" //[x]
+    #include "ft/stat.hpp" //[x]
+    #include "ft/svg.hpp" //[x]
+    #include "ft/vdmx.hpp" //[x]
+    #include "ft/vhea.hpp" //[x]
+    #include "ft/vmtx.hpp" //[x]
+    #include "ft/vorg.hpp" //[x]
+    #include "ft/vvar.hpp" //[x]
 
         constexpr bool wcb = std::is_same<wchar_t,char16_t> wcb; 
         std::vector<ftrange<char>> cglyfs ;
@@ -593,61 +614,24 @@ template <>uint16 getGid(char32_t c){
             return res;
         };
 
-
-        int avarI, BASEI, CBDTI, CBLCI, CFFI, CFF2I, cmapI, COLRI, CPALI, cvarI, cvtI, DSIGI, EBDTI, EBLCI, EBSCI, fpgmI, fvarI, gaspI, GDEFI, glyfI, GPOSI, GSUBI, gvarI, hdmxI, headI, hheaI, hmtxI, HVARI, JSTFI, kernI, locaI, LTSHI, MATHI, maxpI, MERGI, metaI, MVARI, nameI, os2I, PCLTI, postI, prepI, sbixI, STATI, SVGI, VDMXI, vheaI, vmtxI, VORGI, VVAR;
-        avarI=-1;BASEI=-1;CBDTI=-1;CBLCI=-1;CFFI=-1;CFF2I=-1;cmapI=-1;COLRI=-1;CPALI=-1;cvarI=-1;cvtI=-1;DSIGI=-1;EBDTI=-1;EBLCI=-1;EBSCI=-1;fpgmI=-1;fvarI=-1;gaspI=-1;GDEFI=-1;glyfI=-1;GPOSI=-1;GSUBI=-1;gvarI=-1;hdmxI=-1;headI=-1;hheaI=-1;hmtxI=-1;HVARI=-1;JSTFI=-1;kernI=-1;locaI=-1;LTSHI=-1;MATHI=-1;maxpI=-1;MERGI=-1;metaI=-1;MVARI=-1;nameI=-1;os2I=-1;PCLTI=-1;postI=-1;prepI=-1;sbixI=-1;STATI=-1;SVGI=-1;VDMXI=-1;vheaI=-1;vmtxI=-1;VORGI=-1;VVARI=-1;cmap& cmap(){return table[cmapI]._cmap; }
     
-    avar& avar(){return table[avarI]._avar;};
-    BASE& BASE(){return table[BASEI]._BASE;};
-    CBDT& CBDT(){return table[CBDTI]._CBDT;};
-    CBLC& CBLC(){return table[CBLCI]._CBLC;};
-    CFF& CFF(){return table[CFFI]._CFF;};
-    CFF2& CFF2(){return table[CFF2I]._CFF2;};
-    cmap& cmap(){return table[cmapI]._cmap;};
-    COLR& COLR(){return table[COLRI]._COLR;};
-    CPAL& CPAL(){return table[CPALI]._CPAL;};
-    cvar& cvar(){return table[cvarI]._cvar;};
-    cvt&  cvt() {return table[cvtI]._cvt;};
-    DSIG& DSIG(){return table[DSIGI]._DSIG;};
-    EBDT& EBDT(){return table[EBDTI]._EBDT;};
-    EBLC& EBLC(){return table[EBLCI]._EBLC;};
-    EBSC& EBSC(){return table[EBSCI]._EBSC;};
-    fpgm& fpgm(){return table[fpgmI]._fpgm;};
-    fvar& fvar(){return table[fvarI]._fvar;};
-    gasp& gasp(){return table[gaspI]._gasp;};
-    GDEF& GDEF(){return table[GDEFI]._GDEF;};
-    glyf& glyf(){return table[glyfI]._glyf;};
-    GPOS& GPOS(){return table[GPOSI]._GPOS;};
-    GSUB& GSUB(){return table[GSUBI]._GSUB;};
-    gvar& gvar(){return table[gvarI]._gvar;};
-    hdmx& hdmx(){return table[hdmxI]._hdmx;};
-    head& head(){return table[headI]._head;};
-    hhea& hhea(){return table[hheaI]._hhea;};
-    hmtx& hmtx(){return table[hmtxI]._hmtx;};
-    HVAR& HVAR(){return table[HVARI]._HVAR;};
-    JSTF& JSTF(){return table[JSTFI]._JSTF;};
-    kern& kern(){return table[kernI]._kern;};
-    loca& loca(){return table[locaI]._loca;};
-    LTSH& LTSH(){return table[LTSHI]._LTSH;};
-    MATH& MATH(){return table[MATHI]._MATH;};
-    maxp& maxp(){return table[maxpI]._maxp;};
-    MERG& MERG(){return table[MERGI]._MERG;};
-    meta& meta(){return table[metaI]._meta;};
-    MVAR& MVAR(){return table[MVARI]._MVAR;};
-    name& name(){return table[nameI]._name;};
-    os2& os2(){return table[os2I]._os2;};
-    PCLT& PCLT(){return table[PCLTI]._PCLT;};
-    post& post(){return table[postI]._post;};
-    prep& prep(){return table[prepI]._prep;};
-    sbix& sbix(){return table[sbixI]._sbix;};
-    STAT& STAT(){return table[STATI]._STAT;};
-    SVG& SVG(){return table[SVGI]._SVG;};
-    VDMX& VDMX(){return table[VDMXI]._VDMX;};
-    vhea& vhea(){return table[vheaI]._vhea;};
-    vmtx& vmtx(){return table[vmtxI]._vmtx;};
-    VORG& VORG(){return table[VORGI]._VORG;};
-    VVAR& VVAR(){return table[VVARI]._VVAR;};
-    
+    template <typename charT>
+    glyfft get(charT c,options opts){glyfft res;
+        uint16 gid;
+        if(cmapI>=0 and locaI>=0 and glyfI>=0){
+            gid=  cmapGlyphId<charT>((&cmap()),c)
+            if(_indexToLocFormat==0){
+                res.fromtGlyfHead(glyf().loca(loca().f.s.offsets[gid]));
+            };
+        }  
+        if(hmtxI>=0; and hheaI>=0){
+            res.advanceWidth=hmtx().hMetrics[gid].advanceWidth;
+            res.lisb=hmtx().hMetrics[gid].lsb;
+        };
+        if(opts.color and COLRI and CPALI){
+            res.colors=COLR().get(gid);
+        };
+    };
     
 template <typename charT>
 void loadGlyphs(uint16 size, charT* start, charT *end,options opts){
@@ -690,7 +674,7 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
             }
         if constexpr(std::is_same<charT,char32_t>::value){wcglyphs.push_back(fr);}
     }
-    res.size=s;
+    
     if(opts.color and COLRI and CPALI){
         for(int i =0 ;i<s;i++){
             // TODO
@@ -739,7 +723,7 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
         int headI=-1;
         int16 xMin,yMin,xMax,yMax;xMin=-8192;yMin=-8192;xMax=8192;yMax=8192;
         if(!f.table){f.table = new tableu[f.td.numTables];};
-        for(_ftTBI  =0 ; i <f.td.numTables){
+        for(int i  =0 ;i<f.td.numTables;i++){
             if(f.td.tableRecords[i].tableTag== Tag("glyf")){
                #define GLYF_TABLE f.table[f.td.tableRecords[i].index]._glyf
                if(GLYF_TABLE.xMin<xMin){xMin=GLYF_TABLE.xMin;}   
@@ -748,10 +732,16 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
                if(GLYF_TABLE.yMax>xMax){xMax=GLYF_TABLE.yMax;}   
             }
             if(f.td.tableRecords[i].tableTag== Tag("head")){headI=f.td.tableRecords[i].index;};
+            bool EBLCfound;
             switch(f.td.tableRecords[i].tableTag){
                 #define TABLE_RECORD(tag,member) case font_tag(tag):{offone((f.table[i]._##member),f.td.tableRecords[i].offset);f.td.tableRecords[i].length=size(f.table[i]._##member);f.##memberI=i;};
-            TAG_MEMBER(TABLE_RECORD)          
+                case font_tag("EBLC"):{offone(f.table[i]._EBLC),f.td.tableRecords[i].offset;f.td.tableRecords[i].length=size(f.table[i]._EBLC);f.EBLCI=i;
+                    EBLCfound=true;
+                };
+                case font_tag("EBDT"):{offone(f.table[i]._EBDT),f.td.tableRecords[i].offset;f.td.tableRecords[i].length=size(f.table[i]._EBDT);f.EBLCI=i;}
+                TAG_MEMBER(TABLE_RECORD)          
             }
+            _length=f.td.tableRecords[i].length;
         }
         if(headI>=0){
         f.table[headI]._head.xMin=xMin;

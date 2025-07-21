@@ -100,7 +100,7 @@ union {
                     if(f.f0.nameRecord[i].nameID==nameId){break;}
                 }
                 *len = f.f0.nameRecord[i].length; 
-            return &(ftcur->name()+f.f0.nameRecord[i].stringOffset);
+            return &(name()+f.f0.nameRecord[i].stringOffset);
 
             }
             case 1 : {int i;
@@ -108,7 +108,7 @@ union {
                     if(f.f1.nameRecord[i].nameID==nameId){break;}
                 }
                 *len = f.f1.nameRecord[i].length; 
-            return &(ftcur->name()+f.f0.nameRecord[i].stringOffset);
+            return &(name()+f.f0.nameRecord[i].stringOffset);
             }
         }
     }

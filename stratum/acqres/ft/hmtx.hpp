@@ -10,8 +10,8 @@ LongHorMetric*   hMetrics;//[numberOfHMetrics]
 FWORD*   leftSideBearings;//[numGlyphs - numberOfHMetrics]
 }hmtx;
 ACQRES(hmtx){
-arr(f.hMetrics, ftcur->hhea().numberOfHMetrics);
- arr(f.leftSideBearings, ftcur->maxp().numGlyphs - ftcur->hhea().numberOfHMetrics);
+arr(f.hMetrics, hhea().numberOfHMetrics);
+ arr(f.leftSideBearings, maxp().numGlyphs - hhea().numberOfHMetrics);
  };
 USE_ACQRES(hmtx)
 #endif
