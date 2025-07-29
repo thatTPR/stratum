@@ -153,6 +153,9 @@ size_t acqres<Type,Func>(Type* f);
 
 
 
+
+
+
     size_t size(auto& s){return sizeof(s);};
 
     

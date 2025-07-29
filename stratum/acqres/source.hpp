@@ -21,7 +21,7 @@ std::vector<tingltf::Value> getvecgltfv(glm::vec<s,T,Q> s){
     
 
 
-template<size_t s, typname T , glm::qualifier Q>
+template<size_t s, typename T , glm::qualifier Q>
 glm::vec<s,T,Q> getvec(tinygltf::Value v){
     using glmvec = glm::vec<s,T,Q>
     glmvec res;

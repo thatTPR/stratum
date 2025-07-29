@@ -1,31 +1,6 @@
 #ifndef FTBASE_HPP
 #define FTBASE_HPP
 typedef struct {
-uint16   majorVersion;
-uint16   minorVersion;
-Offset16   horizAxisOffset;
-Offset16   vertAxisOffset;
-}BASE10/* Header, version 1.0*/;
-typedef struct {
-uint16   majorVersion;
-uint16   minorVersion;
-Offset16   horizAxisOffset;
-Offset16   vertAxisOffset;
-Offset32   itemVarStoreOffset;
-}BASE11/* Header, version 1.1*/;
-
-typedef struct {
-        base10 b10;
-        Offset32   itemVarStoreOffset;
-         
-}basehead;
-ACQRES(basehead){
-    one((f.b10));
-    switch(f.b10.minorVersion){
-        case 1 : {one((f.iterVarStoreOffset));};
-    };
-}
-typedef struct {
 Offset16   baseTagListOffset;
 Offset16   baseScriptListOffset;
 }Axis/* table*/;
@@ -34,7 +9,7 @@ uint16   baseTagCount;
 Tag*   baselineTags;//[baseTagCount]
 }BaseTagList/* table*/;
 ACQRES(BaseTagList/* table*/){
-one((f.baseTagCount));
+one(f.baseTagCount);
 arr(f.baselineTags, f.baseTagCount);
  };
 USE_ACQRES(BaseTagList/* table*/)
@@ -44,7 +19,7 @@ uint16   baseScriptCount;
 BaseScriptRecord*   baseScriptRecords;//[baseScriptCount]
 }BaseScriptList/* table*/;
 ACQRES(BaseScriptList/* table*/){
-one((f.baseScriptCount));
+one(f.baseScriptCount);
 arr(f.baseScriptRecords, f.baseScriptCount);
  };
 USE_ACQRES(BaseScriptList/* table*/)
@@ -64,9 +39,9 @@ uint16   baseLangSysCount;
 BaseLangSys*   baseLangSysRecords;//[baseLangSysCount]
 }BaseScript ;///*table*/;
 ACQRES(BaseScript/* table*/){
-one((f.baseValuesOffset));
-one((f.defaultMinMaxOffset));
-one((f.baseLangSysCount));
+one(f.baseValuesOffset);
+one(f.defaultMinMaxOffset);
+one(f.baseLangSysCount);
 arr(f.baseLangSysRecords, f.baseLangSysCount);
  };
 USE_ACQRES(BaseScript /*table*/)
@@ -78,8 +53,8 @@ uint16   baseCoordCount;
 Offset16*   baseCoordOffsets;//[baseCoordCount]
 }BaseValues /*table*/;
 ACQRES(BaseValues/* table*/){
-one((f.defaultBaselineIndex));
-one((f.baseCoordCount));
+one(f.defaultBaselineIndex);
+one(f.baseCoordCount);
 arr(f.baseCoordOffsets, f.baseCoordCount);
  };
 USE_ACQRES(BaseValues/* table*/)
@@ -120,11 +95,11 @@ one(f.f1);
 switch(f.f1.format){
 case 2 : {
     
-    one((f.referenceGlypth));
-    one((f.baseCoordPoint));
+    one(f.referenceGlypth);
+    one(f.baseCoordPoint);
 };
 case 3 : {
-    one((f.deviceOffset));
+    one(f.deviceOffset);
     };
 } ;
 };
@@ -135,14 +110,14 @@ Offset16   minCoordOffset;
 Offset16   maxCoordOffset;
 uint16   featMinMaxCount;
 FeatMinMax*   featMinMaxRecords;//[featMinMaxCount]
-}MinMax/* table*/;
-ACQRES(MinMax/* table*/){
-one((f.minCoordOffset));
-one((f.maxCoordOffset));
-one((f.featMinMaxCount));
+}MinMax;
+ACQRES(MinMax){
+one(f.minCoordOffset);
+one(f.maxCoordOffset);
+one(f.featMinMaxCount);
 arr(f.featMinMaxRecords, f.featMinMaxCount);
  };
-USE_ACQRES(MinMax/* table*/)
+USE_ACQRES(MinMax)
 
 
  typedef struct {
@@ -153,7 +128,7 @@ USE_ACQRES(MinMax/* table*/)
         BaseCoordFormat* Maxcoord ;
     }MinMaxBox;
     ACQRES(MinMaxBox) {
-        one((f.d)) ;
+        one(f.d) ;
         offone((f.min) ,f.d.minCoordOffset) ; 
         offone((f.max) ,f.d.maxCoordOffset) ;
         arr(f.Mincoord,f.d.featMinMaxCount);
@@ -172,13 +147,13 @@ typedef struct {
         MinMaxBox* minMax;
     }BaseScriptBox;
     ACQRES(BaseScriptBox) {
-        one((f.baseScript));
+        one(f.baseScript);
         offone((f.baseValues),f.baseScript.baseValuesOffset);
         for(int i = 0 ; i < f.baseValues.baseCoordCount){
             offone((f.baseCoordValues[i]),f.baseScript.baseValuesOffset + f.baseValues.baseCoordOffsets[i]);
         };
         for(int i = 0 ; i < f.baseScript.baseLangSysCount;i++){
-            one((f.minMax[i]))
+            one(f.minMax[i])
         };
     };
     USE_ACQRES(BaseScriptBox)
@@ -190,7 +165,7 @@ typedef struct {
         
     }AxisBox;
     ACQRES(AxisBox) {
-        one((f.ax));
+        one(f.ax);
         if(f.ax.baseTagListOffset != NULL){
             offone((f.baseTagList),f.ax.baseTagListOffset);
         };
@@ -200,6 +175,32 @@ typedef struct {
         };
     }
     USE_ACQRES(AxisBox) 
+
+    typedef struct {
+Offset16   horizAxisOffset;
+Offset16   vertAxisOffset;
+}BASE10/* Header, version 1.0*/;
+typedef struct {
+Offset16   horizAxisOffset;
+Offset16   vertAxisOffset;
+Offset32   itemVarStoreOffset;
+}BASE11/* Header, version 1.1*/;
+
+typedef struct {
+uint16   majorVersion;
+uint16   minorVersion;
+BASE10 b10;
+Offset32   itemVarStoreOffset;
+
+}basehead;
+ACQRES(basehead){
+    one(f.majorVersion);
+    one(f.minorVersion);
+    switch(f.minorVersion){
+        case 1 : {one(f.u.f11);}
+    };
+}
+
     typedef struct {
         basehead head;
         AxisBox hori ;    
@@ -207,12 +208,10 @@ typedef struct {
 
     }BASE;
     ACQRES(BASE) {
-        one((f.head));
-        if(f.head.b10.minorVersion == 1){
-            one((f.head.b11.itemVarStoreOffset));
-        };
-        offone((f.hori),f.head.horiAxisOffset);
-        offone((f.hori),f.head.vertAxisOffset);
+        one(f.head);
+        
+        offone(f.hori,f.head.b10.horiAxisOffset);
+        offone(f.verti,f.head.b10.vertAxisOffset);
     };
     USE_ACQRES(BASE)
 

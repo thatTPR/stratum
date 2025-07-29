@@ -37,22 +37,10 @@ one(f.dataLen);
 arr(f.data, f.dataLen);
  };
 USE_ACQRES(GlyphBitmapFormat19)
-
 typedef union {
-    
-        GlyphBitmapFormat1 f1;
-        GlyphBitmapFormat2 f2;
-        GlyphBitmapFormat3 f3;
-        GlyphBitmapFormat4 f4;
-        GlyphBitmapFormat5 f5;
-        GlyphBitmapFormat6 f6;
-        GlyphBitmapFormat7 f7;
-        GlyphBitmapFormat8 f8;
-        GlyphBitmapFormat9 f9;
-        // CBDT
-        GlyphBitmapFormat17 f17;
-        GlyphBitmapFormat18 f18;
-        GlyphBitmapFormat19 f19;
+    #define UMEMB(n) GlyphBitmapFormat##n f##n; 
+    REPEAT(UMEMB,1,2,3,4,5,6,7,8,9, //CBDT:
+        17,18,18)
 
 
 }CBDTf;
@@ -79,20 +67,8 @@ for(int i=0;i<CBLC().numSizes;i++){
             case 5 :{_imageSize=ist->u.f5.imageSize;}
         }
         switch(ist->header.imageFormat){
-            case 1:{offone(f.f.f1,ist->header.imageDataOffset);};
-            case 2:{offone(f.f.f2,ist->header.imageDataOffset);};
-            case 3:{offone(f.f.f3,ist->header.imageDataOffset);};
-            case 4:{offone(f.f.f4,ist->header.imageDataOffset);};
-            case 5:{offone(f.f.f5,ist->header.imageDataOffset);};
-            case 6:{offone(f.f.f6,ist->header.imageDataOffset);};
-            case 7:{offone(f.f.f7,ist->header.imageDataOffset);};
-            case 8:{offone(f.f.f8,ist->header.imageDataOffset);};
-            case 9:{offone(f.f.f9,ist->header.imageDataOffset);};
-
-            
-            case 17:{offone(f.f.f17,ist->header.imageDataOffset);}
-            case 18:{offone(f.f.f18,ist->header.imageDataOffset);}
-            case 19:{offone(f.f.f19,ist->header.imageDataOffset);}
+            #define OFFMEMBCASE(n) case n:{offone(f.f.f##n,ist->header.imageDataOffset);};
+            REPEAT(OFFMEMBCASE,1,2,3,4,5,6,7,8,9,17,18,19)
         }
         f.numBitmaps++;
 

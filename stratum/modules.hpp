@@ -2,6 +2,7 @@
 #define MODULES_HPP
 #include <typeindex>
 #include <cstddef>
+#include <ifstream>
 #include <math.h>
 #include <vector>
 #include <string>
@@ -10,6 +11,9 @@
 #include <tuple>
 #include <map>
 #include <lib/glm/glm.hpp>
+#include <cstring>
+namespace modules {
+
 
 struct app_info {
     char*  name;
@@ -18,7 +22,25 @@ struct app_info {
     char*  engver;
 };
 
+#define NAME_FALSE false
+#define NAME_TRUE true
 
+
+
+template <typename T>
+struct named {
+    std::string name;
+    T data;
+    named<T>& operator=(T& d){data=d;}
+    named(std::string n, T& d) :name(n),data(d)  {};
+} ;
+template <typename T>
+struct named {
+    std::string name;
+    T* data;
+    named<T>& operator=(T& d){data=d;}
+    named(std::string n, T* d) :name(n),data(d)  {};
+} ;
 
 enum image_formats {// Floating-point layout image formats:
 rgba32f,
@@ -59,95 +81,223 @@ rg16ui,
 rg8ui,
 r32ui,
 r16ui,
-r8ui
+r8ui,
+
+
+
+argb32f,
+argb16f,
+argb16,
+a2_rgb10,
+argb8,
+argb16_snorm,
+argb8_snorm,
+ar8_snorm,     // Signed integer lyout image foarmts:
+argb32i,
+argb16i,
+argb8i,
+argb32ui,
+argb16ui,
+a2_rgb10ui,
+argb8ui,
+
 };
 
+
+#define IMAGE_FORMATS rgba32f,rgba16f,rg32f,rg16f,r11f_g11f_b10f,r32f,r16f,rgba16,rgb10_a2,rgba8,rg16,rg8,r16,r8,rgba16_snorm,rgba8_snorm,rg16_snorm,rg8_snorm,r16_snorm,r8_snorm,rgba32i,rgba16i,rgba8i,rg32i,rg16i,rg8i,r32i,r16i,r8i,rgba32ui,rgba16ui,rgb10_a2ui,rgba8ui,rg32ui,rg16ui,rg8ui,r32ui,r16ui,r8ui,
+
+    constexpr int8_t bitdepth(image_format imf,size_t s){
+        switch(imf){
+    case rgb10_a2ui:{return 10;}
+    case a2_rgb10ui:{return 10;}
+    case rgb10_a2:{return 10;}
+    case a2_rgb10:{return 10;}
+
+    case rgba32f: {return 32 ;}
+    case argb32f:{return 32;}
+    case rgba16f: {return 16 ;}
+    case argb16f: {return 16 ;}
+    if constexpr (s<3 ){
+        case rg32f: {return 32 ;}
+        case rg16f: {return 16 ;}}
+    if constexpr (s<4){
+        case r11f_g11f_b10f: {return 11 ;}
+    }
+    if constexpr (s==1){
+        case r32f: {return 32 ;}
+        case r16f: {return 16 ;}
+    }
+    case rgba16: {return 16 ;}
+    case argb16: {return 16 ;}
+    if constexpr (s==4){
+        case rgb10_a2: {return 2 ;}
+    }
+    else {case rgb10_a2: {return 10 ;}}
+    case rgba8: {return 8 ;}
+    if constexpr (s<3){
+        case rg16: {return 16 ;}
+    }
+        if constexpr (s<2){
+    case rg8: {return 8 ;}}
+        if constexpr (s==1){
+    case r16: {return 16 ;}
+    case r8: {return  8 ;}}
+    case rgba16_snorm: {return 16 ;}
+    case rgba8_snorm: {return 8 ;}
+    case argb16_snorm: {return 16 ;}
+    case argb8_snorm: {return 8 ;}
+        if constexpr (s<3){
+    case rg16_snorm: {return 16 ;}
+    case rg8_snorm: {return 8 ;}}
+        if constexpr (s==1){
+    case r16_snorm: {return 16 ;}
+    case r8_snorm: {return 8 ;}}
+    case rgba32i: {return 32 ;}
+    case rgba16i: {return 16 ;}
+    case rgba8i: {return 8 ;}
+    case argb32i: {return 32 ;}
+    case argb16i: {return 16 ;}
+    case argb8i: {return 8 ;}
+        if constexpr (s<3){
+    case rg32i: {return 32 ;}
+    case rg16i: {return 16 ;}
+    case rg8i: {return 8 ;}}
+        if constexpr (s==1){
+    case r32i: {return 32 ;}
+    case r16i: {return 16 ;}
+    case r8i: {return 8 ;}}
+    case rgba32ui: {return 32 ;}
+    case rgba16ui: {return 16 ;}
+    case argb32ui: {return 32 ;}
+    case argb16ui: {return 16 ;}
+    
+    if constexpr (s==4){case rgb10_a2ui: {return 10 ;}            }
+        else {case rgb10_a2ui: {return 10 ;}}
+    case rgba8ui: {return 8 ;}
+    case argb8ui: {return 8 ;}
+        if constexpr (s<3){    
+    case rg32ui: {return 32 ;}
+    case rg16ui: {return 16 ;}
+    case rg8ui: {return 8 ;}}
+            if constexpr (s==1){
+    case r32ui: {return 32 ;}
+    case r16ui: {return 16 ;}
+    case r8ui: {return 8 ;}}
+
+return 0;
+    }};
+    constexpr int8_t bitdepth_r(image_format imf){return bitdepth(imf,0);};
+    constexpr int8_t bitdepth_g(image_format imf){return bitdepth(imf,1);};
+    constexpr int8_t bitdepth_b(image_format imf){return bitdepth(imf,2);};
+    constexpr int8_t bitdepth_a(image_format imf){
+            switch(imf){
+    case rgb10_a2ui:{return 2;}
+    case a2_rgb10ui:{return 2;}
+    case rgb10_a2:{return 2;}
+    case a2_rgb10:{return 2;}
+    }
+        return bitdepth(imf,3);};
+
+    constexpr bool RGBA(image_format imf){
+        switch(imf){
+            case rgb10_a2{return true;}
+            case rgb10_a2ui{return true;}
+            case rgba8:{return true;}
+            case rgba8:{return true;}
+            case rgba8ui:{return true;}
+            case rgba8ui:{return true;}
+            case rgba8_snorm:{return true;}
+            case rgba8_snorm:{return true;}
+            case rgba16:{return true;}
+            case rgba16:{return true;}
+            case rgba16ui:{return true;}
+            case rgba16ui:{return true;}
+            case rgba16_snorm:{return true;}
+            case rgba16_snorm:{return true;}
+            case rgba32:{return true;}
+            case rgba32:{return true;}
+            case rgba32ui:{return true;}
+            case rgba32ui:{return true;}
+            case rgba32_snorm:{return true;}
+            case rgba32_snorm:{return true;}
+        }
+        return false;
+    }
+    constexpr bool ARGB(image_format imf){
+                switch(imf){
+            case a2_rgb10{return true;}
+            case a2_rgb10ui{return true;}
+            case argb8:{return true;}
+            case argb8:{return true;}
+            case argb8ui:{return true;}
+            case argb8ui:{return true;}
+            case argb8_snorm:{return true;}
+            case argb8_snorm:{return true;}
+            case argb16:{return true;}
+            case argb16:{return true;}
+            case argb16ui:{return true;}
+            case argb16ui:{return true;}
+            case argb16_snorm:{return true;}
+            case argb16_snorm:{return true;}
+            case argb32:{return true;}
+            case argb32:{return true;}
+            case argb32ui:{return true;}
+            case argb32ui:{return true;}
+            case argb32_snorm:{return true;}
+            case argb32_snorm:{return true;}
+        }
+        return false;
+
+    }
+
+constexpr int8_t bitd(image_formats imf){return bitdepth_r(imf)+bitdepth_g(imf)+bitdepth_b(imf)+bitdepth_a(imf);}
+
+
+constexpr int8_t imageFormatBytes(image_formats imf){bitdepth(imf)/8;}
+
+
 template<image_formats imf>
-struct color        {
-     using ty = ivec4; };
-#ifdef ENU_VEC_STRATA_NO_GLM
-struct enu_vec<image_formats::rgba32f>        { using ty =dvec4;};
-struct enu_vec<image_formats::rgba16f>        { using ty =vec4;};
-struct enu_vec<image_formats::rg32f>          { using ty =dvec2;};
-struct enu_vec<image_formats::rg16f>          { using ty =vec2;};
-struct enu_vec<image_formats::r11f_g11f_b10f> { using ty =svec3;};
-struct enu_vec<image_formats::r32f>           { using ty =float32;};
-struct enu_vec<image_formats::r16f>           { using ty =float16;};
-struct enu_vec<image_formats::rgba16>         { using ty =ivec4;};
-struct enu_vec<image_formats::rgb10_a2>       { using ty =sivec4 ;};
-struct enu_vec<image_formats::rgba8>          { using ty =sivec4 ;};
-struct enu_vec<image_formats::rg16>           { using ty =ivec2;};
-struct enu_vec<image_formats::rg8>            { using ty =sivec2 ;};
-struct enu_vec<image_formats::r16>            { using ty =int ;};
-struct enu_vec<image_formats::r8>             { using ty =sint ;};
-struct enu_vec<image_formats::rgba16_snorm>   { using ty =vec4;};
-struct enu_vec<image_formats::rgba8_snorm>    { using ty =svec4 ;};
-struct enu_vec<image_formats::rg16_snorm>     { using ty =vec2;};
-struct enu_vec<image_formats::rg8_snorm>      { using ty =vec2 ;};
-struct enu_vec<image_formats::r16_snorm>      { using ty =float;};
-struct enu_vec<image_formats::r8_snorm>       { using ty =float ;};
-struct enu_vec<image_formats::rgba32i>        { using ty =livec4;};
-struct enu_vec<image_formats::rgba16i>        { using ty =ivec4 ;};
-struct enu_vec<image_formats::rgba8i>         { using ty =sivec4;};
-struct enu_vec<image_formats::rg32i>          { using ty =livec2;};
-struct enu_vec<image_formats::rg16i>          { using ty =ivec2 ;};
-struct enu_vec<image_formats::rg8i>           { using ty =sivec2 ;};
-struct enu_vec<image_formats::r32i>           { using ty =int32 ;};
-struct enu_vec<image_formats::r16i>           { using ty =int16;};
-struct enu_vec<image_formats::r8i>            { using ty =int16 ;};
-struct enu_vec<image_formats::rgba32ui>       { using ty =luvec4 ;};
-struct enu_vec<image_formats::rgba16ui>       { using ty =uvec4 ;};
-struct enu_vec<image_formats::rgb10_a2ui>     { using ty =suvec4 ;};
-struct enu_vec<image_formats::rgba8ui>        { using ty =suvec4 ;};
-struct enu_vec<image_formats::rg32ui>         { using ty =luvec2 ;};
-struct enu_vec<image_formats::rg16ui>         { using ty =uvec2 ;};
-struct enu_vec<image_formats::rg8ui>          { using ty =suvec2 ;};
-struct enu_vec<image_formats::r32ui>          { using ty =uint32 ;};
-struct enu_vec<image_formats::r16ui>          { using ty =uint32 ;};
-struct enu_vec<image_formats::r8ui>           { using ty =suint ;};
-#endif
-
-struct enu_vec<image_formats::rgba32f>        { using ty =glm::highp_vec4;};
-struct enu_vec<image_formats::rgba16f>        { using ty =glm::mediump_vec4;};
-struct enu_vec<image_formats::rg32f>          { using ty =glm::hihip_vec2;};
-struct enu_vec<image_formats::rg16f>          { using ty =glm::mediump_vec2;};
-struct enu_vec<image_formats::r11f_g11f_b10f> { using ty =glm::mediump_vec3;};
-struct enu_vec<image_formats::r32f>           { using ty =float32_t;};
-struct enu_vec<image_formats::r16f>           { using ty =float16_t;};
-struct enu_vec<image_formats::rgba16>         { using ty =glm::mediump_ivec4;};
-struct enu_vec<image_formats::rgb10_a2>       { using ty =glm::mediump_ivec4 ;};
-struct enu_vec<image_formats::rgba8>          { using ty =glm::lowp_ivec4 ;};
-struct enu_vec<image_formats::rg16>           { using ty =glm::mediump_ivec2;};
-struct enu_vec<image_formats::rg8>            { using ty =glm::lowp_ivec2 ;};
-struct enu_vec<image_formats::r16>            { using ty =int16_t ;};
-struct enu_vec<image_formats::r8>             { using ty =int8_t ;};
-struct enu_vec<image_formats::rgba16_snorm>   { using ty =glm::mediump_vec4;};
-struct enu_vec<image_formats::rgba8_snorm>    { using ty =glm::lowp_vec4 ;};
-struct enu_vec<image_formats::rg16_snorm>     { using ty =glm::mediump_vec2;};
-struct enu_vec<image_formats::rg8_snorm>      { using ty =glm::lowp_vec2 ;};
-struct enu_vec<image_formats::r16_snorm>      { using ty =float;};
-struct enu_vec<image_formats::r8_snorm>       { using ty =float ;};
-struct enu_vec<image_formats::rgba32i>        { using ty =glm::hihgp_ivec4;};
-struct enu_vec<image_formats::rgba16i>        { using ty =glm::mediump_ivec4 ;};
-struct enu_vec<image_formats::rgba8i>         { using ty =glm::lowp_ivec4;};
-struct enu_vec<image_formats::rg32i>          { using ty =glm::highp_ivec2;};
-struct enu_vec<image_formats::rg16i>          { using ty =glm::mediump_ivec2 ;};
-struct enu_vec<image_formats::rg8i>           { using ty =glm::lowp_ivec2<> ;};
-struct enu_vec<image_formats::r32i>           { using ty =int32_t ;};
-struct enu_vec<image_formats::r16i>           { using ty =int16_t;};
-struct enu_vec<image_formats::r8i>            { using ty =int8_t ;};
-struct enu_vec<image_formats::rgba32ui>       { using ty =glm::highp_uvec4 ;};
-struct enu_vec<image_formats::rgba16ui>       { using ty =glm::mediump_uvec4 ;};
-struct enu_vec<image_formats::rgb10_a2ui>     { using ty =glm::mediump_uvec4 ;};
-struct enu_vec<image_formats::rgba8ui>        { using ty =glm::lowp_uvec4 ;};
-struct enu_vec<image_formats::rg32ui>         { using ty =glm::highp_uvec2 ;};
-struct enu_vec<image_formats::rg16ui>         { using ty =glm::mediump_uvec2 ;};
-struct enu_vec<image_formats::rg8ui>          { using ty =glm::lowp+uvec2 ;};
-struct enu_vec<image_formats::r32ui>          { using ty =uint32_t ;};
-struct enu_vec<image_formats::r16ui>          { using ty =uint16_t ;};
-struct enu_vec<image_formats::r8ui>           { using ty =uint8_t ;};
-
-
+struct enu_vec{
+     using ty = glm::ivec4 };
+template <>struct enu_vec<image_formats::rgba32f>        { using ty =glm::f32vec4;};
+template <>struct enu_vec<image_formats::rgba16f>        { using ty =glm::f16vec4;};
+template <>struct enu_vec<image_formats::rg32f>          { using ty =glm::f32vec2;};
+template <>struct enu_vec<image_formats::rg16f>          { using ty =glm::f16vec2;};
+template <>struct enu_vec<image_formats::r11f_g11f_b10f> { using ty =glm::f16vec3;};
+template <>struct enu_vec<image_formats::r32f>           { using ty =float32_t;};
+template <>struct enu_vec<image_formats::r16f>           { using ty =float16_t;};
+template <>struct enu_vec<image_formats::rgba16>         { using ty =glm::i16vec4;};
+template <>struct enu_vec<image_formats::rgb10_a2>       { using ty =glm::i16vec4;};
+template <>struct enu_vec<image_formats::rgba8>          { using ty =glm::i8vec4;};
+template <>struct enu_vec<image_formats::rg16>           { using ty =glm::i16vec2;};
+template <>struct enu_vec<image_formats::rg8>            { using ty =glm::i8vec2;};
+template <>struct enu_vec<image_formats::r16>            { using ty =glm::f16 ;};
+template <>struct enu_vec<image_formats::r8>             { using ty =uint8_t ;};
+template <>struct enu_vec<image_formats::rgba16_snorm>   { using ty =glm::i16vec4;};
+template <>struct enu_vec<image_formats::rgba8_snorm>    { using ty =glm::i8vec4 ;};
+template <>struct enu_vec<image_formats::rg16_snorm>     { using ty =glm::i16vec2;};
+template <>struct enu_vec<image_formats::rg8_snorm>      { using ty =glm::i8vec2 ;};
+template <>struct enu_vec<image_formats::r16_snorm>      { using ty =float;};
+template <>struct enu_vec<image_formats::r8_snorm>       { using ty =float ;};
+template <>struct enu_vec<image_formats::rgba32i>        { using ty =glm::i32vec4;};
+template <>struct enu_vec<image_formats::rgba16i>        { using ty =glm::i16vec4 ;};
+template <>struct enu_vec<image_formats::rgba8i>         { using ty =glm::i8vec4;};
+template <>struct enu_vec<image_formats::rg32i>          { using ty =glm::f32vec2;};
+template <>struct enu_vec<image_formats::rg16i>          { using ty =glm::i16vec2 ;};
+template <>struct enu_vec<image_formats::rg8i>           { using ty =glm::i8vec2 ;};
+template <>struct enu_vec<image_formats::r32i>           { using ty =int32_t ;};
+template <>struct enu_vec<image_formats::r16i>           { using ty =int16_t;};
+template <>struct enu_vec<image_formats::r8i>            { using ty =int16_t ;};
+template <>struct enu_vec<image_formats::rgba32ui>       { using ty =glm::u32vec4 ;};
+template <>struct enu_vec<image_formats::rgba16ui>       { using ty =glm::u16vec4 ;};
+template <>struct enu_vec<image_formats::rgb10_a2ui>     { using ty =glm::u16vec4 ;};
+template <>struct enu_vec<image_formats::rgba8ui>        { using ty =glm::u8vec4 ;};
+template <>struct enu_vec<image_formats::rg32ui>         { using ty =glm::u32vec2 ;};
+template <>struct enu_vec<image_formats::rg16ui>         { using ty =glm::u16vec2 ;};
+template <>struct enu_vec<image_formats::rg8ui>          { using ty =glm::u8vec2 ;};
+template <>struct enu_vec<image_formats::r32ui>          { using ty =uint32_t ;};
+template <>struct enu_vec<image_formats::r16ui>          { using ty =uint16_t ;};
+template <>struct enu_vec<image_formats::r8ui>           { using ty =uint8_t ;};
 glm::lowp_ivec4 uint32ToRGBA(uint32_t color) {
     glm::ivec4 s;
     s.r = (color >> 24) & 0xFF; // Extract Red channel (highest byte)
@@ -169,41 +319,8 @@ int32_t f32_to_i32(f32_t s){
     int_32_t r =  s*
 };  
 
-template <image_formats imf,size_t s>
-struct image2d {
-    using ty = enu_vec<imf>::ty;
-    ty data[s][s];
 
-    void read(acqres resource){
-        this->data=resource.read();
-    };
 
-    
-    auto read(acqres resource){
-        
-    };
-};
-template <image_formats imf,size_t x, size_t y , size_t  z>
-struct image3d {
-    using ty = enu_vec<imf>::ty;
-    ty s[x][y][z]
-};
-
-template <image_formats imf>using im8    = image2d<imf,8>;
-template <image_formats imf>using im16   = image2d<imf,16>;
-template <image_formats imf>using im32   = image2d<imf,32>;
-template <image_formats imf>using im164  = image2d<imf,164>;
-template <image_formats imf>using im128  = image2d<imf,128>;
-template <image_formats imf>using im256  = image2d<imf,256>;
-template <image_formats imf>using im512  = image2d<imf,512>;
-template <image_formats imf>using im1024 = image2d<imf,1024>;
-template <image_formats imf>using im2048 = image2d<imf,2048>;
-template <image_formats imf>using im4096 = image2d<imf,4096>;
-template <image_formats imf>using im8192 = image2d<imf,8192>;
-template <image_formats imf>using im16384= image2d<imf,16384>;
-template <image_formats imf>using im32768= image2d<imf,32768>;
-
-using imicon = im128<image_formats::rgba16>;
 
 enum texture_format {
 TEXTURE_1D                  = 0  ,  // Images in this texture all are 1-dimensional. They have width, but no height or depth.
@@ -220,75 +337,187 @@ TEXTURE_2D_MULTISAMPLE_ARRAY= 10 ,  // Combines 2D array  and 2D multisample typ
 };
 
 size_t im_size[]= {8 ,16 ,32 ,164 ,128 ,256 ,512 ,1024 ,2048 ,4096 ,8192 ,16384 ,32768};
-struct image2D {
-    size_t x; 
-    size_t y;
-    image_format imf[x][y];
-};
-struct image3D {
-    size_t x ; 
-    size_t y ;
-    size_t z ;
-    image_format imf;
 
-};
-/* Not really needed with reflect
-template<typename... args>
-class ty_index_map  {
-    public:
-    std::tuple<args...> r ;
-    static const size_t size = sizeof...(args);
-    arr<std::type_index,sizeof...(args)> tys;
-    auto& operator[](std::type_index s; ){
-        for(int i = 0 ; i <sizeof(size) ; i++){
-            if(s==this->tys[i]){return this->r[i];};
+struct image1D {
+    std::string name;
+    uint32_t width; 
+    uint32_t imageSize=0;
+    image_format imageFormat;
+    void* data;
+    uint8_t byd ;
+    uint8_t bdc;
+    int8_t bd ;
+    uint8_t length;
+    uint8_t bitdIm(uint8_t pos){
+        switch(pos){
+            case 0 :{return bitdepth_r(imageFormat);}
+            case 1 :{return bitdepth_g(imageFormat);}
+            case 2 :{return bitdepth_b(imageFormat);}
+            case 3 :{return bitdepth_a(imageFormat);}
+        }
+    };
+    void putAt(uint32_t pt,enu_vec<imageFormat>::ty v){
+        for(int i=0;i<length;i++){ 
+            uint8_t bdc=bitdIm(i);              
+            uint32_t mask = 1<<bdc -1;          
+            data[byd*pt + i*bdc/8 ] += v[i] & mask 
+        }
+    };
+    enu_vec<imageFormat>::ty getAt(uint32_t pt){
+        ty v;
+        mask = 1<< bdc-1;
+        for(int i=0;i<length;i++){ 
+            v[i]=data[byd*pt] & (mask<<((l -i -1)*bdc) );
+        }
+        return v;
+    };
+    image2D loadChannel(uint8_t s){
+        int8_t bypd= bdc/8;
+        image2D i;
+        i.data = new char[imageSize * bdc]
+        for(uint32_t i;i<imageSize;i++){
+            std::memcpy(i.data+i*bypd,data+i*byd+s*bypd,bypd);
+        }; 
+        return i; 
+    };
+    void operator<<(uint8_t s){
+        
+        int8_t bypd= bdc/8;
+        
+        int8_t nc =bool(bitdepth_r(imageFormat))+bool(bitdepth_g(imageFormat))+bool(bitdepth_b(imageFormat))+bool(bitdepth_a(imageFormat));
+         for(uint32_t i=0;i<imageSize;i++){
+            void* temp ;
+            void* t2
+            std::memcpy(temp,data+i*bd,bdc);
+            std::memcpy(data+i*bd,data+i*bd+bdc,(nc-1)*bdc);
+            std::memcpy(data+i*bd+bdc*(nc-1),temp,bdc);
+        }
+    };
+    void operator>>(uint8_t s){
+        
+        int8_t bypd= bdc/8;
+        int8_t nc =bool(bitdepth_r(imageFormat))+bool(bitdepth_g(imageFormat))+bool(bitdepth_b(imageFormat))+bool(bitdepth_a(imageFormat));
+         for(uint32_t i=0;i<imageSize;i++){
+            void* temp ;
+            void* t2
+            std::memcpy(temp,data+i*byd + bdc*(nc-1),bypd);
+            std::memcpy(data+i*byd+bypd,data+i*bd,(nc-1)*bypd);
+            std::memcpy(data+i*byd,temp,bypd);
+        }  
+    };
+    void swap(uint pos1,uint pos2 ){        
+        
+        int8_t bypd= bdc/8;
+
+
+        for(uint32_t i=0;i<imageSize;i++){
+            void* temp ;
+            std::memcpy(temp,data+i*byd+ pos1*bypd,bypd);
+            std::memcpy(data+i*byd+pos1*bypd,data+i*byd+ pos2*bypd,bypd);
+            std::memcpy(data+i*byd+pos2*bypd,temp,bypd);
+        }
+    }
+    void swaprb(){
+        if constexpr (bitedepths<imageFormat>::RGBA()){
+            swap(0,2);}
+        if constexpr (bitedepths<imageFormat>::ARGB()){
+            swap(1,3);}
+        }
+    void swaprg(){
+if constexpr (bitedepths<imageFormat>::RGBA()){
+            swap(0,1);}
+        if constexpr (bitedepths<imageFormat>::ARGB()){
+            swap(1,2);}
+
+    };
+    
+
+    decltype(*this) to(image_format fm){
+        decltype(*this) im(width,height,fm);
+        im.imageFormat=fm;
+        int8_t bdCur=bd;
+        int8_t bdDest=bitd(fm);
+        for(int i=0;i<imageSize){
+            int8_t bitsOffsetCur=0;
+            enu_vec<imageFormat>::ty cr = getAt(i);
+            enu_vec<fm> re ;
+            for(int j =0;j< length ;j++){
+                uint8_t bitCur = bitdIm(i);
+                uint8_t bitDest = im.bitdIm(i);
+                
+                uint32_t maskCur = 1<<bitCur-1;
+                uint32_t maskDest = 1<<bitDest-1; 
+                re[j] = (float)cr[j] * (maskDest/maskCur);
+            }
+            im.putAt(i,re)
+
         };
+        return i;
     };
-    auto& operator[](size_t s){return this->r[s];};
-    void ty_index_map(std::initializer_list<type_index> list){
-        this->tys=new arr<std::type_index,sizeof...(args)>(list);
-    };
+    void ImageSize(){imageSize=width*height;bd=bitd(imageFormat);bdc = bitdepth_r(imageFormat);byd = bitd(imageFormat)/8 ;length=enu_vec<imageFormat>::ty::length();}
+    
+    image1D(size_t s,image_format fm) : width(s),height(s),imageFormat(fm){ImageSize();};
+};
+struct image2D : image1D {
+    uint32_t height;
+
+    
+    image2d(uint32_t size,image_format fm) : width(w),height(h),imageFormat(fm) {ImageSize();};
+    image2D(uint32_t w,uint32_t h,image_format fm) : width(w),height(h),imageFormat(fm){ImageSize();};
 
 };
-
-static const std::map<std::type_index,std::string> ty_index{// Vecs
-{tyind(bvec2),"bvec2"},{tyind(bvec3),"bvec3"},{tyind(bvec4),"bvec4"},{tyind(uvec2),"uvec2"},{tyind(uvec3),"uvec3"},{tyind(uvec4),"uvec4"},{tyind(ivec2),"ivec2"},{tyind(ivec3),"ivec3"},{tyind(ivec4),"ivec4"},{tyind(vec2),"vec2"},{tyind(vec3),"vec3"},{tyind(vec4),"vec4"},{tyind(bmat2x2),"bmat2x2"},{tyind(bmat2x3),"bmat2x3"},{tyind(bmat2x4),"bmat2x4"},{tyind(bmat3x2),"bmat3x2"},{tyind(bmat3x3),"bmat3x3"},{tyind(bmat3x4),"bmat3x4"},{tyind(bmat4x2),"bmat4x2"},{tyind(bmat4x3),"bmat4x3"},{tyind(bmat4x4),"bmat4x4"},{tyind(umat2x2),"umat2x2"},{tyind(umat2x3),"umat2x3"},{tyind(umat2x4),"umat2x4"},{tyind(umat3x2),"umat3x2"},{tyind(umat3x3),"umat3x3"},{tyind(umat3x4),"umat3x4"},{tyind(umat4x2),"umat4x2"},{tyind(umat4x3),"umat4x3"},{tyind(umat4x4),"umat4x4"},{tyind(imat2x2),"imat2x2"},{tyind(imat2x3),"imat2x3"},{tyind(imat2x4),"imat2x4"},{tyind(imat3x2),"imat3x2"},{tyind(imat3x3),"imat3x3"},{tyind(imat3x4),"imat3x4"},{tyind(imat4x2),"imat4x2"},{tyind(imat4x3),"imat4x3"},{tyind(imat4x4),"imat4x4"},{tyind(mat2x2),"mat2x2"},{tyind(mat2x3),"mat2x3"},{tyind(mat2x4),"mat2x4"},{tyind(mat3x2),"mat3x2"},{tyind(mat3x3),"mat3x3"},{tyind(mat3x4),"mat3x4"},{tyind(mat4x2),"mat4x2"},{tyind(mat4x3),"mat4x3"},{tyind(mat4x4),"mat4x4"},
-// 
-{dvec4,"dvec4"},{vec4,"vec4"},{dvec2,"dvec2"},{vec2,"vec2"},{svec3,"svec3"},{float32,"float32"},{float16,"float16"},{ivec4,"ivec4"},{sivec4,"sivec4"},{sivec4,"sivec4"},{ivec2,"ivec2"},{sivec2,"sivec2"},{int,"int"},{sint,"sint"},{vec4,"vec4"},{svec4,"svec4"},{vec2,"vec2"},{vec2,"vec2"},{float,"float"},{float,"float"},{livec4,"livec4"},{ivec4,"ivec4"},{sivec4,"sivec4"},{livec2,"livec2"},{ivec2,"ivec2"},{sivec2,"sivec2"},{int32,"int32"},{int16,"int16"},{int16,"int16"},{luvec4,"luvec4"},{uvec4,"uvec4"},{suvec4,"suvec4"},{suvec4,"suvec4"},{luvec2,"luvec2"},{uvec2,"uvec2"},{suvec2,"suvec2"},{uint32,"uint32"},{uint32,"uint32"},{suint,"suint"},
-// Images and colors
-ONE(TY_INDEX_STR,COLORSFORM)
-// Color formats
-ONE(COL_VF_STR,rgba32f,rgba16f,rg32f,rg16f,r11f_g11f_b10f,r32f,r16f,rgba16,rgb10_a2,rgba8,rg16,rg8,r16,r8,rgba16_snorm,rgba8_snorm,rg16_snorm,rg8_snorm,r16_snorm,r8_snorm,rgba32i,rgba16i,rgba8i,rg32i,rg16i,rg8i,r32i,r16i,r8i,rgba32ui,rgba16ui,rgb10_a2ui,rgba8ui,rg32ui,rg16ui,rg8ui,r32ui,r16ui,r8ui)
-
+struct image3D : image1D {
+    uint32_t size_t height ;
+    uint32_t size_t depth ;
+    image2D(uint32_t w,uint32_t h,uint32_t d,image_format fm) : width(w),height(h),depth(d),imageFormat(fm){ImageSize();};
 };
-*/
+
+image2D im8(image_format imf){return image2d(8,imf);}
+image2D im16(image_format imf){return image2d(16,imf);}
+image2D im32(image_format imf){return image2d(32,imf);}
+image2D im164(image_format imf){return image2d(164,imf);}
+image2D im128(image_format imf){return image2d(128,imf);}
+image2D im256(image_format imf){return image2d(256,imf);}
+image2D im512(image_format imf){return image2d(512,imf);}
+image2D im1024(image_format imf){return image2d(1024,imf);}
+image2D im2048(image_format imf){return image2d(2048,imf);}
+image2D im4096(image_format imf){return image2d(4096,imf);}
+image2D im8192(image_format imf){return image2d(8192,imf);}
+image2D im16384(image_format imf){return image2d(16384,imf);}
+image2D im32768(image_format imf){return image2d(32768,imf);}
 
 
+typedef uint32_t Time ; // hh:mm:ss:ms // One Bytes Each
 
-#define IMS_FROM_COLORS_FORM(im,colors_form) im<colors_form> \
-ty_index_map< \
-/* Vecs */ \
-VECS,  \
-TY_IMF(COLORSFORM), \
-ONE(IMG_INSTS,COLORSFORM) \ // Images with all color fomat vecs
 
->
- type_ind({
-ONE(TY_INDEX,VECS),
-ONE(TY_INDEX,TY_IMF(COLORS_FORM),
-ONE(TY_INDEX,ONE(IMG_INSTS,COLORSFORM))
-});
+ 
+struct image2D_dyn : image2D {
+    uint32_t imageCount;
+    uint16_t hz;
+    void ImageSize(){imageSize=width*height*imageCount;};
+    uint32_t getPt(Time t){ // Convert to pt
+        uint32_t ms = T & (1<<8 -1);
+        uint32_t s = T & ((1<<8 -1)<<8) >>8 ;
+        uint32_t m = T & ((1<<8 -1)<<16) >>16 ;
+        uint32_t h = T & ((1<<8 -1)<<24) >>24 ;
+        uint32_t pt = h*hz*3600+m*hz*60+ s*hz + ms*hz/1000;
+        return pt;
+    };
+    void insertPt(image2d_dyn im ,uint32_t pt){
+        uint8_t byd= bitd(imageFormat)/8;
+        void* d  = new char[byd * width*height * (imageCount + im.imageCount) ];
 
-// TODO cubemap based destruct 
-void readFile(const std::string& filename , const uint32_t* c , int* code_size) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-    size_t fileSize = static_cast<size_t>(file.tellg());
-    (*code_size) = filesize;
-    std::vector<char> buffer(fileSize);
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    c = reinterpret_cast<const uint32_t*>(buffer.data());
-}
+        std::memcpy(d,data,byd * width*height * pt );
+        std::memcpy(d+byd * width*height * pt,im.data, im.imageSize);
+        std::memcpy(d+byd*width*height*(pt+im.imageCount),data+byd*width*height*pt,byd*width*height*(imageCount-pt));
+        imageCount+=im.imageCount;
+    };
+    void insertTime(image2d_dyn im , Time t){
+        insertPt(im,getPt(t));
+    };
+};
+
+
 
 /*
 Shader Type	Abbreviation	Purpose
@@ -364,6 +593,732 @@ struct image {
 };
 
 
+namespace quality
+{
+    
+    enum QUALITY
+    {
+        UltraLow = 0 ,
+        VeryLow = 1 ,      
+        Low = 2,
+        MediumLow = 3,
+        MediumHigh = 4,
+        High = 5,
+        VeryHigh = 6
+        Ultra = 7,
+        // Hyper, // Like super but adds even more realism through live homeostatic simulation
+        // Super, // realistic shading model and material system taking into account a variety of factors. Thermal coloring. Bio-matter Tissue lighting
+    };
+  
+    
+    class quality_setting {
+
+        std::string name ;
+        QUALITY  value ;
+        QUALITY limit ;
+        QUALITY wlimit; // Warning Limit
+        quality_setting(std::string name, QUALITY  value ,
+        QUALITY limit ,
+        QUALITY warnlimit ) : name(name), value(value) , limit(limit) , limit(warnlimit) {};
+    };
+    typedef std::pair<std::string, std::array<std::array<glm::vec4>> > quality_category; 
+    class quality_def {
+        std::vector<std::pair<QualityCategory  std::vector<Qset> > > contents;
+    };
+    class quality {
+        QUALITY qnum  ;
+        bool vSync ;
+        typedef enum ANTI_ALIASING {
+            off = 0 ,
+            bilinear, 
+            trilinear,
+            AnisotropicFiltering,
+        }ANTI_ALIASING;
+        virtual ANTI_ALIASING anti_aliasing; 
+      
+
+        // This should be a maximum value and the behaviour should adapt to the model detail.
+    //    typedef enum TESSELATION_QUALITY {
+    //         OFF,
+    //         
+
+    //     }TESSELATION_QUALITY;
+           
+        typedef enum tesselation_mode {
+            off =  0,
+            REG
+            PN, // Point normal
+        } tesselation_mode;
+        tesselation_mode tesselation ; 
+         
+
+        enum RENDER_MODE 
+            ray_tracing,
+            path_tracing,
+            ray_casting,
+            photon_mapping
+        };    
+};
+   
+
+
+
+
+/// @brief 
+namespace texture {
+    
+    
+     struct texture  { // TODO
+        image2D image;
+        
+        texture(textureInfo _info, image::rgba_static_arr _image) : info(_info) , image(_image) {};
+    } ;
+    
+    struct dyn_texture : texture {
+        textureInfo info ;
+
+    };
+    
+    struct diffuse : texture {
+        textureInfo info = textureInfo(NULL , NULL , "diffuse", pipeline::stage.DS)
+    } ;
+    
+    
+    struct tangent : texture {
+        textureInfo info = textureInfo(NULL , NULL , "tangent")   ; 
+    };
+    
+    struct height : texture  {
+        textureInfo info = textureInfo(NULL , NULL , "height")   ; 
+        float scale ;
+    };
+    
+    struct normal : texture {
+        textureInfo info = textureInfo(NULL , NULL , "normal" ); 
+    };
+    
+    struct normal_dx : texture {
+        textureInfo info = textureInfo(NULL , NULL , "normal-dx" ); 
+    };
+    
+    struct tangent : texture { // Maps normal space to tangent space ( tangent space is the direction the surface is facing centered coordinates)
+        textureInfo info = textureInfo(NULL , NULL , "tangent" ); 
+    };
+    
+    struct albedo : texture  { // Proportion of light reflected
+        textureInfo info = textureInfo(NULL , NULL , "albedo");  
+    };
+    
+    struct ambient_occlusion : texture  { // Ambient occlusion
+        textureInfo info = textureInfo(NULL , NULL , "ao"); 
+    };
+    
+    struct metallic : texture  {
+        textureInfo info = textureInfo(NULL , NULL , "metallic");  
+    };
+    
+    struct roughness : texture  {
+        textureInfo info = textureInfo(NULL , NULL , "roughness"); 
+    };
+    
+    struct opacity : texture {
+        textureInfo info = textureInfo(NULL , NULL , "opacity"); 
+    };
+    
+    
+    struct bump : texture {
+        textureInfo info = textureInfo(NULL , NULL , "bump");
+    };
+    
+    struct specular : texture {
+        textureInfo info = textureInfo(NULL , NULL , "specular"); // Pixel Shader
+    };
+    
+    struct glow : texture {
+        textureInfo info = textureInfo(NULL , NULL , "glow"); // Pixel Shader
+    };
+    
+    struct reflection_map : texture { // Can be taken from a reflection element in the case of static elements
+        textureInfo info = textureInfo(NULL , NULL , "reflection");
+    };
+
+    
+    struct reflection_elem : elem , texture {
+
+    };
+    
+    struct heat : texture  { 
+        textureInfo info = textureInfo(NULL , NULL , "heat",  pipeline::stage.PS);
+    };
+    
+    
+
+    // Used when sharing the texture
+
+    struct preview :  texture {
+        textureInfo info = textureInfo(NULL , NULL , "preview", NULL)  ; 
+    };
+
+};
+
+//  VkPrimitiveTopology {
+//     VK_PRIMITIVE_TOPOLOGY_POINT_LIST = 0,
+//     VK_PRIMITIVE_TOPOLOGY_LINE_LIST = 1,
+//     VK_PRIMITIVE_TOPOLOGY_LINE_STRIP = 2,
+//     VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST = 3,
+//     VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP = 4,
+//     VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN = 5,
+//     VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY = 6,
+//     VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY = 7,
+//     VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY = 8,
+//     VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY = 9,
+//     VK_PRIMITIVE_TOPOLOGY_PATCH_LIST = 10,
+// } VkPrimitiveTopology;
+
+using point_list = std::vector<uint>; 
+using line_list = std::vector<uint>; 
+using line_strip = std::vector<uint>;
+using triangle_list = std::vector<uint>; 
+using triangle_strip = std::vector<uint>; 
+using triangle_fan = std::vector<uint>; 
+
+using line_list_with_adjacency = std::vector<uint>; 
+using line_strip_with_adjacency = std::vector<uint>;
+using triangle_list_with_adjacency = std::vector<uint>;  
+using triangle_strip_with_adjacency = std::vector<uint>; 
+using patch_list = std::vector<uint>  ;
+
+
+enum DIM {
+    Bi=2, 
+    Tri=3,
+}DIM;
+template <DIM t>
+using dim_pos = typename <std::conditional<t == DIM.Bi , glm::vec2 , 
+                typename std::conditional<t == DIM.Tri , glm::vec3 , void>::type>::type
+
+template <quality::QUALITY q>
+struct material_physical_properties    {
+    bool dynamic
+    float gravitational_density ;
+    float inertial_density ;
+    bool collision_enabled = true ;
+    unsigned float collision_dampening ; // 
+
+        float friction ;
+        float refraction ;
+        material_physical_properties(float _grav_mass, float _inert_mass , bool _collision_enabled , unsigned float _collision_dampening ,float _friction , float _refraction ): grav_mass(_grav_mass),inert_mass(_inert_mass),collision_enabled(_collision_enabled),collision_dampening(_collision_dampening) ,friction(_friction) ,refraction(_refraction){};
+        material_physical_properties() ;
+};
+
+
+// elems are objects which can be put into to the scene w 
+// Images can be rendered 
+
+// This material rendering scheme can be applied to a mesh
+struct Tmap {
+    image2D image ;
+    struct tmapOps{
+    bool blendu=true;bool blendv=true;
+    float boost;
+    float mm_base=0 ; float mm_gain=1;
+    glm::vec3 o = glm::vec3(0,0,0);  // Origin offset
+    glm::vec3 s = glm::vec3(1,1,1);  // Scale
+    glm::vec3 t = glm::vec3(0,0,0);
+    uint32_t texres;
+    bool clamp =false;
+    float bm =1;
+    char imfchan ;
+    enum TYPE{
+        sphere ,cube_top,  cube_bottom,  cube_front,  cube_back,    cube_left,  cube_right 
+    }
+    TYPE type;
+    };
+tmapOps ops;
+};
+#include <math.h>
+template <quality::QUALITY Q>
+struct material   {
+    public:
+    std::enable_if<Q>3, image2D>::type map_disp;
+    std::enable_if<Q>4, image2D>::type map_bump;
+    std::enable_if<Q>2, image2D>::type map_matte;// matte channe
+    std::enable_if<Q>2, image2D>::type map_refl;
+    std::enable_if<Q>2, image2D>::type map_ambient;
+    std::enable_if<Q>2, image2D>::type map_diffuse;
+    std::enable_if<Q>2, image2D>::type map_specular;
+
+
+
+    std::enable_if<Q>4,image2D>::type normal ;
+    std::enable_if<Q>4,image2D>::type tangent   ;  
+    image2D opacity_mask;
+    glm::vec3 base_Color ;
+    image2D baseColorMap;
+    image2D subSurfaceColor;
+    glm::vec3 subsurface_Color ;
+    std::enable_if<Q>2 ,glm::vec3>::type emmisive_Color ;
+    // float anisotropy ; // Normalised between -1 and 1  with 0 meaning none
+    std::enable_if<Q>2,float>::type refraction ;
+    float metallicity ;
+    float roughness ;
+    float specularity ;
+    float opacity ;
+    float position_offset ;
+    float position_displacement ;    
+    bool clear_Coat ;
+    bool ambient_occlusion ;
+    
+    
+    void Tangent(){
+        using ty = enuvec<map_disp.imageFormat>::ty;
+        tangent.imageFormat = image_formats::rgb32f;
+        tangent.imageSize = map_disp.imageSize;
+         for(uint32_t i=0;i<map_disp.height;i++){
+            for(uint32_t j=0;j<map_disp.width;j++){
+
+                uint32_t h  = map_disp.width;
+                float hL=0;float hR=0;float hD=0;float hU=0;
+                if(j>0){
+                    hL = map_disp.data.getAt((j-1) + h*i);
+                }
+                if(j<map_disp.width){
+                    hR = map_disp.data.getAt((j+1) + h*i);
+                }
+                if(i>0){hD = map_disp.data.getAt( j    + h(i-1));}
+                if(i<ma_bump.height){
+                    hU = map_disp.data.getAt( j    + h(i+1));
+                }
+ glm::f32vec3 tangent   = glm::vec3(2.0f * dx, 0.0f, hR - hL); // dP/dx
+    glm::f32vec3 bitangent = glm::vec3(0.0f, 2.0f * dy, hU - hD); // dP/dy
+
+    glm::f32vec3 normal = glm::normalize(glm::cross(tangent, bitangent));
+
+               tangent.putAt(i*width + j,normal);
+            }
+        }
+    }
+    void Normal(){
+        using ty = enuvec<map_disp.imageFormat>::ty;
+        normal.imageFormat = image_formats::rgb32f;
+        normal.imageSize = map_disp.imageSize;
+         for(uint32_t i=0;i<map_disp.height;i++){
+            for(uint32_t j=0;j<map_disp.width;j++){
+                uint32_t h  = map_disp.width;
+                float hL=0;float hR=0;float hD=0;float hU=0;
+                if(j>0){
+                    hL = map_disp.data.getAt((j-1) + h*i);
+                }
+                if(j<map_disp.width){
+                    hR = map_disp.data.getAt((j+1) + h*i);
+                }
+                if(i>0){hD = map_disp.data.getAt( j    + h(i-1));}
+                if(i<ma_bump.height){
+                    hU = map_disp.data.getAt( j    + h(i+1));
+                }
+float dZdx = (hR - hL) / (2.0f * dx);
+    float dZdy = (hU - hD) / (2.0f * dy);
+
+    // Tangent vector along X (U direction)
+    glm::f32vec3 tangent(1.0f, 0.0f, dZdx);
+
+    // Bitangent vector along Y (V direction)
+    glm::f32vec3 bitangent(0.0f, 1.0f, dZdy);
+
+    // Surface normal = cross product of tangents
+
+    glm::f32vec3 t = glm::normalize(glm::cross(tangent, bitangent));
+
+               map_bump.putAt(i*width + j,t);
+            }
+        }
+    }
+   
+    material_physical_properties<Q> physical_properties ;
+             
+    
+    material(){
+
+    }
+};
+struct particle{
+    std::string name ;
+
+    bool physics ;
+    material_physical_properties ; 
+    rgba base_color ;
+    float density ; 
+    dynamicMesh mesh ;
+    particle(std::string name ){
+
+    };
+   
+};
+
+
+struct fluid : {
+    material Material;
+    float viscosity ;
+    float surface_tension ; // values from 0-1;
+    
+    fluid(){}
+  
+};
+
+struct smoke {
+    material Material;
+    float buoyancy; // -1 -- 1;
+};
+template <bool Name , typename Src >
+struct source :  {
+    Src source;
+    glm::vec3 pos; 
+};
+template < bool Name>
+using fluidSource = source<Name,fluid<NAME_FALSE>> ;
+template < bool Name>
+particleSource = source<Name,particle<NAME_FALSE>> 
+
+
+
+
+
+typedef glm::uvec3 triangle_i ;
+typedef glm::uvec4 square_i ;
+typedef std::vector<uint> ngon_i ;
+
+
+
+struct physicsVertInfo {
+    glm::dvec4 vector ; // XYZW w is speed
+    glm::dvec2 div_curl ; 
+    glm::dvec3 grad ;
+};
+struct fluidMesh { // This is used for water bodies and smoke and the like
+    std::vector<std::pair<vertex, > > vertices ;
+    
+    float turbulence ;
+    double cycleSeconds = 2 ; // Default is 
+
+};
+struct particleMesh { // Closed bounding box fill everything
+    std::vector<glm::vec3> vertices ;
+    std::vector<glm::vec3> vectors; 
+
+};
+
+struct elem {  
+    std::string name ;
+    
+};
+
+enum TopologyPrimitive {
+    POINT_LIST = 0,
+    LINE_LIST = 1,
+    LINE_STRIP = 2,
+    TRIANGLE_LIST = 3,
+    TRIANGLE_STRIP = 4,
+    TRIANGLE_FAN = 5,
+    LINE_LIST_WITH_ADJACENCY = 6,
+    LINE_STRIP_WITH_ADJACENCY = 7,
+    TRIANGLE_LIST_WITH_ADJACENCY = 8,
+    TRIANGLE_STRIP_WITH_ADJACENCY = 9,
+    PATCH_LIST = 10,
+} 
+
+
+//  VkPrimitiveTopology {
+// } VkPrimitiveTopology;
+
+
+
+#include <petri/vect.hpp>
+template <DIM S>
+struct mesh {
+    using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
+    using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>;
+
+    // 0 Indexed
+    std::vector<xyzwVert> vert; //..pointVertices
+    std::vector<xyzVert> tvert; // textures vertices;
+    std::vector<xyzVert> nvert; // normal vertices
+    std::vector<xyzVert> pvert; // Parameter vertices
+
+
+    std::vector<std::vector<xyzwVert>> lines;
+
+    std::vector<std::vector<xyzwVert>> facevert;
+    std::vector<std::vector<xyzwVert>> facenvert;
+    std::vector<std::vector<xyzwVert>> facetvert;
+    
+    
+    struct group {
+        std::pair<uint32_t,uint32_t> vert;
+        std::pair<uint32_t,uint32_t> tvert;
+        std::pair<uint32_t,uint32_t> nvert;
+        std::pair<uint32_t,uint32_t> pvert;
+         
+        std::pair<uint32_t,uint32_t> lines;
+        std::pair<uint32_t,uint32_t> faces;
+        private: 
+        material* material;
+    };
+    struct materialGroup: group   {
+        std::vector<material*> materials;
+    }
+    private:
+    std::vector<group> groups ;
+    std::vector<materialsGroup> materialsGroup;
+    
+};
+
+template <DIM S> 
+struct model : mesh<S> {
+    struct manifold { // Have a group conventiion
+        std::string name;
+        std::pair<uint32_t,uint32_t> vert;
+        std::pair<uint32_t,uint32_t> tvert;
+        std::pair<uint32_t,uint32_t> nvert;
+        std::pair<uint32_t,uint32_t> pvert;
+         
+        std::pair<uint32_t,uint32_t> lines;
+        std::pair<uint32_t,uint32_t> faces;
+        std::vector<mesh<S>::materialGroup> mat ;
+        std::vector<mesh<S>::group> materialGroup ; 
+    };
+    std::vector<manifold > manifolds;
+};
+
+
+template <DIM S>
+struct vertex {
+ using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
+    using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>;    
+    
+    xyzwVert vert;
+    xyzVert nvert;
+    xyzwVert tvert;
+        
+}
+template <DIM S>
+struct mesh_prim  {
+        using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
+    using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>;
+
+    
+    bool bPOINT_LIST;
+    bool bLINE_LIST;
+    bool bLINE_STRIP;
+    bool bTRIANGLE_LIST;
+    bool bTRIANGLE_STRIP;
+    bool bTRIANGLE_FAN;
+    bool bLINE_LIST_WITH_ADJACENCY;
+    bool bLINE_STRIP_WITH_ADJACENCY;
+    bool bTRIANGLE_LIST_WITH_ADJACENCY;
+    bool bTRIANGLE_STRIP_WITH_ADJACENCY;
+    bool bPATCH_LIST;
+
+    std::vector<xyzwVert> pPOINT_LIST ;
+    std::vector<xyzwVert> pLINE_LIST ;
+    std::vector<xyzwVert> pLINE_STRIP ;
+    std::vector<xyzwVert> pTRIANGLE_LIST ;
+    std::vector<xyzwVert> pTRIANGLE_STRIP ;
+    std::vector<xyzwVert> pTRIANGLE_FAN ;
+    std::vector<xyzwVert> pLINE_LIST_WITH_ADJACENCY ;
+    std::vector<xyzwVert> pLINE_STRIP_WITH_ADJACENCY ;
+    std::vector<xyzwVert> pTRIANGLE_LIST_WITH_ADJACENCY ;
+    std::vector<xyzwVert> pTRIANGLE_STRIP_WITH_ADJACENCY ;
+    std::vector<xyzwVert> pPATCH_LIST ;
+    
+    std::vector<xyzVert> nvert_POINT_LIST ;
+    std::vector<xyzVert> nvert_LINE_LIST ;
+    std::vector<xyzVert> nvert_LINE_STRIP ;
+    std::vector<xyzVert> nvert_TRIANGLE_LIST ;
+    std::vector<xyzVert> nvert_TRIANGLE_STRIP ;
+    std::vector<xyzVert> nvert_TRIANGLE_FAN ;
+    std::vector<xyzVert> nvert_LINE_LIST_WITH_ADJACENCY ;
+    std::vector<xyzVert> nvert_LINE_STRIP_WITH_ADJACENCY ;
+    std::vector<xyzVert> nvert_TRIANGLE_LIST_WITH_ADJACENCY ;
+    std::vector<xyzVert> nvert_TRIANGLE_STRIP_WITH_ADJACENCY ;
+    std::vector<xyzVert> nvert_PATCH_LIST ;
+    
+    std::vector<xyzVert> tvert_POINT_LIST ;
+    std::vector<xyzVert> tvert_LINE_LIST ;
+    std::vector<xyzVert> tvert_LINE_STRIP ;
+    std::vector<xyzVert> tvert_TRIANGLE_LIST ;
+    std::vector<xyzVert> tvert_TRIANGLE_STRIP ;
+    std::vector<xyzVert> tvert_TRIANGLE_FAN ;
+    std::vector<xyzVert> tvert_LINE_LIST_WITH_ADJACENCY ;
+    std::vector<xyzVert> tvert_LINE_STRIP_WITH_ADJACENCY ;
+    std::vector<xyzVert> tvert_TRIANGLE_LIST_WITH_ADJACENCY ;
+    std::vector<xyzVert> tvert_TRIANGLE_STRIP_WITH_ADJACENCY ;
+    std::vector<xyzVert> tvert_PATCH_LIST ;
+    mesh_prim(mesh<S>& p){
+        if(p.lines.size()>0){bLINES_STRIP = true;
+        for(const std::vector<uint32_t> line : p.lines){
+
+            pLINE_STRIP.push_back(line.ve)
+        };};
+        // Get Mesh
+        for(const face& f : p.faces){
+            for(uint32_t i = 0; i < f.vertices.size();i++){
+                
+            };
+        };
+    };
+};
+template <DIM S>
+struct model_prim {
+    mesh_prim<S> mesh;
+
+    
+
+    material* mat ;
+}
+
+
+template <DIM S>
+struct dynamicMesh : mesh<S> {
+        using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
+    using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>;    
+
+struct bonePtGroup : vertGroup {
+    xyzwVert vert;
+    xyzVert pvert;
+    xyzVert tvert;
+
+    std::pair<uint32_t,uint32_t> faces;
+    std::pair<uint32_t,uint32_t> lines;
+    uint16_t boneUp;
+    std::vector<uint16_t> boneDown;
+    uint16_t boneDown;
+    void addPt(uint16_t pt){bonePtIndices.push_back(pt);}
+};
+std::vector<bonePtgroup> vertGroups;
+};
+// Bone Mesh
+
+
+
+template <DIM S>
+struct dynamicMesh_prim {
+
+};
+
+template <DIM S>
+struct softBody : dynamicMesh<S> {
+
+};
+template <DIM S>
+struct cloth : dynamicMesh {
+    std::vector<vertex> vertices;
+    
+};
+template <DIM S>
+struct entity : dynamicMesh<S>  
+{
+    virtual virtual render();
+    virtual update();
+};
+template <DIM S>
+struct flora : mesh<S> {
+
+};
+template <DIM S>
+struct dyn_flora : dynamicMesh<S> {
+
+};
+// Actors are entities which can be possessed by controlSchemes
+
+struct actor : entity 
+{
+         
+};
+struct fauna : entity {
+
+};
+struct human : entity 
+{
+    std::string name ;
+};
+
+struct attach_int {
+    
+    std::pair<uint,std::vector< uint> first ;  
+    std::pair<uint,std::vector< uint > sec;
+    attach_int::mode one_to_one ;
+    update_one_to_one(){
+        if(first.second.size == sec.second.size){
+            one_to_one = true ;}
+            else one_to_one = false ;
+    }  ;
+};
+
+struct attach_points {
+    elem* el ;
+    std::vector<uint> verts ; 
+};
+
+struct group { // Groups elements together in one shared animation unit .
+    
+    struct attach {
+        typedef enum ATTACH_MODE {
+        one_to_one , 
+        one_to_multiple, 
+        one_to_notmultiple,
+        multiple_to_one,
+        notmultiple_to_one
+         } ATTACH_MODE;
+
+        attach::ATTACH_MODE m ; 
+        uint first 
+        uint second ; 
+        std::vector<uint> verts_second ;
+        std::vector<uint> verts_first ; 
+
+    };
+    std::string name ;
+    std::vector<elem*> elems ;
+    
+    std::map<uint , std::vector<group::attach> >  ><std::pair<elem*, elem* >> attachments;
+
+    void addAttachment ({uint first_i, std::vector<uint> verts } ,  attach_points sec ){
+        if(this->elems.find(first.el) ){
+
+        };
+    };
+
+};
+struct component {
+   
+    std::string name; 
+    std::vector<elem*> elements; 
+    std::vector<group*> groups ;
+};
+struct collection {
+    std::string name ;
+    std::vector<elem*> elems ;
+    std::vector<group*> groups ;
+    std::vector<component*> component ;
+             
+};
+// Allows the creation and instantiation of objects in scene based on a base elem
+struct chain { 
+    struct ref {
+        coords ; 
+    };
+    elem base ; 
+    std::vector<elem>  ; 
+};
+
+
+
+//
+
+
+
+
+
 struct Lsys {
         
     typedef int16_t number ;
@@ -390,7 +1345,7 @@ struct Lsys {
 struct LoadDomainInfo{glm::ivec2 coords, int view_distance , void chunks_distance,int fog };
 
 struct LoadWorldInfo{int index, glm::ivec3 coords };
-void load_world_domain(glm::ivec3 coords, int view_distance, );
+void load_world_domain(glm::ivec3 coords, int view_distance);
 
 
     const rgb BLACK(0, 0, 0);
@@ -412,49 +1367,7 @@ void load_world_domain(glm::ivec3 coords, int view_distance, );
     const rgb GOLD(255, 215, 0);    
 
 
-    template <uint length ,  typename T , glm::qualifier Q>
-    class image {
-        uint x ; 
-        uint y  ; 
-        std::mat<glm::vec<length,T ,Q> >  content ;  
-        
-        image(uint _x , uint _y) : x(_x) , y(_y){
-            
-        }
-    };
-
-    template <uint length , typename T , glm::prectision prec >
-    class dyn_image : image<length, T , prec  > {
-
-        virtual std::array<>
-    };
-    
-   
-    
-    template<colorType ct, size_t x ,size_t y>
-    using image = std::array<std::array<ct,x> ,y>;
-    template <colorType ct, size_t x , size_t y >
-    using rgba_static_arr = image<ct,x,y>;
-    template <size_t frames , colorType ct, size_t x , size_t y>
-    using rgba_dyn_arr = std::array<image<ct,x,y>,frames> ;
-    template <colorType ct, size_t x , size_t y>
-    using rgb_static_arr =  image<ct,x,y> ;
-    template <colorType ct,size_t frames, size_t x , size_t y>
-    using rgb_dyn_arr = std::array<image<ct,x,y>,frames> ;
-    
-
-    typedef std::vector<std::vector<rgba>>               rgba_static ; 
-    typedef std::vector<std::vector<std::array<rgba>>>   rgba_dyn ;
-    
-    typedef std::vector<std::vector<rgb>>                rgb_static ; 
-    typedef std::vector<std::vector<std::vector<rgb>>>   rgb_dyn ;
-    
-    union rgba_either {
-        rgba_static_image static_img,
-        rgba_dyn_image dyn_img
-    };
-
-
+  
     // Variables
 
     enum normType {
@@ -495,7 +1408,6 @@ void load_world_domain(glm::ivec3 coords, int view_distance, );
             return func(res) ;
         };
 
-
     };
     template <typename T>
     using radian = normval<T,0,M_PI,normType::loop>;
@@ -511,93 +1423,350 @@ void load_world_domain(glm::ivec3 coords, int view_distance, );
         T maximum ;
         
     };
+namespace lod
+{
+    struct resource {
+
+    };
 
     
+    class atlas{ // Can contain uv's and a bunch other stuff
+        colorType tp  ;
+        std::path p ; 
+        std::vector<std::tuple<size_t , size_t, size_t , size_t> > sizes ; 
+        size_t width , height , channels; 
+        unsigned char* image ; 
+        
+        size_t lod ; // How many downscalings are there 
+        std::map<>
+
+        get(uint ind ){
+
+        };
+        load_image(){
+            this->image = stbi_load(p, &width, &height, &channels, 0);
+            stbi
+
+        };
+        unsigned char* loadRegion(size_t x, size_t y, size_t xs , size_t ys ){
+             if (data == NULL) {
+                 // Handle error loading image
+                 return NULL;
+            }
+
+            // Check if the specified region is valid
+            if (x < 0 || y < 0 || x + xs > width || y + ys > height) {
+                // Handle invalid region
+                return NULL;
+            }
+
+            // Calculate the size of the cropped region
+            int croppedSize = w * h * channels;
+            unsigned char* croppedData = (unsigned char*)malloc(croppedSize);
+
+            // Copy the specified region from the  image
+            for (int i = 0; i < h; ++i) {
+                for (int j = 0; j < w; ++j) {
+                    for (int c = 0; c < channels; ++c) {
+                        int Index = ((y + i) * Width + (x + j)) * Channels + c;
+                        int croppedIndex = (i * w + j) * Channels + c;
+                        croppedData[croppedIndex] = data[Index];
+                    }
+                }
+            }
+            stbi_image_free(data);
+            return croppedData;
+        };
+        unsigned char* loadRegionDownScaling(size_t x, size_t y, size_t xs , size_t ys  , size_t downscaleFactor){ // TODO
+                
+        };
+        void lod(){ // TODO in lod systems there is a a progrssively lower resolution. Everythin is placed below the image
+        };        
+        atlas(std::path p , std::vector<std::pair<size_t , size_t> > sizes ) :  p(p) , sizes(sizes) {};
+    };
+    class file_atlas {
+        std::vector<atlas> atlases;
+        
+        
+    };
+    class lod {
+        atlas a ;   
+        std::vector<> ref; 
+
+    };
+    
+    typedef enum LOD {
+        Normal,
+        Imposter, // Looks like 3d image but always gets rendered at same angle not size though
+        Sprite, // Simmillar to imposter but is not 3d in any way 
+    
+    } LOD;
+    void makeImposter();
+    
+    class Lodsys {
+        std::array<>
+    };
+    
+
+  
+};
+  
+
+
+
+
+template <DIM T>
+class coords
+{
+    virtual glm::vec<T , float ,defaultp> pos; // x y z
+    virtual glm::vec<T, float , defaultp> ori ; // orientation
+ 
+    typeof(pos) get_pos()
+    {
+        return this->pos ;
+    };
+
+    typeof(ori) get_ori()
+    {
+        return this->ori ;
+    }
+    std::pair<typeof(pos) , typeof(ori)> get()
+    {
+        return {this->pos, this->ori };
+    }
+};
+
+namespace style {
+    /*
+         Can apply styles modifing shading modes ( textures and tesselation rules)
+    Produces another elem most of the time
+    Does not modify animations
+    */    
+    template <elem T>
+    class style {
+        virtual void apply(T* e){};
+    };
+    class 
+};
+
+// The scene object is always responsible for loading objects accordingly from the world partitioning system and space partitioning systems
+
+enum PERSPECTIVE {
+    ThirdPersonLeft,
+    ThirdPersonRight,
+    ThirdPersonCenter,
+    IsoMetric ,
+    FirstPerson,
+    VR,
+    AR
+};
+namespace camera {
+    typedef glm::fvec2 dof ;
+
+    typedef enum EFFECT {
+        pixel, // For camera effects applied to pixels 
+        texel,
+        vertex // For camera effects applied to 
+    }EFFECT;
+    class perspective {
+        glm::mat4 ; 
+        glm::uvec2 center ; 
+        glm::uvec2 left ; 
+        glm::uvec2 right ; 
+        glm::uvec2 up  ;
+        glm::uvec2 down ; 
+    };
+    class orthoganal : perspective {
+
+    };
+    struct effects {
+        bool distance_blur; 
+
+    };
+    class camera {
+
+    };
+};
+
+class ThirdPerson {
+    
+    float fov,aspect,znear,zfar;
+    glm::mat4 getMatrix(glm::vec3 pos){
+        mat = glm::perspective(fov,aspect,znear,zfar);
+    };
+    void move( glm::vec3 amount , glm::mat4 projectionMatrix  ){
+
+    };
+};
+class FirstPerson {
+    glm::mat4 mat; 
+
+    void getMatrix()
+};
+
+
+
+class perspective {
+    PERSPECTIVE v ;
+
+};
+template <DIM d>
+class cloud {
+    
+};
+namespace sp
+{
+    class generator {
+       
+    };
+    class biome {
+        std::string name ; 
+        generator  ;
+        
+        std::vector<fauna> fauna ; 
+    };
+    template<generator gen>
+    class terrain {
+            std::vector<std::vector<>>; 
+            gen generator ;
+            uv uv ;  
+         
+    };
+    template <DIM T>
+    class chunk
+    {
+        int size ; 
+        glm::ivec3 ;
+        std::vector<element> elements ;
+       
+    };
+    template <DIM T , size_t s >
+    class chunkingShape {
+
+    };
+    
+    template <DIM T , size_t s  >
+    class sp  {
+       
+         resourceParser ; 
+        int maxDistance;
+
+        uint depth ; // Chunk tree depth
+        uint min  ;
+        uint max ;
+
+        std::vector<sp* > space_partitionings ;
+
+        virtual glm::vec<3 ,float , defaultp   > chunkCoord ; // x 
+        virtual source
+        
+        void positionalCulling(); // Cull everything based on positional perspective
+        void perspectiveCulling(); // Cull everything not in the view frustum
+        void disOocclusion();
+
+    };
+
+    template <DIM T , size_t levels>
+    class planet : sp  {
+        std::string name ; 
+        std::vector<scene> scene ; 
+        rayleigh rayleig_scattering
+        mie mie_scattering ;
+
+    };
+    template <DIM T , size_t level>
+    class MegaStruct : planet {
+
+    };
+   
+    
+};
+
+
+template <DIM d , sp space_part >
+class scene {
+    template <DIM d, glm::qualifier Q>
+    class lightSource {
+        glm::vec<d,float , Q > position;
+        glm::vec<d, float , >
+    };
+    template <DIM d>
+    class lightSourceChromatic  {
+        glm::vec<d,float , glm::defaultp > position;
+        glm::vec<d , float> ; 
+    };
+    struct skybox {
+        rgba_dyn_image images ;
+        std::vector<uint > ind_images;  
+    };
+
+    skybox sky; 
+    world world_partition ; 
+    space space_partition ;
+    
+    bool pos_culling = true; ;
+    bool frustum_culling = true ;  
+
+    void positionalCulling();
+    void frustumCulling();
+    void backFaceCulling() ; 
+    void backFaceCulling() ;
+    void occlusion();
+    void disocllusion() ;
+    virtual scene(stypes::rgba_dyn_image _skybox) skybox(_skybox) {
+
+    };
+
+};
+    
 enum shader_type {
-    all,
-    gr,
-    vert,
-    frag,
-    geom,
-    tesc,
-    tese,
-    comp,
-    task,
-    mesh,
-    rgen,
-    rint,
-    rahit,
-    rchit,
-    rmiss,
-    rcall,
+all,
+gr,
+vert,
+frag,
+geom,
+tesc,
+tese,
+comp,
+task,
+mesh,
+rgen,
+rint,
+rahit,
+rchit,
+rmiss,
+rcall,
 };
 
 struct shaderModule {
-     
-    auto* ubo  ;bool unib=false  ; uint16_t ubosize; bool dynsUbo;
-    auto* ssbo  ;bool shab=false ;  uint16_t ssbosize; bool dynsSsbo;
+    shader_type shader_type;
+    auto* ubo  ;bool unib=false  ; uint32_t ubosize; bool dynsUbo;
+    auto* ssbo  ;bool shab=false ;  uint32_t ssbosize; bool dynsSsbo;
     int code_size;
-    const uint32_t** code; // SPIR-V Module
-
+    const uint32_t* code; // SPIR-V Module
+    std::string name ;
     std::vector<std::string> entry_points; // all entry points
-    
-};
+    std::string codePath;
+    void readCode(std::string p){
+        codePath=p;
+        std::ifstream file(p, std::ios::ate | std::ios::binary );
+    size_t fileSize = static_cast<size_t>(file.tellg());
+    code_size = filesize;
+    std::vector<char> buffer(fileSize);
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+    c = reinterpret_cast<const uint32_t*>(buffer.data());
+    }
+    void uboBind(){
 
-
-
-class ShaderModule {
-    shader_type shad_ty;
-    size_t uni_size;
-    size_t sssbo_size;
-    std::string codePath ; // SPIR-V module path;
-    shaderModule shadmod;
-    std::vector<std::string> entry_points ;
-    uint entry ;
-    auto ubo;
-    auto ssbo;
-
-    void read_code(){readFile(std::string(this->code),this->shadmod.code,&(this->shadmod.code_size); )};
-    void bind(bool ubo_,bool ssbo_){
-        if(ubo_){this->shadmod.unib=true ;this->shadmod.ubo = static_cast<void*>(&(this->unibuf));};
-        if(ssbo_){this->shadmod.shab=true ;this->shadmod.ssbo = static_cast<void*>(&(this->unibuf));};
     };
-    ShaderModule(shader_type st) : shad_ty(st);
-};
-// TODO make node editor with inout support
-
-template <typename _ubo,typename _ssbo> 
-using   all__shmod =  ShaderModule<shader_type::all,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   gr__shmod =  ShaderModule<shader_type::gr,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   vert__shmod =  ShaderModule<shader_type::vert,_ubo,_ssbo> ;
-template <typename _ubo,typename _ssbo> 
-using   frag__shmod =  ShaderModule<shader_type::frag,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   geom__shmod =  ShaderModule<shader_type::geom,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   tesc__shmod =  ShaderModule<shader_type::tesc,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   tese__shmod =  ShaderModule<shader_type::tese,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   comp__shmod =  ShaderModule<shader_type::comp,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   task__shmod =  ShaderModule<shader_type::task,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   mesh__shmod =  ShaderModule<shader_type::mesh,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   rgen__shmod =  ShaderModule<shader_type::rgen,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   rint__shmod =  ShaderModule<shader_type::rint,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   rahit__shmod =  ShaderModule<shader_type::rahit,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   rchit__shmod =  ShaderModule<shader_type::rchit,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   rmiss__shmod =  ShaderModule<shader_type::rmiss,_ubo,_ssbo>;
-template <typename _ubo,typename _ssbo> 
-using   rcall__shmod =  ShaderModule<shader_type::rcall,_ubo,_ssbo>;
-
+    template <typename T>
+    void ssboBind(T ssBufo){
+        ssbosize=sizeof(ssBufo);
+        std::memcpy(ssbo,&ssBufo,ssbo);
+    }
+    
+    }
 
 
 
@@ -610,4 +1779,9 @@ class PipeLineAdapter {
     };
 };
 
+
+class PipeLines {
+
+};
+};
 #endif

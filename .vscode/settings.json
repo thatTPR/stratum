@@ -161,7 +161,10 @@
         "__nullptr": "cpp",
         "x": "cpp",
         "__refstring": "cpp",
-        "algo": "cpp"
+        "algo": "cpp",
+        "defs": "cpp",
+        "version.h": "c",
+        "__functional_03": "cpp"
     },
     "svg.preview.background": "custom"
 }

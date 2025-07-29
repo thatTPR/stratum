@@ -11,10 +11,10 @@
 
 bool load_names = true;
 
-#define ONE(macro, first)  macro(first)
-#define ONE(macro, first , sec)  macro(first) macro(sec)
-#define ONE(macro, first , sec , tri)  macro(first) macro(sec) macro(tri)
-#define ONE(macro, first,...) macro(first) macro(__VA_LIST__)
+#define REPEAT(macro, first)  macro(first)
+#define REPEAT(macro, first , sec)  macro(first) macro(sec)
+#define REPEAT(macro, first , sec , tri)  macro(first) macro(sec) macro(tri)
+#define REPEAT(macro, first,...) macro(first) macro(__VA_LIST__)
 
 enum jsonval{
     none,
@@ -106,7 +106,7 @@ class property {
     #define PROPERTIES prop1 prop2 
     #define GLOBJ(name, ...) class ##name_globj : public property<arr_val,obj_val> {\
     public:
-        ONE(PROPS_MEMB,__VA_LIST__) \
+        REPEAT(PROPS_MEMB,__VA_LIST__) \
     };
 
     jsonval_t<v>::type value;
@@ -125,7 +125,7 @@ class property {
      if(m){pos=m+2; }; prpt res ; \
      res_##prpt=res.feed_line(vt,pos,f,h); ob._##prpt = res;};return true;}  ;
 
-    #define PROPERTS(...)     size_t p=0; ONE(PROPS, __VA_LIST__)
+    #define PROPERTS(...)     size_t p=0; REPEAT(PROPS, __VA_LIST__)
     // PROPERTS(PROPERTIES)
 
     };
@@ -275,23 +275,12 @@ class properties {
          std::string s;
             f>>s;
             size_t pos = s.find_first_not_of(" \n\r");
-            #define FEED_RET(prpt) p=s.find( prpt::name) ; if(p==sp){ if(prpt::arr_val){size_t m=s.find("s\"",p+1); if(m){pos=m+2; }}; prpt res ;return res.feed_line(jsonval::none,names,pos,f,s);};
-            FEED_RET(asset)
-            FEED_RET(extensionsUsed)
-            FEED_RET(extensionsRequired)
-            FEED_RET(scene) // Objects
-            FEED_RET(animation)
-            FEED_RET(node)
-            FEED_RET(camera)
-            FEED_RET(skin)
-            FEED_RET(mesh)
-            FEED_RET(accessor)
-            FEED_RET(bufferView)
-            FEED_RET(buffer)
-            FEED_RET(material)
-            FEED_RET(texture)
-            FEED_RET(sampler)
-            FEED_RET(image)
+            #define FEED_RET(prpt) p=s.find( prpt::name) ; \
+            if(p==sp){ if(prpt::arr_val){size_t m=s.find("s\"",p+1); 
+                if(m){pos=m+2; }}; \
+                prpt res ;return res.feed_line(jsonval::none,names,pos,f,s);};
+            REPEAT(FEED_RET,asset,extensionsUsed,extensionsRequired,scene,animation,node,camera,skin,mesh,accessor,bufferView,buffer,material,texture,sampler,image)
+            
     
     };
     property void feed(int pos_prop, int pos_str , std::string s , bool names){
@@ -300,13 +289,7 @@ class properties {
     
 };
 
-class gLtf : public acqres {
-    
-    void fromglb
-};  
-
-
-class gltf : public gLtf{ // 
+class gltf{ // 
     void load(ifstream file , bool names){
 
     };
@@ -314,7 +297,7 @@ class gltf : public gLtf{ //
 
     };
 } ;
-class glb : public gLtf {
+class glb  {
 
 };
 

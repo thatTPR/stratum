@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <petri/defs>
+#include <petri/macros.hpp>
 #include <glm/glm.hpp>
 namespace ttf {
 
@@ -506,11 +507,15 @@ return Sum;
 #define REPEAT(macro)
 #define REPEAT(macro,a) macro(a)
 #define REPEAT(macro,a,...) macro(a) REPEAT(macro,__VA_ARG__)
+
+#define CASE_ONE(n) case n : {one(f.u,f##n);}\
+
+
      struct font {
                 TableDirectory td ;
         tableu* table;
 
-        #define TBINDEX(m) int ##mI=-1;m& m(){return table[##mI]._##;};
+        #define TBINDEX(m) int ##mI=-1;m& m(){return table[##mI]._##m;};
         REPEAT(TBINDEX,avar, BASE, CBDT, CBLC, CFF, CFF2, cmap, COLR, CPAL, cvar, cvt, DS,G, EBDT, EBLC, EBSC, fpgm, fvar, gasp, GDEF, glyf, GPOS, GSUB, gvar, hdmx, head, hhea, hmtx, HVAR, JSTF, kern, loca, LTSH, MATH, maxp, MERG, meta, MVAR, name, os2, PCLT, post, prep, sbix, STAT, SVG, VDMX, vhea, vmtx, VORG, VVAR)
      
         #include "ft/avar.hpp" //[x]
@@ -519,8 +524,8 @@ return Sum;
     #include "ft/ebdt.hpp" //[x]
     #include "ft/eblc.hpp" //[x]
 
-#include "ft/cbdt.hpp" //[]
-#include "ft/cblc.hpp" //[]
+#include "ft/cbdt.hpp" //[x]
+#include "ft/cblc.hpp" //[x]
 #include "ft/cff.hpp" //[]
 #include "ft/cff2.hpp" //[]
 #include "ft/cmap.hpp" //[x]

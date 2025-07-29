@@ -162,15 +162,10 @@ for(int i=0;i<EBLC().numSizes;i++){
             case 5 :{_imageSize=ist->u.f5.imageSize;}
         }
         switch(ist->header.imageFormat){
-            case 1:{offone(f.f.f1,ist->header.imageDataOffset);};
-            case 2:{offone(f.f.f2,ist->header.imageDataOffset);};
-            case 3:{offone(f.f.f3,ist->header.imageDataOffset);};
-            case 4:{offone(f.f.f4,ist->header.imageDataOffset);};
-            case 5:{offone(f.f.f5,ist->header.imageDataOffset);};
-            case 6:{offone(f.f.f6,ist->header.imageDataOffset);};
-            case 7:{offone(f.f.f7,ist->header.imageDataOffset);};
-            case 8:{offone(f.f.f8,ist->header.imageDataOffset);};
-            case 9:{offone(f.f.f9,ist->header.imageDataOffset);};
+                        #define OFFMEMBCASE() case n:{offone(f.f.f##n,ist->header.imageDataOffset);};
+            REPEAT(OFFMEMBCASE,1,2,3,4,5,6,7,8,9)
+
+            
         }
         f.numBitmaps++;
 

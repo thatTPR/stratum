@@ -130,11 +130,7 @@ ACQRES(IndexSubtable){
     one(f.header);
     _ebtdFormat=f.header.imageFormat;
     switch (f.header.indexFormat){
-    case 1 : {one(f.u.f1);};
-    case 2 : {one(f.u.f2);};
-    case 3 : {one(f.u.f3);};
-    case 4 : {one(f.u.f4);};
-    case 5 : {one(f.u.f5);};
+        REPEAT(CASE_ONE,1,2,3,4,5)
     }
 }
 USE_ACQRES(IndexSubtable)

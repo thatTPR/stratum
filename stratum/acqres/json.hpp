@@ -2,6 +2,7 @@
 #define JSON_HPP
 #include <string>
 #include <vector>
+#include <fstream>
 #include <map>
 #include <petri/stack.hpp>
 #include <stack>
@@ -16,7 +17,7 @@ enum jsonvalt{
     arr,
     obj,
 };
-    typedef std::vector<jsonval> jsonarr ;
+    typedef std::vector<jsonvalue> jsonarr ;
     typedef std::map<std::string,jsonvalue> jsonobj;
      typedef union jsonvalu{
         int i;
@@ -25,75 +26,74 @@ enum jsonvalt{
         void Null ;
         bool Bool;
         jsonobj* val ;
-        jsonarr* arr;
+        jsonarr arr;
     } jsonvalu;
     std::string id ;
     jsonvalu val;
-    jsonvalt valty ;
+    jsonvalt valt = jsonvalue::obj ;
 
     void read(std::string& s){
         if(s[0] == '\"'){
-            valty = jsonvalt::stri;
+            valt = jsonvalt::stri;
             val.str = s;
         }
-        else (s.find(".")) {
-                valty= jsonvalt::flt;
+        else (s.find(".")!=std::string::npos) {
+                valt= jsonvalt::flt;
                 val.flt = std::stof(s);
         }
-        else (s.find("null")){
-            valty = jsonvalt::Null;
+        else (s.find("null")!=std::string::npos){
+            valt = jsonvalt::Null;
         }
-        else (s.find("true")){
-            valty = jsonvalt::Bool;
+        else (s.find("true")!=std::string::npos){
+            valt = jsonvalt::Bool;
             val.Bool = true;
         }
-        else(s.find("false")){
-            valty= jsonvalt::Bool;
+        else(s.find("false")!=std::string::npos){
+            valt= jsonvalt::Bool;
             val.Bool = false;
         }
         else {
-            valty = jsonvalt::intgr;
+            valt = jsonvalt::intgr;
             val.i = std::stoi(s);
         };
 
     };
-    auto get(jsonvalue vl){
+    auto get(){
         switch(valty){
             case jsonvalt::Bool: {return val.Bool}
             case jsonvalt::intgr: {return val.i;};
             case jsonvalt::flt: {return val.flt;};
             case jsonvalt::stri: {return val.str;};
-            case jsonvalt::arr: {return val.val;};
+            case jsonvalt::arr: {return val.arr;};
             case jsonvalt::obj: {return val.val;};
-            case jsonvalt::arr : {return val.arr;}
         }; 
         return "null";
     };
-    void put(ofstream* fs){
+    void put(ofstream& fs){
         switch(this->valty){
-            case jsonvalt::none : {*fs<<"null";};
-            case jsonvalt::Bool : {if(val.Bool){*fs<<"true";}else {*fs<<"false";};};
-            case jsonvalt::intgr : {*fs<<val.i;};
-            case jsonvalt::flt : {*fs<<val.flt;};
-            case jsonvalt::stri : {*fs<<val.stri;};
+            case jsonvalt::none : {fs<<"null";};
+            case jsonvalt::Bool : {if(val.Bool){*fs<<"true";}else {fs<<"false";};};
+            case jsonvalt::intgr : {fs<<val.i;};
+            case jsonvalt::flt : {fs<<val.flt;};
+            case jsonvalt::stri : {fs<<val.stri;};
             case jsonvalt::arr : {
-                *fs<<"[";
+                fs<<"[";
                 val.arr[0].put(fs);
                 for(int i = 1; i<val.arr.size();i++ ){
-                    *fs<<"," ;
-                    if(val.arr[i-1].valty == jsonval::obj){*fs<<std::endl;};
+                    fs<<"," ;
+                    if(val.arr[i-1].valty == jsonval::obj){fs<<std::endl;};
                     if(val.arr[i].valty == jsonval::obj){
-                        *fs<<std::endl;
+                        fs<<std::endl;
                     }
                     val.arr[i].put(fs);
                 };
-                *fs<<"]"<<std::endl;
+                fs<<"]"<<std::endl;
             };
             case jsonvalt::obj : {
                 val.val.put(fs);
             };
         };
-        *fs<<",";
+        fs<<",";
         
     };
 };
@@ -109,75 +109,70 @@ class json_parser {
     std::string line ;
     std::ifstream* filein;
 
-    void pushArr(){
-        cur.back()->val.arr.push_back(jsonvalue());
-        cur.push(&(cur.back()->val));
-    };
     std::string value ;
     bool startValue = true ;
-    bool startArr = false ;
-    bool startStr = false;
-    void feed(std::string line){
+    bool startStr(){return cur.top()->valt==jsonvalue::jsonvalt::stri;}
+    bool startObj(){return cur.top()->valt==jsonvalue::jsonvalt::obj;} 
+    bool startArr(){cur.top()->valt==jsonvalue::jsonvalt::arr;};
+    std::string line;
+    void pushArr(){
+        cur.top()->val.arr.push_back(jsonvalue());
+        cur.push(&cur.top()->val.arr.back());
+    };
+    void feed(){
         for(int i =0 ; i<line.size();i++){
-            
-            if(line[i] == ':') { startValue = true;continue;};
+            if(line[i] == ':') { cur.top().id=value;startValue = true;value = std::string();continue;};
             if(line[i] == '"')  { 
-                    if(startStr and  line[i-1] == '\\') {value+='"';}
-                    else (!startStr) {startStr = true; value=std::string()+'"';};
-                    else {  startStr = false;
-                        if(!startValue){cur.back()->val.val[value] = NULL;
-                            cur.push(&(cur.back()->val));
+                    if(startStr() ) {if( line[i-1] == '\\')
+                                    else {  
+                        if(!startValue){cur.top()->val.arr.top().val.str = value;
                         }
                         else {
-                            cur.back()->val.stri = value+'"';startStr=false;}
-                    };
-                    if(startValue && (startStr == false)){
-                        cur.back()->valt =jsonvalue::jsonvalt::str;
-                        cur.back()->val.str = value; startStr=true;
-                    };
-                };
-            if(line[i] == '{')  { startValue = true;
-                cur.back()->valt=jsonvalue::jsonvalt::obj;
-            }
-            if(line[i] == '}')  { startValue = false;cur.pop();}
+                            cur.top()->val.str = value;}
+                    };}
+                    else  { cur.top()->valt =jsonvalue::jsonvalt::str;};
                     
                 };
+            if(line[i] == '{')  { 
+                cur.top()->valt=jsonvalue::jsonvalt::obj;
+            }
+            if(line[i] == '}')  { cur.pop();}
+                    
+                
             if(line[i] == '[') {
-                cur.back()->valt=jsonvalue::jsonvalt::arr;
+                cur.top()->valt=jsonvalue::jsonvalt::arr;
                 pushArr();
-                startArr = true;};
-            if(line[i] == ']')  {
-                startArr = false;cur.pop()};
+                };
+            if(line[i] == ']')  {startValue=false;
+                cur.pop()};
             if(line[i] == ',')  {
-                if(startArr){
-                    cur.pop();
+                cur.pop();
+                if(startArr()){
                     pushArr();
                     continue;
                 };
                 startValue = false;
             };
-
             if(isspace(line[i])){
-                if(startStr){value+=line[i];continue;};
+                if(startStr()){value+=line[i];continue;};
                 if(startValue  ){
                     if(value.size()>0){
-                        cur.back()->read(value); 
+                        cur.top()->read(value); 
                         cur.pop(); 
                     };
                 };
-                if(cur->ptr->valty == jsonvalue::jsonvalt::stri and startStr){
+                if(cur.top()->valty == jsonvalue::jsonvalt::stri){
                     cur->ptr->val.str+=line[i];
                 };
             }
             else {
-                if(startStr || startValue){value+=line[i];continue;}
-                    value+=line[i];
+                if(startStr() || startValue ){value+=line[i];continue;}
+                else if(startObj()){value+=line[i];}
+                else if(startArr()){value+=line[i];}
             }
-            
-
         };
-
-    bool feed(){
+    }
+    bool feedLine(){
         if(std::getline(*filein,line)){
             feed(line);
             return true;};
@@ -185,11 +180,11 @@ class json_parser {
     };
     void parse(std::ifstream* file){
         filein = file;
-        while(feed())
+        while(feedLine())
     };
+}
 
 
-};
 
 
 #endif

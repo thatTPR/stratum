@@ -48,6 +48,7 @@ class gl_impl {
     
 
     std::vector<shaderModule> all_modules;
+    
     std::vector<vertModule> vert_modules;
     std::vector<fragModule> frag_modules;
     std::vector<geomModule> geom_modules;
@@ -63,6 +64,11 @@ class gl_impl {
     std::vector<rmissModule> rmiss_modules;
     std::vector<rcallModule> rcall_modules;
     
+
+
+    std::vector
+virtual auto get_format(image_format imf);
+virtual auto getShaderType(shader_type STAGE)
 
      
 virtual void createSwapChain();

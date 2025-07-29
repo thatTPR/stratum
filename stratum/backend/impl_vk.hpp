@@ -174,49 +174,65 @@ void set_up_dev(){
 
 
 
-constexpr VkFormat get_vk_format(image_formats fm){
+constexpr VkFormat get_format(image_formats fm){
     switch(fm){
-image_formats::rgba32f         :{return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT; break;}; 
-image_formats::rgba16f         :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT; break;};
-image_formats::rg32f           :{return VkFormat::VK_FORMAT_R32G32_SFLOAT; break;};
-image_formats::rg16f           :{return VkFormat::VK_FORMAT_R16G16_SFLOAT; break;};
-image_formats::r11f_g11f_b10f  :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT; break;};
-image_formats::r32f            :{return VkFormat::VK_FORMAT_R32_SFLOAT; break;};
-image_formats::r16f            :{return VkFormat::VK_FORMAT_R16_SFLOAT; break;};
-image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM; break;};
-image_formats::rgb10_a2        :{return VkFormat::VK_FORMAT_A2R10G10B10_SNORM_PACK32; break;};
-image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SRGB; break;};
-image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SNORM; break;};
-image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SNORM; break;};
-image_formats::r16             :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM; break;};
-image_formats::r8              :{return VkFormat::VK_FORMAT_R8_SNORM; break;};
-image_formats::rgba16_snorm    :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM; break;};
-image_formats::rgba8_snorm     :{return VkFormat::VK_FORMAT_R8G8B8A8_SNORM; break;};
-image_formats::rg16_snorm      :{return VkFormat::VK_FORMAT_R16G16_SNORM; break;};
-image_formats::rg8_snorm       :{return VkFormat::VK_FORMAT_R8G8_SNORM; break;};
-image_formats::r16_snorm       :{return VkFormat::VK_FORMAT_R16_SNORM; break;};
-image_formats::r8_snorm        :{return VkFormat::VK_FORMAT_R8_SNORM; break;};
-image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_SINT; break;};
-image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SINT; break;};
-image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SINT; break;};
-image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32_SINT; break;};
-image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SINT; break;};
-image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SINT; break;};
-image_formats::r32i            :{return VkFormat::VK_FORMAT_R32_SINT; break;};
-image_formats::r16i            :{return VkFormat::VK_FORMAT_R16_SINT; break;};
-image_formats::r8i             :{return VkFormat::VK_FORMAT_R8_SINT; break;};
-image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_UINT; break;};
-image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_UINT; break;};
-image_formats::rgb10_a2ui      :{return VkFormat::VK_FORMAT_A2R10G10B10_UINT_PACK32; break;};
-image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_UINT; break;};
-image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32B32_UINT; break;};
-image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16B16_UINT; break;};
-image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8B8_UINT; break;};
-image_formats::r32             :{return VkFormat::VK_FORMAT_R32_UINT; break;};
-image_formats::r16             :{return VkFormat::VK_FORMAT_R16_UINT; break;};
-image_formats::r8              :{return VkFormat::VK_FORMAT_R8_UINT; break;};
+image_formats::rgba32f         :{return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;}; 
+image_formats::rgba16f         :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
+image_formats::rg32f           :{return VkFormat::VK_FORMAT_R32G32_SFLOAT;};
+image_formats::rg16f           :{return VkFormat::VK_FORMAT_R16G16_SFLOAT;};
+image_formats::r11f_g11f_b10f  :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
+image_formats::r32f            :{return VkFormat::VK_FORMAT_R32_SFLOAT;};
+image_formats::r16f            :{return VkFormat::VK_FORMAT_R16_SFLOAT;};
+image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
+image_formats::rgb10_a2        :{return VkFormat::VK_FORMAT_A2R10G10B10_SNORM_PACK32;};
+image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SRGB;};
+image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
+image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
+image_formats::r16             :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
+image_formats::r8              :{return VkFormat::VK_FORMAT_R8_SNORM;};
+image_formats::rgba16_snorm    :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
+image_formats::rgba8_snorm     :{return VkFormat::VK_FORMAT_R8G8B8A8_SNORM;};
+image_formats::rg16_snorm      :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
+image_formats::rg8_snorm       :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
+image_formats::r16_snorm       :{return VkFormat::VK_FORMAT_R16_SNORM;};
+image_formats::r8_snorm        :{return VkFormat::VK_FORMAT_R8_SNORM;};
+image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_SINT;};
+image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SINT;};
+image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SINT;};
+image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32_SINT;};
+image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SINT;};
+image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SINT;};
+image_formats::r32i            :{return VkFormat::VK_FORMAT_R32_SINT;};
+image_formats::r16i            :{return VkFormat::VK_FORMAT_R16_SINT;};
+image_formats::r8i             :{return VkFormat::VK_FORMAT_R8_SINT;};
+image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_UINT;};
+image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_UINT;};
+image_formats::rgb10_a2ui      :{return VkFormat::VK_FORMAT_A2R10G10B10_UINT_PACK32;};
+image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_UINT;};
+image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32B32_UINT;};
+image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16B16_UINT;};
+image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8B8_UINT;};
+image_formats::r32             :{return VkFormat::VK_FORMAT_R32_UINT;};
+image_formats::r16             :{return VkFormat::VK_FORMAT_R16_UINT;};
+image_formats::r8              :{return VkFormat::VK_FORMAT_R8_UINT;};
     };
 };
+
+constexpr VkPrimitiveTopology(TopologyPrimitive TP){
+    switch(TP){
+case TopologyPrimitive::POINT_LIST : {return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;}
+case TopologyPrimitive::LINE_LIST : {return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;}
+case TopologyPrimitive::LINE_STRIP : {return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;}
+case TopologyPrimitive::TRIANGLE_LIST : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;}
+case TopologyPrimitive::TRIANGLE_STRIP : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;}
+case TopologyPrimitive::TRIANGLE_FAN : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;}
+case TopologyPrimitive::LINE_LIST_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY;}
+case TopologyPrimitive::LINE_STRIP_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY;}
+case TopologyPrimitive::TRIANGLE_LIST_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;}
+case TopologyPrimitive::TRIANGLE_STRIP_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;}
+case TopologyPrimitive::PATCH_LIST : {return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;}
+};
+}
 constexpr VkSurfaceTransformFlagBitsKHR get_transform(transform::image s){
     switch(s){
 case none:  {return VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;};
@@ -337,7 +353,29 @@ void updateUBO();
 // Unuse shader module flags
 // VK_SHADER_STAGE_SUBPASS_SHADING_BIT_HUAWEI
 // VK_SHADER_STAGE_CLUSTER_CULLING_BIT_HUAWEI
-int shaderModule(shaderModule* module, int STAGE){
+
+constexpr VkShaderStageFlagBits getShaderType(shader_type STAGE){
+    switch(STAGE){
+        shader_type::all :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;}
+        shader_type::gr :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS;}
+        shader_type::vert :{return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;}
+        shader_type::frag :{return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;}
+        shader_type::geom :{return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;}
+        shader_type::tesc :{return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;}
+        shader_type::tese :{return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;}
+        shader_type::comp :{return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;}
+        shader_type::task :{return VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_EXT;}
+        shader_type::mesh :{return VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_EXT;}
+        shader_type::rgen :{return VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR;}
+        shader_type::rint :{return VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR;}
+        shader_type::rahit :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR;}
+        shader_type::rchit :{return VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;}
+        shader_type::rmiss :{return VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR;}
+        shader_type::rcall :{return VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR;}
+    }
+};
+
+int shaderModule(shaderModule* module,VkShaderStageFlagBits STAGE){
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = module->size;
@@ -360,24 +398,29 @@ if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCC
     };
     return 
 };
+int shaderModule(shaderModule* module, shader_type STAGE){
+    shaderModule(module,getShaderType(STAGE));
+};
+
+
 int grModule(shaderModule* module){
-    this->shaderModule(module,VK_SHADER_STAGE_ALL_GRAPHICS);
+    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS);
 };
 int glslModule(shaderModule* module){
-    this->shaderModule(module,VK_SHADER_STAGE_ALL);
+    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_ALL);
 };
 int vertModule(vertModule* module){
-    this->shaderModule(module,VK_SHADER_STAGE_VERTEX_BIT);};
+    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT);};
 int fragModule(fragModule* module){
-    this->shaderModule(module,VK_SHADER_STAGE_FRAGMENT_BIT);};
+    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT);};
 int geomModule(geomModule* module){
-    this->shaderModule(module,VK_SHADER_STAGE_GEOMETRY_BIT);};
+    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT);};
 int tescModule(tescModule* module){
-    this->shaderModule(module,VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);};
+    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);};
 int teseModule(teseModule* module){
-    this->shaderModule(module,VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);};
+    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);};
 int compModule(compModule* module){
-    this->shaderModule(module,VK_SHADER_STAGE_COMPUTE_BIT);
+    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT);
     VkComputePipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     pipelineInfo.stage = shaderStageInfo;              // Shader stage info
@@ -385,23 +428,23 @@ int compModule(compModule* module){
     if()
 };
 int taskModule(taskModule* module){
-    this->shaderModule(module,(this->nv)?VK_SHADER_STAGE_TASK_BIT_NV:VK_SHADER_STAGE_TASK_BIT_EXT);};
+    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_EXT);};
 int meshModule(meshModule* module){
-    this->shaderModule(module,(this->nv)?VK_SHADER_STAGE_MESH_BIT_NV:VK_SHADER_STAGE_MESH_BIT_EXT);};
+    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_EXT);};
 int rgenModule(rgenModule* module){
-    this->shaderModule(module,(this->nv)?VK_SHADER_STAGE_RAYGEN_BIT_NV: VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_NV: VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 };
 int rintModule(rintModule* module){
-    this->shaderModule(module,(this->nv)?VK_SHADER_STAGE_INTERSECTION_BIT_NV:VK_SHADER_STAGE_INTERSECTION_BIT_KHR);};
+    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR);};
 int rahitModule(rahitModule* module){
-    this->shaderModule(module,(this->nv)?VK_SHADER_STAGE_ANY_HIT_BIT_NV:VK_SHADER_STAGE_ANY_HIT_BIT_KHR);};
+    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR);};
 int rchitModule(rchitModule* module){
-    this->shaderModule(module,(this->nv)?VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV:VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);};
+    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);};
 int rmissModule(rmissModule* module){
-    this->shaderModule(module,(this->nv)?VK_SHADER_STAGE_MISS_BIT_NV:VK_SHADER_STAGE_MISS_BIT_KHR);};
+    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR);};
 int rcallModule(rcallModule* module){
-    this->shaderModule(module,(this->nv)?VK_SHADER_STAGE_CALLABLE_BIT_NV:VK_SHADER_STAGE_CALLABLE_BIT_KHR);};
-virtual T* shader(T shader);
+    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR);};
+
 
 void descriptor_pool(){
 
