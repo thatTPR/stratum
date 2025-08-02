@@ -116,6 +116,7 @@ map_ORM       # alternate definition of map_RMA
 */
 std::vector<named<image2D>> images; 
 struct Tmap {
+    
     modules::image2D image ;
 struct tmapOps{
     bool blendu=true;bool blendv=true;
@@ -185,20 +186,21 @@ struct material {
     Tmap map_Ks ;// specularity
 
     template <modules::quality::QUALITY q>
-    modules::material<q> get(){
-        modules::material<q> res;
+    named<modules::material<q>> get(){
+        named<modules::material<q>> res;
+        res.name=name;
         if constexpr(Q>4){
-                    res.map_bump =map_bump.image ;
+                    res.data.map_bump =map_bump.image ;
         }
         if constexpr(Q>3){
-                    res.map_disp =map_disp.image ;
+                    res.data.map_disp =map_disp.image ;
         }
         if constexpr(Q>2){
-                    res.map_matte =map_matte.image ;
-                    res.map_refl =map_refl.image ;
-                    res.map_ambient =map_Ka.image ;
-                    res.map_diffuse =map_Kd.image ;
-                    res.map_specular =map_Ks.image ;
+                    res.data.map_matte =map_matte.image ;
+                    res.data.map_refl =map_refl.image ;
+                    res.data.map_ambient =map_Ka.image ;
+                    res.data.map_diffuse =map_Kd.image ;
+                    res.data.map_specular =map_Ks.image ;
         }
         if constexpr(Q>2){
             res.
@@ -452,7 +454,6 @@ if(mapB(std::string("metallicity"))){materials}
             std::pair<uint32_t,uint32_t> Tvert;
             std::pair<uint32_t,uint32_t> lines;
             std::pair<uint32_t,uint32_t> faces;
-
             group(std::string _name,
 uint32_t_ vert,uint32_t _Pvert,uint32_t _Nvert,uint32_t _Tvert,uint32_t _lines,uint32_t _faces){
     name=_name;Pvert.first=_Pvert;
@@ -490,37 +491,44 @@ uint32_t_ vert,uint32_t _Pvert,uint32_t _Nvert,uint32_t _Tvert,uint32_t _lines,u
             res.tvert=Tvertices;
             res.nvert=Nvertices;
             res.pvert=Pvertices;
-            for(std::vector<uint32_t>& line : lines){
+            for(std::vector<uint32_t>& line : s.lines){
                 res.lines.push_back(std::vector<glm::vec4>());
                 for(uint32_t& ind : line){
                     if(ind==0){res.lines.back().push_back(defVal());}
-                    else {res.lines.back().push_back(vertices[ind]);}
+                    else {res.lines.back().push_back(s.vertices[ind]);}
                 }
             };
-            for(face& f : faces){
+            for(face& f : s.faces){
                 for(uint32_t& ind : f.vertices){
                     if(ind==0){res.facevert.back().push_back(defVal());}
-                    else {res.facevert.back().push_back(vertices[ind]);}
+                    else {res.facevert.back().push_back(s.vertices[ind]);}
                 }
                 for(uint32_t& ind : f.vertT){
                     if(ind==0){res.facetvert.back().push_back(defVal());}
-                    else {res.facetvert.back().push_back(Tvertices[ind]);}
+                    else {res.facetvert.back().push_back(s.Tvertices[ind]);}
                 }
                 for(uint32_t& ind : f.vertices){
                     if(ind==0){res.facenvert.back().push_back(defVal());}
-                    else {res.facenvert.back().push_back(Nvertices[ind]);}
+                    else {res.facenvert.back().push_back(s.Nvertices[ind]);}
                 }
 
             };
         };
-        modules::mesh<3> operator=(mesh& s){
-            get<mesh<3>> res = get<modules::mesh<3>>(s);
-            res.mat
-        };
 
-        modules::model<3> operator=(mesh& s){
-            modules::model<3> res= get<modules::model<3>>(s);
-            res.manifolds
+        template <modules::quality::QUALIY Q>
+        modules::mesh<3,Q> getMesh(mesh& s){
+            get<mesh<3,Q>> res = get<modules::mesh<3>>(s);
+        };
+        template <modules::quality::QUALIY Q>
+        modules::model<3,Q> getModel(mesh& s){
+            std::string manifold=std::string("manifold");
+            modules::model<3,Q> res= get<modules::model<3>>(s);
+            for(group& g: s.groups){
+                if(g.name.substr(0,manifold.size()) == manifold ){
+                    res.manifolds.push_back(modules::model<3,Q>::manifold())
+
+                };
+            }
         };
         template <typename vT>
         void ldVert(std::string& line , int indexStart,std::vector<vT>* ptr){

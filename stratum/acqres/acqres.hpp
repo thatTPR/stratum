@@ -87,102 +87,64 @@ inline void wr( T& f,auto& start ,size_t Offsize , auto* Offset, std::ofstream* 
     };
 };
 
-template <typename T>
-void NULLt();
 
-template <typename T, 
-template <typename> typename One  ,
-template <typename> typename Arr  ,
-template <typename> typename OffOne  ,
-template <typename> typename OffArr  ,
-template <typename> typename OffMany  >
-size_t acqresf(T& f, size_t* s, FOne one ,FArr arr,FOffOne offone,FOffArr offarr,FOffMany Offmany  ) ;
 
-// Function
-// 
-/*
+#define ACQRES(type) \
+strstruct acqresb_##type : acqres_base {}; \
+struct acqres_##type_ld : acqresSize , acqresb_##type {} ; \
+struct acqres_##type_wr : acqresLd , acqresb_##type {}; \
+struct acqres_##type_si : acqresWr , acqresb_##type {}; \
+void acqresb_##type::function()
 
-#define ACQRES(type)\
-void acqresf_##type \
-(type* f,std::function<void(auto type::*) one ,
-std::function<void(auto type::*, auto size) arr,
-std::function<void(auto type::* , auto offset) offone,
-std::function<void(auto type::*, auto offset, auto size) offarr,
-std::function<void(auto type::*, auto offset, auto size, auto* offset) offmany)
+#define USE_ACQRES(type) \
+template <> ld(std::ifstream& fi){acqres_##type_ld obj(fi);obj.func();} \
+template <> wr(std::ofstream& fi){acqres_##type_wr obj(fi);obj.func();} \
+template <> size(){acqres_##type_ld obj;obj.func();} \
 
-template <typename T,
-std::function<void(T,std::function<void(auto type::*)  ,
-std::function<void(auto type::*, auto size) ,
-std::function<void(auto type::* , auto offset) ,
-std::function<void(auto type::*, auto offset, auto size) ,
-std::function<void(auto type::*, auto offset, auto size, auto* offset) )>>
-struct acqres {
 
-};
-*/
+struct acqres_base {
+    //  template <typename A>
+    // void set (auto* Start);
+    // template <typename A>
+    // void one (A& g) ;
+    // template <typename A>
+    // void arr (A& g,size_t size);
+    // template <typename A>
+    // void offone (A& g,  auto& Offset );
+    // template <typename A>
+    // void offarr (A& g, auto& Offset,size_t size); 
+    // template <typename A>
+    // void offmany (A& g, auto& OFfset, size_t size);
+    void init(){};
+    void function();
 
-template <typename T>
-void acqres(T f,std::function<void(T)> one,std::function<void(T,size_t)> arr,std::function<void(T,)>offone,offarr,offmany,set)
-
-#define ACQRES(type)\
-template <  \
-template <typename> typename FOne , \
-template <typename> typename FArr , \
-template <typename> typename FOffOne , \
-template <typename> typename FOffArr , \
-template < typename> typename FOffMany,\
-template <typename> typename FSet > \
-void acqresf_##type \
-(type f, FOne one ,FArr arr,FOffOne offone,FOffArr offarr ,FOffMany, FSet set) 
-    /*
-    
-       return 
-       Func(&(f->sizeMember)) ;
-        Func(&(f->memberTwo),f->sizeMember);
-        OffF(&(f->memberThree),f->offset);
-        OffF(&(f->memberArr),sizeMember,f->offset) 
-        ; 
-        
-    };
-  
-*/
-/*
-template <template <typename> typename Func>\
-size_t acqres<Type,Func>(Type* f);
-*/
+}
 
 
 
 
 
-
-    size_t size(auto& s){return sizeof(s);};
 
     
-    
-    template< typename T,
-template <
-template < template <typename> typename FOne , 
-template < template <typename> typename FArr , 
-template < template <typename> typename FOffOne , 
-template < template <typename> typename FOffArr , 
-template < template <typename> typename FOffMany,
-template <template <typename> typename set> typename Function>
-     size_t sizeacqres(Function fn,T& f){
-        size_t ss = 0;    
+struct acqresSize : acqres_base  {
+    size_t ss = 0;    
     size_t s = 0;
-    auto* Set ;
-    auto sset = [&s,&ss,&Set]<typename A>(auto* Start){Set =  Start;ss=s;};
-    auto sone = [&s]<typename A>(A& g) {s+=size(g); };
-    auto sarr = [&s]<typename A>(A& g,size_t size) {for(int i = 0 ; i < size ; i++){s+= size(g[i]);};};
-    
-    auto soffone = [&s,&offset]<typename A>(A& g,  auto& Offset ) {
+    void* Set ;
+    template <typename A>
+    void set (auto* Start){Set =  Start;ss=s;};
+    template <typename A>
+    void one (A& g) {s+=size(g); };
+    template <typename A>
+    void arr (A& g,size_t size) {for(int i = 0 ; i < size ; i++){s+= size(g[i]);};};
+    template <typename A>
+    void offone (A& g,  auto& Offset ) {
         size_t curs=size(g);
         if(Set)Offset = s-ss;
         else Offset = s;
         s+= curs;
     };
-    auto soffarr = [&s,&offset]<typename A>(A& g, auto& Offset,size_t size) {
+    template <typename A>
+    void offarr (A& g, auto& Offset,size_t size) {
         size_t curs = s;
         for(int i = 0 ; i < size ; i++){
             curs += size(g[i]);
@@ -191,89 +153,65 @@ template <template <typename> typename set> typename Function>
         else Offset= s ;
         s+=curs;
     }; 
-       
-    auto soffmany = [&s,&offset]<typename A>(A& g, auto& OFfset, size_t size){
+    template <typename A>
+    void offmany (A& g, auto& OFfset, size_t size){
         for(int i=0;i<size;i++){soffone(g[i],Offset[i]);}
     };
-        fn(f,sone,sarr,soffone,soffarr,soffmany,sset);
-        return s;
-    }
+    void init(){ss=0;s=0;};
+    void func(){function();};
 
     
+};
 
-    template< typename T,
-    template <
-    template < template <typename> typename FOne , 
-    template < template <typename> typename FArr , 
-    template < template <typename> typename FOffOne , 
-    template < template <typename> typename FOffArr , 
-    template < template <typename> typename FOffMany,
-template <template <typename> typename set> typename Function>
-void ldacqres(Function fn,T& f, std::ifstream* fi){
-    size_t size =0;
 
-        size_t start = fi->seekg();
-        auto ldone = [&fi]<typename A>(A& g) {ld(g,fi) };
-        auto ldarr = [&fi]<typename A>(A& g,auto& size) {ld(g,size,fi) ;};
-        auto ldOffone = [&fi,&start]<typename A>(A& g,auto& offset, auto& s){ld<A>(g,start,offset,s,fi);}
-        auto ldOffarr = [&fi,&start]<typename A*>(A g,auto& offset, auto& s){ld(g,start,offset,s,fi) ;};
-        auto lfOffMany = [&fi,&start]<typename A*,typename B*>(A* g,B* Offset, size_t s ){
+struct acqresLd : acqres_base{
+    std::ifstream& fi;
+     size_t size ;    size_t start ; 
+        template <typename A>
+        void one(A& g) {ld(g,fi) };
+        template <typename A>
+        void arr(A& g,auto& size) {ld(g,size,fi) ;};
+        template <typename A>
+        void offone (A& g,auto& offset, auto& s){ld<A>(g,start,offset,s,fi);}
+        template <typename A*>
+        void offarr (A g,auto& offset, auto& s){ld(g,start,offset,s,fi) ;};
+        template <typename A* ,typename B*>
+        void offmany (A* g,B* Offset, size_t s ){
             if(!g){g = new A[s];}
             for(int i=0;i<s;i++){ldOffone(g[i],Offset[i]);}
         }
-        auto ldset = [&fi,&start]<typename A>(A& set){};
-        fn(f,ldone,ldarr,ldOffone,ldOffarr,ldOffmany,ldset) ;
-    };
+        template <typename A>
+        void set (A& set){};
+        void init(){size =0; start = fi->seekg();}
+        void func(){function();} ;
+        acqresLd(std::ifstream& f){fi=f;}
+}
 
-   
-    template< typename T,
-    template <
-    template < template <typename> typename FOne , 
-    template < template <typename> typename FArr , 
-template < template <typename> typename FOffOne , 
-template < template <typename> typename FOffArr , 
-template < template <typename> typename FOffMany,
-template <template <typename> typename set> typename Function>
-void wracqres(Function fn,T& f, std::ofstream* fi){
-       size_t start ;
-       size(f) ;
-       start = fi->seekp();
-       auto wrset = []<typename A>(A& g){};
-       auto wrone = [&fi]<typename A>(A& g,) {wr(g,fi) };
-       auto wrarr = [&fi]<typename A,typename S>(A& g,S& size) {wr(g,size,fi) ;};
-       auto wrOffone = [&fi,&start]<typename A>(A& g,auto& offset,auto& s =1){wr<A>(g,start,offset,s,fi);}
-       auto wrOffarr = [&fi,&start]<typename A*>(A* g,auto& offset, auto& s=1){wr<A>(g,start,offset,s,fi) ;};
-       auto wrOffmany =[&fi,&start]<typename A*,typename B*>(A* g,B* Offset, auto& s ){
+struct acqresWr : acqres_base{
+        std::ofstream& fi;
+    size_t start ;
+        template <typename A>
+        void set(A& g){};
+        template <typename A>
+       auto one (A& g,) {wr(g,fi) };
+        template <typename A,typename S>
+        auto arr (A& g,S& size) {wr(g,size,fi) ;};
+       template <typename A>
+       auto offone (A& g,auto& offset,auto& s =1){wr<A>(g,start,offset,s,fi);}
+       template <typename A*>
+       auto offarr(A* g,auto& offset, auto& s=1){wr<A>(g,start,offset,s,fi) ;};
+       template <typename A*,typename B*>
+       void offmany(A* g,B* Offset, auto& s ){
             for(int i=0;i<s;i++){wrOffone(g[i],Offset[i]);}
        }
-       auto wrset = [&fi,&start]<typename A>(A& g ){}; 
-        fn(f,wrone,wrarr,wrOffone,wrOffarr,wrOffmany,wrset) ;
-    };
-    
-    
+       template<typename A>
+       void wrset (A& g ){}; 
+    void init(){size(f) ;start = fi->seekp();} 
+    void func(){function();}
+    acqresWr(std::ofstream& f){fi=f;}
+
+}
 
 
-
-
-#define MEMBER_ACQRES(type) \
-void ld(type* f, std::ifstream* fi){acqres<type,acqresf_##type>::ld<type>(f,fi);}; \
-void ld(type* f, std::ifstream* fi,size_t s){acqres<type,acqresf_##type>::ld<type>(f,fi,s);}; \
-void wr(type* f,std::ofstream* fi){acqres<type,acqresf_##type>::wr<type>(f,fi);}; \
-void size(type* f){acqres<type,acqresf_##type>::size<type>(f);}; 
-
-
-#define USE_ACQRES(type) \
-acqres<type,acqresf_##type> acqres_##type; \
-template <>void ld<type>(type* f,std::ifstream fi){ ldacqres(acqresf_##type,f,fi);}; \
-template <>void wr<type>(type* f,std::ofstream fi){ wracqres(acqresf_##type,f,fi);}; \
-template <>size_t size<type>(type* f){return sizeacqres(acqresf_##type,f);};
-
-
-template <typename T>
-struct data ;
-template <typename T >
-data<T> build(T& t );
-template <typename T>
-T parse(data<T>* );
 
 #endif

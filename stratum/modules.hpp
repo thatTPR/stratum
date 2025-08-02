@@ -1,5 +1,6 @@
 #ifndef MODULES_HPP
 #define MODULES_HPP
+#include <petri/macros.hpp>
 #include <typeindex>
 #include <cstddef>
 #include <ifstream>
@@ -12,6 +13,8 @@
 #include <map>
 #include <lib/glm/glm.hpp>
 #include <cstring>
+#include <math.h>
+
 namespace modules {
 
 
@@ -82,6 +85,21 @@ rg8ui,
 r32ui,
 r16ui,
 r8ui,
+
+
+rgb32f,
+rgb16f,
+rgb16,
+rgb8,
+rgb16_snorm,
+rgb8_snorm,
+rgb32i,
+rgb16i,
+rgb8i,
+rgb32ui,
+rgb16ui,
+rgb8ui,
+
 
 
 
@@ -182,7 +200,21 @@ argb8ui,
             if constexpr (s==1){
     case r32ui: {return 32 ;}
     case r16ui: {return 16 ;}
-    case r8ui: {return 8 ;}}
+    case r8ui: {return 8 ;}}    
+    if constexpr(s<4){
+        case rgb32f:{return 32; }     
+        case rgb16f:{return 16; }     
+        case rgb16:{return 16; }      
+        case rgb8:{return 8; }       
+        case rgb16_snorm:{return 16; }
+        case rgb8_snorm:{return 8; } 
+        case rgb32i:{return 32; }     
+        case rgb16i:{return 16; }     
+        case rgb8i:{return 8; }      
+        case rgb32ui:{return 32; }    
+        case rgb16ui:{return 16; }    
+        case rgb8ui:{return 8; }     
+    }
 
 return 0;
     }};
@@ -255,6 +287,7 @@ constexpr int8_t bitd(image_formats imf){return bitdepth_r(imf)+bitdepth_g(imf)+
 
 constexpr int8_t imageFormatBytes(image_formats imf){bitdepth(imf)/8;}
 
+typedef short f16 ; 
 
 template<image_formats imf>
 struct enu_vec{
@@ -264,30 +297,30 @@ template <>struct enu_vec<image_formats::rgba16f>        { using ty =glm::f16vec
 template <>struct enu_vec<image_formats::rg32f>          { using ty =glm::f32vec2;};
 template <>struct enu_vec<image_formats::rg16f>          { using ty =glm::f16vec2;};
 template <>struct enu_vec<image_formats::r11f_g11f_b10f> { using ty =glm::f16vec3;};
-template <>struct enu_vec<image_formats::r32f>           { using ty =float32_t;};
-template <>struct enu_vec<image_formats::r16f>           { using ty =float16_t;};
+template <>struct enu_vec<image_formats::r32f>           { using ty =glm::f32;};
+template <>struct enu_vec<image_formats::r16f>           { using ty =f16;};
 template <>struct enu_vec<image_formats::rgba16>         { using ty =glm::i16vec4;};
 template <>struct enu_vec<image_formats::rgb10_a2>       { using ty =glm::i16vec4;};
 template <>struct enu_vec<image_formats::rgba8>          { using ty =glm::i8vec4;};
 template <>struct enu_vec<image_formats::rg16>           { using ty =glm::i16vec2;};
 template <>struct enu_vec<image_formats::rg8>            { using ty =glm::i8vec2;};
-template <>struct enu_vec<image_formats::r16>            { using ty =glm::f16 ;};
+template <>struct enu_vec<image_formats::r16>            { using ty =f16 ;};
 template <>struct enu_vec<image_formats::r8>             { using ty =uint8_t ;};
 template <>struct enu_vec<image_formats::rgba16_snorm>   { using ty =glm::i16vec4;};
 template <>struct enu_vec<image_formats::rgba8_snorm>    { using ty =glm::i8vec4 ;};
 template <>struct enu_vec<image_formats::rg16_snorm>     { using ty =glm::i16vec2;};
 template <>struct enu_vec<image_formats::rg8_snorm>      { using ty =glm::i8vec2 ;};
-template <>struct enu_vec<image_formats::r16_snorm>      { using ty =float;};
-template <>struct enu_vec<image_formats::r8_snorm>       { using ty =float ;};
+template <>struct enu_vec<image_formats::r16_snorm>      { using ty =glm::i16;};
+template <>struct enu_vec<image_formats::r8_snorm>       { using ty =glm::i8 ;};
 template <>struct enu_vec<image_formats::rgba32i>        { using ty =glm::i32vec4;};
 template <>struct enu_vec<image_formats::rgba16i>        { using ty =glm::i16vec4 ;};
 template <>struct enu_vec<image_formats::rgba8i>         { using ty =glm::i8vec4;};
 template <>struct enu_vec<image_formats::rg32i>          { using ty =glm::f32vec2;};
 template <>struct enu_vec<image_formats::rg16i>          { using ty =glm::i16vec2 ;};
 template <>struct enu_vec<image_formats::rg8i>           { using ty =glm::i8vec2 ;};
-template <>struct enu_vec<image_formats::r32i>           { using ty =int32_t ;};
-template <>struct enu_vec<image_formats::r16i>           { using ty =int16_t;};
-template <>struct enu_vec<image_formats::r8i>            { using ty =int16_t ;};
+template <>struct enu_vec<image_formats::r32i>           { using ty =glm::i32 ;};
+template <>struct enu_vec<image_formats::r16i>           { using ty =glm::i16;};
+template <>struct enu_vec<image_formats::r8i>            { using ty =glm::i8 ;};
 template <>struct enu_vec<image_formats::rgba32ui>       { using ty =glm::u32vec4 ;};
 template <>struct enu_vec<image_formats::rgba16ui>       { using ty =glm::u16vec4 ;};
 template <>struct enu_vec<image_formats::rgb10_a2ui>     { using ty =glm::u16vec4 ;};
@@ -298,6 +331,78 @@ template <>struct enu_vec<image_formats::rg8ui>          { using ty =glm::u8vec2
 template <>struct enu_vec<image_formats::r32ui>          { using ty =uint32_t ;};
 template <>struct enu_vec<image_formats::r16ui>          { using ty =uint16_t ;};
 template <>struct enu_vec<image_formats::r8ui>           { using ty =uint8_t ;};
+
+template <>struct enu_vec<image_formats::rgb32f>           { using ty =glm::f32vec3 ;};
+template <>struct enu_vec<image_formats::rgb16f>           { using ty =glm::f16vec3 ;};
+template <>struct enu_vec<image_formats::rgb16>           { using ty =glm::i16vec3 ;};
+template <>struct enu_vec<image_formats::rgb8>           { using ty =glm::i8vec3 ;};
+template <>struct enu_vec<image_formats::rgb16_snorm>           { using ty =glm::i16vec3 ;};
+template <>struct enu_vec<image_formats::rgb8_snorm>           { using ty =glm::i8vec3 ;};
+template <>struct enu_vec<image_formats::rgb32i>           { using ty =glm::i32vec3 ;};
+template <>struct enu_vec<image_formats::rgb16i>           { using ty =glm::i16vec3 ;};
+template <>struct enu_vec<image_formats::rgb8i>           { using ty =glm::i8vec3 ;};
+template <>struct enu_vec<image_formats::rgb32ui>           { using ty =glm::ui32vec3 ;};
+template <>struct enu_vec<image_formats::rgb16ui>           { using ty =glm::ui16vec3 ;};
+template <>struct enu_vec<image_formats::rgb8ui>           { using ty =glm::ui8vec3 ;};
+
+
+
+template<image_formats imf>
+struct enu_unit{
+     using ty = glm::ivec4 };
+template <>struct enu_unit<image_formats::rgba32f>        { using ty =glm::f32;};
+template <>struct enu_unit<image_formats::rgba16f>        { using ty =f16;};
+template <>struct enu_unit<image_formats::rg32f>          { using ty =glm::f32;};
+template <>struct enu_unit<image_formats::rg16f>          { using ty =f16;};
+template <>struct enu_unit<image_formats::r11f_g11f_b10f> { using ty =f16;};
+template <>struct enu_unit<image_formats::r32f>           { using ty =glm::f32;};
+template <>struct enu_unit<image_formats::r16f>           { using ty =f16;};
+template <>struct enu_unit<image_formats::rgba16>         { using ty =glm::i16;};
+template <>struct enu_unit<image_formats::rgb10_a2>       { using ty =glm::i16;};
+template <>struct enu_unit<image_formats::rgba8>          { using ty =glm::i8;};
+template <>struct enu_unit<image_formats::rg16>           { using ty =glm::i16;};
+template <>struct enu_unit<image_formats::rg8>            { using ty =glm::i8;};
+template <>struct enu_unit<image_formats::r16>            { using ty =glm::i16 ;};
+template <>struct enu_unit<image_formats::r8>             { using ty =glm::i8 ;};
+template <>struct enu_unit<image_formats::rgba16_snorm>   { using ty =glm::i16;};
+template <>struct enu_unit<image_formats::rgba8_snorm>    { using ty =glm::i8 ;};
+template <>struct enu_unit<image_formats::rg16_snorm>     { using ty =glm::i16;};
+template <>struct enu_unit<image_formats::rg8_snorm>      { using ty =glm::i8 ;};
+template <>struct enu_unit<image_formats::r16_snorm>      { using ty =glm::i16;};
+template <>struct enu_unit<image_formats::r8_snorm>       { using ty =glm::i8 ;};
+template <>struct enu_unit<image_formats::rgba32i>        { using ty =glm::i32;};
+template <>struct enu_unit<image_formats::rgba16i>        { using ty =glm::i16 ;};
+template <>struct enu_unit<image_formats::rgba8i>         { using ty =glm::i8;};
+template <>struct enu_unit<image_formats::rg32i>          { using ty =glm::f32;};
+template <>struct enu_unit<image_formats::rg16i>          { using ty =glm::i16 ;};
+template <>struct enu_unit<image_formats::rg8i>           { using ty =glm::i8 ;};
+template <>struct enu_unit<image_formats::r32i>           { using ty =glm::i32 ;};
+template <>struct enu_unit<image_formats::r16i>           { using ty =glm::i16;};
+template <>struct enu_unit<image_formats::r8i>            { using ty =glm::i8 ;};
+template <>struct enu_unit<image_formats::rgba32ui>       { using ty =glm::u32 ;};
+template <>struct enu_unit<image_formats::rgba16ui>       { using ty =glm::u16 ;};
+template <>struct enu_unit<image_formats::rgb10_a2ui>     { using ty =glm::u16 ;};
+template <>struct enu_unit<image_formats::rgba8ui>        { using ty =glm::u8 ;};
+template <>struct enu_unit<image_formats::rg32ui>         { using ty =glm::u32 ;};
+template <>struct enu_unit<image_formats::rg16ui>         { using ty =glm::u16 ;};
+template <>struct enu_unit<image_formats::rg8ui>          { using ty =glm::u8 ;};
+template <>struct enu_unit<image_formats::r32ui>          { using ty =glm::uint32_t ;};
+template <>struct enu_unit<image_formats::r16ui>          { using ty =glm::uint16_t ;};
+template <>struct enu_unit<image_formats::r8ui>           { using ty =glm::uint8_t ;};
+
+template <>struct enu_unit<image_formats::rgb32f>          { using ty =glm::f32 ;};
+template <>struct enu_unit<image_formats::rgb16f>          { using ty =glm::f16 ;};
+template <>struct enu_unit<image_formats::rgb16>           { using ty =glm::i16 ;};
+template <>struct enu_unit<image_formats::rgb8>            { using ty =glm::i8 ;};
+template <>struct enu_unit<image_formats::rgb16_snorm>     { using ty =glm::i16 ;};
+template <>struct enu_unit<image_formats::rgb8_snorm>      { using ty =glm::i8 ;};
+template <>struct enu_unit<image_formats::rgb32i>          { using ty =glm::i32 ;};
+template <>struct enu_unit<image_formats::rgb16i>          { using ty =glm::i16 ;};
+template <>struct enu_unit<image_formats::rgb8i>           { using ty =glm::i8 ;};
+template <>struct enu_unit<image_formats::rgb32ui>         { using ty =glm::uint32_t ;};
+template <>struct enu_unit<image_formats::rgb16ui>         { using ty =glm::uint16_t ;};
+template <>struct enu_unit<image_formats::rgb8ui>          { using ty =glm::uint8_t ;};
+
 glm::lowp_ivec4 uint32ToRGBA(uint32_t color) {
     glm::ivec4 s;
     s.r = (color >> 24) & 0xFF; // Extract Red channel (highest byte)
@@ -339,7 +444,9 @@ TEXTURE_2D_MULTISAMPLE_ARRAY= 10 ,  // Combines 2D array  and 2D multisample typ
 size_t im_size[]= {8 ,16 ,32 ,164 ,128 ,256 ,512 ,1024 ,2048 ,4096 ,8192 ,16384 ,32768};
 
 struct image1D {
-    std::string name;
+    // std::string name;
+    uint32_t x;
+    uint32_t y;
     uint32_t width; 
     uint32_t imageSize=0;
     image_format imageFormat;
@@ -348,7 +455,7 @@ struct image1D {
     uint8_t bdc;
     int8_t bd ;
     uint8_t length;
-    uint8_t bitdIm(uint8_t pos){
+    uint8_t bitdim(uint8_t pos){
         switch(pos){
             case 0 :{return bitdepth_r(imageFormat);}
             case 1 :{return bitdepth_g(imageFormat);}
@@ -356,20 +463,40 @@ struct image1D {
             case 3 :{return bitdepth_a(imageFormat);}
         }
     };
-    void putAt(uint32_t pt,enu_vec<imageFormat>::ty v){
-        for(int i=0;i<length;i++){ 
-            uint8_t bdc=bitdIm(i);              
-            uint32_t mask = 1<<bdc -1;          
-            data[byd*pt + i*bdc/8 ] += v[i] & mask 
+    template <image_formats fm>
+    void putAt(uint64_t pt,enu_vec<fm>::ty v){
+        if(fm==imageFormat){
+            std::memcpy(  data+pt*byd, &v,byd) ;
+            return ;
         }
+mask = 1<<bdc -1;
+maskd=1<<(sizeof(enu_vec<fm>::ty)/length())-1;      
+for(int i=0;i<length;i++){ 
+    uint8_t bdc=bitdim(i);              
+    uint32_t mask = 1<<bdc -1;          
+    data[byd*pt + i*bdc/8 ] += v[i] & mask 
+}
     };
-    enu_vec<imageFormat>::ty getAt(uint32_t pt){
-        ty v;
-        mask = 1<< bdc-1;
-        for(int i=0;i<length;i++){ 
-            v[i]=data[byd*pt] & (mask<<((l -i -1)*bdc) );
+    template <image_formats fm>
+    enu_vec<fm>::ty getAt(uint64_t pt){
+        enu_vec<fm>::ty v;
+        if(fm==imageFormat){
+            &v = data+pt*byd;
+            return v;
         }
-        return v;
+        
+            mask = 1<<bdc -1;
+            uint32_t maskd=1<<(sizeof(enu_vec<fm>::ty)/length())-1;
+            if(length>1){
+                for(int i=0;i<length;i++){ 
+                    v[i]= (data+byd*pt) & (mask<<((l -i -1)*bdc) );
+                    v[i]*= (maskd/mask);
+                }
+            } 
+            else {v = data[byd*pt] & (mask<<((l-1)*bdc));v*= (maskd/mask); };
+            return v;
+        }
+      
     };
     image2D loadChannel(uint8_t s){
         int8_t bypd= bdc/8;
@@ -431,45 +558,72 @@ if constexpr (bitedepths<imageFormat>::RGBA()){
 
     };
     
-
-    decltype(*this) to(image_format fm){
+    template<image_format fm>
+    decltype(*this) to(){
         decltype(*this) im(width,height,fm);
         im.imageFormat=fm;
         int8_t bdCur=bd;
         int8_t bdDest=bitd(fm);
         for(int i=0;i<imageSize){
             int8_t bitsOffsetCur=0;
-            enu_vec<imageFormat>::ty cr = getAt(i);
-            enu_vec<fm> re ;
+            enu_vec<fm>::ty cr = getAt<enu_vec<fm>::ty>(i);
             for(int j =0;j< length ;j++){
                 uint8_t bitCur = bitdIm(i);
                 uint8_t bitDest = im.bitdIm(i);
                 
                 uint32_t maskCur = 1<<bitCur-1;
                 uint32_t maskDest = 1<<bitDest-1; 
-                re[j] = (float)cr[j] * (maskDest/maskCur);
+                re[j] = (float)(cr[j] * (maskDest/maskCur));
             }
             im.putAt(i,re)
 
         };
         return i;
     };
+    bool blend(uint32_t w, uint32_t h , void* d,uint32_t x,uint32_t y){//TODO
+        if(w+x>( width-1) or (h+y)>(height-1) ){return false;}
+        for(uint32_t i;i<h;i++){
+        std::memcpy(data+((y+i)*width+x)*byd , d + i*w*byd, w*byd);
+        }
+    };  
+    bool blit(uint32_t w, uint32_t h , void* d,uint32_t x,uint32_t y){
+         if(w+x>( width-1) or (h+y)>(height-1) ){return false;}
+        for(uint32_t i;i<h;i++){
+        std::memcpy(data+((y+i)*width+x)*byd , d + i*w*byd, w*byd);
+        }
+        return true;
+    };  
+
     void ImageSize(){imageSize=width*height;bd=bitd(imageFormat);bdc = bitdepth_r(imageFormat);byd = bitd(imageFormat)/8 ;length=enu_vec<imageFormat>::ty::length();}
+    void init(){ImageSize();data= new uint8_t[(byd * imageSize];}
     
-    image1D(size_t s,image_format fm) : width(s),height(s),imageFormat(fm){ImageSize();};
+    image1D(size_t s,image_format fm) : width(s),height(s),imageFormat(fm){init();};
 };
 struct image2D : image1D {
     uint32_t height;
-
+    void blend(uint32_t w, uint32_t h , void* d,uint32_t x,uint32_t y){
+        for(uint32_t i;i<h;i++){
+        std::memcpy(data+((y+i)*width+x)*byd , d + i*w*byd, w*byd);
+        }
+    };  
+    void blit(uint32_t w, uint32_t h , void* d,uint32_t x,uint32_t y){
+        for(uint32_t i;i<h;i++){
+        std::memcpy(data+((y+i)*width+x)*byd , d + i*w*byd, w*byd);
+        }
+    };  
     
-    image2d(uint32_t size,image_format fm) : width(w),height(h),imageFormat(fm) {ImageSize();};
-    image2D(uint32_t w,uint32_t h,image_format fm) : width(w),height(h),imageFormat(fm){ImageSize();};
+    image2d(uint32_t size,image_format fm) : width(w),height(h),imageFormat(fm) {Init();};
+    image2D(uint32_t w,uint32_t h,image_format fm) : width(w),height(h),imageFormat(fm){Init();};
 
 };
+struct aimage2D : std::vector<image2D>{ 
+    uint32_t swidth;
+    uint32_t sheight;
+}
 struct image3D : image1D {
     uint32_t size_t height ;
     uint32_t size_t depth ;
-    image2D(uint32_t w,uint32_t h,uint32_t d,image_format fm) : width(w),height(h),depth(d),imageFormat(fm){ImageSize();};
+    image3D(uint32_t w,uint32_t h,uint32_t d,image_format fm) : width(w),height(h),depth(d),imageFormat(fm){Init();};
 };
 
 image2D im8(image_format imf){return image2d(8,imf);}
@@ -836,7 +990,6 @@ struct Tmap {
     };
 tmapOps ops;
 };
-#include <math.h>
 template <quality::QUALITY Q>
 struct material   {
     public:
@@ -941,6 +1094,17 @@ float dZdx = (hR - hL) / (2.0f * dx);
 
     }
 };
+#define QUALITIES_ENUM 0,1,2,3,4,5,6,7
+
+struct {
+    #define NAMED_MATERIALS_DEF(n)     std::vector<named<material<n>>> materials##n;
+    REPEAT(NAMED_MATERIALS_DEF,QUALITIES_ENUM) 
+}named_materialPool;
+struct {
+    #define MATERIALS_DEF(n)     std::vector<material<n>*> materials##n;
+    REPEAT(MATERIALS_DEF,QUALITIES_ENUM) 
+}materialPool;
+
 struct particle{
     std::string name ;
 
@@ -1033,7 +1197,7 @@ enum TopologyPrimitive {
 
 
 #include <petri/vect.hpp>
-template <DIM S>
+template <DIM S , quality::QUALITY q>
 struct mesh {
     using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
     using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>;
@@ -1061,18 +1225,30 @@ struct mesh {
         std::pair<uint32_t,uint32_t> lines;
         std::pair<uint32_t,uint32_t> faces;
         private: 
-        material* material;
+        material<Q>* material;
     };
     struct materialGroup: group   {
-        std::vector<material*> materials;
+        std::vector<material<Q>*> materials;
     }
     private:
     std::vector<group> groups ;
     std::vector<materialsGroup> materialsGroup;
     
 };
+struct {
+    #define DEF_MESHES2(n)     std::vector<mesh<2,n>> models2##n;
+    #define DEF_MESHES3(n)     std::vector<mesh<3,n>> models3##n;
+    REPEAT(DEF_MESHES2,QUALITIES_ENUM)
+    REPEAT(DEF_MESHES3,QUALITIES_ENUM)
+}meshPool;
+struct {
+    #define DEF_NMESHES2(n)     std::vector<named<mesh<2,n>*>> models2##n;
+    #define DEF_NMESHES3(n)     std::vector<named<mesh<3,n>*>> models3##n;
+    REPEAT(DEF_NMESHES2,QUALITIES_ENUM)
+    REPEAT(DEF_NMESHES3,QUALITIES_ENUM)
+}namedMeshPool;
 
-template <DIM S> 
+template <DIM S,quality::QUALITY Q> 
 struct model : mesh<S> {
     struct manifold { // Have a group conventiion
         std::string name;
@@ -1083,76 +1259,76 @@ struct model : mesh<S> {
          
         std::pair<uint32_t,uint32_t> lines;
         std::pair<uint32_t,uint32_t> faces;
-        std::vector<mesh<S>::materialGroup> mat ;
-        std::vector<mesh<S>::group> materialGroup ; 
+        std::vector<mesh<S,Q>::materialGroup> materialGroups ;
+        std::vector<mesh<S,Q>::group> groups ; 
     };
     std::vector<manifold > manifolds;
 };
 
+struct {
+    #define DEF_MODELS2(n)     std::vector<model<2,n>> models2##n;
+    #define DEF_MODELS3(n)     std::vector<model<3,n>> models3##n;
+    REPEAT(DEF_MODELS2,QUALITIES_ENUM)
+    REPEAT(DEF_MODELS3,QUALITIES_ENUM)
+    template <DIM d,quality::QUALITY q>
+    void add(model<d,q> m){
 
-template <DIM S>
-struct vertex {
- using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
-    using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>;    
-    
-    xyzwVert vert;
-    xyzVert nvert;
-    xyzwVert tvert;
-        
-}
+    }
+}modelPool;
+
+struct {
+    #define DEF_NMODELS2(n)     std::vector<named<model<2,n>*>> models2##n;
+    #define DEF_NMODELS3(n)     std::vector<named<model<3,n>*>> models3##n;
+    REPEAT(DEF_NMODELS2,QUALITIES_ENUM)
+    REPEAT(DEF_NMODELS3,QUALITIES_ENUM)
+
+    template <DIM d,quality::QUALITY q>
+    void add(model<d,q> m){
+        #define ADD_MMACRO(D,Q) case Q :{models##D##Q.push_back(m);return;}
+        #define ADD_MMACRO2(Q) ADD_MMACRO(2,Q) 
+        #define ADD_MMACRO3(Q) ADD_MMACRO(3,Q) 
+        if constexpr(d==2){
+            switch constexpr (q){
+                REPEAT(ADD_MMACRO2,QUALITIES_ENUM)
+            }
+        }
+        if constexpr (d==3) {
+            switch constexpr (q){
+                REPEAT(ADD_MMACRO3,QUALITIES_ENUM)
+            };
+        }
+    }
+
+}namedModelPool;
+template <DIM d,quality::QUALITY q>
+void addModel(model<d,q>& m ){
+    modelPool.add<d,q>(m);
+};
+template <DIM d,quality::QUALITY q>
+void addModel(model<d,q>& m,std::string name ){addModel<d,q>(m);
+
+};
+
 template <DIM S>
 struct mesh_prim  {
         using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
     using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>;
 
-    
-    bool bPOINT_LIST;
-    bool bLINE_LIST;
-    bool bLINE_STRIP;
-    bool bTRIANGLE_LIST;
-    bool bTRIANGLE_STRIP;
-    bool bTRIANGLE_FAN;
-    bool bLINE_LIST_WITH_ADJACENCY;
-    bool bLINE_STRIP_WITH_ADJACENCY;
-    bool bTRIANGLE_LIST_WITH_ADJACENCY;
-    bool bTRIANGLE_STRIP_WITH_ADJACENCY;
-    bool bPATCH_LIST;
 
-    std::vector<xyzwVert> pPOINT_LIST ;
-    std::vector<xyzwVert> pLINE_LIST ;
-    std::vector<xyzwVert> pLINE_STRIP ;
-    std::vector<xyzwVert> pTRIANGLE_LIST ;
-    std::vector<xyzwVert> pTRIANGLE_STRIP ;
-    std::vector<xyzwVert> pTRIANGLE_FAN ;
-    std::vector<xyzwVert> pLINE_LIST_WITH_ADJACENCY ;
-    std::vector<xyzwVert> pLINE_STRIP_WITH_ADJACENCY ;
-    std::vector<xyzwVert> pTRIANGLE_LIST_WITH_ADJACENCY ;
-    std::vector<xyzwVert> pTRIANGLE_STRIP_WITH_ADJACENCY ;
-    std::vector<xyzwVert> pPATCH_LIST ;
+    #define PRIMITIVE_ENUM POINT_LIST,LINE_LIST,LINE_STRIP,TRIANGLE_LIST,TRIANGLE_STRIP,TRIANGLE_FAN,LINE_LIST_WITH_ADJACENCY,LINE_STRIP_WITH_ADJACENCY,TRIANGLE_LIST_WITH_ADJACENCY,TRIANGLE_STRIP_WITH_ADJACENCY,PATCH_LIST
+    #define PRIM_DEFS(n,NAME) name##n
+
+    #define NORMALS(name) PRIM_DEFS(n,name) 
+    #define TEXTURES(name) PRIM_DEFS(t,name)
+
+    #define VERTS(name) PRIM_DEFS(v,name) 
+    #define PARAMS(name) PRIM_DEFS(p,name)
+
+    REPEAT(NORMALS,PRIMITIVE_ENUM)
+    REPEAT(TEXTURES,PRIMITIVE_ENUM)
+    REPEAT(VERTS,PRIMITIVE_ENUM)
+    REPEAT(PARAMS,PRIMITIVE_ENUM)
     
-    std::vector<xyzVert> nvert_POINT_LIST ;
-    std::vector<xyzVert> nvert_LINE_LIST ;
-    std::vector<xyzVert> nvert_LINE_STRIP ;
-    std::vector<xyzVert> nvert_TRIANGLE_LIST ;
-    std::vector<xyzVert> nvert_TRIANGLE_STRIP ;
-    std::vector<xyzVert> nvert_TRIANGLE_FAN ;
-    std::vector<xyzVert> nvert_LINE_LIST_WITH_ADJACENCY ;
-    std::vector<xyzVert> nvert_LINE_STRIP_WITH_ADJACENCY ;
-    std::vector<xyzVert> nvert_TRIANGLE_LIST_WITH_ADJACENCY ;
-    std::vector<xyzVert> nvert_TRIANGLE_STRIP_WITH_ADJACENCY ;
-    std::vector<xyzVert> nvert_PATCH_LIST ;
-    
-    std::vector<xyzVert> tvert_POINT_LIST ;
-    std::vector<xyzVert> tvert_LINE_LIST ;
-    std::vector<xyzVert> tvert_LINE_STRIP ;
-    std::vector<xyzVert> tvert_TRIANGLE_LIST ;
-    std::vector<xyzVert> tvert_TRIANGLE_STRIP ;
-    std::vector<xyzVert> tvert_TRIANGLE_FAN ;
-    std::vector<xyzVert> tvert_LINE_LIST_WITH_ADJACENCY ;
-    std::vector<xyzVert> tvert_LINE_STRIP_WITH_ADJACENCY ;
-    std::vector<xyzVert> tvert_TRIANGLE_LIST_WITH_ADJACENCY ;
-    std::vector<xyzVert> tvert_TRIANGLE_STRIP_WITH_ADJACENCY ;
-    std::vector<xyzVert> tvert_PATCH_LIST ;
     mesh_prim(mesh<S>& p){
         if(p.lines.size()>0){bLINES_STRIP = true;
         for(const std::vector<uint32_t> line : p.lines){
@@ -1168,7 +1344,7 @@ struct mesh_prim  {
     };
 };
 template <DIM S>
-struct model_prim {
+struct model_prim : mesh_prim<S>{
     mesh_prim<S> mesh;
 
     
@@ -1536,18 +1712,6 @@ class coords
     }
 };
 
-namespace style {
-    /*
-         Can apply styles modifing shading modes ( textures and tesselation rules)
-    Produces another elem most of the time
-    Does not modify animations
-    */    
-    template <elem T>
-    class style {
-        virtual void apply(T* e){};
-    };
-    class 
-};
 
 // The scene object is always responsible for loading objects accordingly from the world partitioning system and space partitioning systems
 
@@ -1768,6 +1932,12 @@ struct shaderModule {
     
     }
 
+    /*
+         Can apply styles modifing shading modes ( textures and tesselation rules)
+    Produces another elem most of the time
+    Does not modify animations
+    */    
+
 
 
 class PipeLineAdapter {
@@ -1779,9 +1949,13 @@ class PipeLineAdapter {
     };
 };
 
+class style {
+    virtual void apply(PipeLineAdapter e){};
+};
+
 
 class PipeLines {
 
 };
-};
+
 #endif

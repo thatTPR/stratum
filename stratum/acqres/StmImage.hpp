@@ -5,25 +5,247 @@
 #include "acqres.hpp"
 #include <glm/glm.hpp>
 #include <cstring>
+#include <iostream>
+#include <algorithm>
+#include "clib.hpp"
+#include <cmath>
+
 /*
-PNG []
-JPEG 
-BMP []
+PNG [x]
+JPEG []
+BMP [/]
 TGA [x]
 GIF []
 HDR
 */
 
+int64_t findpalette(void* palette,uint64_t *palettesize,size_t entrysize,void* entry){
+    uint64_t n=*palettesize/2;
+    for(uint64_t i=*palettesize/2;i>0;i=<*palettesize;){
+        int s =std::memcmp(palette+(i-1)*entrysize,entry,entrysize)
+        if(s==0){return i;}
+        n/=n==1?2:1;
+        if(s<0){i+=n;}
+        else {i+=n;}
+    };
+    return -1
+} ;
+uint64_t insertpalette(void* palette,uint64_t *palettesize,size_t entrysize,void* entry){
+    uint64_t i;
+    for(i=0;i<*palettesize;i++){
+        int s =std::memcmp(palette+i*entrysize,entry,entrysize)
+        if(s<0){continue;}
+        else{break;}
+    };
+    for(uint64_t j=*palettesize;j>=i;j--){
+        std::memcpy(palette+j*entrysize,palette+(j-1)*entrysize,entrysize);
+    }
+    std::memcpy(palette+i*entrysize,entry,entrysize);
+    *palettesize++;
 
-// Png
+} ;
 
+void paletteGenerate(image2D& im, void* palette,uint64_t* palettesize){
+    *palettesize=0;
+    uint64_t imsize=im.imageSize*im.byd;
+    uint64_t min =  (1<<(im.byd*8-1) - 1 +(1<<(im.byd*8-1)));
+    min=min>imsize?imsize:min;
+    void* temp = new char[min];
+    for(uint64_t i=0;i<im.imageSize;i++){
+        if(findpalette(temp,palettesize,im.byd,im.data+i*im.byd) == -1){ 
+            insertpalette(temp,palettesize,im.byd,im.data+i*im.byd);};
+    };
+    palette = new char[(*palettesize)*im.byd];
+    std::memcpy(palette,temp,(*palettesize)*im.byd);
+    delete temp;
+};
+
+void loadDataInterlaceSubBytes(image2D& im,uint64_t* inds,uint64_t indslen,uint64_t destPt, uint64_t len,int8_t pdSrc, int8_t* src ){
+        uint8_t maskDest = (1<<im.bdc) -1;
+        // uint8_t maskSrc = (1<<pdSrc)  -1;
+        uint8_t nch = im.length;
+        uint8_t pdch = (pdSrc/nch);
+        uint8_t maskSrcch = maskSrc>>(pdSrc/nch);
+        float ratio = maskDest/maskSrcch;
+        for(uint64_t k=destPt;k<indsLen;){
+            for(int64_t i=0;i<len;i++){
+                int8_t s = src[i];
+                for(int j=0;j<nch;j++){
+                    int8_t r = s & (maskSrcch<< (pdch*(nch-j-1))>>(pdch(nch-j-1)));
+                    r *=ratio;
+                    std::memcpy(im.data+inds[k]*im.byd+j,r,1);
+                    k++;
+                }   
+            }
+        };
+}
+
+void wrDataInterlaceSubBytes(image2D& im,uint64_t* inds,uint64_t indslen,uint64_t srcPt, uint64_t len,int8_t pdDest, int8_t* dest ){
+        uint8_t maskSrc = (1<<im.bdc) -1;
+        uint8_t maskDest = (1<<pdDest)  -1;
+        uint8_t nch = im.length;
+        uint8_t pdch = (pdDest/nch);
+        uint8_t maskDestch = maskDest>>(pdDest/nch);
+        float ratio = maskDestch/maskSrc;
+
+        int8_t nchb = pdDest/nch;
+        int8_t nchbc=8/nchb;
+
+        for(uint64_t k=destPt;k<indsLen;){
+            for(int64_t i=0;i<len;i++){
+                std::memcpy(&r,im.data+inds[k]*im.byd+j,1);
+                uint8_t re[pdDest/8]; for(int m=0;m<pdDest/8;m++){re[m]=0;}
+                for(int j=0;j<nch;j++){
+                    uint8_t r =im.data+inds[k]*im.byd+j ;
+                    r =r*ratio & maskDestch;
+                    
+                    int8_t re[j/(pdDest/8)] |= r<<(nchbc%j)*nchb ;
+                    
+                }
+                std::memcpy(dest+k*(pdDest/8),re,(pdDest/8)); k++;if(k>indsLen){break;}
+            }
+        };
+};
+template <image_fromats fm>
+void loadDataInterlaceArr(image2D& im,uint64_t* inds,uint64_t indslen,uint64_t destPt,uint64_t len,int8_t pdSrc, int8_t* src ){
+                    uint64_t maskDest = (1<<im.bdc) -1;
+                    // uint64_t maskSrc = (1<<pdSrc)  -1;
+                    uint64_t nch = im.length;
+                    uint64_t pdch = (pdSrc/nch);
+                    uint64_t maskSrcch = maskSrc>>(pdSrc/nch);
+                    float ratio = maskDest/maskSrcch;
+                for(uint64_t k=destPt;k<indsLen;){
+        for(int64_t i=0;i<len;i+=pdSrc/8){
+           enu_vec<fm>::ty res ;
+            for(int j=0;j<nch;j++){
+                res[j] = src[i];
+                res[j] =res[j]  & (maskSrcch<< (pdch*(nch-j-1))>>(pdch(nch-j-1)));
+                res[j] *=ratio;
+            }   
+            std::memcpy(im.data+inds[k]*im.byd,res,im.byd);
+        }
+    }
+}
+
+void wrDataInterlaceArr(image2D& im,uint64_t* inds,uint64_t indslen,uint64_t srcPt, uint64_t len,int8_t pdDest, int8_t* dest ){
+     uint64_t maskDest = (1<<pdDest) -1;
+    uint64_t maskSrc = (1<<im.bd)  -1;
+    uint64_t nch = im.length;
+    uint64_t pdch = (pdDest/nch);
+    uint64_t maskSrcch = maskSrc>>(im.pd/nch() *(nch-1));
+    float ratio = maskDest/maskSrcch;
+    for(uint64_t k=destPt;k<indsLen;){
+        for(uint64_t i=0;i<len;i++){
+            enu_vec<fm>::ty res ;
+            std::memcpy(&res,im.data+inds[k]*im.byd,im.byd);
+        for(int j=0;j<nch;j++){
+            decltype(res[j]) r = res[j] ;
+            r*=ratio;
+            int8_t s[pdDest/nch] ;
+            for(int k=0;k<pdDest/nch;i++) {
+                s[k]=(1<<8 -1)<<(8*k) &r >>8*k; 
+            }
+            std::memcpy(dest+i*pdDest/8 + j * pdDest/(8*nch) ,&s,pdDest/nch);k++;
+            if(k>indsLen){break;}
+        }
+           
+    }
+}
+};
+
+
+void loadDataArrSubBytes(image2D& im,uint64_t destPt,uint64_t len,int8_t pdSrc, int8_t* src ){
+                    uint8_t maskDest = (1<<im.bdc) -1;
+                    // uint8_t maskSrc = (1<<pdSrc)  -1;
+                    uint8_t nch = im.length;
+                    uint8_t pdch = (pdSrc/nch);
+                    uint8_t maskSrcch = maskSrc>>(pdSrc/nch *(nch-1));
+                    float ratio = maskDest/maskSrcch;
+        for(uint64_t i=0;i<len;i++){
+            int8_t s = src[i];
+            for(int j=0;j<nch;j++){
+                int8_t r = s & (maskSrcch<< (pdch*(nch-j-1))>>(pdch(nch-j-1)));
+                r *=ratio;
+                std::memcpy(im.data+destPt+i*im.byd+j,&r,1);
+            }   
+        }    
+}
+void wrDataArrSubBytes(image2D& im,uint64_t srcPt,uint64_t len,int8_t pdDest, int8_t* dest){
+    uint8_t maskSrc = (1<<im.bdc) -1;
+// uint8_t maskDest = (1<<pdDest)  -1;
+uint8_t nch = im.length;
+uint8_t pdch = (pdDest/nch);
+uint8_t maskDch = maskDest>>(pdch>>(nch-1));
+float ratio = maskDch/maskSrc;
+
+int8_t nchb = pdDest/nch;
+int8_t nchbc=8/nchb;
+for(uint64_t i=0;i<len;i++){
+    enu_vec<fm>::ty res;
+    std::memcpy(&res,im.data+srcPt+i*im.byd,nch);
+    uint8_t re[pdDest/8];for(int m=0;m<pdDest/8;m++){re[m]=0;}; int8_t offs=0;
+    for(int j=0;j<nch;j++){
+        decltype(res[j]) r = res[j];
+        r *=ratio;
+        re[offs/(pdDest/8)]|=r<<(nchb*(nchbc - (nchbc%offs)));
+        offs++;
+    }   
+    std::memcpy(dest+i*(pdDest/8),&r,pdDest/8);
+}
+
+};
+template <modules::image_formats fm>
+void loadDataArr(image2D& im,uint64_t destPt,uint64_t len,int8_t pdSrc, int8_t* src ){
+                    uint64_t maskDest = (1<<im.bdc) -1;
+                    uint64_t maskSrc = (1<<pdSrc)  -1;
+                    uint64_t nch = im.length;
+                    uint64_t pdch = (pdSrc/nch);
+                    uint64_t maskSrcch = maskSrc>>(pdSrc/nch);
+                    float ratio = maskDest/maskSrcch;
+           
+        for(uint64_t i=0;i<len;i+=pdSrc/8){
+            enu_vec<fm>::ty res ;
+            for(int j=0;j<nch;j++){
+                res[j] = src[i];
+                res[j] =res[j]  & (maskSrcch<< (pdch*(nch-j-1))>>(pdch(nch-j-1)));
+                res[j] *=ratio;
+            }   
+            std::memcpy(im.data+destPt+i+j,&res,im.byd);
+        }
+        }
+template <modules::image_fromats fm>
+void wrDataArr(image2D& im,uint64_t srcPt,uint64_t len,int8_t pdDest, int8_t* dest){
+    uint64_t maskDest = (1<<pdDest) -1;
+    uint64_t maskSrc = (1<<im.bd)  -1;
+    uint64_t nch = im.length;
+    uint64_t pdch = (pdDest/nch);
+    uint64_t maskSrcch = maskSrc>>(im.pd/nch() *(nch-1));
+    float ratio = maskDest/maskSrcch;
+       
+    for(uint64_t i=0;i<len;i++){
+        enu_vec<fm>::ty res ;
+        std::memcpy(&res,im.data+srcPt+i*im.byd,im.byd);
+        for(int j=0;j<nch;j++){
+            decltype(res[j]) r = res[j] ;
+            r*=ratio;
+            int8_t s[pdDest/nch] ;
+            for(int k=0;k<pdDest/nch;i++) {
+                s[k]=(1<<8 -1)<<(8*k) &r >>8*k; 
+            }
+            std::memcpy(dest+i*pdDest/8 + j * pdDest/(8*nch) ,&s,pdDest/nch);
+        }   
+    }
+}
+
+struct png {
+    
 struct pngHeader {
     int8_t bit=0x89;
     int8_t png[3] = {0x50,0x4E, 0x47};
     int8_t dosEnd[2]={0x0D,0x0A} 
     int8_t com = 0x1A;
     int8_t UNIXend = 0x0A;
-}
+};
 /// @defgroup png Chunks
 int64_t tag(char* s){
     int8_t n = s[0];
@@ -31,7 +253,7 @@ int64_t tag(char* s){
     n = s[1];res+=n;res=res<<8;
     n=s[2];res+=n;res=res<<8;
     n=s[3];res+=n;
-}
+};
 #define PNG_TAG(n) const int64_t png##n=tag(#n);
 #define PNGC length=pc.length; \
      name=pc.name; \
@@ -42,12 +264,14 @@ struct pngC{
     int64_t name;
     data d;
     int64_t crc;
-
-    pngC(pngC<int8_t*> pc;){
-     length=pc.length;
-     name=pc.name;
-     crc=pc.crc;
-    d = std::memcpy(&d,pc.bytes,length);    
+    void set(pngC<int8_t*>& pc){
+        length=pc.length;
+        name=pc.name;
+        crc=pc.crc;
+    }
+    pngC<data>(pngC<int8_t*>& pc){
+        set(pc);
+     d = std::memcpy(&d,pc.bytes,length);    
 }
 };
 
@@ -95,7 +319,7 @@ interlace method (1 byte, values 0 "no interlace" or 1 "Adam7 interlace") (13 da
 //tRNS,  //contains transparency information. For indexed images, it stores alpha channel values for one or more palette entries. For truecolor and grayscale images, it stores a single pixel value that is to be regarded as fully transparent.
 //zTXt,  //contains compressed text (and a compression method marker) with the same limits as tEXt.
 /// 
-struct png_IDHRd {
+struct IDHRd {
     /*
 Color    Allowed    Interpretation
    Type    Bit Depths
@@ -134,31 +358,16 @@ Color    Allowed    Interpretation
     int8_t colortype ;// (1 byte, values 0, 2, 3, 4, or 6);
     int8_t compression ;// method (1 byte, value 0);
     int8_t filter ;// method (1 byte, value 0);
-    int8_t interlace ;// method (1 byte, values 0 "no interlace" or 1 "Adam7 interlace") (13 data bytes total).;
+    int8_t interlace ;// method (1 byte, values 0 "no interlace" or 1 "Adam7 interlace") 
     
 }
-using png_IDHR = pngC<png_IDHRd>;
+using IDHR = pngC<IDHRd>;
 
-typedef glm::i8vec3 png_PLTEd;
-using png_PLTE = pngC<png_PLTEd*> ;
+typedef glm::u8vec3 PLTEd;
+using PLTE = pngC<PLTEd*> ;
 
-struct png_IDATd {
-
-    int8_t deflate;
-    int8_t zlib_fcheck:
-    int8_t* block;
-    int8_t zlib_check;
-}
-struct png_IDAT : pngC<png_IDATd> {
-  
-    png_IDAT(pngC<int8_t*> pc){PNGC
-        d.deflate=pc.d[0];
-        d.zlib_fcheck = pc.d[1];
-        d.block = std::memcpy(d.block,pc+2,length -3);
-        d.slib_check = pc[length-1];
-    };
-}
-union png_tRNSd {
+struct IDAT : pngC<int8_t*> ;
+union tRNSd {
     int8_t* three;
     int16_t* zero;
     struct {
@@ -168,10 +377,27 @@ union png_tRNSd {
             
     } two;
 };
-using png_tRNS = pngC<png_tRNSd>;
-using png_gAMA = pngC<int64_t>;
+struct tRNS : pngC<tRNSd>{
+    tRNS(pngC<int8_t*> pc,pnh_IDHR& idhr,PLTE& plte){
+        set(pc);
+        PtRNS = pngC<pngtRNSd>(pc) ; 
+        switch(idhr.d.colortype){
+            case 3 : {
+                std::memcpy(&d.three,pc.d ,plte.length/3);
+            }
+            case 0 : {
+                std::memcpy(&d.zero,pc.d, pow(2,plte.d.bitdepth)-1);
+            }
+            case 2 : {
+                std::memcpy(&d.two.r,pc.d, pow(2,plte.d.bitdepth)-1);
+                std::memcpy(&d.two.g,pc.d + pow(2,idhr.d.bitdepth)-1, pow(2,idhr.d.bitdepth)-1);
+                std::memcpy(&d.two.b,pc.d + (pow(2,idhr.d.bitdepth) -1)*2  , pow(2,idhr.d.bitdepth)-1);
+            };}          
+    };
+};
+using gAMA = pngC<int64_t> ;
 
-struct png_cHRMd {
+struct cHRMd {
 int32_t WhitePointx;   // 4 bytes
 int32_t WhitePointy;   // 4 bytes
 int32_t Redx;    //        4 bytes
@@ -181,7 +407,7 @@ int32_t Greeny;    //      4 bytes
 int32_t Bluex;    //       4 bytes
 int32_t Bluey;    //       4 bytes
 }
-using png_cHRM = pngC<png_cHRMd>;
+using cHRM = pngC<cHRMd>;
 
 enum pngsRGB {
  Perceptual =0,
@@ -189,25 +415,44 @@ enum pngsRGB {
  Saturation =2,
  Absolute_colorimetric =3
 }
-typedef int8_t png_sRGBd ;
-using png_sRGB = pngC<png_sRGBd> ;
+typedef int8_t sRGBd ;
+using sRGB = pngC<sRGBd> ;
 
-struct png_iCCPd {
+struct iCCPd {
     char* str;
     int8_t null;
     int8_t compression;
     int8_t *nBytes;
 }
-using png_iCCP = pngC<png_iCCPd> 
-struct png_tEXtd {
+struct iCCP : pngC<iCCPd>{
+    iCCP(pngC<int8_t*> pc){
+        set(pc);
+        int i;
+        for(i=0;pc.d[i]!='\0';i++ ){}
+        std::memcpy(d.str,pc.d,i+1);
+        d.null = '\0';
+        d.compression = pc.d[i+1];
+        std::memcpy(d.nBytes,pc.d+i+2);
+    };
+} ;
+struct tEXtd {
     char* str;
     int8_t null;
     int8_t *nBytes;
 }
-using png_iTXt = pngC<png_tEXtd>; 
-using png_zTXt = pngC<png_iCCPd> ;
+struct pngtEXt : pngC<tEXtd> {
+    tEXt(pngC<int8_t*> pc){
+        set(pc);
+        int i;
+        for(i=0;pc.d[i]!='\0';i++ ){}
+        std::memcpy(d.str,pc.d,i+1);
+        piCCP.d.null = '\0';
+        std::memcpy(d.nBytes,pc.d+i+1);break;
+    };
+}; 
+using zTXt = ICCP ;
 
-struct png_iTXtd {
+struct iTXtd {
     char* str;
     int8_t null;
     int8_t compressionFlag;
@@ -219,25 +464,71 @@ struct png_iTXtd {
 
     char* nBytes;
 }
-using png_iTXt = pngC<png_iTXtd>;
+using iTXt : pngC<iTXtd>{
+     iTXt(pngC<int8_t*> pc){
+int i;
+for(i=0;pc.d[i]!='\0';i++ ){}
+std::memcpy(d.str,pc.d,i+1);
+d.null = '\0';
+d.compressionFlag= pc.d[i+1];
+d.compressionMethod=pc.d[i+2];
+int j;
+for(j=i+4;pc.d[j] !='\0';j++){}
+std::memcpy(d.langtag,pc.d+i+4 ,j+1);
+d.null2='\0';int k;
+for(k=i+4 + j+2;pc.d[k] !='\0';k++){}
+std::memcpy(d.keyword,pc.d+i+4+j+2 ,k+1);
+d.null3='\0';
+std::memcpy(d.nBytes,pc.d +i+4+j+2+k+1,pc.length-i-4-j-2-k-1);
+     }
+};
 
-using png_bKGD = pngC<png_tRNSd>;
-struct png_pHYsd {
+struct bKGD : pngC<tRNSd>{
+bKGD(pngC<int8_t*> pc,IDHR& PIDHR){
+            set(pc);
+switch(PIDHR.d.colortype){
+            case 3 : {
+                std::memcpy(&PbKGD.d.three,pc.d ,PPLTE.length/3);
+            }
+            case 0 : {std::memcpy(&PbKGD.d.zero,pc.d, pow(2,PIDHR.d.bitdepth)-1);}
+            case 4 : {std::memcpy(&PbKGD.d.zero,pc.d, pow(2,PIDHR.d.bitdepth)-1);} 
+            case 2 : {
+                std::memcpy(&PbKGD.d.two.r,pc.d, pow(2,PIDHR.d.bitdepth)-1);
+                std::memcpy(&PbKGD.d.two.g,pc.d + pow(2,PIDHR.d.bitdepth)-1, pow(2,PIDHR.d.bitdepth)-1);
+                std::memcpy(&PbKGD.d.two.b,pc.d + (pow(2,PIDHR.d.bitdepth) -1)*2  , pow(2,PIDHR.d.bitdepth)-1);
+            };
+            case 6 : {
+                std::memcpy(&PbKGD.d.two.r,pc.d, pow(2,PIDHR.d.bitdepth)-1);
+                std::memcpy(&PbKGD.d.two.g,pc.d + pow(2,PIDHR.d.bitdepth)-1, pow(2,PIDHR.d.bitdepth)-1);
+                std::memcpy(&PbKGD.d.two.b,pc.d + (pow(2,PIDHR.d.bitdepth) -1)*2  , pow(2,PIDHR.d.bitdepth)-1);
+            }
+        }
+        }
+};
+struct pHYsd {
     int32_t unitx;
     int32_t unity;
     int8_t unitSpecifier;
 }
-using png_pHYs = pngC<png_pHYsd>;
-union png_sBITd {
+using pHYs = pngC<pHYsd>;
+union sBITd {
     int8_t zero;
     int8_t two[3];
     int8_t three[3];
     int16_t four;
     int32_t six;
 };
-using png_sBIT = pngC<png_sBITd>;
+using sBIT : pngC<sBITd>{
+    sBIT(pngC<int8_t*> pc,IDHR& PIDHR){
+        switch(PIDHR.colortype) {
+        case 0:{std::memcpy(&PsBIT.d.zero,pc.d,1);break;}; 
+        case 2:{std::memcpy(&PsBIT.d.two,pc.d,3);break;}; 
+        case 3:{std::memcpy(&PsBIT.d.three,pc.d,3);break;}; 
+        case 4:{std::memcpy(&PsBIT.d.four,pc.d,2);break;};
+        case 6:{std::memcpy(&PsBIT.d.six,pc.d,4);break;};}}
+};
 
-struct png_sPLTd {
+struct sPLTd {
     char* Palettename:    1-79 bytes (character string)
     int8_t null;
     int8_t Sampledepth;
@@ -259,12 +550,37 @@ struct png_sPLTd {
     rgbf* pl;
 
 }
-using png_sPLT = pngC<png_SPLd>;
+struct sPLT : pngC<SPLd> {
+    sPLT(pngC<int8_t*> pc){int i;
+for(i=0;i<pc.d[i]!='\0';i++){};
+std::memcpy(d.PaletteName,pc.d,i+1);
+d.null='\0';
+d.Sampledepth = pc.d[i+1];
 
-typedef uint16_t* png_hISTd ;
-using png_hIST = pngC<png_hISTd>;
+int l = length - i -2;
+switch(d.Sampledepth){
+    case 8 : {
+        d.pl = new sPLTd::rgbf[2* l/6];
+        for(int i=0;l>0;i++){
+            std::memcpy(&d.pl[i].one,pc.d+i+2 +i*6,4);
+            std::memcpy(&d.pl[i].frequency,pc.d+i+2 +i*6 +4,2);
+        }
+    }
+    case 16 : {
+        d.pl = new sPLTd::rgbf[2* l/10];
+            for(int i=0;l>0;i++){
+            std::memcpy(&d.pl[i].two,pc.d+i+2 +i*10,4);
+            std::memcpy(&d.pl[i].frequency,pc.d+i+2 +i*10 +8,2);
+        }
+    }
+};
+}
+}
 
-struct png_tIMEd {
+typedef uint16_t* hISTd ;
+using hIST = pngC<hISTd>;
+
+struct tIMEd {
    uint16_t Year;//:   2 bytes (complete; for example, 1995, not 95)
    uint8_t Month;//:  1 byte (1-12)
    uint8_t Day;//:    1 byte (1-31)
@@ -272,166 +588,340 @@ struct png_tIMEd {
    uint8_t Minute;//: 1 byte (0-59)
    uint8_t Second;//: 1 byte (0-60) 
 }
-using png_tIME = pngC<png_tIMEd>;
-struct png {
+using tIME = pngC<tIMEd>;
+
+struct IEND = pngC<void>;
+
     pngHeader head;
     std::vector<pngu> chunks;
 
-    image2D ld(std::string path ){
+    IDHR PIDHR;PLTE PPLTE; list<IDAT> PIDAT; IEND PIEND ;
+    #define PNG_DEF(p) ##p P##p ;
+    REPEAT(PNG_DEF, bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt )
+
+    int8_t& bd(){return PIDHR.bitdepth;}
+    int64_t& width(){return PIDHR.width;}
+    int64_t& height(){return PIDHR.height;}
+    void getImageSegment()
+
+    uint8_t nch;
+    uint8_t pltemask;
+        uint64_t pix;
+    IDAT& idat;
+    std::vector<uint8_t> decomp;
+    uLongf destLen ;
+
+    void loadPlte(image2D& im,uint64_t pt, uint64_t index){
+        uint64_t offs =  index%(8/bd());
+        uint8_t ind= idat.d[ index*(8/bd())] ;
+        uint8_t offset = bd()*(8/bd() - offs*(8/bd()))
+        uint8_t ind = ind & (pltemask << offset) >> offset;
+        glm::u8vec3 s =PPLTE.d[ind];
+        im.putAt<image_formats::rgb8>(x*y,s);
+    };
+    void loadData(image2D& im,uint64_t pt, uint64_t index){
+        uint64_t len = destLen ;
+        if(bd()<8 or (bd()/nch)<8){
+            loadDataArrSubBytes(im,pt,len,bd(),idat.d);}
+        else {
+            switch(im.imageFormat){
+                #define IMAGEFORMAT_CASE_LOAD(imf) \
+                case image_formats::imf :{loadDataArr<image_formats::imf>(im,pt,len,bd(),idat.d);};
+                REPEAT(IMAGEFORMAT_CASE_LOAD , r8ui,r16ui,rgb8ui,rgb1ui,rg8ui,rgba8ui);
+            }
+        }
+    };  
+    uint32_t wc ;
+    uint32_t hc ;
+    uint32_t na7;
+    std::vector<uint64_t> inds;
+    void loadDataAdam7(image2D& im,uint64_t pt, uint64_t index){
+        uint64_t len = destLen ;
+        if(bd()<8 or (bd()/nch)<8){
+            loadDataInterlaceSubBytes(im,inds.data(),inds.size(),pt,destLen,bd(),decomp.data());
+        }
+        else {
+            for(uint32_t i=0;i<len;i++){
+                switch(im.imageFormat){
+                    #define IMAGEFORMAT_CASE_LOAD_ADAM(imf) \
+                    case image_formats::imf :{loadDataInterlaceArr<image_formats::imf>(im,inds,inds.size(),pt,destLen,bd(),idat.d);};
+                    REPEAT(IMAGEFORMAT_CASE_LOAD_ADAM , r8ui,r16ui,rgb8ui,rgb1ui,rg8ui,rgba8ui);
+                }
+            }
+        }
+    };  
+
+    void Adam7Handle(image2D& im,uint16_t step, void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
+        if(loadPixel == loadPlte){
+                pltemask= 1<<bd() - 1;uint64_t i;
+                for( i=0;i<destLen*(8/bd());i++) {
+                    loadPlte(im,inds[pix+i],i);
+                }
+                pix+=i;
+                return ;}
+            if(bd() == im.bd   ){uint32_t i;
+                for(i=0;<i<destLen;i++){
+                    std::memcpy(im.data + inds[pix+i] * im.byd,decomp.data() + im.byd*i ,im.byd);
+                }
+            pix+=i ;return;
+            }
+            else {loadDataAdam7(im,pix,0);}
+    }
+    void a7setInds(){
+         wc = width()/8 ; // Set heights of 
+        hc = height()/8 ; // Set heights of 
+        na7 = wc*hc;
+        pix=0;
+        int8_t wcm=width()%8;int8_t hcm=height()%8;
+inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ; 
+        for(int i=1;i<na7;i*=2){
+            if(i%2==0){
+                for(int k=1;k<=i;k++){
+                    inds[i+k]=inds[i]+wd;
+                };wd/=2;
+            }
+            else {
+                for(int k=1;k<=i;k++){
+                    inds[i+k]=inds[i]+hd*width();
+                };hd/=2;
+            }
+        };
+    }
+    void loadAdam7(image2D& im, void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
+        a7setInds()
+            // if(PIDAT.size()!=256){std::cerr("IDAT chunk num != 256 Adam7 inoperable");}
+            int i=0;
+            for(idat : PIDAT ) { 
+                if(idat.length < IDAT_MAX_SIZE) {
+                decomp =std::vector<uint8_t>(idat.length * 1032);
+                    uncompress(decomp.data(),&destLen,idat.d,idat.length)    ;
+                    decomp.resize(destLen);
+                    Adam7Handle(i,im,loadPixel);
+                }
+                else {std::cerr("IDAT chunk too big");return;}
+                i++;};
+        }
+    
+    void loadNormalHandle(image2D& im,void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
+    
+         if(loadPixel == loadPlte){
+                   pltemask= 1<<bd() - 1;uint64_t i;
+                for( i=0;i<destLen*(8/bd());i++) {
+                    loadPlte(im,pix+i,i);
+                }
+                pix+=i;
+                return ;
+            }
+            if(bd() == im.bd   ){
+                std::memcpy(im.data + pix * im.byd,decomp.data() ,destLen);
+                pix+=destLen/im.byd ;return;
+            }
+            else {loadPixel(im,pix,0);}
+    }
+    #ifndef IDAT_MAX_SIZE
+    #define IDAT_MAX_SIZE 8193
+    #endif
+    void loadNormal(image2D& im,void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
+        pix=0;
+    
+        for( idat : PIDAT) {
+            if(idat.length < IDAT_MAX_SIZE ){
+                decomp =std::vector<uint8_t>(idat.length * 1032);
+               uncompress(decomp.data(),&destLen,idat.d,idat.length);
+               decomp.resize(destLen);
+                loadNormalHandle(im,loadPixel);
+            }
+            else {std::cerr("IDAT Chunk To big")return;}
+        };
+    }
+    void loadImage(image2D& im, void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
+        if(PIDHR.interlace) {loadAdam7(im,loadPixel);}
+        else {loadNormal(im,loadPixel);}
+    }
+    image2D ld(std::string path ,bool subImage=false, uint32_t x=0,uint32_t y=0, uint32_t width=0,uint32_t height=0){
         png p ;
         std::ifstream fi(path);
         ld<pngHeader>(p.head,fi);
 
-        png_IDHR PIDHR;png_PLTE PPLTE; list<png_IDAT> PIDAT; png_IEND pIEND ;
-
-        #define PNG_DEF(p) png_##p P##p ;
-        REPEAT(PNG_DEF bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt)
-        
-
-        png_tRNS PtRNS ;
+        tRNS PtRNS ;
+        #define BOOL_CHUNK(n) bool b##n=false;
+        REPEAT(BOOL_CHUNK ,bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt)
 
         while(!fi.eof()){
             pngChunk  pc;
             ld<pngChunk>(pc,fi);
-            
             switch(pc.name){
-                case pngIDHR : {PIDHR =png_IDHR(pc);break;}
-                case pngPLTE : {PPLTE=pngC<png_PLTEd>(pc);break;}
-                case pngIDAT : {PIDAT.push_back(png_IDAT(pc,idhr));break;}
-                case pngIEND : {break;};
-                case pngtRNS : {
-                    PtRNS = pngC<pngtRNSd>(pc) ; 
-                    switch(PIDHR.d.colortype){
-                        case 3 : {
-                            std::memcpy(&PtRNS.d.three,pc.d ,PPLTE.length/3);
-                        }
-                        case 0 : {
-                            std::memcpy(&PtRNS.d.zero,pc.d, pow(2,PIDHR.d.bitdepth)-1);
-                        }
-                        case 2 : {
-                            std::memcpy(&PtRNS.d.two.r,pc.d, pow(2,PIDHR.d.bitdepth)-1);
-                            std::memcpy(&PtRNS.d.two.g,pc.d + pow(2,PIDHR.d.bitdepth)-1, pow(2,PIDHR.d.bitdepth)-1);
-                            std::memcpy(&PtRNS.d.two.b,pc.d + (pow(2,PIDHR.d.bitdepth) -1)*2  , pow(2,PIDHR.d.bitdepth)-1);
-                        };
-                        }
-                        break;
-                    }
-                case pnggAMA : {PgAMA = pngC<pnggAMAd>(pc);
-                    std::memcpy(&PgAMA.d,pc.d,4);break;
-                }
-                case pngCHRM :{PcHRM = pngC<pngCHRMd>(pc);};
-                case pngsRGB :{psRGB = pngC<pngsRGBd>(pc);};
-                case pngiCCP :{piCCP = pngC<pngiCCPd>(pc);int i;
-                    for(i=0;pc.d[i]!='\0';i++ ){}
-                    std::memcpy(piCCP.d.str,pc.d,i+1);
-                    piCCP.d.null = '\0';
-                    piCCP.d.compression = pc.d[i+1];
-                    std::memcpy(piCCP.d.nBytes,pc.d+i+2);break;
+                case pngIDHR :{PIDHR=IDHR(pc);break;}
+                case pngPLTE :{PPLTE=pngC<PLTEd>(pc);break;}
+                case pngIDAT :{PIDAT.push_back(pc);break;}
+                case pngIEND :{PIEND=pngc<void>(pc);break;};
+                case pngtRNS :{btRNS=true;PrRNS =tRNS(pc,PIDHR,PPLTE);break;}
+                case pnggAMA :{bgAMA=true;PgAMA = gAMA(pc);break;}
+                case pngCHRM :{bCHRM=true;PcHRM = CHRM(pc);break;};
+                case pngsRGB :{bsRGB=true;psRGB = sRGB(pc);break;};
+                case pngiCCP :{biCCP=true;piCCP = iCCP(pc);break;};
+                case pngtEXt :{btEXt=true;PtEXt = tEXt(pc);break;};
+                case pngzTXt :{bzTXt=true;PzTXt = iCCP(pc);break;}
+                case pngiTXt :{biTXt=true;piTXt = iTXt(pc);break;}
+                case pngbKGD :{bbKGD=true;PbKGD = tRNS(pc);break;}
+                case pngpHYs :{bpHYs=true;PpHYs = pHYs(pc);}
+                case pngsBIT :{bsBIT=true;PsBIT = sBIT(pc,PIDHR);break;}
+                case pngsPLT :{bsPLT=true;PsPLT = sPLT(pc);break;}
+                case pnghIST :{bhIST=true;PhIST = hIST(pc);break;}
+                case pnhtIME :{btIME=true;PtIME = tIME(pc);break;}
                 };
-                case png_tEXt :{PtEXt = pngC<pngtEXtd>(pc);int i;
-                    for(i=0;pc.d[i]!='\0';i++ ){}
-                    std::memcpy(PtEXt.d.str,pc.d,i+1);
-                    piCCP.d.null = '\0';
-                    std::memcpy(PtEXt.d.nBytes,pc.d+i+1);break;
-                };
-                case pngzTXt:{PzTXt = pngC<pngiCCPd>(pc);int i;
-                    for(i=0;pc.d[i]!='\0';i++ ){}
-                    std::memcpy(PzTXt.d.str,pc.d,i+1);
-                    PzTXt.d.null = '\0';
-                    PzTXt.d.compression = pc.d[i+1] ;
-                    std::memcpy(PzTXt.d.nBytes,pc.d+i+2);break;}
-                case pngiTXt : {piTXt = pngC<pngiTXtd>(pc);int i;
-                    for(i=0;pc.d[i]!='\0';i++ ){}
-                    std::memcpy(PiTXt.d.str,pc.d,i+1);
-                    PiTXt.d.null = '\0';
-                    PiTXt.d.compressionFlag= pc.d[i+1];
-                    PiTXt.d.compressionMethod=pc.d[i+2];
-                    int j;
-                    for(j=i+4;pc.d[j] !='\0';j++){}
-                    std::memcpy(PiTXt.d.langtag,pc.d+i+4 ,j+1);
-                    PiTXt.d.null2='\0';int k;
-                    for(k=i+4 + j+2;pc.d[k] !='\0';k++){}
-                    std::memcpy(PiTXt.d.keyword,pc.d+i+4+j+2 ,k+1);
-                    PiTXt.d.null3='\0';
-                    std::memcpy(PiTXt.d.nBytes,pc.d +i+4+j+2+k+1,pc.length-i-4-j-2-k-1);
-                    break;
-                }
-                case pngbKGD : { PbKGD = pngC<png_tRNSd>(pc);
-                    switch(PIDHR.d.colortype){
-                        case 3 : {
-                            std::memcpy(&PbKGD.d.three,pc.d ,PPLTE.length/3);
-                        }
-                        case 0 : {std::memcpy(&PbKGD.d.zero,pc.d, pow(2,PIDHR.d.bitdepth)-1);}
-                        case 4 : {std::memcpy(&PbKGD.d.zero,pc.d, pow(2,PIDHR.d.bitdepth)-1);} 
-                        case 2 : {
-                            std::memcpy(&PbKGD.d.two.r,pc.d, pow(2,PIDHR.d.bitdepth)-1);
-                            std::memcpy(&PbKGD.d.two.g,pc.d + pow(2,PIDHR.d.bitdepth)-1, pow(2,PIDHR.d.bitdepth)-1);
-                            std::memcpy(&PbKGD.d.two.b,pc.d + (pow(2,PIDHR.d.bitdepth) -1)*2  , pow(2,PIDHR.d.bitdepth)-1);
-                        };
-                        case 6 : {
-                            std::memcpy(&PbKGD.d.two.r,pc.d, pow(2,PIDHR.d.bitdepth)-1);
-                            std::memcpy(&PbKGD.d.two.g,pc.d + pow(2,PIDHR.d.bitdepth)-1, pow(2,PIDHR.d.bitdepth)-1);
-                            std::memcpy(&PbKGD.d.two.b,pc.d + (pow(2,PIDHR.d.bitdepth) -1)*2  , pow(2,PIDHR.d.bitdepth)-1);
-                        }
-                    }
-                    break;
-                }
-                case pngpHYs : {PpHYs = pngC<png_pHYsd>(pc);}
-                case pngsBIT : {PsBIT = pngC<png_sBITd>(pc);
-                switch(PIDHR.colortype) {
-                    case 0:{std::memcpy(&PsBIT.d.zero,pc.d,1)} 
-                    case 2:{std::memcpy(&PsBIT.d.two,pc.d,3)} 
-                    case 3:{std::memcpy(&PsBIT.d.three,pc.d,3)} 
-                    case 4:{std::memcpy(&PsBIT.d.four,pc.d,2)}
-                    case 6:{std::memcpy(&PsBIT.d.six,pc.d,4)} 
-                }
-                break;
-                }
-                case pngsPLT :{PsPLT = pngC<png_sPLTd>(pc);
-                    int i;
-                    for(i=0;i<pc.d[i]!='\0';i++){}
-                    std::memcpy(PsPLT.d.PaletteName,pc.d,i+1);
-                    PsPLT.d.null='\0';
-                    PsPLT.d.Sampledepth = pc.d[i+1];
- 
-                    int l = PsPLT.length - i -2;
-                    switch(PsPLT.d.Sampledepth){
-                        case 8 : {
-                            PsPLT.d.pl = new png_sPLTd::rgbf[2* l/6];
-                            for(int i=0;l>0;i++){
-                                std::memcpy(&PsPLT.d.pl[i].one,pc.d+i+2 +i*6,4);
-                                std::memcpy(&PsPLT.d.pl[i].frequency,pc.d+i+2 +i*6 +4,2);
-                            }
-                        }
-                        case 16 : {
-                            PsPLT.d.pl = new png_sPLTd::rgbf[2* l/10];
-                                for(int i=0;l>0;i++){
-                                std::memcpy(&PsPLT.d.pl[i].two,pc.d+i+2 +i*10,4);
-                                std::memcpy(&PsPLT.d.pl[i].frequency,pc.d+i+2 +i*10 +8,2);
-                            }
-
-                        }
-                    };
-                    break;
-                }
-                case pnghIST : {PhIST = pngC<png_hISTd>(pc);
-                    std::memcpy(PhIST.d, pc.d,pc.length);break;
-                }
-                case pnhtIME : {PtIME = pngC<png_tIMEd>(pc);}
-                };
-            p.chunks.push_back(pc);
+            // p.chunks.push_back(pc);
         };
         image2D im;
+        im.width = width();
+        im.height = height();
+                
+        if(PIDHR.compression != 0){std::cerr(std::string("IDHR chunk compression field value not 0 in image : ") +path ) ;}
+        if(PIDHR.filter != 0){std::cerr(std::string("IDHR chunk filter field value not 0 in image : ") +path );}
+        if(PIDHR.interlace != 0  or (PIDHR.interlace != 1)){std::cerr(std::string("IDHR chunk interlace value unknown in image :")+path );}
+        im.init();
+        switch(PIDHR.colortype){
+            case IDHRd::colorType::grayscale : {
+                switch(bd()){ nch=1;
+                case 1 : {im.imageFormat = image_formats:r8ui;}
+                case 2 : {im.imageFromat = image_formats:r8ui;}
+                case 4 : {im.imageFromat = image_formats:r8ui;}
+                case 8 : {im.imageFromat = image_formats:r8ui;}
+                case 16 : {im.imageFromat = image_formats:r16ui;} }
+                loadImage(im,&loadData);break;}
+            case IDHRd::colorType::rgb : {nch=3;
+                switch(bd()){
+                case 8 : {im.imageFromat = image_formats::rgb8ui;}
+                case 16 : {im.imageFromat = image_formats::rgb16ui;}}; loadImage(im,&loadData);break;}
+            case IDHRd::colorType::palette : {nch=3;im.imageFormat = image_formats.rgb8ui;loadImage(im,&loadPlte);break;}        
+            case IDHRd::colorType::grayscalealpha : {nch=2;
+                switch(bd()){
+                    case 8 : {im.imageFromat = image_formats::rg8ui;}
+                    case 16 : {im.imageFromat = image_formats::rg8ui;}}
+                loadImage(im,&loadData);break;}
+            case IDHRd::colorType::rgba : {nch=4;
+                switch(bd()){
+                    case 8 : {im.imageFromat = image_formats::rgba8ui;}
+                    case 16 : {im.imageFromat = image_formats::rgba8ui;}}
+                loadImage(im,&loadData);break;}     
+                }
+                return im;
+    };
+    void wrPlte(image2D& im,uint64_t pt,uint64_t index){ // Index maybe size;
+        uint64_t pltes=PLTE.length/3;
+        int64_t s =findpalette(PLTE.d,pltes,3,im.data[pts]);
+
+        std::memcpy(decomp.data()+(pt*bd()/8, &s + sizeof(s) - (bd()/8), bd()/8) ;  
+    }   ; 
+    void wrData(image2D& im,uint64_t pt,uint64_t index){
+        uint64_t len = destLen ;
+        if(bd()<8 or (bd()/nch)<8){
+            wrDataArrSubBytes(im,pt,len,bd(),demcomp.data());}
+        else {
+            switch(im.imageFormat){
+                #define IMAGEFORMAT_CASE_LOAD(imf) \
+                case image_formats::imf :{wrDataArr<image_formats::imf>(im,pt,len,bd(),decom.data());};
+                REPEAT(IMAGEFORMAT_CASE_LOAD , r8ui,r16ui,rgb8ui,rgb1ui,rg8ui,rgba8ui);
+            }
+        }
+    };
+    void wrDataAdam7(image2D& im,uint64_t pt,uint64_t index){
+         uint64_t len = destLen ;
+        if(bd()<8 or (bd()/nch)<8){
+            wrDataInterlaceSubBytes(im,inds.data(),inds.size(),pt,destLen,bd(),decomp.data());
+        }
+        else {
+            for(uint32_t i=0;i<len;i++){
+                switch(im.imageFormat){
+                    #define IMAGEFORMAT_CASE_LOAD_ADAM(imf) \
+                    case image_formats::imf :{wrDataInterlaceArr<image_formats::imf>(im,inds,inds.size(),pt,destLen,bd(),decomp.data());};
+                    REPEAT(IMAGEFORMAT_CASE_LOAD_ADAM , r8ui,r16ui,rgb8ui,rgb1ui,rg8ui,rgba8ui);
+                }
+            }
+        }
+    };
+    uint32_t plteentries;
+    
+    void Adam7wrHandle(image2d& im,uint16_t step,void (*wrPixel)(image2D& ,uint64_t , uint64_t )){
+        if(wrPixel==wrPlte){paletteGenerate(im,PLTE.d,PLTE.length);
+            PLTE.length*=3;
+            uint8_t byd=1 ;
+            while((1<<8*byd-1) < PLTE.length){byd++;}
+            bd() = 8*(byd);
+            decomp.resize(bd()/8 * im.imageSize);
+             pltemask= 1<<bd() - 1;uint64_t i;
+                for( i=0;i<im.imageSize;i++) {
+                    wrPlte(im,inds[i],i);
+                }
+                pix+=i;
+                return ;}
+        else {
+            bd() = im.bd;
+            decomp.resize(im.byd * im.imageSize);
+            wrDataAdam7(im,step,wrPixel);
+        }
+    };
+    void wrAdam7(image2D& im, void (*wrPixel)(image2D& ,uint64_t , uint64_t )){
+        a7setInds();
+        Adam7wrHandle(im,pix,wrPixel);
+    }
+    void wrNormal(image2D& im, void (*wrPixel)(image2D& ,uint64_t , uint64_t )){
+        if(wrPixel==wrPlte){paletteGenerate(im,PLTE.d,PLTE.length);
+            PLTE.length*=3;
+            uint8_t byd=1 ;
+            while((1<<8*byd-1) < PLTE.length){byd++;}
+            bd() = 8*(byd);
+            decomp.resize(bd()/8 * im.imageSize);
+             pltemask= 1<<bd() - 1;uint64_t i;
+                for( i=0;i<im.imageSize;i++) {
+                    wrPlte(im,inds[i],i);
+                }
+                pix+=i;
+                return ;}
+        else {
+            bd() = im.bd;
+            decomp.resize(im.byd * im.imageSize);
+            destLen=im.imageSize*im.byd;
+            wrData(im,,wrPixel);
+        }
+    }
+    void wrImage(image2D& im, void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
+        if(PIDHR.interlace) {wrAdam7(im,loadPixel);}
+        else {wrNormal(im,loadPixel);}
+        uint32_t max= IDAT_MAX_SIZE * 512;destLen=max;
+        PIDAT.push_back(IDAT());
+        for(uint64_t i=0 ;i<decomp.size();i+=destLen){
+            uint32_t destLen=max;
+            for(PIDAT.back().length>IDAT_MAX_SIZE;destLen/=2){
+                compress(PIDAT.back().d,&(PIDAT.back().length),decomp.data() + i,destLen)    ;
+            };
+            PIDAT.push_back(IDAT());
+        }
+    };
+    void wr(std::string path,image2d& im ){
+        *this = png() ;
+        bool plt=true;
         
+        #define BOOL_CHUNK(n) bool b##n=false;
+        REPEAT(BOOL_CHUNK ,PLTE,bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt,IEND)
 
+        bool bIDHR=true;bool bIDAT=true;
+        switch(im.imageFormat){
+            case image_formats::r8ui : {nch=1;PIDHR.d.colortype = IDHRd::colorType::grayscale;}
+            case image_formats::r16ui : {nch=1;PIDHR.d.colortype = IDHRd::colorType::grayscale;}
+            case image_formats::rg8ui : {nch=2;PIDHR.d.colortype = IDHRd::colorType::grayscalealpha;}
+            case image_formats::rgb8ui : {nch=3;PIDHR.d.colortype = IDHRd::colorType::rgb;}
+            case image_formats::rgba8ui : {nch=4;PIDHR.d.colortype = IDHRd::colorType::rgba;}
+            case image_formats::rgb16ui : { nch=3;PIDHR.d.colortype = IDHRd::colorType::rgb;}
+            case image_fromats::rgba16ui : {nch=4;PIDHR.d.colortype = IDHRd::colorType::rgba;}
+        }
+        if(plt){wrImage(im,&wrPlte);}
+        else{wrImage(im,&wrData);}
+        std::ofstream of(path);
+        #define WR_CHUNK(n) if(b##n){wr<n>(P##n,of);}
+        REPEAT(WR_CHUNK,IDHR ,PLTE,bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt,IDAT,IEND)
     };
-
-    void wr(std::string path,png p ){
-
-    };
-    void wr(std::string path,image2d& im){
-
-    };
+    png() {head = pngHeader();};
 }
 // Jpeg
 
@@ -482,12 +972,11 @@ struct tga_header {
     }  Image;// specification	Image dimensions and format
   
 };
-#include <cmath>
 struct tga {
     tga_header head;
-      int8_t* ID;
-    int8_t* colorMapData;
-    int8_t* imageData;
+    uint8_t* ID;
+    uint8_t* colorMapData;
+    uint8_t* imageData;
     
 uint8_t pd;uint8_t byted;
 int ac;
@@ -497,6 +986,9 @@ int16 imageFormatBytes ;
 
     image2D im ;
 
+    uint8_t& cm_EntrySize(){return head.Color_map.entrySize;}
+    uint16_t& cm_length(){return head.Color_map.length;}
+    int8_t& pd(){return head.Image.pixelDepth;}
    
 void setFormat(){
         im.imageFormat = ac>0?rgba32ui:rgb32ui;
@@ -581,10 +1073,7 @@ else {im.imageFormat = rgb32ui;
         loadPtr(numCol,&getColorMap<key>);
 
     };
-    void runLength(int ind,)
-    void RunLength(int numCol,int indT,int ind,int8_t (*ptr)(int,int)){
-
-    };
+    
     void loadRunLength( int numCol, int8_t (*ptr)(int,int) ){
         setFormat();
         int inds=0;
@@ -701,7 +1190,101 @@ image2D ld(std::string path){
         case 11:{selectGrayScale();load11();}
     }       
     return i;
+};
+std::vector<uint8_t> imageD;
+std::vector<uint8_t> colorMapD;
+
+int64_t findCl(uint8_t byd,void* d){
+    for(uint64_t i=0;i<colorMapD.size();i+=byd){
+        if(memcmp(d,colorMapD.data()+i,byd)){
+            return i;
+        }
+    }; 
+    return -1;
+} ;
+void wrCmap(image2D& im){
+    pd() = 8;uint64_t i;
+
+    for(i=0;i<im.imageSize;i+=im.byd){
+        int64_t s = findpalette(colorMapD.data(),&colorMapD.size(),im.byd,im.data()+i);
+        if(s==-1){
+            colorMapD.resize(colorMapD.size()+im.byd);
+            s=(colorMapD.size()-im.byd)
+            std::memcpy(colorMapD.data()+s , im.data+i,im.byd);
+        }
+        s/=8;
+        std::memcpy(imageD.data()+(i/im.byd)*pd(),&s,pd());
+    };
+    // Resize bitdepths;
+    uint64_t s;
+    for(;i<s;pd()--){s=1<<(pd()*8 -1)-1 + (1<<(pd()*8-1));}
+    for(uint64_t n=0;n<imageD.size()/8;n++){
+        std::memcpy(imageD.data()+n*pd(),imageD.data()+n*8 + 8-pd(),pd() );
+    };  
+    imageD.resize(imageD.size()/8*pd() );
+
+};
+void wrCmapRLE(image2D& im){
+    pd() = 8;uint64_t i;
+    uint8_t rep=0;uint32_t entries=0;
+    for(i=0;i<im.imageSize;i+=im.byd){
+        if(std::memcmp(im.data+i,im.data+i-im.byd , im.byd)==0 and (rep<(1<<7))){rep++;}
+        else {uint8_t reps = rep +(1<<7);
+            memcpy(imageD.data()+entries*(pd()+1),&reps,1);
+            rep=0;entries++;};
+        int64_t s = findCl(im.byd,im.data()+i);
+        if(s==-1){
+            colorMapD.resize(colorMapD.size()+im.byd);
+            s=(colorMapD.size()-im.byd)
+            std::memcpy(colorMapD.data()+s , im.data+i,im.byd);
+        }
+        
+    };
+    // Resize bitdepths;
+    uint64_t s;
+    for(;i<s;pd()--){s=1<<(pd()*8 -1)-1 + (1<<(pd()*8-1));}
+    for(uint64_t n=0;n<imageD.size()/8;n++){
+        std::memcpy(imageD.data()+n*(pd()+1),imageD.data()+n*9 + 8-pd(),pd()+1 );
+    };  
+    imageD.resize(imageD.size()/8*(pd()+1) );
+
+};
+void wrNorm(image2D& im){
+    pd()=im.byd;uint8_t rep-0;uint32_t entries=0
+    imageD.resize(pd()*im.imageSize);
+    std::memcpy(imageD.data(),im.data,pd()*im.imageSize);
+};
+void wrRLE(image2D& im){
+    pd()=im.byd;
+    for(int i=0;i<im.imageSize;i+=im.byd){
+        if(std::memcmp(im.data+i,im.data+i-im.byd , im.byd)==0 and (rep<(1<<7))){rep++;}
+        else{uint8_t reps = rep+(1<<7);
+            memcpy(imageD.data()+entries*(pd()+1),&reps,1);
+            rep=0;entries++;
+            memcpy(imageD.data()+entries*(pd()+1)+1,im.data+i,pd() );
+        }
+    };
 }
+void wr(image2D& im,std::string path,bool cpl=false,bool rle=true){
+    uint8_t bda =modules::bitdepth_a(im.imageFormat);
+    head.Image.descriptor=bda &0b1111 + 0b110000; 
+    head.Image.width=im.width;head.Image.height=im.height;
+    cm_entrySize() = im.byd;
+    colorMapD= std::vector<uint8_t>(im.byd*im.imageSize);
+    if(im.length()<=2){
+        if(rle){head.Image_type=tga_ImageType::run_length_grayscale;wrRLE(im);}
+        else{head.Image_type=tga_ImageType::uncompressed_grayscale;wrNorm(im);}
+    }
+    else {
+        if(rle){head.Image_type=tga_Image_type::run_length_color_mappped;wrCmapRLE(im);}
+        else{head.Image_type=tga_ImageType::uncompressed_color_mappped;wrCmap(im);}
+    }
+    std::ofstream of(path);
+    wr<tga_header>(head,of);
+    wr<uint8_t>(ID,head.ID_LENGTH,of);
+    wr<uint8_t>(colorMapD,colorMapD.size(),of);
+    wr<uint8_t>(imageD,imageD.size(),of);
+};
 };
 // bmp 
 #include "clib.hpp"
@@ -1020,10 +1603,280 @@ std::memcpy(&pix,pixels+i*bc,4)
 
         getColor(pd());
     }
+    void wr(sd::string path,image2D& im){
+
+    };  
+}
+
+// JPEG
+
+struct jpeg {
+
+
+    const uint8_t segstart = 0xFF;
+    enum segs {
+        SOI	= 0xD8,//	none	        Start Of Image	
+        SOF0= 0xC0,//	variable size	Start Of Frame (baseline DCT)	Indicates that this is a baseline DCT-based JPEG, and specifies the width, height, number of components, and component subsampling (e.g., 4:2:0).
+        SOF2= 0xC2,//	variable size	Start Of Frame (progressive DCT)	Indicates that this is a progressive DCT-based JPEG, and specifies the width, height, number of components, and component subsampling (e.g., 4:2:0).
+        DHT	= 0xC4,//	variable size	Define Huffman Table(s)	Specifies one or more Huffman tables.
+        DQT	= 0xDB,//	variable size	Define Quantization Table(s)	Specifies one or more quantization tables.
+        DRI	= 0xDD,//	4 bytes	        Define Restart Interval	Specifies the interval between RSTn markers, in Minimum Coded Units (MCUs). This marker is followed by two bytes indicating the fixed size so it can be treated like any other variable size segment.
+        SOS	= 0xDA,//	variable size	Start Of Scan	Begins a top-to-bottom scan of the image. In baseline DCT JPEG images, there is generally a single scan. Progressive DCT JPEG images usually contain multiple scans. This marker specifies which slice of data it will contain, and is immediately followed by entropy-coded data.
+        RSTn= 0xDn,// (n=0..7)	none	Restart	Inserted every r macroblocks, where r is the restart interval set by a DRI marker. Not used if there was no DRI marker. The low three bits of the marker code cycle in value from 0 to 7.
+        APPn= 0xEn,//	variable size	Application-specific	For example, an Exif JPEG file uses an APP1 marker to store metadata, laid out in a structure based closely on TIFF.
+        COM	= 0xFE,//	variable size	Comment	Contains a text comment.
+        EOI	= 0xD9,//	none	End Of Image	
+    }
+
+    int8_t dct(uint8_t u,uint8_t v,uint8_t x,uint8_t y){
+        return cos((2 * x + 1) * u * PI / 16.0) *
+                           cos((2 * y + 1) * v * PI / 16.0);
+    };  
+    void dct8x8(double input[8][8], double output[8][8]) {
+    for (int u = 0; u < N; ++u) {
+        for (int v = 0; v < N; ++v) {
+            double sum = 0.0;
+            for (int x = 0; x < N; ++x) {
+                for (int y = 0; y < N; ++y) {
+                    sum += input[x][y] *dct(u,v,x,y);
+                }
+            }
+            output[u][v] = 0.25 * alpha(u) * alpha(v) * sum;
+        }
+    }
+}
+
+// Inverse DCT
+void idct8x8(double input[8][8], double output[8][8]) {
+    for (int x = 0; x < N; ++x) {
+        for (int y = 0; y < N; ++y) {
+            double sum = 0.0;
+            for (int u = 0; u < N; ++u) {
+                for (int v = 0; v < N; ++v) {
+                    sum += alpha(u) * alpha(v) * input[u][v] *dct(u,v,x,y);
+                }
+            }
+            output[x][y] = 0.25 * sum;
+        }
+    }
+}
+
+modules::image2D sRGBto_YCC(modules::image2D& im){
+    modules::image2D res;
+    for(uint64_t i=0;i<im.imageSize*im.byd;i++){
+        uint8_t rgb[3] ;
+        std::memcpy(rgb,im.data+i,3);
+        int8_t ycc[3] ;
+        int8_t ycc[0]=  fmin(fmax(0,round(0.299 *rgb[0] + 0.587 *rgb[1] + 0114*rgb[2])),255); 
+        int8_t ycc[1] = fmin(fmax(0,round(-0.1687 *rgb[0]- 0.3313*rgb[1]+ 0.5*rgb[2] + 128 )),255);
+        int8_t ycc[2] = fmin(fmax(0,round(0.5 *rgb[0]- 0.4187 *rgb[1]- 0.0813*rgb[2] +128)),255); 
+        std::memcpy(res.data+i,ycc,3);
+    };
+};
+modules::image2D YCCtoRGB(modules::image2D& im){
+    modules::image2D res;
+    for(uint64_t i=0;i<im.imageSize*im.byd;i++){
+        int8_t ycc[3] ;
+        std::memcpy(ycc,im+i,3);
+        int8_t rgb[3] ;
+        int8_t rgb[0]=  fmin(fmax(0,round(ycc[0] + 1.402*(ycc[1] -128))),255); 
+        int8_t rgb[1] = fmin(fmax(0,round(ycc[0] - 0.3441 *(ycc[2] - 128) -0.71241(ycc[1] -128) )),255);
+        int8_t rgb[2] = fmin(fmax(0,round(ycc[0] + 1.772 *(ycc[2] -128))),255); 
+        std::memcpy(res.data+i,rgb,3);
+    };
+};
+    void get8x8image(modules::image2D& im,uint32_t w, uint32_t h){
+        
+    }
+    modules::image2D ld(std::string path){
+        
+    };
+
+};
+#ifdef STM_IMAGE_GIF
+
+struct gif {
+    typedef uint8_t char;
+    typedef uint16_t WORD;
+    typedef struct _GifHeader{
+  // Header
+  BYTE Signature[3];     /* Header Signature (always "GIF") */
+  BYTE Version[3];       /* GIF format version("87a" or "89a") */
+  // Logical Screen Descriptor
+  WORD ScreenWidth;      /* Width of Display Screen in Pixels */
+  WORD ScreenHeight;     /* Height of Display Screen in Pixels */
+  BYTE Packed;           /* Screen and Color Map Information */
+  
+//Bits 0-2	Size of the Global Color Table
+//Bit 3	Color Table Sort Flag
+//Bits 4-6	Color Resolution
+//Bit 7	Global Color Table Flag
+
+  BYTE BackgroundColor;  /* Background Color Index */
+  BYTE AspectRatio;      /* Pixel Aspect Ratio */
+} GIFHEAD;
+    GIFHEAD head;
+
+    uint8_t NumberGlobalColorTable(){return 1L<<(head.Packed & 0b111 + 1);}
+    uint8_t SizeGlobalColorTable(){return 1L<<(head.Packed & 0b111 + 1);}
+    bool ColorTableSortFlag(){return head.Packed &0b1000;}
+    uint8_t ColorResolution(){return (head.Packed &0b1110000) >> 4 + 1;}
+    bool ColorTableFlag(){return (head.Packed &0b10000000) ;}
+    WORD& width(){return head.ScreenWidth;} 
+    WORD& height(){return head.ScreenHeight;} 
+    
+    glm::u8vec3* GIFCOLORTABLE;
+    uint32_t ColorTableSize(){return 3L* (1L<<sizeGlobaleColorTable());}
+    
+ typedef struct _GifImageDescriptor
+{
+  BYTE Separator;    /* Image Descriptor identifier */
+  WORD Left;         /* X position of image on the display */
+  WORD Top;          /* Y position of image on the display */
+  WORD Width;        /* Width of the image in pixels */
+  WORD Height;       /* Height of the image in pixels */
+  BYTE Packed;       /* Image and Color Table Data Information */
+
+// Bit 0	Local Color Table Flag
+// Bit 1	Interlace Flag
+// Bit 2	Sort Flag
+// Bits 3-4	Reserved
+// Bits 5-7	Size of Local Color Table Entry
+ bool LocalColorTableFlag(){return 0b1 & Packed;}
+ bool InterlaceFlag(){return 0b10 & Packed;}
+ bool SortFlag(){return 0b100 & Packed;}
+ uint8_t SizeLocalColorTable(){return (0b1110000 & Packed)>>4 + 1;}
+uint32_t ColorTableSize(){return 3L * (1L << (SizeLocalColorTable() ));}
+uint32_t ColorTableNumberOfEntries(){return 1L << SizeLocalColorTable() ;}
+
+    glm::u8vec3* GIFCOLORTABLE;
+
+    std::vector<std::vector<uint8_t>> blocks; 
+    std::vector<uint8_t> data;
+} GIFIMGDESC;
+
+std::vector<GIFIMGDESC> imgs;
+ // Interlaces scanlines:
+ // 0 8 ... 0++8
+ // 4 12 ... 4++8
+// 2 6 10 14 .. 2++4
+// 1 3 5 7 // 1++2
+    void loadNormal(image2D& im,GIFIMGDESC& gifim,uint64_t step,glm::uvec3* ct){
+        std::memcpy(im.data+step*im.byd,ct+3*gifim.data[step],im.byd);
+    }
+    void loadInterlace(image2D& im,GIFIMGDESC& gifim,uint64_t step , glm::uvec3* ct){
+            if((step/gifim.Width)%8==0 )    {std::memcpy(im.data+ ((step%gifim.Width) + (step/gifim.Width) * 8 * gifim.Width) *im.byd,ct+3*gifim.data[step]);}
+            if((step/gifim.Width + 4)%8==0 ){std::memcpy(im.data+ ((step%gifim.Width) + (step/gifim.Width +4) * 8 * gifim.Width) *im.byd,ct+3*gifim.data[step]);}
+            if((step/gifim.Width + 2)%4==0 ){std::memcpy(im.data+ ((step%gifim.Width) + (step/gifim.Width +2) * 4 * gifim.Width) *im.byd,ct+3*gifim.data[step]);}
+            if((step/gifim.Width + 1)%2==0 ){std::memcpy(im.data+ ((step%gifim.Width) + (step/gifim.Width +1) * 2 * gifim.Width) *im.byd,ct+3*gifim.data[step]);}
+                   
+    };
+    
+    modules::aimage2D ld(std::string path){
+        std::ifstream fi(path);
+        ld(head,fi);
+        if(head.ColorTableFlag()){
+            ld<glm::u8vec3>(GIFCOLORTABLE,sizeGlobalColorTable()/3,fi);}
+        modules::aimage2D vec;
+        vec.swidth=  width();
+        vec.sheight= height();
+        void (*ptr)(image2D& ,GIFIMGDESC& ,uint32_t,glm::uvec3* ) ;
+        while(!fi.eof() ){
+            GIFIMGDESC gifim; 
+            ld(gifim.Separator,fi);
+            if(gifim.Separator!=0x2C){break;}
+            ld(gifim.Left,fi);
+            ld(gifim.Top,fi);
+            ld(gifim.Width,fi);
+            ld(gifim.Height,fi);
+            ld(gifim.Packed,fi);
+            if(gifim.InterlaceFlag()){ptr=&loadInterlace;}
+            else{ptr=&loadNormal;}
+            glm::u8vec3* ct;
+            if(gifim.LocalColorTableFlag()){
+                ld(gifim.GIFCOLORTABLE,gifim.colorTableNumberOfEntries,fi)
+                ct=gifim.GIFCOLORTABLE;
+            }
+            else{ct=GIFCOLORTABLE;}
+            image2D im(gifim.Width,gifim.height,image_formats::rgb8ui);
+            im.x=gifim.Left;im.y=gifim.Right;
+            uint8_t byte;
+            ld(byte,fi);
+            uint64_t step=0;
+            while(byte!=0){
+                gifim.blocks.push_back(std::vector<uint8_t>(byte));
+                ld(blocks.back().data(),byte);
+                std::vector<uint8_t> decoded(block.size()*10);
+                size_t destLen;
+                lzw_decode(block.data(),block.size(),decoded.data(),&destLen);
+                decoded.resize(destLen);
+                for(uint64_t i=0;i<destLen;i++){
+                    ptr(im,gifim,step,ct);step++;
+                }
+                ld(byte,fi);
+            };
+            vec.push_back(im);
+        }
+    };
+
+    void wr(std::string path, modules::aimage2D aim){
+        std::ofstream of(path);
+        head.Signature="GIF";
+        head.Version="87a";
+        head.ScreenWidth=aim.swidth;
+        head.ScreenHeight=aim.sheight;
+        head.Packed=0b11110000;
+        uint32_t destplt;
+        palettegenerate(aim[0],GIFCOLORTABLE,&destplt);
+        uint32_t plts=destplt;
+        int i=0;for(;destplt!=0;destplt>>1){i++;};i--;
+        head.Packed|=i&0b111;
+        wr(head,fi);
+        wr(GIFCOLORTABLE,plts);
+        
+        for(image2D im : aim){
+            GIFIMGDESC ims ;
+            ims.Separator=0x2C;
+            ims.Left=im.x;
+            ims.Right=im.y;
+            ims.Width=im.Width;
+            ims.Height=im.height;
+            ims.Packed=0b00000;
+            bool failed=false;
+            for(uint64_t i=0;i< im.imageSize;i++){
+                int16_t t=findpalette(GIFCOLORTABLE,&plts,3,im.data+3*i);
+                if(t>=0){int8_t res = t&(1<<8 -1);ims.data.push_back(res)};
+                else {failed=true;break;}
+            };
+                            uint32_t pltsize;
+            if(failed){ims.data.clear();
+                uint32_t destplts;
+                paletteGenerate(im,ims.GIFCOLORTABLE,&destplt);
+                pltsize=destplts;
+                int i=0;for(;destplts!=0;destplts>>1){i++;};i--;
+                im.packed|=((i& 0b111)<<4);
+                 for(uint64_t i=0;i< im.imageSize;i++){
+                int16_t t=findpalette(ims.GIFCOLORTABLE,&pltsize,3,im.data+3*i);
+                int8_t res = t&(1<<8 -1);ims.data.push_back(res)};
+            }
+            wr(ims.Separator,of);
+            wr(ims.Left,of);
+            wr(ims.Right,of);
+            wr(ims.Width,of);
+            wr(ims.Height,of);
+            wr(ims.Packed,of);
+            if(failed){wr(GIFCOLORTABLE,pltsize,of);}
+            size_t s;
+            std::vector<uint8_t> block(ims.data.size());
+            lzw_encode(ims.data.data(),&ims.data.size(),block.data(),&s);
+            block.resize(s);
+            wr(block.data(),s,of);
+            }
+    };
 
 }
 
-
+#endif
 
 image2D StmLoadImage(std::string name){
     // 
@@ -1034,6 +1887,9 @@ image2D StmLoadImage(std::string name){
             case std::string("png"):{png i ;return i.ld(name); } 
             case std::string("tga"):{tga i ; return i.ld(name);}
             case std::string("bmp"):{bmp i;return i.ld(name)}
+            case std::string("jpeg"):{bmp i;return i.ld(name)}
+            case std::string("jpeg"):{jpeg i;return i.ld(name)}
+            case std::string("jpg"):{jpeg i;return i.ld(name)}
         }
     }
 };

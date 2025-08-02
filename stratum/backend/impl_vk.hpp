@@ -215,6 +215,20 @@ image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8B8_UINT;};
 image_formats::r32             :{return VkFormat::VK_FORMAT_R32_UINT;};
 image_formats::r16             :{return VkFormat::VK_FORMAT_R16_UINT;};
 image_formats::r8              :{return VkFormat::VK_FORMAT_R8_UINT;};
+
+image_formats::rgb32f          :{return VkFormat::VK_FORMAT_R32G32B32_SFLOAT };     
+image_formats::rgb16f          :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };     
+image_formats::rgb16           :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };    
+image_formats::rgb8            :{return VkFormat::VK_FORMAT_R8G8B8_SFLOAT };   
+image_formats::rgb16_snorm     :{return VkFormat::VK_FORMAT_R16G16B16_SNORM };          
+image_formats::rgb8_snorm      :{return VkFormat::VK_FORMAT_R8G8B8_SNORM };         
+image_formats::rgb32i          :{return VkFormat::VK_FORMAT_R32G32B32_SINT };     
+image_formats::rgb16i          :{return VkFormat::VK_FORMAT_R16G16B16_SINT };     
+image_formats::rgb8i           :{return VkFormat::VK_FORMAT_R8G8B8_SINT };    
+image_formats::rgb32ui         :{return VkFormat::VK_FORMAT_R32G32B32_UINT };      
+image_formats::rgb16ui         :{return VkFormat::VK_FORMAT_R16G16B16_UINT };      
+image_formats::rgb8ui          :{return VkFormat::VK_FORMAT_R8G8B8_UINT };     
+
     };
 };
 
