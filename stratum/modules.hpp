@@ -14,9 +14,12 @@
 #include <lib/glm/glm.hpp>
 #include <cstring>
 #include <math.h>
+#include <petri\list.hpp>
+
 
 namespace modules {
 
+    
 
 struct app_info {
     char*  name;
@@ -37,13 +40,7 @@ struct named {
     named<T>& operator=(T& d){data=d;}
     named(std::string n, T& d) :name(n),data(d)  {};
 } ;
-template <typename T>
-struct named {
-    std::string name;
-    T* data;
-    named<T>& operator=(T& d){data=d;}
-    named(std::string n, T* d) :name(n),data(d)  {};
-} ;
+
 
 enum image_formats {// Floating-point layout image formats:
 rgba32f,
@@ -575,8 +572,7 @@ if constexpr (bitedepths<imageFormat>::RGBA()){
                 uint32_t maskDest = 1<<bitDest-1; 
                 re[j] = (float)(cr[j] * (maskDest/maskCur));
             }
-            im.putAt(i,re)
-
+            im.putAt(i,re);
         };
         return i;
     };
@@ -594,7 +590,7 @@ if constexpr (bitedepths<imageFormat>::RGBA()){
         return true;
     };  
 
-    void ImageSize(){imageSize=width*height;bd=bitd(imageFormat);bdc = bitdepth_r(imageFormat);byd = bitd(imageFormat)/8 ;length=enu_vec<imageFormat>::ty::length();}
+    void ImageSize(){imageSize=width;bd=bitd(imageFormat);bdc = bitdepth_r(imageFormat);byd = bitd(imageFormat)/8 ;length=enu_vec<imageFormat>::ty::length();}
     void init(){ImageSize();data= new uint8_t[(byd * imageSize];}
     
     image1D(size_t s,image_format fm) : width(s),height(s),imageFormat(fm){init();};
@@ -611,7 +607,7 @@ struct image2D : image1D {
         std::memcpy(data+((y+i)*width+x)*byd , d + i*w*byd, w*byd);
         }
     };  
-    
+        void ImageSize(){imageSize=width*height;bd=bitd(imageFormat);bdc = bitdepth_r(imageFormat);byd = bitd(imageFormat)/8 ;length=enu_vec<imageFormat>::ty::length();}
     image2d(uint32_t size,image_format fm) : width(w),height(h),imageFormat(fm) {Init();};
     image2D(uint32_t w,uint32_t h,image_format fm) : width(w),height(h),imageFormat(fm){Init();};
 
@@ -700,11 +696,7 @@ enum transform_image {
     mirror_rotate180,
     mirror_roate270
 };
-enum image_dim {
-    one=0,
-    two=1,
-    three=2,
-};
+
 enum sample_count {
     sample_1 = 0x00000001,
     sample_2 = 0x00000002,
@@ -814,8 +806,6 @@ namespace quality
         };    
 };
    
-
-
 
 
 /// @brief 
@@ -953,15 +943,12 @@ using dim_pos = typename <std::conditional<t == DIM.Bi , glm::vec2 ,
 
 template <quality::QUALITY q>
 struct material_physical_properties    {
-    bool dynamic
-    float gravitational_density ;
-    float inertial_density ;
-    bool collision_enabled = true ;
-    unsigned float collision_dampening ; // 
 
-        float friction ;
-        float refraction ;
-        material_physical_properties(float _grav_mass, float _inert_mass , bool _collision_enabled , unsigned float _collision_dampening ,float _friction , float _refraction ): grav_mass(_grav_mass),inert_mass(_inert_mass),collision_enabled(_collision_enabled),collision_dampening(_collision_dampening) ,friction(_friction) ,refraction(_refraction){};
+    float mass ;
+    bool collision_enabled = true ;
+    unsigned float collision_dampening ; 
+    float friction;
+    material_physical_properties( bool _collision_enabled , unsigned float _collision_dampening ,float _friction  ): collision_enabled(_collision_enabled),collision_dampening(_collision_dampening) ,friction(_friction) {};
         material_physical_properties() ;
 };
 
@@ -1089,92 +1076,129 @@ float dZdx = (hR - hL) / (2.0f * dx);
    
     material_physical_properties<Q> physical_properties ;
              
-    
-    material(){
-
-    }
 };
 #define QUALITIES_ENUM 0,1,2,3,4,5,6,7
 
-struct {
-    #define NAMED_MATERIALS_DEF(n)     std::vector<named<material<n>>> materials##n;
+template < template <DIM , quality::QUALITY > typename T>
+struct qdmemoryPool {
+    #define NAMED2_DEF(n)     list<named<T<DIM::two,n>*>> named2##n;
+    #define NAMED3_DEF(n)     list<named<T<DIM::tri,n>*>> named3##n;
     REPEAT(NAMED_MATERIALS_DEF,QUALITIES_ENUM) 
-}named_materialPool;
-struct {
-    #define MATERIALS_DEF(n)     std::vector<material<n>*> materials##n;
-    REPEAT(MATERIALS_DEF,QUALITIES_ENUM) 
-}materialPool;
+    #define DATA2_DEF(n)     list<T<DIM::two,n>> d2##n;
+    #define DATA3_DEF(n)     list<T<DIM::tri,n>> d3##n;
+    REPEAT(NAMED_MATERIALS_DEF,QUALITIES_ENUM) 
 
-struct particle{
-    std::string name ;
+    template <DIM d,quality::QUALITY q>
+    void add(T<d,q> m){
+        #define ADD_MMACRO(D,Q) case Q :{d##D##Q.push_back(m);return;}
+        #define ADD_MMACRO2(Q) ADD_MMACRO(2,Q) 
+        #define ADD_MMACRO3(Q) ADD_MMACRO(3,Q) 
+        if constexpr(d==2){
+            switch constexpr (q){REPEAT(ADD_MMACRO2,QUALITIES_ENUM)}}
+        if constexpr (d==3) {switch constexpr (q){
+                REPEAT(ADD_MMACRO3,QUALITIES_ENUM)};}
+    }
+    template <DIM d,quality::QUALITY q>
+    void addNamed(named<T<d,q>> m){
+        #define ADDN_MMACRO(D,Q) case Q :{d##D##Q.push_back(m.data);named##D##Q.push_back(named<T<D,Q>*>(m.name,&(d##D##Q.back())))return;}
+        #define ADDN_MMACRO2(Q) ADD_MMACRO(2,Q) 
+        #define ADDN_MMACRO3(Q) ADD_MMACRO(3,Q) 
+        if constexpr(d==2){
+            switch constexpr (q){REPEAT(ADDN_MMACRO2,QUALITIES_ENUM)}}
+        if constexpr (d==3) {switch constexpr (q){
+                REPEAT(ADDN_MMACRO3,QUALITIES_ENUM)};}
+    }
 
-    bool physics ;
-    material_physical_properties ; 
-    rgba base_color ;
-    float density ; 
-    dynamicMesh mesh ;
-    particle(std::string name ){
-
-    };
-   
+    template <DIM d,quality::QUALITY q>
+    list<T<d,q>>& get(){
+        #define GET_MMACRO(D,Q) case Q :{return d##D##Q;}
+        #define GET_MMACRO2(Q) ADD_MMACRO(2,Q) 
+        #define GET_MMACRO3(Q) ADD_MMACRO(3,Q) 
+        if constexpr(d==2){
+            switch constexpr (q){REPEAT(GET_MMACRO2,QUALITIES_ENUM)}}
+        if constexpr (d==3) {switch constexpr (q){
+                REPEAT(GET_MMACRO,QUALITIES_ENUM)};}
+    }
+    template <DIM d,quality::QUALITY q>
+    list<named<T<d,q>>>& getNamed(){
+        #define GETN_MMACRO(D,Q) case Q :{return named##D##Q;}
+        #define GETN_MMACRO2(Q) GETN_MMACRO(2,Q) 
+        #define GETN_MMACRO3(Q) GETN_MMACRO(3,Q) 
+        if constexpr(d==2){
+            switch constexpr (q){REPEAT(GETN_MMACRO2,QUALITIES_ENUM)}}
+        if constexpr (d==3) {switch constexpr (q){
+                REPEAT(GETN_MMACRO3,QUALITIES_ENUM)};}
+    }
 };
 
 
-struct fluid : {
-    material Material;
-    float viscosity ;
-    float surface_tension ; // values from 0-1;
-    
-    fluid(){}
-  
+template < template <DIM > typename T>
+struct dmemoryPool {
+    list<named<T<DIM::two>*>> named2;
+    list<named<T<DIM::tri>*>> named3;
+    list<T<DIM::two>> d2;
+    list<T<DIM::tri>> d3;
+
+    template <DIM d>
+    void add(T<d> m){
+        if constexpr(d==2){
+d2.push_back(m);return;}
+        if constexpr (d==3) {
+d3.push_back(m);return;}
+    }
+    template <DIM d>
+    void addNamed(named<T<d>> m){
+               if constexpr(d==2){
+d2.push_back(m.data);named2.push_back(named<T<2>*>(m.name,&d2.back()));return;}
+        if constexpr (d==3) {
+d3.push_back(m.data);named3.push_back(named<T<3>*>(m.name,&d3.back());return;}
+    }
 };
 
-struct smoke {
-    material Material;
-    float buoyancy; // -1 -- 1;
+
+template < template <quality::QUALITY> typename T>
+struct qmemoryPool {
+
+    #define QUALDEF(q)     list<named<T<q>*>> named##q; \
+    list<T<q>> d##q;
+
+    REPEAT(QUALDEF,QUALITIES_ENUM)
+
+    template <quality::QUALITY q>
+    void add(T<d> m){
+        switch constexpr(q) {
+            #define QUALCASE(q) case q : {d##q.push_back(m);}
+            REPEAT(QUALCASE,QUALITIES_ENUM) 
+        }
+    }
+    template <quality::QUALITY q>
+    void addNamed(named<T<q>> m){
+            switch constexpr(q) {
+            #define QUALCASENAME(q) case q : {d##q.push_back(m.data);named##q.push_back(named<T<q>*>(m.name,&d##q.back());}
+            REPEAT(QUALCASENAME,QUALITIES_ENUM) 
+        }
+
+    }
+
+    template <quality::QUALITY q>
+    list<T<q>>& get(T<d> m){
+        switch constexpr(q) {
+            #define QUALCASEGET(q) case q : {return d##q;}
+            REPEAT(QUALCASE,QUALITIES_ENUM) 
+        }
+    }
+    template <quality::QUALITY q>
+    list<T<q>*> getNamed(named<T<q>> m){
+            switch constexpr(q) {
+            #define QUALCASENAME(q) case q : {return named##q;}
+            REPEAT(QUALCASENAME,QUALITIES_ENUM) 
+        }
+
+    }    
 };
-template <bool Name , typename Src >
-struct source :  {
-    Src source;
-    glm::vec3 pos; 
-};
-template < bool Name>
-using fluidSource = source<Name,fluid<NAME_FALSE>> ;
-template < bool Name>
-particleSource = source<Name,particle<NAME_FALSE>> 
+qmemoryPool<material> materialPool;
 
 
-
-
-
-typedef glm::uvec3 triangle_i ;
-typedef glm::uvec4 square_i ;
-typedef std::vector<uint> ngon_i ;
-
-
-
-struct physicsVertInfo {
-    glm::dvec4 vector ; // XYZW w is speed
-    glm::dvec2 div_curl ; 
-    glm::dvec3 grad ;
-};
-struct fluidMesh { // This is used for water bodies and smoke and the like
-    std::vector<std::pair<vertex, > > vertices ;
-    
-    float turbulence ;
-    double cycleSeconds = 2 ; // Default is 
-
-};
-struct particleMesh { // Closed bounding box fill everything
-    std::vector<glm::vec3> vertices ;
-    std::vector<glm::vec3> vectors; 
-
-};
-
-struct elem {  
-    std::string name ;
-    
-};
 
 enum TopologyPrimitive {
     POINT_LIST = 0,
@@ -1191,12 +1215,6 @@ enum TopologyPrimitive {
 } 
 
 
-//  VkPrimitiveTopology {
-// } VkPrimitiveTopology;
-
-
-
-#include <petri/vect.hpp>
 template <DIM S , quality::QUALITY q>
 struct mesh {
     using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
@@ -1235,79 +1253,9 @@ struct mesh {
     std::vector<materialsGroup> materialsGroup;
     
 };
-struct {
-    #define DEF_MESHES2(n)     std::vector<mesh<2,n>> models2##n;
-    #define DEF_MESHES3(n)     std::vector<mesh<3,n>> models3##n;
-    REPEAT(DEF_MESHES2,QUALITIES_ENUM)
-    REPEAT(DEF_MESHES3,QUALITIES_ENUM)
-}meshPool;
-struct {
-    #define DEF_NMESHES2(n)     std::vector<named<mesh<2,n>*>> models2##n;
-    #define DEF_NMESHES3(n)     std::vector<named<mesh<3,n>*>> models3##n;
-    REPEAT(DEF_NMESHES2,QUALITIES_ENUM)
-    REPEAT(DEF_NMESHES3,QUALITIES_ENUM)
-}namedMeshPool;
+dqmemoryPool<mesh> meshPool;
 
-template <DIM S,quality::QUALITY Q> 
-struct model : mesh<S> {
-    struct manifold { // Have a group conventiion
-        std::string name;
-        std::pair<uint32_t,uint32_t> vert;
-        std::pair<uint32_t,uint32_t> tvert;
-        std::pair<uint32_t,uint32_t> nvert;
-        std::pair<uint32_t,uint32_t> pvert;
-         
-        std::pair<uint32_t,uint32_t> lines;
-        std::pair<uint32_t,uint32_t> faces;
-        std::vector<mesh<S,Q>::materialGroup> materialGroups ;
-        std::vector<mesh<S,Q>::group> groups ; 
-    };
-    std::vector<manifold > manifolds;
-};
 
-struct {
-    #define DEF_MODELS2(n)     std::vector<model<2,n>> models2##n;
-    #define DEF_MODELS3(n)     std::vector<model<3,n>> models3##n;
-    REPEAT(DEF_MODELS2,QUALITIES_ENUM)
-    REPEAT(DEF_MODELS3,QUALITIES_ENUM)
-    template <DIM d,quality::QUALITY q>
-    void add(model<d,q> m){
-
-    }
-}modelPool;
-
-struct {
-    #define DEF_NMODELS2(n)     std::vector<named<model<2,n>*>> models2##n;
-    #define DEF_NMODELS3(n)     std::vector<named<model<3,n>*>> models3##n;
-    REPEAT(DEF_NMODELS2,QUALITIES_ENUM)
-    REPEAT(DEF_NMODELS3,QUALITIES_ENUM)
-
-    template <DIM d,quality::QUALITY q>
-    void add(model<d,q> m){
-        #define ADD_MMACRO(D,Q) case Q :{models##D##Q.push_back(m);return;}
-        #define ADD_MMACRO2(Q) ADD_MMACRO(2,Q) 
-        #define ADD_MMACRO3(Q) ADD_MMACRO(3,Q) 
-        if constexpr(d==2){
-            switch constexpr (q){
-                REPEAT(ADD_MMACRO2,QUALITIES_ENUM)
-            }
-        }
-        if constexpr (d==3) {
-            switch constexpr (q){
-                REPEAT(ADD_MMACRO3,QUALITIES_ENUM)
-            };
-        }
-    }
-
-}namedModelPool;
-template <DIM d,quality::QUALITY q>
-void addModel(model<d,q>& m ){
-    modelPool.add<d,q>(m);
-};
-template <DIM d,quality::QUALITY q>
-void addModel(model<d,q>& m,std::string name ){addModel<d,q>(m);
-
-};
 
 template <DIM S>
 struct mesh_prim  {
@@ -1343,14 +1291,8 @@ struct mesh_prim  {
         };
     };
 };
-template <DIM S>
-struct model_prim : mesh_prim<S>{
-    mesh_prim<S> mesh;
+dmemoryPool<mesh_prim> meshPrimPool;
 
-    
-
-    material* mat ;
-}
 
 
 template <DIM S>
@@ -1372,7 +1314,73 @@ struct bonePtGroup : vertGroup {
 };
 std::vector<bonePtgroup> vertGroups;
 };
-// Bone Mesh
+
+
+
+
+template <DIM d, quality::QUALITY q>
+struct particle{
+    material_physical_properties<q> mpt ; 
+    rgba base_color ;
+    float density ; 
+    dynamicMesh<d,q> mesh ;
+};
+
+template <DIM d, quality::QUALITY q>
+struct fluid  {
+    material_physical_properties<q> mpt ; 
+    float viscosity;
+    rgba base_color ;
+    float density ; 
+    dynamicMesh<d,q> mesh ;
+
+    fluid(){}
+  
+};
+template <DIM d, quality::QUALITY q>
+struct smoke {
+    material_physical_properties<q> mpt ; 
+    float buoyancy; // -1 -- 1;
+};
+
+template <DIM d, quality::QUALITY q, template <DIM , quality::QUALITY > typename T>
+struct source   {
+    T<d,q> p;
+    glm::vec3 pos; 
+};
+template < DIM d, quality::QUALITY q>
+particleSource = source<d,q,paricle> ; 
+template <DIM d, quality::QUALITY q>>
+using fluidSource = source<d,q,fluid> ;
+template <DIM d, quality::QUALITY q>>
+using smokeSource = source<d,q,fluid> ;
+
+struct animation {
+    list<std::vector<glm::vec3>> pts ;
+
+};
+
+template <DIM S,quality::QUALITY Q> 
+struct model : mesh<S,Q> {
+    struct manifold { // Have a group conventiion
+        std::string name;
+        std::pair<uint32_t,uint32_t> vert;
+        std::pair<uint32_t,uint32_t> tvert;
+        std::pair<uint32_t,uint32_t> nvert;
+        std::pair<uint32_t,uint32_t> pvert;
+         
+        std::pair<uint32_t,uint32_t> lines;
+        std::pair<uint32_t,uint32_t> faces;
+        std::vector<mesh<S,Q>::materialGroup> materialGroups ;
+        std::vector<mesh<S,Q>::group> groups ; 
+    };
+    std::vector<manifold > manifolds;
+
+    std::vector<animation> anim;
+};
+dqmemoryPool<model> modelPool 
+
+
 
 
 
@@ -1383,11 +1391,9 @@ struct dynamicMesh_prim {
 
 template <DIM S>
 struct softBody : dynamicMesh<S> {
-
+    
 };
-template <DIM S>
-struct cloth : dynamicMesh {
-    std::vector<vertex> vertices;
+struct cloth : dynamicMesh<> {
     
 };
 template <DIM S>
@@ -1406,14 +1412,13 @@ struct dyn_flora : dynamicMesh<S> {
 };
 // Actors are entities which can be possessed by controlSchemes
 
-struct actor : entity 
-{
-         
-};
-struct fauna : entity {
+struct actor : model  {
 
 };
-struct human : entity 
+struct fauna : model {
+
+};
+struct human : model
 {
     std::string name ;
 };
@@ -1605,86 +1610,88 @@ namespace lod
 
     };
 
-    
-    class atlas{ // Can contain uv's and a bunch other stuff
-        colorType tp  ;
-        std::path p ; 
-        std::vector<std::tuple<size_t , size_t, size_t , size_t> > sizes ; 
-        size_t width , height , channels; 
-        unsigned char* image ; 
+    template <quality::QUALITY Q>
+    struct atlas{ // Can contain uv's and a bunch other stuff
+
+        material<Q> image ; 
         
+        uint32_t width;
+        uint32_t height;
+
+        uint64_t widthFull;
+        uint64_t heightFull;
         size_t lod ; // How many downscalings are there 
-        std::map<>
+        
 
-        get(uint ind ){
-
-        };
-        load_image(){
-            this->image = stbi_load(p, &width, &height, &channels, 0);
-            stbi
+        glm::uvec2 getLODuv(uint ind ){ // Order Down,right,
 
         };
-        unsigned char* loadRegion(size_t x, size_t y, size_t xs , size_t ys ){
-             if (data == NULL) {
-                 // Handle error loading image
-                 return NULL;
-            }
+        glm::uvec2 getSetuv(uint ind){
 
-            // Check if the specified region is valid
-            if (x < 0 || y < 0 || x + xs > width || y + ys > height) {
-                // Handle invalid region
-                return NULL;
-            }
-
-            // Calculate the size of the cropped region
-            int croppedSize = w * h * channels;
-            unsigned char* croppedData = (unsigned char*)malloc(croppedSize);
-
-            // Copy the specified region from the  image
-            for (int i = 0; i < h; ++i) {
-                for (int j = 0; j < w; ++j) {
-                    for (int c = 0; c < channels; ++c) {
-                        int Index = ((y + i) * Width + (x + j)) * Channels + c;
-                        int croppedIndex = (i * w + j) * Channels + c;
-                        croppedData[croppedIndex] = data[Index];
-                    }
-                }
-            }
-            stbi_image_free(data);
-            return croppedData;
         };
-        unsigned char* loadRegionDownScaling(size_t x, size_t y, size_t xs , size_t ys  , size_t downscaleFactor){ // TODO
-                
+        loadMaterial(){
+            
         };
-        void lod(){ // TODO in lod systems there is a a progrssively lower resolution. Everythin is placed below the image
+       
+        void lod(material<Q> im){ // TODO in lod systems there is a a progrssively lower resolution. Everything is placed below the image
+            
         };        
         atlas(std::path p , std::vector<std::pair<size_t , size_t> > sizes ) :  p(p) , sizes(sizes) {};
     };
     class file_atlas {
         std::vector<atlas> atlases;
-        
-        
     };
-    class lod {
-        atlas a ;   
-        std::vector<> ref; 
-
+   
+    struct lod {
+        void 
     };
     
-    typedef enum LOD {
+    enum LOD {
         Normal,
         Imposter, // Looks like 3d image but always gets rendered at same angle not size though
         Sprite, // Simmillar to imposter but is not 3d in any way 
     
     } LOD;
     void makeImposter();
-    
-    class Lodsys {
-        std::array<>
-    };
-    
+    void makeSprite(){};
+    void makeSprieFan(){};
 
-  
+    template <DIM d,quality::QUALITY q, template <template <DIM ,quality::QUALITY >> typename T>
+    struct qdlod {
+       
+        T<d,q>& original;
+        std::vector<T<d,q>> sub;
+        template <DIM d,quality::QUALITY q>
+        void LodSys(uint8_t s){
+            T<d,q> original.Lod(s);
+        };
+    }
+    template <DIM d, template <template <DIM ,>> typename T>
+    struct dlod {
+       
+        T<d>& original;
+        std::vector<T<d>> sub;
+        template <DIM d>
+        void LodSys(uint8_t s){
+            T<d> original.Lod(s);
+        };
+    }
+    template <quality::QUALITY q, template <template <quality::QUALITY >> typename T>
+    struct dlod {
+       
+        T<q>& original;
+        std::vector<T<q>> sub;
+        template <quality::QUALITY q>
+        void LodSys(uint8_t s){
+             sub.push_back(original.Lod(s));
+        };
+    }
+
+     
+
+    struct lodSys {
+        
+    }
 };
   
 
@@ -1692,24 +1699,10 @@ namespace lod
 
 
 template <DIM T>
-class coords
+struct coords
 {
-    virtual glm::vec<T , float ,defaultp> pos; // x y z
-    virtual glm::vec<T, float , defaultp> ori ; // orientation
- 
-    typeof(pos) get_pos()
-    {
-        return this->pos ;
-    };
-
-    typeof(ori) get_ori()
-    {
-        return this->ori ;
-    }
-    std::pair<typeof(pos) , typeof(ori)> get()
-    {
-        return {this->pos, this->ori };
-    }
+    std::conditional<T==2,glm::vec2,glm::vec3>::type pos; // x y z
+    std::conditional<T==2,glm::vec2,glm::vec3>::type ori ; // orientation
 };
 
 
@@ -1727,11 +1720,12 @@ enum PERSPECTIVE {
 namespace camera {
     typedef glm::fvec2 dof ;
 
-    typedef enum EFFECT {
+    enum EFFECT {
         pixel, // For camera effects applied to pixels 
         texel,
         vertex // For camera effects applied to 
     }EFFECT;
+    
     class perspective {
         glm::mat4 ; 
         glm::uvec2 center ; 

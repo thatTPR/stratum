@@ -10,10 +10,10 @@
             "name": "(gdb) launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "C:\\Users\\Alexandru.Popp\\learn.microsoft.com\\en-us\\typography\\opentype\\spec\\fontget.exe",
+            "program": "C:\\Users\\Alexandru.Popp\\src\\stratum\\stratum\\cxx\\stmsl\\spvget.exe",
             "MIMode": "gdb",
-            "args": ["head"],
-            "cwd" : "C:\\Users\\Alexandru.Popp\\learn.microsoft.com\\en-us\\typography\\opentype\\spec\\",
+            "args": ["spv.html"],
+            "cwd" : "C:\\Users\\Alexandru.Popp\\src\\stratum\\stratum\\cxx\\",
             "miDebuggerPath": "gdb",
             "setupCommands": [
                 {

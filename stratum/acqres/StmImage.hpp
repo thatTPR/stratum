@@ -9,6 +9,8 @@
 #include <algorithm>
 #include "clib.hpp"
 #include <cmath>
+#include <limits.h>
+#include <type_traits>
 
 /*
 PNG [x]
@@ -923,12 +925,11 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
     };
     png() {head = pngHeader();};
 }
-// Jpeg
 
 // Tga
-#include <limits.h>
-#include <type_traits>
-enum tga_ColorMapType {
+
+struct tga {
+    enum tga_ColorMapType {
 no=0 ,//if image file contains no color map
 yes=1 //
 //2–127 reserved by Truevision
@@ -972,19 +973,19 @@ struct tga_header {
     }  Image;// specification	Image dimensions and format
   
 };
-struct tga {
     tga_header head;
     uint8_t* ID;
     uint8_t* colorMapData;
     uint8_t* imageData;
-    
+    uint8_t* rleregion;
 uint8_t pd;uint8_t byted;
 int ac;
 int nm;
 int nch;
-int16 imageFormatBytes ;
-
-    image2D im ;
+uint8_t imageFormatBytes ;
+uint32_t imDatas;
+    modules::image2D im ;
+    std::ifstream fi;
 
     uint8_t& cm_EntrySize(){return head.Color_map.entrySize;}
     uint16_t& cm_length(){return head.Color_map.length;}
@@ -993,19 +994,18 @@ int16 imageFormatBytes ;
 void setFormat(){
         im.imageFormat = ac>0?rgba32ui:rgb32ui;
 if (ac > 0){im.imageFormat = rgba32ui;
-    imageFormatBytes = imageFormatBytes<rgba32ui>();}
+    imageFormatBytes = modules::imageFormatBytes(image_formats::rgba32ui);}
 else {im.imageFormat = rgb32ui;    
-    imageFormatBytes = imageFormatBytes<rgb32ui>();}
+    imageFormatBytes = modules::imageFormatBytes(image_formats::rgb32ui);}
     }
     template <typename K>
     int8_t& getColorMap(int indt,int Offset){
-        k* d =imageData+indt;
-        return colorMapData[*d+offset];
+        K* d =imageData+indt;
+        return colorMapData[*d+Offset];
     };
     int8_t& getRgb(int indt,int Offset){
-        return imageData[indt+offset];
+        return imageData[indt+Offset];
     };
-
     int byteOffset ;
     int bitOffset ;
     int acByteDepth;
@@ -1063,21 +1063,29 @@ else {im.imageFormat = rgb32ui;
     bitOffset = nm%8;
     acByteDepth = ac/8 + (ac%8==0)?0:1;
 
-        for(int i=0;i<imDatas/byted;i++){ 
+        for(int i=0;i<imDatas;i++){ 
              int indT = i*byted;int ind=i*imageFormatBytes ;
             alpha(ind,indT,ptr);
             colors(ind,indT,ptr);}
     }
+   
     template <typename key>
-    void loadColorMapped(int numCol){
-        loadPtr(numCol,&getColorMap<key>);
-
-    };
+    void loadColorMapped(int numCol){loadPtr(numCol,&getColorMap<key>);};
     
+    template <typename key>
+    void loadColorMapped(int numCol,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        imDatas=byted*w*h;
+        fi.seekg((y*head.Image.width +x)*byted,std::ios_base::cur);
+        for(int i=0;i<head.Image.height;i++){ 
+            ld(imageData+head.Image.width*i,w.byted,fi);
+        fi.seekg(head.Image.width *byted,std::ios_base::cur);
+        };
+        loadPtr(numCol,&getColorMap<key>);};
+
     void loadRunLength( int numCol, int8_t (*ptr)(int,int) ){
         setFormat();
         int inds=0;
-        for(int i=0;i<imDatas/byted;i++){
+        for(int i=0;i<imDatas;i++){
             int indT = i*byted;int ind=inds*imageFormatBytes ;
             int8_t packet = ptr(indT,0);
             int pc = (packet &(1<<7))?packet-(1<<7):1;
@@ -1091,33 +1099,107 @@ else {im.imageFormat = rgb32ui;
             inds++;
         };
     };
+    void loadRunLength( int numCol,uint32_t w,uint32_t h,uint32_t x,uint32_t y, int8_t (*ptr)(int,int) ){
+        // imDatas=byted*w*h;
+        uint8_t* lastRl=new uint8_t[byted];
+        uint32_t i=0;uint8_t am;uint32_t lim=(head.Image.width*y+x);
+        while(i<lim){
+            ld(lastRl,fi)
+             am=(1<<7)&lastRl[0] ?lastRl[0] - (1<<7):1;
+            i+=  am;
+        };
+        imageData = new uint8_t[w*h*byted];uint32_t ind=0;
+        while(ind<w*h){
+            lastRl[0] -=(i -lim);
+            std::memcpy(imageData+ind*byted,lastRl,byted);
+            uint32_t index=i-lim;lim=w;
+            while(index<lim){
+            ld(lastRl,fi);
+            std::memcpy(imageData+(ind+index)*byted,lastRl,byted);
+            am=(1<<7)&lastRl[0] ?lastRl[0] - (1<<7):1;
+            index+= am ;
+            };
+            imageData[(ind+index)*byted]-=index-lim;
+            ind+=lim;
+        i=index-lim;lim=(head.Image.width-w);
+        while(i<lim){
+            ld(lastRl,fi);
+            am=(1<<7)&lastRl[0] ?lastRl[0] - (1<<7):1;
+            i+= am;
+        };
+        };
+        loadRunLength(numCol,ptr);
+    }
     template <typename key>
     void loadRunLengthColorMapped(int numcol){loadRunLength(numcol,&getColorMap<key>);};
+    void loadRunLengthColorMapped(int numcol,uint32_t w,uint32_t h,uint32_t x,uint32_t y){loadRunLength(numcol,w,h,x,y,&getColorMap<key>);};
 
     void loadRunLengthRgba(int numcol){loadRunLength(numcol,&getRgb);}
+    void loadRunLengthRgba(int numcol,uint32_t w,uint32_t h,uint32_t x,uint32_t y){loadRunLength(numcol,w,h,x,y,&getRgb);}
     
     void loadRgba(int numCol){
         loadPtr(numCol,&getRgb);
     };
-    bool isFormatted(){
-        bool res = pd%32==0?1:(pd%16==0)?1:(pd%8==0)
+    void loadRgba(int numCol,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
 
-        std::memcpy(d.data.p.imageData,imDatas);
-        return true
+        fi.seekg(y*byted*head.Image.width+x*byted,std::ios_base::cur);
+        imDatas=byted* w*h;
+        imageData=new uint8_t[imDatas];
+        for(int i=0;i<h;i++){
+            ld(imageData+i*byted*w, byted*w,fi );
+            fi.seekg((head.Image.width- w)*byted,std::ios_base::cur);
+        }
+        loadPtr(numCol,&getRgb);
+    };
+
+    bool isFormatted(){
+        bool res = pd%32==0 or (pd%16==0) or (pd%8==0) ;
+        // std::memcpy(im.data, imageData,imDatas);
+        if(res){
+            ld(im.data,imDatas,fi);return false;
+        }
+        else {
+            ld(imageData,imDatas,fi);
+            return true;
+        }
+    };
+    bool isFormatted(uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        bool res = pd%32==0 or (pd%16==0) or (pd%8==0) ;
+        // std::memcpy(im.data ,imageData,imDatas);
+          if(res){
+            fi.seekg((y*head.Image.width +x)*byted+,std::ios_base::cur);
+            for(int i = 0 ; i<h;i++){
+                ld(im.data+i*w*byted,w*byted,fi);
+                fi.seekg(head.Image.width *byted+,std::ios_base::cur);
+            }
+            ld(im.data,imDatas,fi);return false;
+        }
+        else {
+            // ld(imageData,imDatas,fi);
+            return true;
+        }
     };
     void load1 (){
-         if(isFormatted() ){return;}
+         if(isFormatted()){return;}
          switch(pd/8){
             case 4 :{loadColorMapped<int16_t>(3);return;}
             case 8 :{loadColorMapped<int32_t>(3);return;}
-        } 
-         
-         
+        }         
     }
-    
+    void load1(uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        if(isFormatted(w,h,x,y)){return;}
+        switch(pd/8){
+            case 4:{loadColorMapped<int16_t>(3,w,h,x,y);return;}
+            case 8:{loadColorMapped<int32_t>(3,w,h,x,y);return;}
+        }
+    };
     void load2 (){
         if( isFormatted()){return;}
-        loadRgbBa(3);
+        loadRgba(3);
+    };
+    void load2 (uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        if( isFormatted(w,h,x,y)){return;}
+        loadRgba(3);
     };
     void load9(){
         switch(pd/8){
@@ -1125,62 +1207,101 @@ else {im.imageFormat = rgb32ui;
             case 8 :{loadRunLengthColorMapped<int32_t>(3);return;}
         } 
         };
+    void load9(uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        switch(pd/8){
+            case 4 :{loadRunLengthColorMapped<int16_t>(3,w,h,x,y);return;}
+            case 8 :{loadRunLengthColorMapped<int32_t>(3,w,h,x,y);return;}
+        } 
+    };
     void load10(){
+        ld(imageData,imDatas,fi);
         loadRunLengthRgba(3);
+    };
+    void load10(uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        ld(imageData,imDatas,fi);
+        loadRunLengthRgba(3,w,h,x,y);
     };
     void load3(){
         if(isFormatted()){return;};
         loadRgbBa(1);
     };
-    void load11(){loadRunLengthRgba(11);};
+    void load3(uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        if(isFormatted(w,h,x,y)){return;};
+        loadRgbBa(1);
+    };
+
+    void load11(){
+        ld(imageData,imDatas,fi);
+        loadRunLengthRgba(11);};
+    void load11(uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        loadRunLengthRgbaR(11,w,h,x,y);};
 
     void selectrgba(){
         switch(nch){
             case 8 : {
                 if(ac==8) {im.imageFormat =image_formats::rgba8ui;return;}
                 if(ac==0) {im.imageFormat =image_formats::rgb8ui;return;}}
-
             }
             case 10 : {
                 if(ac==2) {im.imageFormat = image_formats::rgba10_a2ui}
-
             };
             case 16 : {
                 if(ac==16){im.imageFormat = image_formats::rgba16ui}
                 if(ac==0) {im.imageFormat =image_formats::rgb16ui;return;}
-
             } 
         }  
     
     void selectGrayScale(){
         switch(nm){
             case 8 : {if(ac==8){im.imageFormat = image_formats::rg8ui;};
-                        if(ac==0){im.imageFormat = image_formats::r8ui}
-        }
-            
+                        if(ac==0){im.imageFormat = image_formats::r8ui}}
         } 
     };
-image2D ld(std::string path){
-    std::ifstream fi(path);
-    i = image2d();
+void loadSet(){
+im = image2d();
     ld<tga_header>(this->head,fi);
     ld(this->ID,this->head.ID_length,fi);
     if(this->head.Color_map_type !=0){
-        ld(this->colorMapData,this->head.Color_map.length,fi);
+        ld(this->colorMapData,this->head.Color_map.length,this->head.Color_map.entrySize,fi);
     }
     pd = this->head.Image.pixelDepth;
     byted = pd%8==0?pd/8:pd/8+1;
 
     size_t imDatas=this->head.Image.width*this->head.Image.height*byted;
-    ld(this->ImageData, imDatas,fi);
-
+    
     im.width = this->head.Image.width;
     im.height = this->head.Image.height;
-
-    pd = this->Image.pixelDepth;
-    ac =  this->Image.getAlpha();
+    
+    pd = this->head.Image.pixelDepth;
+    ac =  this->head.Image.getAlpha();
     nm = pd -ac;
     nch = nm/3;  
+    imDatas=this->head.Image.width*this->head.Image.height * this->head.Image.pixelDepth/8;
+    
+}
+modules::image2D ld(std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+     fi=std::ifstream(path);
+    loadSet();
+
+    // ld(this->ImageData, imDatas,fi);
+
+    switch(this->head.Image_type ){
+        case 1:{selectrgba();load1(w,h,x,y);}
+        case 2:{selectrgba();load2(w,h,x,y);}
+        case 9:{selectrgba();load9(w,h,x,y);}
+        case 10:{selectrgba();load10(w,h,x,y);}
+        case 3:{selectGrayScale();load3(w,h,x,y);}
+        case 11:{selectGrayScale();load11(w,h,x,y);}
+    }       
+    return im;
+
+};
+modules::image2D ld(std::string path){
+    fi=std::ifstream(path);
+    loadSet();
+
+    // ld(this->ImageData, imDatas,fi);
+
     switch(this->head.Image_type ){
         case 1:{selectrgba();load1();}
         case 2:{selectrgba();load2();}
@@ -1189,10 +1310,11 @@ image2D ld(std::string path){
         case 3:{selectGrayScale();load3();}
         case 11:{selectGrayScale();load11();}
     }       
-    return i;
+    return im;
 };
 std::vector<uint8_t> imageD;
 std::vector<uint8_t> colorMapD;
+std::fstream& fs;
 
 int64_t findCl(uint8_t byd,void* d){
     for(uint64_t i=0;i<colorMapD.size();i+=byd){
@@ -1202,18 +1324,18 @@ int64_t findCl(uint8_t byd,void* d){
     }; 
     return -1;
 } ;
-void wrCmap(image2D& im){
+void wrCmap(image2D& image){
     pd() = 8;uint64_t i;
 
-    for(i=0;i<im.imageSize;i+=im.byd){
-        int64_t s = findpalette(colorMapD.data(),&colorMapD.size(),im.byd,im.data()+i);
+    for(i=0;i<image.imageSize;i+=im.byd){uint64_t sicd;colorMapD.size()
+        int64_t s = findpalette(colorMapD.data(),&sicd,im.byd,im.data()+i);
         if(s==-1){
-            colorMapD.resize(colorMapD.size()+im.byd);
-            s=(colorMapD.size()-im.byd)
-            std::memcpy(colorMapD.data()+s , im.data+i,im.byd);
+            colorMapD.resize(colorMapD.size()+image.byd);
+            s=(colorMapD.size()-image.byd)
+            std::memcpy(colorMapD.data()+s , im.data+i,image.byd);
         }
         s/=8;
-        std::memcpy(imageD.data()+(i/im.byd)*pd(),&s,pd());
+        std::memcpy(imageD.data()+(i/image.byd)*pd(),&s,pd());
     };
     // Resize bitdepths;
     uint64_t s;
@@ -1224,19 +1346,109 @@ void wrCmap(image2D& im){
     imageD.resize(imageD.size()/8*pd() );
 
 };
-void wrCmapRLE(image2D& im){
+uint32_t lengthCm ; 
+uint32_t updateCmap(image2D& image,std::vector<uint8_t>& cmdata){
+     std::vector<uint8_t> cpdata;
+     lengthCm = head.Color_map.length;
+     for(uint32_t i =0i<image.imageSize;i++ ){bool found=false;
+        cmdata.resize(cmdata.size()+byted);
+        auto getil = [&](uint32_t inds){
+            uint8_t d[byted];
+            for(uint8_t k = byted;k>0;k--){
+                d[k] = inds& (0b11111111<<(8*k)) >> (8*k) ;
+            };
+            std::memcpy(cmdata.data()+cmdata.size()-byted,d,byted);
+        }
+
+            for(uint32_t j = 0;head.Color_map.length;j++){
+                if(0==std::memcmp(image.data+i*image.byd,colorMapData+j*image.byd,byted) ){
+                    std::memcpy(cmdata.data()+cmdata.size()-byted,colorMapData+j*image.byd,byted);
+                    getil(j);
+                    found=true;break;};
+            };
+            if(!found){
+                for(uint32_t j = 0; j<cpdata.size()/byted;j++){
+                    if(0==std::memcmp(image.data+i*image.byd,cpdata.data()+j*image.byd,byted)){
+                        std::memcpy(cmdata.data()+cmdata.size()-byted,cpdata.data()+j*image.byd,byted);
+                        getil(head.Color_map.length+1+j);
+                        found=true;break;
+                    }
+                }
+            }
+            if(!found){head.Color_map.length++;
+                cpdata.resize(cpdata.size()+image.byd);
+                std::memcpy(cpdata.data()+ image.byd*(cpdata.size()-1),image.data+i*image.byd ,image.byd);
+                getil(head.Color_map.length+1+cpdata.size());
+            }
+        };
+        uint32_t res= cpdata.size();
+    std::vector<uint8_t> cp(cpdata.size() + Image.Color_map.length * Image.Color_map.entrySize);
+    std::memcpy(cp.data(),colorMapData,Image.Color_map.length*Image.Color_map.entrySize);
+    std::memcpy(cp.data()+Image.Color_map.length*Image.Color_map.entrySize,cpdata.data(),res);
+    delete colorMapData ;
+    colorMapData = uint8_t[cp.size()];
+    std::memcpy(colorMapData,cp,cp.size());
+    return res;
+}
+void wrCmap(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){// TODO
+    std::vector<uint8_t>& cmdata;
+    uint32_t size = updateCmap(image,cmdata);
+    std::vector<uint8_t> data(size);
+    uint32_t indt = byted*(y*head.Image.width+x); 
+    ld(data.data(),size,fs);
+    fs.seekg(-size,std::ios_base::cur);
+    wr(cmdata.data(),size,fs);
+    ///
+    std::vector<uint8_t> img(head.Image.width*head.Image.height*byted);
+    std::memcpy(img.data(),data.data(),size);
+    ld(img.data()+size,byted*head.Image.width*head.Image.height-size,fs);
+    for(uint32_t i=0;i<h;i++){
+        std::memcpy(img.data()+(i*head.Image.width+x)*byted,image.data+i*w*byted,w*byted);
+    }
+    wr(img.data()+size,byted*(head.Image.width*head.Image.height)-size,fs);
+    
+    if(false)
+    {
+
+    std::vector<uint8_t > imgline(head.Image.width*byted);
+    if(y>0){
+        std::memcpy(imgline.data(),data.data(),size);
+        ld(imgline.data()+size,head.Image.width*byted-size,fs);
+        fs.seekg(-(head.Image.width*byted-size),std::ios_base::cur)
+        wr(imgline.data()+size,head.Image.width*byted,fs);
+    }
+    for(uint32_t i=0;i<y;i++){
+        ld(imgline.data(),head.Image.width*byted,fs);
+        fs.seekg(-(head.Image.width*byted),std::ios_base::cur);
+        wr(imgline.data()+size,head.Image.width*byted-size,fs);
+        ld(data.data(),size,fs);
+        fs.seekg(-size);
+        wr(imgline.data()+head.Image.width*byted-size,size,fs);
+    }
+    imgline.resize(x*byted);
+
+    for(uint32_t i=0;i<h;i++){
+        std::memcpy(img.data()+(head.Image.width*i+ x )*byted,image.data+w*byted,w*byted) ;
+    }
+
+    }
+        
+}
+void wrCmapRLE(image2D& image){
+    std::vector<uint8_t>& cmdata;
+    uint32_t size = updateCmap(image,cmdata);
     pd() = 8;uint64_t i;
     uint8_t rep=0;uint32_t entries=0;
-    for(i=0;i<im.imageSize;i+=im.byd){
-        if(std::memcmp(im.data+i,im.data+i-im.byd , im.byd)==0 and (rep<(1<<7))){rep++;}
+    for(i=0;i<image.imageSize;i+=image.byd){
+        if(std::memcmp(image.data+i,image.data+i-image.byd , image.byd)==0 and (rep<(1<<7))){rep++;}
         else {uint8_t reps = rep +(1<<7);
             memcpy(imageD.data()+entries*(pd()+1),&reps,1);
             rep=0;entries++;};
-        int64_t s = findCl(im.byd,im.data()+i);
+        int64_t s = findCl(image.byd,image.data()+i);
         if(s==-1){
-            colorMapD.resize(colorMapD.size()+im.byd);
-            s=(colorMapD.size()-im.byd)
-            std::memcpy(colorMapD.data()+s , im.data+i,im.byd);
+            colorMapD.resize(colorMapD.size()+image.byd);
+            s=(colorMapD.size()-image.byd)
+            std::memcpy(colorMapD.data()+s , image.data+i,image.byd);
         }
         
     };
@@ -1249,29 +1461,79 @@ void wrCmapRLE(image2D& im){
     imageD.resize(imageD.size()/8*(pd()+1) );
 
 };
-void wrNorm(image2D& im){
-    pd()=im.byd;uint8_t rep-0;uint32_t entries=0
-    imageD.resize(pd()*im.imageSize);
-    std::memcpy(imageD.data(),im.data,pd()*im.imageSize);
+void wrCmapRLE(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+    std::vector<uint8_t>& cmdata;
+    uint32_t size = updateCmap(image,cmdata);
 };
-void wrRLE(image2D& im){
-    pd()=im.byd;
-    for(int i=0;i<im.imageSize;i+=im.byd){
-        if(std::memcmp(im.data+i,im.data+i-im.byd , im.byd)==0 and (rep<(1<<7))){rep++;}
+void wrNorm(image2D& image){
+    byted=image.byd;uint8_t rep=0;uint32_t entries=0
+    imageD.resize(byted*image.imageSize);
+    std::memcpy(imageD.data(),image.data,byted*image.imageSize);
+};
+void wrNorm(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+    fs.seekp((y*head.Image.width + x)*byted ,std::ios_base::cur);
+    for(int i=0;i<h;i++){
+        wr(image.data,w*byted,fs);
+        fs.seekp((head.Image.width-w)*byted,std::ios_base::cur)
+    }
+};
+void wrRLE(image2D& image){
+    byted=image.byd;
+    for(int i=0;i<image.imageSize;i+=image.byd){
+        if(std::memcmp(image.data+i,image.data+i-image.byd , image.byd)==0 and (rep<(1<<7))){rep++;}
         else{uint8_t reps = rep+(1<<7);
-            memcpy(imageD.data()+entries*(pd()+1),&reps,1);
+            memcpy(imageD.data()+entries*(byted+1),&reps,1);
             rep=0;entries++;
-            memcpy(imageD.data()+entries*(pd()+1)+1,im.data+i,pd() );
+            memcpy(imageD.data()+entries*(byted+1)+1,image.data+i,pd() );
         }
     };
 }
-void wr(image2D& im,std::string path,bool cpl=false,bool rle=true){
-    uint8_t bda =modules::bitdepth_a(im.imageFormat);
+void wrRLE(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+    byted = image.byd;
+    uint8_t* lastrle = new uint8_t[byted+1]; 
+    std::vector<uint8_t> rleim(image.imageSize*(byted+1));uint8_t rep=0; uint32_t inds=0;
+    uint8_t* lim = new uint8_t[byted];
+    std::memcpy(lim+1,image.data,byted);
+    auto lam = [&](){
+            lastrle[0] =1<<7 + rep;
+            std::memcpy(rleim.data()+inds*(byted+1),lastrle,byted+1);rep =0;inds++;
+            std::memcpy(lim,image.data+i*byted,byted);
+    }
+    for(uint32_t i = 1 ;i<image.imageSize;i++){
+        if(0==std::memcmp(lim,image.data+i*byted,byted)){
+            rep++;}
+        else {lam();};
+        if(rep>14){lam();};
+    };
+    rleim.resize(inds);
+
+    uint32_t i ;uint8_t val ;uint32_t lim=(byted+1)*(head.Image.width*y +x );
+    for(i=0;i<lim;i+=val){
+        ld(lastrle,byted+1,fs);
+        val = lastrle[0] & 0b10000000 ?  lastrle[0] & 0b01111111 : 1;
+    }
+    int32_t extraBytes=0;uint8_t lastrl=new uint8_t[byted+1];
+    for(uint32_t ind=0;ind<h;ind++){
+        if(i-lim>0){
+            lastrle[0]-=(i-lim);   
+            extraBytes++;
+        }
+        
+        lim = (byted+1)*(head.Image.width*(y+ind) +x+w  );
+        for(i = (byted+1)*(head.Image.width*(y+ind) +x) ; i<lim;i+=val){            
+            ld(lastrl,byted+1,fs);
+            val=lastrle[0] & 0b10000000 ?  lastrle[0] & 0b01111111 : 1;};
+
+        
+    };
+}
+void wr(image2D& image,std::string path,bool cpl=false,bool rle=true){
+    uint8_t bda =modules::bitdepth_a(image.imageFormat);
     head.Image.descriptor=bda &0b1111 + 0b110000; 
-    head.Image.width=im.width;head.Image.height=im.height;
-    cm_entrySize() = im.byd;
-    colorMapD= std::vector<uint8_t>(im.byd*im.imageSize);
-    if(im.length()<=2){
+    head.Image.width=image.width;head.Image.height=image.height;
+    cm_entrySize() = image.byd;
+    colorMapD= std::vector<uint8_t>(image.byd*image.imageSize);
+    if(image.length()<=2){
         if(rle){head.Image_type=tga_ImageType::run_length_grayscale;wrRLE(im);}
         else{head.Image_type=tga_ImageType::uncompressed_grayscale;wrNorm(im);}
     }
@@ -1284,6 +1546,14 @@ void wr(image2D& im,std::string path,bool cpl=false,bool rle=true){
     wr<uint8_t>(ID,head.ID_LENGTH,of);
     wr<uint8_t>(colorMapD,colorMapD.size(),of);
     wr<uint8_t>(imageD,imageD.size(),of);
+};
+void wr(image2D& image,std::string path,bool cpl=false,bool rle=true,uint32_t w,uint32_t h,uint32_t x,uint32_t y){// TODO
+
+    fs =std::fstream(path);
+    pos_type p= fs.tellp();
+
+    loadSet();
+
 };
 };
 // bmp 
@@ -1611,28 +1881,221 @@ std::memcpy(&pix,pixels+i*bc,4)
 // JPEG
 
 struct jpeg {
-
-
     const uint8_t segstart = 0xFF;
     enum segs {
-        SOI	= 0xD8,//	none	        Start Of Image	
-        SOF0= 0xC0,//	variable size	Start Of Frame (baseline DCT)	Indicates that this is a baseline DCT-based JPEG, and specifies the width, height, number of components, and component subsampling (e.g., 4:2:0).
-        SOF2= 0xC2,//	variable size	Start Of Frame (progressive DCT)	Indicates that this is a progressive DCT-based JPEG, and specifies the width, height, number of components, and component subsampling (e.g., 4:2:0).
-        DHT	= 0xC4,//	variable size	Define Huffman Table(s)	Specifies one or more Huffman tables.
-        DQT	= 0xDB,//	variable size	Define Quantization Table(s)	Specifies one or more quantization tables.
-        DRI	= 0xDD,//	4 bytes	        Define Restart Interval	Specifies the interval between RSTn markers, in Minimum Coded Units (MCUs). This marker is followed by two bytes indicating the fixed size so it can be treated like any other variable size segment.
-        SOS	= 0xDA,//	variable size	Start Of Scan	Begins a top-to-bottom scan of the image. In baseline DCT JPEG images, there is generally a single scan. Progressive DCT JPEG images usually contain multiple scans. This marker specifies which slice of data it will contain, and is immediately followed by entropy-coded data.
-        RSTn= 0xDn,// (n=0..7)	none	Restart	Inserted every r macroblocks, where r is the restart interval set by a DRI marker. Not used if there was no DRI marker. The low three bits of the marker code cycle in value from 0 to 7.
-        APPn= 0xEn,//	variable size	Application-specific	For example, an Exif JPEG file uses an APP1 marker to store metadata, laid out in a structure based closely on TIFF.
-        COM	= 0xFE,//	variable size	Comment	Contains a text comment.
-        EOI	= 0xD9,//	none	End Of Image	
+        _SOI	= 0xD8,//	none	        Start Of Image	
+        _SOF0= 0xC0,//	variable size	Start Of Frame (baseline DCT)	Indicates that this is a baseline DCT-based JPEG, and specifies the width, height, number of components, and component subsampling (e.g., 4:2:0).
+        _SOF2= 0xC2,//	variable size	Start Of Frame (progressive DCT)	Indicates that this is a progressive DCT-based JPEG, and specifies the width, height, number of components, and component subsampling (e.g., 4:2:0).
+        _DHT	= 0xC4,//	variable size	Define Huffman Table(s)	Specifies one or more Huffman tables.
+        _DQT	= 0xDB,//	variable size	Define Quantization Table(s)	Specifies one or more quantization tables.
+        _DRI	= 0xDD,//	4 bytes	        Define Restart Interval	Specifies the interval between RSTn markers, in Minimum Coded Units (MCUs). This marker is followed by two bytes indicating the fixed size so it can be treated like any other variable size segment.
+        _SOS	= 0xDA,//	variable size	Start Of Scan	Begins a top-to-bottom scan of the image. In baseline DCT JPEG images, there is generally a single scan. Progressive DCT JPEG images usually contain multiple scans. This marker specifies which slice of data it will contain, and is immediately followed by entropy-coded data.
+        _RSTn= 0xD0,// (n=0..7)	none	Restart	Inserted every r macroblocks, where r is the restart interval set by a DRI marker. Not used if there was no DRI marker. The low three bits of the marker code cycle in value from 0 to 7.
+        _RST7= 0xD7,// (n=0..7)	none	Restart	Inserted every r macroblocks, where r is the restart interval set by a DRI marker. Not used if there was no DRI marker. The low three bits of the marker code cycle in value from 0 to 7.
+        _APPn= 0xE0,//	variable size	Application-specific	For example, an Exif JPEG file uses an APP1 marker to store metadata, laid out in a structure based closely on TIFF.
+        _APPL= 0xEF,//	variable size	Application-specific	For example, an Exif JPEG file uses an APP1 marker to store metadata, laid out in a structure based closely on TIFF.
+        _COM	= 0xFE,//	variable size	Comment	Contains a text comment.
+        _EOI	= 0xD9,//	none	End Of Image	
+    }
+    uint8_t SOI;
+    struct SOF{
+        // uint16_t length ;
+        uint16_t width;
+        uint16_t height;
+        uint16_t numcomponents;
+        uint16_t* componentSubSampling;
+    };
+
+    ACQRES(SOF){
+        one(f.width);
+        one(f.height);
+        one(f.numcomponents);
+        arr(f.componentSubSampling,f.numcomponents);
+    }
+    USE_ACQRES(SOF)
+    typedef SOF SOF0;
+    typedef SOF SOF2;
+
+    struct DHT {
+        uint16_t length;
+        std::vector<huff_tree> trees;
+    };
+    ACQRES(DHT) {
+        one(f.length);
+        uint16_t l = length;
+        int i;
+        trees.resize(f.s);
+        for( i=0;l>0;i++){trees.push_back(huffmanTree());
+            one(f.trees[i].htInfo); l--;
+            arr(f.tress[i].codeLengths,16); l-=16;
+            size_t s=0;
+            for(int i=0;i<16;i++){s+=f.codeLengths[i];}l-=s;
+            if(!f.trees[i].symbols){new f.trees.symbols=new uint8_t[s];}
+            arr(f.trees[i].symbols,s);
+        };
+        f.s=i;
+        trees.resize(f.s);
+    }
+    USE_ACQRES(DHT)
+
+    struct DQT {
+        uint16_t length;
+        uint8_t* qtable;
+    };
+    ACQRES(DQT){
+        one(f.length);
+        one(f.qtable,f.length);
+    } 
+    USE_ACQRES(DQT)
+    typedef uint16_t DRI ;
+
+    struct SOS {
+        uint16_t length;
+        uint8_t numberOfComponents;
+        struct {
+            uint8_t id;
+            uint8_t huffman; // high4:DC, low4:AC
+            uint8_t tdc(){return huffman>>4;}
+            uint8_t tac(){return huffman&0b1111;}
+            void tdc(uint8_t s){ huffman&=0b00001111;huffman+=(s&0b1111)<<4;}
+            void tac(uint8_t s){ huffman&=0b11110000;huffman+=s&0b1111 ;}
+        }* componentSpecifier; // by1:id by2:HT
+        uint8_t spectralStart=0x00;//
+        uint8_t spectralEnd=0x3F;
+        uint8_t successiveApprox;
+        std::vector<uint8_t> data;
+    };  
+    template <>
+    void ld(SOS& f,std::ifstream& fi){
+        ld(f.length,fi);
+        ld(f.numberOfComponents,fi);
+        ld(f.componentSpecifier,f.numberOfComponents,fi);
+        ld(f.spectralStart,fi);
+        ld(f.spectralEnd,fi);
+        ld(f.successiveApprox,fi);
+        uint8_t o;bool t=true;
+        while(t){
+            ld(o,fi);
+            f.data.data.push_back(one);
+            if(o==0xFF){ld(o,fi);
+                if(o==0xD9){t=false;break;}}
+        } 
+    }
+    void ld(SOS& f, uint32_t x,uint32_t y,uint32_t w,uint32_t h,std::ifstream& fi){
+    ld(f.length,fi);
+    ld(f.numberOfComponents,fi);
+    ld(f.componentSpecifier,f.numberOfComponents,fi);
+    ld(f.spectralStart,fi);
+    ld(f.spectralEnd,fi);
+    ld(f.successiveApprox,fi);
+    uint8_t o;bool t=true;
+    while(t){
+        ld(o,fi);
+        f.data.data.push_back(one);
+        if(o==0xFF){ld(o,fi);
+            if(o==0xD9){t=false;break;}}
+    } 
+    }
+    template <>
+    void wr(SOS& f,STD::ofstream& fi){
+        ld(f.length,fi);
+        ld(f.numberOfComponents,fi);
+        ld(f.componentSpecifier,f.numberOfComponents,fi);
+        ld(f.spectralStart,fi);
+        ld(f.spectralEnd,fi);
+        ld(f.successiveApprox,fi);
+        wr(f.data.data.data(),f.data.size(),fi);
+    };
+    struct COM {
+        uint16_t length;
+        char* text;
+    };
+    ACQRES(COM){
+        one(f.length);
+        arr(f.text,f.length);
+    };
+    USE_ACQRES(COM) 
+
+    struct data {
+        uint8_t segstart;
+        uint8_t SOI_ = seg::_SOI;
+        bool baseline;bool DRIb=false;
+
+            SOF SOF_;
+            
+            DHT DHT_;
+            DQT DQT_;
+            DRI DRI_;
+            SOS SOS_;
+            APPn APPn_;
+            COM COM_;
+         list<tables> tabs;
+    };
+    void ld(std::ifstream& fi){
+        ld(f.segstart,fi);
+        ld(f.SOI_,fi);
+        uint8_t segs;
+        uint8_t segt=seg::_SOI;
+        while(segt!=segs::_EOI){
+            ld(segs,fi);
+            ld(segt,fi);
+            data::tables tb;
+            switch(segt){
+                #define CASE_JPEGTAG(n) case _##n : {ld(f.##n_,fi);break;} 
+                REPEAT(CASE_JPEGTAG,DHT,DQT,DRI,SOS,RSTn,RST7,APPn,COM,EOI)   
+                case _SOF0 : {ld(f.SOF_,fi);f.baseline=true};
+                case _SOF2 : {ld(f.SOF_,fi);f.baseline=false};
+                case _DRI : { DRI s; ld(s,fi);DRI_.push_back(s);data.DRIb=true;};
+            }
+            f.tabs.push_back(tb);
+        };
+    }
+
+    void ld(std::ifstream& fi,uint32_t x,uint32_t y,uint32_t w,uint32_t h){
+        ld(f.segstart,fi);
+        ld(f.SOI_,fi);
+        uint8_t segs;
+        uint8_t segt=seg::_SOI;
+        while(segt!=segs::_EOI){
+            ld(segs,fi);
+            ld(segt,fi);
+            data::tables tb;
+            switch(segt){
+                #define CASE_JPEGTAG(n) case _##n : {ld(f.##n_,fi);break;} 
+                REPEAT(CASE_JPEGTAG,DHT,DQT,DRI,RSTn,RST7,APPn,COM,EOI)   
+                        case _DRI : { DRI s; ld(s,fi);DRI_.push_back(s);};
+                        case _SOF0 : {ld(f.SOF0_,fi);f.baseline=true};
+                        case _SOF2 : {ld(f.SOF2_,fi);f.baseline=false};
+                        case _SOS : {
+                            ld(f.SOS2_,x,y,w,h,fi)
+                        }
+
+            }
+            f.tabs.push_back(tb);
+        };
+    };
+    void wrSeg(std::ofstream& of,segs s){wr(segstart,of);wr(s,of);}
+    void wr(std::ofstream& of){
+        wrSeg(of,segs::_SOI);
+        if(data.baseline){wrSegs(of,segs::_SOF0);wr(data,SOF0_,of);}
+        else{wrSegs(of,segs::_SOF2);wr(data,SOF2_,of);}
+        wrSeg(of,segs::_DHT);
+        wr(data.DHT,of);
+        wr(data.DQT,of);
+        wr(data.DRI_);
+        wr(data.SOS_);
+        wr(data.EOF_);   
+        wr(data.APPn_);
+        wr(data.COM_);
     }
 
     int8_t dct(uint8_t u,uint8_t v,uint8_t x,uint8_t y){
         return cos((2 * x + 1) * u * PI / 16.0) *
-                           cos((2 * y + 1) * v * PI / 16.0);
-    };  
-    void dct8x8(double input[8][8], double output[8][8]) {
+                           cos((2 * y + 1) * v * PI / 16.0);    };  
+
+void alpha(uint8_t n){return n==0?0.707106781:1;}
+void dct8x8(double input[8][8], double output[8][8]) {
+    const int N =8;
     for (int u = 0; u < N; ++u) {
         for (int v = 0; v < N; ++v) {
             double sum = 0.0;
@@ -1645,7 +2108,147 @@ struct jpeg {
         }
     }
 }
+void getCoefficients(modules::image2D& YCC ,uint16_t wstep,uint16_t hstep , double ycoef[8][8],double crcoef[8][8],double cbcoef[8][8]){
+    glm::u8vec3 vec[8][8];
+    for(int i=hstep;i<8;i++){
+        std::memcpy(vec+(i-hstep)*24,YCC.data+i*24*YCC.width+wstep*24,24*8);
+    };
+    double input[8][8];        
+    for(int i=0;i<3;i++){
+        for(int j=0;j<8;j++){
+        for(int k=0;k<8;k++){
+            input[j][k]=vec[j][k][i] -128;
+        } } 
+        switch(i){
+            case 0 :{dct8x8(input,ycoef);}
+            case 1 :{dct8x8(input,crcoef);}
+            case 2 :{dct8x8(input,cbcoef);}
+        }
+    };
+};
+const uint8_t qmatrix = {
+{16,11,10,16,24, 40, 51, 61},
+{12,12,14,19,26, 58, 60, 55},
+{14,13,16,24,40, 57, 69, 56},
+{14,17,22,29,51, 87, 80, 62},
+{18,22,37,56,68, 109,103,77},
+{24,35,55,64,81, 104,113,92},
+{49,64,78,87,103,121,120,101},
+{72,92,95,98,112,100,103,99},
+}
 
+void setDQT(uint8_t *mat[8][8], size_t s){
+    data.DQT_.length=64*s;
+    data.DQT.qtable = new uint8_t[data.DQT_.length];
+    std::memcpy(data.DQT.qtable,mat,data.DQT.length) 
+};
+void qmatrix(uint8_t qmat[8][8], uint8_t quality){
+    uint8_t factor=  quality/10;
+    for(int i=0;i<8;i++){
+    for(int j=0;j<8;j++){
+        qmat[i][j]=qmatrix/factor;
+    }
+    }
+}
+int bitSize(int8_t s){
+    int i;for(i=0;s!=0;i++){s=s>>1;};return i;
+};  
+void zigzagRle(int8_t* result,uint8_t* size, int8_t mat[8][8]){
+    int8_t zeros=0;
+    for(int i=0;i<8;i++){
+    for(int j=0;j<8;j++){
+        if(mat[i][j]==0){zeros++;}
+    }
+    }    
+    result = new int8_t[(64-zeros)*2];
+    int8_t zero=0; int index=0;*size=0;
+    int index=1; int loc=0;int step=0;int8_t last=0;
+    for(int i=0;i<64;i++){
+        loc++;
+        if(loc == index){
+            if(i<32 ){index++};
+            else{index--;step++;};
+            loc=0;
+        }
+        int row ;int col ;
+        if(index%2==0){
+            row=step+loc;
+            col=step+index-loc;
+        }
+        else {
+            row=step+index-loc;
+            col=step+loc;
+        }
+        if(mat[row][col]==0){zero++;}
+        if(zero==16){zero=0;result[*size]=0b11110000;result[*size+1]=0;*size+=2;continue;}
+        else {*size+=zero*2+2; zero=0;
+            if(mat[row][col] == last){result[*size+1]; result[*size]+=0b10000;}
+            else {
+                result[*size]=zero<<4 + bitSize(mat[row][col]);
+                result[*size+1]=mat[row][col];
+                last = mat[row][col];
+            }
+            }
+    };
+    if(zero!=0){
+        for(;(result[*size-2] == 0b11110000 and (result[*size-1] ==0))and 
+             (result[*size-4] == 0b11110000 and (result[*size-3] ===0));*size-=2 ){};
+result[*size-2] == 0 ; result[*size-1] =0;}
+};
+
+void addToVec(std::vector<int8_t>& rles,std::vector<std::vector<int8_t>> rl ,int8_t* rle ;uint8_t size){
+    uint32_t s = rles.size();
+    rles.resize(rles.size()+size);
+    std::memcpy(rles.data(),rle,size);
+    std::vector<int8_t> vec(size);
+    std::memcpy(vec.data(),rle,size);
+    rl.push_back(vec);
+};
+void quantize(modules::image2D& YCC,uint8_t qmat[8][8],uint8_t quality,uint8_t subsy,uint8_t subscr,uint8_t subscb ){
+    uint8_t wm=YCC.width %8 ; 
+    uint8_t hm=YCC.height %8 ; 
+    uint8_t wd=YCC.width /8 ; 
+    uint8_t hd=YCC.height /8 ; 
+    data.DQT_.qtable=new uint8_t[64];
+    std::vector<int8_t> rles;
+    std::vector<std::vector<int8_t>> rl; 
+    std::vector<int8_t > acs;
+    for(uint32_t j=0;i<wd;i++){
+        
+        for(uint32_t i=0;i<hd;i++){
+            double ycoef[8][8];double crcoef[8][8];double cbcoef[8][8];
+            getCoefficients(YCC,j,i,ycoef,crcoef,cbcoef);
+            qmatrix(ycoef,(subsy/4)*quality);
+            qmatrix(crcoef,(subscr/4)*quality);
+            qmatrix(cbcoef,(subscb/4)*quality);
+
+        int8_t* rle ;uint8_t size;uint8_t* dest;size_t destSize; huffmanTree tree;  
+        zigzagRle(rle,&size,ycoef);
+        addToVec(rles,rl,rle+2,size-2); acs.push_back(ycoef[0]);
+        zigzagRle(rle,rl,&size,crcoef);
+        addToVec(rles,rle+2,size-2);acs.push_back(crcoef[0]);
+        zigzagRle(rle,rl,&size,cbcoef);
+        addToVec(rles,rl,rle+2,size-2);acs.push_back(cbcoef[0]);
+    };
+    };
+    // Dc differenece encode ;
+    for(int i=acs.size()-1;i>0;i--){acs[i] = acs[i] - acs[i-1];};
+    huff_tree* tree; char* dest;size_t* destlen;
+    huffman_encode(acs.data(),acs.size(),tree,dest,destlen);
+tree->htInfo=0;tree->length();
+    data.DHT_.trees.push_back(*tree) ; 
+    auto lam =[&](){size_t s=data.SOS_.data.size();
+        data.SOS_.data.resize(s+*destlen)
+        std::memcpy(data.SOS_.data.data()+s,dest,*destlen);}
+    lam();
+    huffman_encode(rles.data(),rles.size(),tree,dest,destlen);
+        tree->htInfo=0b00010001;tree->length();
+    data.DHT_.trees.push_back(*tree) ; 
+    lam();
+}
+void quantize(modules::image2D& YCC,uint8_t qmat[8][8],uint8_t quality){ // TODO region write
+    quantize(YCC,qmat,quality,data.SOF_.componentSubSampling[0],data.SOF_.componentSubSampling[1],data.SOF_.componentSubSampling[2]);
+};
 // Inverse DCT
 void idct8x8(double input[8][8], double output[8][8]) {
     for (int x = 0; x < N; ++x) {
@@ -1660,6 +2263,13 @@ void idct8x8(double input[8][8], double output[8][8]) {
         }
     }
 }
+void dequantize(modules::image2D& YCC,uint32_t x,uint32_t y,uint32_t w,uint32_t h){
+    YCC
+};
+ 
+void dequantize(modules::image2D& YCC){ // 
+    dequantize(YCC,0,0,data.SOF_.width,data.SOF_.height);
+};
 
 modules::image2D sRGBto_YCC(modules::image2D& im){
     modules::image2D res;
@@ -1685,12 +2295,43 @@ modules::image2D YCCtoRGB(modules::image2D& im){
         std::memcpy(res.data+i,rgb,3);
     };
 };
-    void get8x8image(modules::image2D& im,uint32_t w, uint32_t h){
+
+    void encode(modules::image2D& im,uint8_t quality){
+        data.SOF_.width=im.width;
+        data.SOF_.height=im.height;
+        data.SOF_.numcomponents=3;
+        uint8_t cmpsb[] = {4,4,4};
+        std::memcpy(data.SOF_.componentSubSampling,&cmpsb,3);
         
+        setDQT({qmatrix},1);
+        std::memcpy(data.DQT_.qtable,qmatrix,64);
+        
+
+        if(im.imageFormat!=modules::image_formats::rgb8){im.to<modules::image_formats::rgb8>();};
+
+        image2D& YCC = sRGBto_YCC(im) ;
+        quantize(YCC,qmatrix,quality);
+    };  
+    modules::image2D decode( uint32_t x,uint32_t y,uint32_t w,uint32_t h){
+        modules::image2D im;
+        dequantize(im,x,y,w,h);
+        YCCtoRGB(im);
+        return im;
     }
-    modules::image2D ld(std::string path){
-        
+    void wr(std::string path ,modules::image2D& im, uint8_t quality=100){
+        encode(im,quality);
+    }
+    modules::image2D ld(std::string path, uint32_t x,uint32_t y,uint32_t w,uint32_t h){
+        std::ifstream fi(path);
+        ld(data,fi,x,y,w,h);
+        modules::image2D im=decode(x,y,w,h);
     };
+     modules::image2D ld(std::string path){
+        std::ifstream fi(path);
+        ld(data,fi);
+        modules::image2D im=decode();
+    };
+
 
 };
 #ifdef STM_IMAGE_GIF

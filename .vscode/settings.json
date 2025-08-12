@@ -164,7 +164,9 @@
         "algo": "cpp",
         "defs": "cpp",
         "version.h": "c",
-        "__functional_03": "cpp"
+        "__functional_03": "cpp",
+        "__functional_base_03": "cpp",
+        "__std_stream": "cpp"
     },
     "svg.preview.background": "custom"
 }

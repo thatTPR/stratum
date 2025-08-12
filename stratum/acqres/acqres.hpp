@@ -2,12 +2,12 @@
 #define ACQRES_HPP
 // #include <type_traits>
 // template <typename T, size_t si>
-// void ld(T& s,std::ifstream* fi){
+// void ld(T& s,std::ifstream& fi){
 //     if constexpr(std::is_pointer<T>::value){
-//         fi->read(reinterpret_cast<char*>(s) , sizeof(s[0])* si)
+//         fi.read(reinterpret_cast<char*>(s) , sizeof(s[0])* si)
 //     }
 //     else {
-//         fi->read(reinterpret_cast<char*>(s) , sizeof(s) )
+//         fi.read(reinterpret_cast<char*>(s) , sizeof(s) )
 //     }
 // };
 
@@ -31,77 +31,143 @@ size_t size(T& s, auto& offset){
 
 
 template <typename T>
-inline void ld(T& f, std::ifstream* fi){ // One
-    fi->read(reinterpret_cast<char*>(&f), sizeof(f));
+inline void ld(T& f, std::ifstream& fi){ // One
+    fi.read(reinterpret_cast<char*>(&f), sizeof(f));
 };
 template <typename T>
-inline void ld(T& f, size_t s,std::ifstream* fi){ // Arr
+inline void ld(T& f, size_t s,std::ifstream& fi){ // Arr
     f = new T[s];
-    fi->read(reinterpret_cast<char*>(&f),sizeof(f[0])*s);
+    fi.read(reinterpret_cast<char*>(&f),sizeof(f[0])*s);
 };
 template <typename T>
-inline void ld( T& f,size_t start ,size_t Offset, std::ifstream* fi){ //  OffOne
-    fi->seekg(start + offset);
+inline void ld( T& f,size_t start ,size_t Offset, std::ifstream& fi){ //  OffOne
+    fi.seekg(start + offset);
     ld(f,fi);
 };
 
 template <typename T>
-inline void ld( T& f,size_t start ,size_t Offset,size_t si, std::ifstream* fi){ // OffArr
-    fi->seekg(start + offset);
+inline void ld( T& f,size_t start ,size_t Offset,size_t si, std::ifstream& fi){ // OffArr
+    fi.seekg(start + offset);
     ld(f,fi,si);
 };
 template <typename T>
-inline void ld( T& f,size_t start ,size_t Offsize , size_t* Offset,size_t si, std::ifstream* fi){ // OffMany
+inline void ld( T& f,size_t start ,size_t Offsize , size_t* Offset,size_t si, std::ifstream& fi){ // OffMany
     for(int i = 0 ; i < Offsize ;i++){
-        fi->seekg(start + Offset[i]);
+        fi.seekg(start + Offset[i]);
         ld(&(f[i]),fi,si);
     };
 };
 
 template <typename T>
-inline void wr(T& f, size_t s, std::ofstream* fi){
-    fi->write(reinterpret_cast<char*>(f),sizeof(f[0])*s);
+inline void wr(T& f, size_t s, std::ofstream& fi){
+    fi.write(reinterpret_cast<char*>(f),sizeof(f[0])*s);
 };
 template <typename T>
-inline void wr(T& f, std::ofstream* fi){
-    fi->write(reinterpret_cast<char*>(f), sizeof(f));
+inline void wr(T& f, std::ofstream& fi){
+    fi.write(reinterpret_cast<char*>(f), sizeof(f));
 };
 
 
 
 template <typename T>
-inline void wr(T& f,pos_t start ,pos_t Offset, std::ofstream* fi){
-    fi->seekp(start + offset);
+inline void wr(T& f,pos_t start ,pos_t Offset, std::ofstream& fi){
+    fi.seekp(start + offset);
     wr(f,fi);
 };
 template <typename T>
-inline void wr(T& f,pos_t start ,pos_t Offset,size_t si, std::ofstream* fi){
-    fi->seekp(start + offset);
+inline void wr(T& f,pos_t start ,pos_t Offset,size_t si, std::ofstream& fi){
+    fi.seekp(start + offset);
     wr(f,si,fi);
 };
 template <typename T>
-inline void wr( T& f,auto& start ,size_t Offsize , auto* Offset, std::ofstream* fi){
+inline void wr( T& f,auto& start ,size_t Offsize , auto* Offset, std::ofstream& fi){
     for(int i = 0 ; i < Offsize ;i++){
-        fi->seekp(start + Offset[i]);
+        fi.seekp(start + Offset[i]);
+        wr(&(f[i]),si,fi);
+    };
+};
+
+
+//////
+
+
+template <typename T>
+inline void ld(T& f, std::fstream& fi){ // One 
+    fi.read(reinterpret_cast<char*>(&f), sizeof(f));
+};
+template <typename T>
+inline void ld(T& f, size_t s,std::fstream& fi){ // Arr
+    f = new T[s];
+    fi.read(reinterpret_cast<char*>(&f),sizeof(f[0])*s);
+};
+template <typename T>
+inline void ld( T& f,size_t start ,size_t Offset, std::fstream& fi){ //  OffOne
+    fi.seekg(start + offset);
+    ld(f,fi);
+};
+
+template <typename T>
+inline void ld( T& f,size_t start ,size_t Offset,size_t si, std::fstream& fi){ // OffArr
+    fi.seekg(start + offset);
+    ld(f,fi,si);
+};
+template <typename T>
+inline void ld( T& f,size_t start ,size_t Offsize , size_t* Offset,size_t si, std::fstream& fi){ // OffMany
+    for(int i = 0 ; i < Offsize ;i++){
+        fi.seekg(start + Offset[i]);
+        ld(&(f[i]),fi,si);
+    };
+};
+
+template <typename T>
+inline void wr(T& f, size_t s, std::fstream& fi){
+    fi.write(reinterpret_cast<char*>(f),sizeof(f[0])*s);
+};
+template <typename T>
+inline void wr(T& f, std::fstream& fi){
+    fi.write(reinterpret_cast<char*>(f), sizeof(f));
+};
+
+
+
+template <typename T>
+inline void wr(T& f,pos_t start ,pos_t Offset, std::fstream& fi){
+    fi.seekp(start + offset);
+    wr(f,fi);
+};
+template <typename T>
+inline void wr(T& f,pos_t start ,pos_t Offset,size_t si, std::fstream& fi){
+    fi.seekp(start + offset);
+    wr(f,si,fi);
+};
+template <typename T>
+inline void wr( T& f,auto& start ,size_t Offsize , auto* Offset, std::fstream& fi){
+    for(int i = 0 ; i < Offsize ;i++){
+        fi.seekp(start + Offset[i]);
         wr(&(f[i]),si,fi);
     };
 };
 
 
 
+
+
 #define ACQRES(type) \
-strstruct acqresb_##type : acqres_base {}; \
-struct acqres_##type_ld : acqresSize , acqresb_##type {} ; \
-struct acqres_##type_wr : acqresLd , acqresb_##type {}; \
-struct acqres_##type_si : acqresWr , acqresb_##type {}; \
-void acqresb_##type::function()
+strstruct acqresb_##type : acqres_base<type> {}; \
+void acqresb_##type::function(type& f)
 
 #define USE_ACQRES(type) \
-template <> ld(std::ifstream& fi){acqres_##type_ld obj(fi);obj.func();} \
-template <> wr(std::ofstream& fi){acqres_##type_wr obj(fi);obj.func();} \
-template <> size(){acqres_##type_ld obj;obj.func();} \
+struct acqres_##type_ld : acqresSize<type> , acqresb_##type {} ; \
+struct acqres_##type_wr : acqresLd<type> , acqresb_##type {}; \
+struct acqres_##type_si : acqresWr<type> , acqresb_##type {}; \
+template <> ld(type& f,std::ifstream& fi){acqres_##type_ld obj(fi);obj.func(f);} \
+template <> wr(type& f,std::ofstream& fi){acqres_##type_wr obj(fi);obj.func(f);} \
+template <> size(type& f){acqres_##type_ld obj;obj.func(f);} \
+// template <> ld(type& f,std::fstream& fi){acqres_##type_ld obj(fi);obj.func(f);} \
+// template <> wr(type& f,std::fstream& fi){acqres_##type_wr obj(fi);obj.func(f);} \
 
 
+template <typename T>
 struct acqres_base {
     //  template <typename A>
     // void set (auto* Start);
@@ -116,7 +182,7 @@ struct acqres_base {
     // template <typename A>
     // void offmany (A& g, auto& OFfset, size_t size);
     void init(){};
-    void function();
+    void function(T& f);
 
 }
 
@@ -125,8 +191,8 @@ struct acqres_base {
 
 
 
-    
-struct acqresSize : acqres_base  {
+template <typename T>
+struct acqresSize : acqres_base<T>  {
     size_t ss = 0;    
     size_t s = 0;
     void* Set ;
@@ -158,13 +224,13 @@ struct acqresSize : acqres_base  {
         for(int i=0;i<size;i++){soffone(g[i],Offset[i]);}
     };
     void init(){ss=0;s=0;};
-    void func(){function();};
+    void func(T& f){function(f);};
 
     
 };
 
-
-struct acqresLd : acqres_base{
+template <typename T>
+struct acqresLd : acqres_base<T>{
     std::ifstream& fi;
      size_t size ;    size_t start ; 
         template <typename A>
@@ -182,12 +248,12 @@ struct acqresLd : acqres_base{
         }
         template <typename A>
         void set (A& set){};
-        void init(){size =0; start = fi->seekg();}
-        void func(){function();} ;
+        void init(){size =0; start = fi.seekg();}
+        void func(T& f){function(f);} ;
         acqresLd(std::ifstream& f){fi=f;}
 }
-
-struct acqresWr : acqres_base{
+template <typename T>
+struct acqresWr : acqres_base<T>{
         std::ofstream& fi;
     size_t start ;
         template <typename A>
@@ -206,8 +272,8 @@ struct acqresWr : acqres_base{
        }
        template<typename A>
        void wrset (A& g ){}; 
-    void init(){size(f) ;start = fi->seekp();} 
-    void func(){function();}
+    void init(){size(f) ;start = fi.seekp();} 
+    void func(T& f){function(f);}
     acqresWr(std::ofstream& f){fi=f;}
 
 }

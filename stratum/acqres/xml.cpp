@@ -626,6 +626,7 @@ class xmlParser {
         // list<eltree::element>::iter parent(eltree::element(&tree));
         match<T>(pat,last,cb);
     };
+
     template <typename T>
     void feed(pattern<T>& pat, void (*cb)(T),std::ifstream& filein){
         std::vector<pattern<T>> p  = {pat};
