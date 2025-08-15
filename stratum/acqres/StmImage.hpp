@@ -2,6 +2,7 @@
 #include <stratum/modules.hpp>
 #include <vector>
 #include <petri/list.hpp>
+#include <petri/queue.hpp>
 #include "acqres.hpp"
 #include <glm/glm.hpp>
 #include <cstring>
@@ -23,15 +24,25 @@ HDR
 
 int64_t findpalette(void* palette,uint64_t *palettesize,size_t entrysize,void* entry){
     uint64_t n=*palettesize/2;
+    uint8_t h=0;
     for(uint64_t i=*palettesize/2;i>0;i=<*palettesize;){
         int s =std::memcmp(palette+(i-1)*entrysize,entry,entrysize)
         if(s==0){return i;}
-        n/=n==1?2:1;
+        if(h==4){return -1;}
+        if(n==1){h++;n=1}
+        else {n/=2;}
         if(s<0){i+=n;}
         else {i+=n;}
     };
-    return -1
+    return -1;
 } ;
+int64_t Searchpalette(void* palette,uint64_t *palettesize,size_t entrysize,void* entry){
+    for(uint64_t i=0;i<*palettesize;i++){
+        if(0==std::memcmp(palette+i*entrysize),entry,entrysize){return i;}
+    };
+    return -1;
+};
+
 uint64_t insertpalette(void* palette,uint64_t *palettesize,size_t entrysize,void* entry){
     uint64_t i;
     for(i=0;i<*palettesize;i++){
@@ -45,10 +56,36 @@ uint64_t insertpalette(void* palette,uint64_t *palettesize,size_t entrysize,void
     std::memcpy(palette+i*entrysize,entry,entrysize);
     *palettesize++;
 
-} ;
-
+};
+void palettePush( void* palette,uint64_t* palettesize,size_t entrysize,,void* color){
+    void* temp = new uint8_t[(palettesize+1)*entrysize ];
+    std::memcpy(temp,palette,(*palettesize)*entrysize);
+    std::memcpy(temp+(*palettesize)*entrysize ,color,entrysize);
+    *palettesize++;
+    std::memcpy(palette,temp,(*palettesize)*entrysize);
+};
+void paletteAdd(image2D& im, void* palette,uint64_t* palettesize,size_t indexSize , void* resinds ){
+    res = new uint8_t[8*im.imageSize];
+    for(uint64_t j=0;j<im.imageSize;j++){   bool b=false;
+        uint64_t i;
+        for( i=0;i<*paletteisze;i++){
+            if(0==std::memcmp(im.data+j*im.byd,palette+i*im.byd)){
+                b=true;break;
+            };
+        };
+        uint8_t r[indexSize] ;
+        for(int k=indexSize-1;k>=0;k--){
+             r[k] = ((1<<8 - 1) << 8*k ) & i >> (8*k);} ;
+        std::memcpy(resinds+j*indexSize,r,indexSize);
+        if(!b){palettePush(palette,palettesize,im.byd,im.data+j*im.byd);}
+    }
+}
+void  paletteAdd(image2D& im, void* palette,uint64_t* palettesize, ){
+    void* res;
+    paletteAdd(im,palette,palettesize,8,res);
+}
 void paletteGenerate(image2D& im, void* palette,uint64_t* palettesize){
-    *palettesize=0;
+    // *palettesize=0;
     uint64_t imsize=im.imageSize*im.byd;
     uint64_t min =  (1<<(im.byd*8-1) - 1 +(1<<(im.byd*8-1)));
     min=min>imsize?imsize:min;
@@ -262,22 +299,33 @@ int64_t tag(char* s){
      crc=pc.crc; 
 template <typename data>
 struct pngC{
-    int64_t length;
-    int64_t name;
+    uint32_t length;
+    uint32_t name;
     data d;
-    int64_t crc;
-    void set(pngC<int8_t*>& pc){
+    int32_t crc;
+    int32_t size(){return length+12;}
+    void set(pngC<uint8_t*>& pc){
         length=pc.length;
         name=pc.name;
         crc=pc.crc;
     }
     pngC<data>(pngC<int8_t*>& pc){
         set(pc);
-     d = std::memcpy(&d,pc.bytes,length);    
-}
+        if constexpr (std::is_pointer<data>::value or std::is_array<data>::value){
+            std::memcpy(d,pc.bytes,length);}
+        else {std::memcpy(&d,pc.bytes,length);}
+    }
+    pngC<uint8_t*> get(){
+        pngC<uint8_t*> res;res.length=length;res.name=name;res.crc=crc;
+        res.d = new uint8_t[length];
+        if constexpr (std::is_pointer<data>::value or std::is_array<data>::value){
+            std::memcpy(pc.d,d,length);    }
+        else {std::memcpy(pc.d,&d,length);                }
+
+    }
 };
 
-using pngChunk  = pngC<int8_t*> ;
+using pngChunk  = pngC<uint8_t*> ;
 ACQRES(pngChunk<int8_t*>){
     one(f.length);
     one(f.name);
@@ -597,7 +645,7 @@ struct IEND = pngC<void>;
     pngHeader head;
     std::vector<pngu> chunks;
 
-    IDHR PIDHR;PLTE PPLTE; list<IDAT> PIDAT; IEND PIEND ;
+    IDHR PIDHR;PLTE PPLTE; IDAT PIDAT; IEND PIEND ;
     #define PNG_DEF(p) ##p P##p ;
     REPEAT(PNG_DEF, bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt )
 
@@ -656,7 +704,7 @@ struct IEND = pngC<void>;
     void Adam7Handle(image2D& im,uint16_t step, void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
         if(loadPixel == loadPlte){
                 pltemask= 1<<bd() - 1;uint64_t i;
-                for( i=0;i<destLen*(8/bd());i++) {
+                for( i=0;i<bdmul(destLen);i++) {
                     loadPlte(im,inds[pix+i],i);
                 }
                 pix+=i;
@@ -693,7 +741,7 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
         a7setInds()
             // if(PIDAT.size()!=256){std::cerr("IDAT chunk num != 256 Adam7 inoperable");}
             int i=0;
-            for(idat : PIDAT ) { 
+            idat = PIDAT  
                 if(idat.length < IDAT_MAX_SIZE) {
                 decomp =std::vector<uint8_t>(idat.length * 1032);
                     uncompress(decomp.data(),&destLen,idat.d,idat.length)    ;
@@ -702,13 +750,14 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
                 }
                 else {std::cerr("IDAT chunk too big");return;}
                 i++;};
-        }
-    
+        
+        inline uint32_t bdmul(uint32_t x){return bd()<8 ? x *(8/bd()) : x/(bd()/8)} 
     void loadNormalHandle(image2D& im,void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
     
          if(loadPixel == loadPlte){
                    pltemask= 1<<bd() - 1;uint64_t i;
-                for( i=0;i<destLen*(8/bd());i++) {
+                   uint8_t size=bdmul(destLen);
+                for( i=0;i<size;i++) {
                     loadPlte(im,pix+i,i);
                 }
                 pix+=i;
@@ -724,57 +773,77 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
     #define IDAT_MAX_SIZE 8193
     #endif
     void loadNormal(image2D& im,void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
-        pix=0;
-    
-        for( idat : PIDAT) {
+        // pix=0;    
+        idat=  PIDAT ; 
             if(idat.length < IDAT_MAX_SIZE ){
                 decomp =std::vector<uint8_t>(idat.length * 1032);
-               uncompress(decomp.data(),&destLen,idat.d,idat.length);
-               decomp.resize(destLen);
+                uncompress(decomp.data(),&destLen,idat.d,idat.length);
+                decomp.resize(destLen);
                 loadNormalHandle(im,loadPixel);
             }
             else {std::cerr("IDAT Chunk To big")return;}
-        };
+        
     }
-    void loadImage(image2D& im, void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
+    uint32_t pixseq;uint32_t pixFull;
+    void loadNormal(image2D& im,uint32_t w,uint32_t h,uint32_t x,uint32_t y,void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
+        
+        idat=PIDAT;
+            if(idat.length < IDAT_MAX_SIZE ){
+                decomp =std::vector<uint8_t>(idat.length * 1032);
+                uncompress(decomp.data(),&destLen,idat.d,idat.length);
+                decomp.resize(destLen);
+                
+                uint16_t size= bdmul(destLen);  
+                uint32_t opix = pix;uint16_t lines;
+                uint32_t eoffs ;
+                if(pix+size >(y*width() + x )){
+                    uint16_t firstLine = y*width() + x ;   
+                    for(;firstLine>pix;firstLine+=width());
+                    uint16_t poffs = firstLine-pix ;
+                    uint16_t offset =   bdmul(x - (pix%width()));
+                    ULongF destlenc=destLen;
+                    eoffs = (size -offset)%width();
+                     lines = linesSize/width(); 
+                    std::vector<uint8_t> decopy = decomp;uint16_t sizeWidth = bdmul(width());;
+                    destLen = bdmul(w);
+                    for(uint32_t i =0;i<lines-1;i++ ){
+                        pixseq=pix;
+                        pix=w*(i+ (pix)/width())  ;
+                        std::memcpy(decomp.data(),decopy().data()+sizeWidth*i+ offset , destLen);
+                        loadNormalHandle(im,loadPixel);
+                        pix=pixseq + width() ;
+                    }
+                    pixseq=pix;
+                    pix=w*(lines-1 +pix/width() );
+                    destLen = (destLenc-offset)&destLen ;
+                    std::memcpy(decomp.data(),decopy().data()+sizeWidth*(lines-1) + offset,destLen );
+                    loadNormalHandle(im,loadPixel);
+                    pix = opix+poffs + (lines-1)*width() + eoffs;
+                } 
+            }
+            else {std::cerr("IDAT Chunk To big")return;}
+        
+    };
+     void (*loadPixel)(image2D& ,uint64_t , uint64_t ) ;
+    void loadImage(image2D& im){
         if(PIDHR.interlace) {loadAdam7(im,loadPixel);}
         else {loadNormal(im,loadPixel);}
     }
-    image2D ld(std::string path ,bool subImage=false, uint32_t x=0,uint32_t y=0, uint32_t width=0,uint32_t height=0){
-        png p ;
-        std::ifstream fi(path);
-        ld<pngHeader>(p.head,fi);
+    void loadImage(image2D& im,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        if(PIDHR.interlace) {loadAdam7(im,loadPixel);}
+        else {loadNormal(im,loadPixel);}
+    }
 
-        tRNS PtRNS ;
-        #define BOOL_CHUNK(n) bool b##n=false;
-        REPEAT(BOOL_CHUNK ,bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt)
 
-        while(!fi.eof()){
-            pngChunk  pc;
-            ld<pngChunk>(pc,fi);
-            switch(pc.name){
-                case pngIDHR :{PIDHR=IDHR(pc);break;}
-                case pngPLTE :{PPLTE=pngC<PLTEd>(pc);break;}
-                case pngIDAT :{PIDAT.push_back(pc);break;}
-                case pngIEND :{PIEND=pngc<void>(pc);break;};
-                case pngtRNS :{btRNS=true;PrRNS =tRNS(pc,PIDHR,PPLTE);break;}
-                case pnggAMA :{bgAMA=true;PgAMA = gAMA(pc);break;}
-                case pngCHRM :{bCHRM=true;PcHRM = CHRM(pc);break;};
-                case pngsRGB :{bsRGB=true;psRGB = sRGB(pc);break;};
-                case pngiCCP :{biCCP=true;piCCP = iCCP(pc);break;};
-                case pngtEXt :{btEXt=true;PtEXt = tEXt(pc);break;};
-                case pngzTXt :{bzTXt=true;PzTXt = iCCP(pc);break;}
-                case pngiTXt :{biTXt=true;piTXt = iTXt(pc);break;}
-                case pngbKGD :{bbKGD=true;PbKGD = tRNS(pc);break;}
-                case pngpHYs :{bpHYs=true;PpHYs = pHYs(pc);}
-                case pngsBIT :{bsBIT=true;PsBIT = sBIT(pc,PIDHR);break;}
-                case pngsPLT :{bsPLT=true;PsPLT = sPLT(pc);break;}
-                case pnghIST :{bhIST=true;PhIST = hIST(pc);break;}
-                case pnhtIME :{btIME=true;PtIME = tIME(pc);break;}
-                };
-            // p.chunks.push_back(pc);
-        };
-        image2D im;
+    std::ifstream& fi;
+        std::fstream& fs;
+
+    // image2D im;
+    // Returns true if idat 
+            #define BOOL_CHUNK(n) bool b##n=false;
+        REPEAT(BOOL_CHUNK ,PLTE,bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt) 
+
+    void idhrInit(image2D& im){
         im.width = width();
         im.height = height();
                 
@@ -782,6 +851,7 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
         if(PIDHR.filter != 0){std::cerr(std::string("IDHR chunk filter field value not 0 in image : ") +path );}
         if(PIDHR.interlace != 0  or (PIDHR.interlace != 1)){std::cerr(std::string("IDHR chunk interlace value unknown in image :")+path );}
         im.init();
+        pix=0;
         switch(PIDHR.colortype){
             case IDHRd::colorType::grayscale : {
                 switch(bd()){ nch=1;
@@ -790,30 +860,77 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
                 case 4 : {im.imageFromat = image_formats:r8ui;}
                 case 8 : {im.imageFromat = image_formats:r8ui;}
                 case 16 : {im.imageFromat = image_formats:r16ui;} }
-                loadImage(im,&loadData);break;}
+                loadPixel=&loadData;break;}
             case IDHRd::colorType::rgb : {nch=3;
                 switch(bd()){
                 case 8 : {im.imageFromat = image_formats::rgb8ui;}
-                case 16 : {im.imageFromat = image_formats::rgb16ui;}}; loadImage(im,&loadData);break;}
-            case IDHRd::colorType::palette : {nch=3;im.imageFormat = image_formats.rgb8ui;loadImage(im,&loadPlte);break;}        
+                case 16 : {im.imageFromat = image_formats::rgb16ui;}}; loadPixel=&loadData;break;}
+            case IDHRd::colorType::palette : {nch=3;im.imageFormat = image_formats.rgb8ui;loadPixel=&loadPlte;break;}        
             case IDHRd::colorType::grayscalealpha : {nch=2;
                 switch(bd()){
                     case 8 : {im.imageFromat = image_formats::rg8ui;}
                     case 16 : {im.imageFromat = image_formats::rg8ui;}}
-                loadImage(im,&loadData);break;}
+                loadPixel=&loadData;break;}
             case IDHRd::colorType::rgba : {nch=4;
                 switch(bd()){
                     case 8 : {im.imageFromat = image_formats::rgba8ui;}
                     case 16 : {im.imageFromat = image_formats::rgba8ui;}}
-                loadImage(im,&loadData);break;}     
-                }
-                return im;
+                loadPixel=&loadData;break;}     
+        }
+    };
+    void loadIDAT(modules::image2D& im){loadImage(im);}
+    uint32_t seqW;uint32_t seqh;uint32_t seqx;uint32_t seqy;
+    void loadIDATr(modules::image2D& im){loadImage(im,seqW,seqH,seqx,seqy);}
+    pngChunk pc;
+    template <typename stream>
+    bool loadChunks(stream& fstr,modules::image2D& im,void loadidat(modules::image2D&)){
+            ld<pngChunk>(pc,fstr);
+            switch(pc.name){
+                case pngIDHR :{PIDHR=IDHR(pc);idhrInit(im);return false;}
+                case pngPLTE :{bPLTE=true;PPLTE=pngC<PLTEd>(pc);return false;}
+                case pngIDAT :{PIDAT=pc;loadidat(im);return true;}
+                case pngIEND :{PIEND=pngc<void>(pc);return false;};
+                case pngtRNS :{btRNS=true;PrRNS =tRNS(pc,PIDHR,PPLTE);return false;}
+                case pnggAMA :{bgAMA=true;PgAMA = gAMA(pc);return false;}
+                case pngCHRM :{bCHRM=true;PcHRM = CHRM(pc);return false;}
+                case pngsRGB :{bsRGB=true;psRGB = sRGB(pc);return false;}
+                case pngiCCP :{biCCP=true;piCCP = iCCP(pc);return false;}
+                case pngtEXt :{btEXt=true;PtEXt = tEXt(pc);return false;}
+                case pngzTXt :{bzTXt=true;PzTXt = iCCP(pc);return false;}
+                case pngiTXt :{biTXt=true;piTXt = iTXt(pc);return false;}
+                case pngbKGD :{bbKGD=true;PbKGD = tRNS(pc);return false;}
+                case pngpHYs :{bpHYs=true;PpHYs = pHYs(return false);}
+                case pngsBIT :{bsBIT=true;PsBIT = sBIT(pc,PIDHR);return false;}
+                case pngsPLT :{bsPLT=true;PsPLT = sPLT(pc);return false;}
+                case pnghIST :{bhIST=true;PhIST = hIST(pc);return false;}
+                case pnhtIME :{btIME=true;PtIME = tIME(pc);return false;}
+                };
+    };
+    image2D ld(std::string path ){
+        fi=std::ifstream(path,std::ios::binary);
+        modules::image2D im;
+        ld<pngHeader>(head,fi);
+        while(!fi.eof()){
+            bool idatcb = loadChunks<std::ifstream>(fi,im,&loadIDAT);
+        }
+        return im;
+    };
+    image2D ld(std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        fi=std::ifstream(path,std::ios::binary);
+        modules::image2D im; 
+        ld<pngHeader>(p.head,fi);
+        seqW=w,seqH=h,seqx=x,seqy=y;
+        while(!fi.eof()){
+            loadChunks<std::ifstream>(fi,im,&loadIDATr);
+            if(pix>((y+h)*width()+x)){return im;}
+        };
+        return im;
     };
     void wrPlte(image2D& im,uint64_t pt,uint64_t index){ // Index maybe size;
         uint64_t pltes=PLTE.length/3;
         int64_t s =findpalette(PLTE.d,pltes,3,im.data[pts]);
 
-        std::memcpy(decomp.data()+(pt*bd()/8, &s + sizeof(s) - (bd()/8), bd()/8) ;  
+        std::memcpy(decomp.data()+(pt*bd()/8, &s + sizeof(s) - (bd()/8), bd()/8) );  
     }   ; 
     void wrData(image2D& im,uint64_t pt,uint64_t index){
         uint64_t len = destLen ;
@@ -822,7 +939,7 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
         else {
             switch(im.imageFormat){
                 #define IMAGEFORMAT_CASE_LOAD(imf) \
-                case image_formats::imf :{wrDataArr<image_formats::imf>(im,pt,len,bd(),decom.data());};
+                case image_formats::imf :{wrDataArr<image_formats::imf>(im,pt,len,bd(),decomp.data());};
                 REPEAT(IMAGEFORMAT_CASE_LOAD , r8ui,r16ui,rgb8ui,rgb1ui,rg8ui,rgba8ui);
             }
         }
@@ -868,13 +985,13 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
         Adam7wrHandle(im,pix,wrPixel);
     }
     void wrNormal(image2D& im, void (*wrPixel)(image2D& ,uint64_t , uint64_t )){
-        if(wrPixel==wrPlte){paletteGenerate(im,PLTE.d,PLTE.length);
+        if(wrPixel==wrPlte){paletteGenerate(im,PLTE.d,&PLTE.length);
             PLTE.length*=3;
             uint8_t byd=1 ;
             while((1<<8*byd-1) < PLTE.length){byd++;}
             bd() = 8*(byd);
             decomp.resize(bd()/8 * im.imageSize);
-             pltemask= 1<<bd() - 1;uint64_t i;
+            pltemask= 1<<bd() - 1;uint64_t i;
                 for( i=0;i<im.imageSize;i++) {
                     wrPlte(im,inds[i],i);
                 }
@@ -884,28 +1001,92 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
             bd() = im.bd;
             decomp.resize(im.byd * im.imageSize);
             destLen=im.imageSize*im.byd;
-            wrData(im,,wrPixel);
+            wrData(im,wrPixel);
         }
     }
-    void wrImage(image2D& im, void (*loadPixel)(image2D& ,uint64_t , uint64_t )){
-        if(PIDHR.interlace) {wrAdam7(im,loadPixel);}
-        else {wrNormal(im,loadPixel);}
+    void* plteRInds;
+    void wrNormal(image2D& im,uint32_t w,uint32_t h,uint32_t x,uint32_t y,void (*wrPixel)(image2D& ,uint64_t , uint64_t )){
+        pixseq=pix;
+        uint32_t size = bdmul(destLen);
+        int16_t off = x- pix%width() ;
+        uint32_t firstLine = ((pix + off) / width()) / y ;
+        uint16_t lines = (pix - Off + destLen) / width() +1;
+        int16_t endoff = x - ((pix+size)%width());
+        if(wrPixel==wrPlte){ uint16_t bytde=bdmul(1);
+        if(off<0) {
+            std::memcpy(decomp.data() + off*bytde,plteRInds + (firstLine*w + off)* bytde, bytde * (w-(pix+off)%width()%w )  );
+        }
+        for(uint32_t i = firstLine + 1*!(off>0) ;i<lines-1 + firstLine;i++){
+            std::memcpy(decomp.data()+ ((i-firstLine)*width() + off)*bytde, plteRInds+(i*w)*bytde,w*bytde);}
+            if(enoff<0){
+                std::memcpy(decomp.data()+ ((i-firstLine)*width() + off)*bytde, plteRInds+i*w*bytde,(w+endoff)*bytde + );
+            }
+            else {std::memcpy(decomp.data()+ ((i-firstLine)*width() + off)*bytde, plteRInds+i*w*bytde,w*bytde);} 
+                return ;}
+        else {
+            uint16_t bytde=im.byd;
+            bd() = im.bd;
+            // decomp.resize(im.byd * im.imageSize);
+            // destLen=im.imageSize*im.byd;
+              if(off<0) {
+            std::memcpy(decomp.data() + off*bytde,im.data + (firstLine*w + off)* bytde, bytde * (w-(pix+off)%width()%w )  );
+        }
+        for(uint32_t i = firstLine + 1*!(off>0) ;i<lines-1 + firstLine;i++){
+            std::memcpy(decomp.data()+ ((i-firstLine)*width() + off)*bytde, im.data+(i*w)*bytde,w*bytde);}
+            if(enoff<0){
+                std::memcpy(decomp.data()+ ((i-firstLine)*width() + off)*bytde, im.data+i*w*bytde,(w+endoff)*bytde + );
+            }
+            else {std::memcpy(decomp.data()+ ((i-firstLine)*width() + off)*bytde, im.data+i*w*bytde,w*bytde);} 
+            // wrData(im,wrPixel);
+        }   
+    }
+    queue<pngChunk> pcc;
+    uint64_t chunksSize=0; int32_t wrroffs=0; int32_t sizech ;// Add int
+    // void (*writePixel)(image2D& ,uint64_t , uint64_t );
+    void wrImage(image2D& im,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
         uint32_t max= IDAT_MAX_SIZE * 512;destLen=max;
-        PIDAT.push_back(IDAT());
+        uncompress(decomp.data(),&destLen,PIDAT.d,PIDAT.length);
+        chunksSize=PIDAT.size();
+        if(pix+bdmul(destLen) > y *width() + x and (pix< x+w+(h+y)*width() ) ) {
+        uint64_t paletteSize = PLTE.length;
+        if(PIDHR.interlace) {wrAdam7(im,wrPixel);}
+        else {wrNormal(im,w,h,x,y,wrPixel);}
+        }
+        else {pix+=bdmul(destLen)};
+
+        // for(uint64_t i=0 ;i<decomp.size();i+=destLen){
+                compress(PIDAT.d,&(PIDAT.length),decomp.data() ,destLen);
+                // wroffs-=pc.size();
+                if(wroffs<=pc.size()+PIDAT.size()){
+                    fs.seekg(wrroffs+pc.size(),std::ios_base::cur);
+                    wr(PIDAT,fs);
+                    fs.seekg(+PIDAT.size()-wroffs-pc.size(),std::ios_base::cur);
+                    wroffs+=PIDAT.size();
+                } 
+                else {pcc.push(PIDAT.get());}
+        // }
+    };
+    
+    void wrImage(image2D& im, void (*wrPixel)(image2D& ,uint64_t , uint64_t )){
+        if(PIDHR.interlace) {wrAdam7(im,wrPixel);}
+        else {wrNormal(im,wrPixel);}
+        uint32_t max= IDAT_MAX_SIZE * 512;destLen=max;
+        // PIDAT=(IDAT());
         for(uint64_t i=0 ;i<decomp.size();i+=destLen){
             uint32_t destLen=max;
-            for(PIDAT.back().length>IDAT_MAX_SIZE;destLen/=2){
-                compress(PIDAT.back().d,&(PIDAT.back().length),decomp.data() + i,destLen)    ;
+            for(PIDAT.length>IDAT_MAX_SIZE;destLen/=2){
+                compress(PIDAT.d+i*max,&(PIDAT.length),decomp.data() + i,destLen);
+                wr(PIDAT,of);
+                PIDAT = IDAT();
             };
-            PIDAT.push_back(IDAT());
         }
     };
-    void wr(std::string path,image2d& im ){
+    void wr(std::string path,modules::image2D& im ){
         *this = png() ;
         bool plt=true;
         
-        #define BOOL_CHUNK(n) bool b##n=false;
-        REPEAT(BOOL_CHUNK ,PLTE,bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt,IEND)
+        // #define BOOL_CHUNK(n) bool b##n=false;
+        // REPEAT(BOOL_CHUNK ,PLTE,bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt,IEND)
 
         bool bIDHR=true;bool bIDAT=true;
         switch(im.imageFormat){
@@ -923,6 +1104,42 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
         #define WR_CHUNK(n) if(b##n){wr<n>(P##n,of);}
         REPEAT(WR_CHUNK,IDHR ,PLTE,bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt,IDAT,IEND)
     };
+    void loadIDATwrR(modules::image2D& im){wrImage(im,seqW,seqH,seqx,seqy);}
+    void wr(modules::image2D,std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+        fs = std::fstream(path,std::ios::binary);
+        seqW=w;seqH=h;seqx=x;seqy=y; 
+        ld<pngHeader>(head,fs);
+        while(!fi.eof()){
+            loadChunks<std::fstream>(fs,im,&loadIDATwrR);
+            wroffs-=pc.size();
+            if(pc.name == pngPLTE) {
+                uint32_t pltesize = PLTE.length/3;
+                    uint32_t cppltesize =pltesize;
+                
+                paletteAdd(im,PPLTE.d,&pltesize,PIDHR.d.bitdepth/8,plteRInds);
+                PPLTE.length*=3;bolPlte=false;
+                wroffs += -ccpltesize ;
+                pcc.push(PPLTE.get());
+            }
+            if(pc.name != pngIDAT){
+                if(!pcc.empty()){
+                    while(wroffs<=0 and  !pcc.empty()){
+                        chunksSize=pcc.front().size();
+                        fs.seekg(wroffs ,std::ios_base::cur);
+                        wr(pcc.front(),fs);
+                        wroffs+=chunksSize;
+                        pcc.pop();
+                    }    
+                }
+            }            
+};
+fs.seekg(wroffs ,std::ios_base::cur);
+while(!pcc.empty()){
+    wr(pcc.front(),fs);
+    pcc.pop();
+}
+
+    };  
     png() {head = pngHeader();};
 }
 
@@ -1232,7 +1449,9 @@ else {im.imageFormat = rgb32ui;
 
     void load11(){
         ld(imageData,imDatas,fi);
-        loadRunLengthRgba(11);};
+        loadRunLengthRgba(1);};
+    
+
     void load11(uint32_t w,uint32_t h,uint32_t x,uint32_t y){
         loadRunLengthRgbaR(11,w,h,x,y);};
 
@@ -1265,7 +1484,7 @@ im = image2d();
         ld(this->colorMapData,this->head.Color_map.length,this->head.Color_map.entrySize,fi);
     }
     pd = this->head.Image.pixelDepth;
-    byted = pd%8==0?pd/8:pd/8+1;
+    byted =pd/8+ (pd%8==0?0:1);
 
     size_t imDatas=this->head.Image.width*this->head.Image.height*byted;
     
@@ -1278,7 +1497,23 @@ im = image2d();
     nch = nm/3;  
     imDatas=this->head.Image.width*this->head.Image.height * this->head.Image.pixelDepth/8;
     
-}
+};
+// modules::image2D mipMap(std::string path,uint8_t level){
+//     fi=std::ifstream(path);
+//     loadSet();
+//     im.width = this->head.Image.width/level;
+//     im.height = this->head.Image.height/level;
+    
+//     switch(this->head.Image_type ){
+//         case 1:{selectrgba();load1mip(level);}
+//         case 2:{selectrgba();load2mip(level);}
+//         case 9:{selectrgba();load9mip(level);}
+//         case 10:{selectrgba();load10mip(level);}
+//         case 3:{selectGrayScale();load3mip(level);}
+//         case 11:{selectGrayScale();load11mip(level);}
+//     }       
+//     return im;
+// };
 modules::image2D ld(std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
      fi=std::ifstream(path);
     loadSet();
@@ -1382,62 +1617,191 @@ uint32_t updateCmap(image2D& image,std::vector<uint8_t>& cmdata){
             }
         };
         uint32_t res= cpdata.size();
-    std::vector<uint8_t> cp(cpdata.size() + Image.Color_map.length * Image.Color_map.entrySize);
-    std::memcpy(cp.data(),colorMapData,Image.Color_map.length*Image.Color_map.entrySize);
-    std::memcpy(cp.data()+Image.Color_map.length*Image.Color_map.entrySize,cpdata.data(),res);
+    std::vector<uint8_t> cp(cpdata.size() + head.Color_map.length * head.Color_map.entrySize);
+    std::memcpy(cp.data(),colorMapData,head.Color_map.length*head.Color_map.entrySize);
+    std::memcpy(cp.data()+head.Color_map.length*head.Color_map.entrySize,cpdata.data(),res);
     delete colorMapData ;
     colorMapData = uint8_t[cp.size()];
     std::memcpy(colorMapData,cp,cp.size());
     return res;
 }
-void wrCmap(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){// TODO
-    std::vector<uint8_t>& cmdata;
+void wrNorm(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+    fs.seekp((y*head.Image.width + x)*byted ,std::ios_base::cur);
+    for(int i=0;i<h;i++){
+        wr(image.data,w*byted,fs);
+        fs.seekp((head.Image.width-w)*byted,std::ios_base::cur)
+    }
+};
+
+void wrRLE(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+    byted = image.byd;
+    uint8_t* lastrle = new uint8_t[byted+1]; 
+    std::vector<uint8_t> rleim(image.imageSize*(byted+1));uint8_t rep=0; uint32_t inds=0;
+    uint32_t i,j;
+    std::vector<uint32_t> rlelineinds{0};
+
+
+    auto lam = [&](){
+            rleim.data()[inds*(byted+1)] =1<<7 + rep -1;inds++;rep=0;
+            std::memcpy(rleim.data()+inds*(byted+1)+1,image.data+(i*w+j)*byted,byted);
+    }
+
+        for( i=0;i<h;i++){
+            std::memcpy(rleim.data()+inds*(byted+1)+1,image.data+i*w*byted,byted);
+            for( j=1;j<w;j++){
+            if(0==std::memcmp(rleim.data()+inds*(byted+1)+1, image.data+(i*w+j)*byted,byted)){
+                rep++;}
+                else {lam();};
+            if(rep==0b01111111){lam();};
+        };
+        rlelineinds.push_back(inds);
+    };
+    rleim.resize(inds);
+        std::vector<uint8_t> rleimBuf ;uint32_t rleimLastInd=0;
+    std::vector<uint32_t> rleimbufinds{0};
+    
+    uint32_t i ;uint8_t val ;uint32_t lim=(head.Image.width*y +x );
+    for(i=0;i<lim;i+=val){
+        ld(lastrle,byted+1,fs);
+        val = lastrle[0] & (1<<7) ?  lastrle[0] -(1<<7) + 1 : 1;
+    }
+
+    uint8_t lastrl=new uint8_t[byted+1];
+    uint8_t nextrl =0;uint8_t over;
+    auto lrl = [&](uint8_t& rlh){
+        over = i-lim;
+        uint8_t r = rlh & (1<<7) ? rlh-(over+1) : 0;
+        nextrl = rlh - r;rlh=r;
+    fs.seekg(-1-byted,std::ios_base::cur);
+    wr(r,fs);
+    fs.seekg(byted,std::ios_base::cur);    
+    }
+    lrl(lastrle[0]);
+    rleimBuf.resize(byted+1);
+    rleimBuf[0]=nextrl;
+    std::memcpy(rleimBuf.data()+1,lastrle+1,byted);
+int32_t offs=0;
+    uint32_t index =0;
+    lim=w;
+    uint32_t ind;
+    for( ind=0;ind<h;ind++){
+        
+        rleimbufinds.push_back(rleimbufinds.back()+1);      
+        for(i=over;i<lim;i+=val){offs+=(byted+1);
+            rleimBuf.resize(rleimBuf.size()+byted+1);
+            ld(rleimBuf.data()+rleimbufinds.back()*(byted+1),byted+1,fs);rleimbufinds.back()++;
+        };
+        if(i-lim>0){
+            lrl (*( rleimBuf.data()+(rleimbufinds.back()-1)*(byted+1)));
+            rleimBuf.resize(rleimBuf.size()+byted+1);
+            rleimBuf[rleimBuf.size()-byted-1] = nextrl;
+            std::memcpy(rleimBuf.data() + rleimBuf.size()-byted, rleimBuf.data() + rleimBuf.size()-2*byted-1, byted  );
+        }
+        else {over=0;}
+
+        uint32_t sim = (rlelinesinds[index+1] - rlelinesinds[index]) *(byted+1);
+        uint32_t sd = (rleimbufinds[index+1] - rleimbufinds[index]) *(byted+1);
+        for(;offs > (sim+sd) and (index<ind);){
+            fs.seekg(-offs,std::ios_base::cur);
+            wr(rleim.data()+rlelineinds[ind]*(byted+1) ,sim  ,fs );offs-=sim;
+            wr(rleimBuf.data()+rleimbufinds[ind]*(byted+1,sd,fs);offs-=sd;
+        index++;            
+            sim = rlelinesinds[ind+1] - rlelinesinds[ind]) *(byted+1);
+             sd = (rleimbufinds[index+1] - rleimbufinds[index]) *(byted+1);
+        }
+    };
+
+}
+
+void wrCmap(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){// starts at read colorMap
+    std::vector<uint8_t> cmdata;
     uint32_t size = updateCmap(image,cmdata);
-    std::vector<uint8_t> data(size);
-    uint32_t indt = byted*(y*head.Image.width+x); 
-    ld(data.data(),size,fs);
-    fs.seekg(-size,std::ios_base::cur);
-    wr(cmdata.data(),size,fs);
-    ///
-    std::vector<uint8_t> img(head.Image.width*head.Image.height*byted);
+    if(size==0){
+        fs.seekg((y*head.Image.width +x)*byted,std::ios_base::cur);
+        while(uint32_t i=0;i<h;i++){
+            wr(cmdata.data()+i*w*byted,w*byted,fs);
+            fs.seekg((head.Image.width-w)*byted,fs);
+        }
+        return;}
+    std::vector<uint8_t> data(size); uint32_t colorMapDataSize=  head.Color_map.entrySize * head.Color_map.length;
+
+    if(size<(imDatas)){
+        ld(data.data(),size,fs);
+        fs.seekg(-size,std::ios_base::cur);
+        wr(colorMapData+colorMapDataSize-size,size,fs);
+    }
+    else {
+        ld(data.data(),imDatas,fs);
+        fs.seekg(-imDatas,fs);
+        wr(colorMapData+colorMapDataSize-size,size,fs);
+        for(uint32_t i=0;i<h;i++){
+            std::memcpy(data.data()+byted*(head.Image.width*(i+y)+x) ,cmdata()+w*i*byted,w*byted  );
+        }
+        wr(data.data(),imDatas,fs);return;
+    }
+    bool highavailmem = false;
+    if(highavailmem){ /// @brief :no
+        std::vector<uint8_t> img(imDatas);
     std::memcpy(img.data(),data.data(),size);
     ld(img.data()+size,byted*head.Image.width*head.Image.height-size,fs);
     for(uint32_t i=0;i<h;i++){
         std::memcpy(img.data()+(i*head.Image.width+x)*byted,image.data+i*w*byted,w*byted);
     }
     wr(img.data()+size,byted*(head.Image.width*head.Image.height)-size,fs);
-    
-    if(false)
+    }
+    else//!highavailmem
     {
-
-    std::vector<uint8_t > imgline(head.Image.width*byted);
-    if(y>0){
-        std::memcpy(imgline.data(),data.data(),size);
-        ld(imgline.data()+size,head.Image.width*byted-size,fs);
-        fs.seekg(-(head.Image.width*byted-size),std::ios_base::cur)
-        wr(imgline.data()+size,head.Image.width*byted,fs);
+        uint32_t s = 0;uint32_t lim = y*head.Image.width+x*byted;
+        std::vector<uint8_t> imgch(size) ;
+        for(;s<lim;s+=size){
+            ld(imgch.data(),size,fs);
+            fs.seekg(-size,std::ios_base::cur);
+            wr(data.data(),size,fs);
+            std::memcpy(data.data(),imgch.data(),size);
+        };
+        uint32_t over=s-lim;
+        uint16_t starts = over / (head.Image.width*byted); 
+        int32_t extraLine = over% head.Image.width*byted;
+        for(uint16_t i=0;i<h;i+=starts){
+            uint16_t j;
+            for( j=0;(j<starts-1) and ((i+j)<h);j++){
+                std::memcpy(data.data()+size-over + (i+j)*head.Image.width*byted , cmdata.data()+w*(i+j)*byted,w*byted);
+            };
+            ld(imgch.data(),size,fs);
+            fs.seekg(-size,std::ios_base::cur);
+            if(extraLine<w*byted){
+                std::memcpy(data.data()+size-over + (i+j)*head.Image.width*byted , cmdata.data()+w*(i+j)*byted,extraLine );
+            }
+            else {
+                std::memcpy(data.data()+size-over + (i+j)*head.Image.width*byted , cmdata.data()+w*(i+j)*byted,w*byted );
+            }
+            wr(data.data(),size,fs);
+            std::memcpy(data.data(),imgch.data(),size);
+            if(extraLine<w*byted){
+                std::memcpy(data.data(), cmdata.data()+w*(i+j+1)*byted - ((w*byted)-extraLine),((w*byted)-extraLine) );
+            };
+            lim += starts* head.Image.width*byted;
+            over=(y+(i+j))*head.Image.width -lim;
+            starts = over / (head.Image.width*byted); 
+            extraLine = over% head.Image.width*byted;
+        };
+        s= head.Image.width*(y+h)*byted+extraLine-w*byted;
+        for(;s<imDatas;s+=size){
+            ld(imgch.data(),size,fs);
+            fs.seekg(-size,std::ios_base::cur);
+            wr(data.data(),size,fs);
+            std::memcpy(data.data(),imgch.data(),size);
+        };  
+        ld(imgch.data(),imDatas-(s-size),fs);
+        fs.seekg(-(imDatas-(s-size)),fs);
+        wr(data.data(),size,fs);
+        wr(imgch.data(),imDatas-(s-size),fs);
     }
-    for(uint32_t i=0;i<y;i++){
-        ld(imgline.data(),head.Image.width*byted,fs);
-        fs.seekg(-(head.Image.width*byted),std::ios_base::cur);
-        wr(imgline.data()+size,head.Image.width*byted-size,fs);
-        ld(data.data(),size,fs);
-        fs.seekg(-size);
-        wr(imgline.data()+head.Image.width*byted-size,size,fs);
-    }
-    imgline.resize(x*byted);
-
-    for(uint32_t i=0;i<h;i++){
-        std::memcpy(img.data()+(head.Image.width*i+ x )*byted,image.data+w*byted,w*byted) ;
-    }
-
-    }
-        
 }
 void wrCmapRLE(image2D& image){
-    std::vector<uint8_t>& cmdata;
+    std::vector<uint8_t> cmdata;
     uint32_t size = updateCmap(image,cmdata);
-    pd() = 8;uint64_t i;
+
     uint8_t rep=0;uint32_t entries=0;
     for(i=0;i<image.imageSize;i+=image.byd){
         if(std::memcmp(image.data+i,image.data+i-image.byd , image.byd)==0 and (rep<(1<<7))){rep++;}
@@ -1461,22 +1825,138 @@ void wrCmapRLE(image2D& image){
     imageD.resize(imageD.size()/8*(pd()+1) );
 
 };
+
+void wrRLEsize0(uint32_t w,uint32_t h,uint32_t x,uint32_t y,uint8_t* cmdata){ // TODO
+ uint8_t lastrle[byted+1];uint8_t val;uint32_t i;
+        for( i=0;i<y*head.Image.width+x;i+=val){
+            ld(lastrle,byted+1,fs);
+            val = lastrle[0] &(1<<7)?(lastrle[0] - 1<<7 ) : 1;
+        };
+        lastrle[0] -= (i-val);
+        uint8_t lastrl[byted+1];
+        for(i=0;i<h*head.Image.width+w;i+=val){
+            uint32_t j ;
+            for(j=0;j<w;j+=val){
+                ld(lastrl,byted+1,fs);
+                fs.seekg(-(byted+1),std::ios_base::cur);
+                val = cmdata[i*w+j] &(1<<7)?(lastrl[0] - 1<<7 ) : 1;
+            };
+            for(j=0;j<head.Image.width-w;j+=val){
+                ld(lastrl,byted+1,fs);
+                val=val = lastrl[0] &(1<<7)?(lastrl[0] - 1<<7 ) : 1;
+
+            };
+    };
+}
 void wrCmapRLE(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
-    std::vector<uint8_t>& cmdata;
+    std::vector<uint8_t> cmdata;
     uint32_t size = updateCmap(image,cmdata);
+    modules::image2D img ;
+    img.data = cmdata.data();
+    if(size==0){
+        // wrRLEsize0(w,h,x,y,cmdata.data())
+        wrRLE(img,w,h,x,y);return;
+    }
+    uint32_t colorMapDataSize=  head.Color_map.entrySize * head.Color_map.length;
+    
+    // byted = image.byd;
+    uint8_t* lastrle = new uint8_t[byted+1]; 
+    std::vector<uint8_t> rleim(image.imageSize*(byted+1));uint8_t rep=0; uint32_t inds=0;
+    uint32_t i,j;
+    std::vector<uint32_t> rlelineinds{0};
+
+
+    auto lam = [&](){
+            rleim.data()[inds*(byted+1)] =1<<7 + rep -1;inds++;rep=0;
+            std::memcpy(rleim.data()+inds*(byted+1)+1,image.data+(i*w+j)*byted,byted);
+    }
+
+        for( i=0;i<h;i++){ 
+            std::memcpy(rleim.data()+inds*(byted+1)+1,cmdata.data()+i*w*byted,byted);
+            for( j=1;j<w;j++){
+            if(0==std::memcmp(rleim.data()+inds*(byted+1)+1, cmdata.data()+(i*w+j)*byted,byted)){
+                rep++;}
+                else {lam();};
+            if(rep==0b01111111){lam();};
+        };
+        rlelineinds.push_back(inds);
+    };
+    rleim.resize(inds);
+    // Here offseted
+        std::vector<uint8_t> rleimBuf ;uint32_t rleimLastInd=0;
+    std::vector<uint32_t> rleimbufinds{0};bool wrcmda=false;
+    uint32_t i ;uint8_t val ;uint32_t lim=(head.Image.width*y +x );
+    
+    uint8_t lastrl=new uint8_t[byted+1];
+    uint8_t nextrl =0;
+    auto lrl = [&](uint8_t& rlh){
+        over = i-lim;
+        uint8_t r = rlh & (1<<7) ? rlh-(over+1) : 0;
+        nextrl = rlh - r;rlh=r;
+    fs.seekg(-1-byted,std::ios_base::cur);
+    wr(r,fs);
+    fs.seekg(byted,std::ios_base::cur);    
+    }
+    uint8_t over=0;int32_t offs=0;
+// Here it writes evertyhing upto region in buffer, Mayhaps more mem efficient?
+        for(i=over;i<lim;i+=val){offs+=(byted+1); 
+            rleimBuf.resize(rleimBuf.size()+byted+1);
+            ld(rleimBuf.data()+rleimbufinds.back()*(byted+1),byted+1,fs);rleimbufinds.back()++;
+        };
+        if(i-lim>0){
+            lrl (*( rleimBuf.data()+(rleimbufinds.back()-1)*(byted+1)));
+            rleimBuf.resize(rleimBuf.size()+byted+1);
+            rleimBuf[rleimBuf.size()-byted-1] = nextrl;
+            std::memcpy(rleimBuf.data() + rleimBuf.size()-byted, rleimBuf.data() + rleimBuf.size()-2*byted-1, byted  );
+        }
+        auto wrcm = [&](){
+            if(offs>size and !wrcmda){
+                fs.seekg(-offs,std::ios_base::cur)
+                fs.wr(colorMapData+colorMapDataSize-size,size,fs);
+                fs.seekg(offs-size,std::ios_base::cur);
+                offset = offs-size;wrcmda = true;
+            };  
+        }
+        wrcm();
+    
+    uint32_t index =0;
+    lim=w;
+    uint32_t ind;
+    for( ind=0;ind<h;ind++){
+        
+        rleimbufinds.push_back(rleimbufinds.back()+1);      
+        for(i=over;i<lim;i+=val){offs+=(byted+1);
+            rleimBuf.resize(rleimBuf.size()+byted+1);
+            ld(rleimBuf.data()+rleimbufinds.back()*(byted+1),byted+1,fs);rleimbufinds.back()++;
+        };
+        if(i-lim>0){
+            lrl (*( rleimBuf.data()+(rleimbufinds.back()-1)*(byted+1)));
+            rleimBuf.resize(rleimBuf.size()+byted+1);
+            rleimBuf[rleimBuf.size()-byted-1] = nextrl;
+            std::memcpy(rleimBuf.data() + rleimBuf.size()-byted, rleimBuf.data() + rleimBuf.size()-2*byted-1, byted  );
+        }
+        else {over=0;}
+
+        uint32_t sim = (rlelinesinds[index+1] - rlelinesinds[index]) *(byted+1);
+        uint32_t sd = (rleimbufinds[index+1] - rleimbufinds[index]) *(byted+1);
+        wrcm()
+        for(;offs > (sim+sd) and (index<ind);){
+            fs.seekg(-offs,std::ios_base::cur);
+            wr(rleim.data()+rlelineinds[ind]*(byted+1) ,sim  ,fs );offs-=sim;
+            wr(rleimBuf.data()+rleimbufinds[ind]*(byted+1,sd,fs);offs-=sd;
+        index++;            
+            sim = rlelinesinds[ind+1] - rlelinesinds[ind]) *(byted+1);
+             sd = (rleimbufinds[index+1] - rleimbufinds[index]) *(byted+1);
+        }
+    };
+
 };
 void wrNorm(image2D& image){
     byted=image.byd;uint8_t rep=0;uint32_t entries=0
     imageD.resize(byted*image.imageSize);
     std::memcpy(imageD.data(),image.data,byted*image.imageSize);
 };
-void wrNorm(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
-    fs.seekp((y*head.Image.width + x)*byted ,std::ios_base::cur);
-    for(int i=0;i<h;i++){
-        wr(image.data,w*byted,fs);
-        fs.seekp((head.Image.width-w)*byted,std::ios_base::cur)
-    }
-};
+
 void wrRLE(image2D& image){
     byted=image.byd;
     for(int i=0;i<image.imageSize;i+=image.byd){
@@ -1488,45 +1968,7 @@ void wrRLE(image2D& image){
         }
     };
 }
-void wrRLE(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
-    byted = image.byd;
-    uint8_t* lastrle = new uint8_t[byted+1]; 
-    std::vector<uint8_t> rleim(image.imageSize*(byted+1));uint8_t rep=0; uint32_t inds=0;
-    uint8_t* lim = new uint8_t[byted];
-    std::memcpy(lim+1,image.data,byted);
-    auto lam = [&](){
-            lastrle[0] =1<<7 + rep;
-            std::memcpy(rleim.data()+inds*(byted+1),lastrle,byted+1);rep =0;inds++;
-            std::memcpy(lim,image.data+i*byted,byted);
-    }
-    for(uint32_t i = 1 ;i<image.imageSize;i++){
-        if(0==std::memcmp(lim,image.data+i*byted,byted)){
-            rep++;}
-        else {lam();};
-        if(rep>14){lam();};
-    };
-    rleim.resize(inds);
 
-    uint32_t i ;uint8_t val ;uint32_t lim=(byted+1)*(head.Image.width*y +x );
-    for(i=0;i<lim;i+=val){
-        ld(lastrle,byted+1,fs);
-        val = lastrle[0] & 0b10000000 ?  lastrle[0] & 0b01111111 : 1;
-    }
-    int32_t extraBytes=0;uint8_t lastrl=new uint8_t[byted+1];
-    for(uint32_t ind=0;ind<h;ind++){
-        if(i-lim>0){
-            lastrle[0]-=(i-lim);   
-            extraBytes++;
-        }
-        
-        lim = (byted+1)*(head.Image.width*(y+ind) +x+w  );
-        for(i = (byted+1)*(head.Image.width*(y+ind) +x) ; i<lim;i+=val){            
-            ld(lastrl,byted+1,fs);
-            val=lastrle[0] & 0b10000000 ?  lastrle[0] & 0b01111111 : 1;};
-
-        
-    };
-}
 void wr(image2D& image,std::string path,bool cpl=false,bool rle=true){
     uint8_t bda =modules::bitdepth_a(image.imageFormat);
     head.Image.descriptor=bda &0b1111 + 0b110000; 
@@ -1549,10 +1991,21 @@ void wr(image2D& image,std::string path,bool cpl=false,bool rle=true){
 };
 void wr(image2D& image,std::string path,bool cpl=false,bool rle=true,uint32_t w,uint32_t h,uint32_t x,uint32_t y){// TODO
 
-    fs =std::fstream(path);
-    pos_type p= fs.tellp();
-
+fi =std::ifstream(path);
     loadSet();
+    pos_type p= fi.tellp();
+    delete fi;
+    fs=std::fstream(path);
+    fs.seekg(p);
+
+    if(cpl){
+        if(rle) {wrCmapRLE(image,w,h,x,y);}
+        else {wrCmap(image,w,h,x,y);}
+    }
+    else {
+        if(rle){wrRLE(image,w,h,x,y);}
+        else {wrNorm(image,w,h,x,y);}
+    }
 
 };
 };
@@ -1859,7 +2312,7 @@ std::memcpy(&pix,pixels+i*bc,4)
             ld(bmask,fi);
             ld(amask,fi);}
         imageSize=_BITMAPINFOHEADER.imageSize;
-        if(head.field != bmpHead::BM){
+        if(head.field != bmpHead::Field::BM){
             ld(_OS22XBITMAPHEADER,fi);
         }
         ncolpal = ncolPal(); 
@@ -1874,7 +2327,17 @@ std::memcpy(&pix,pixels+i*bc,4)
         getColor(pd());
     }
     void wr(sd::string path,image2D& im){
+        std::ofstream of(path);
+        _BITMAPINFOHEADER.width=im.width;
+        _BITMAPINFOHEADER.height=im.height;
+        _BITMAPINFOHEADER.imageSize=im.byd*im.imageSize;
+        pd()=8*im.byd;
+        head.field = bmpHEAD::Field::BA;
 
+        wr(head,of);
+        wr(_BITMAPINFOHEADER,of);
+        wr(im.data,_BITMAPINFOHEADER.imageSize,of);
+         
     };  
 }
 
@@ -2016,7 +2479,7 @@ struct jpeg {
     };
     USE_ACQRES(COM) 
 
-    struct data {
+    struct {
         uint8_t segstart;
         uint8_t SOI_ = seg::_SOI;
         bool baseline;bool DRIb=false;
@@ -2030,7 +2493,7 @@ struct jpeg {
             APPn APPn_;
             COM COM_;
          list<tables> tabs;
-    };
+    } data;
     void ld(std::ifstream& fi){
         ld(f.segstart,fi);
         ld(f.SOI_,fi);
@@ -2042,7 +2505,7 @@ struct jpeg {
             data::tables tb;
             switch(segt){
                 #define CASE_JPEGTAG(n) case _##n : {ld(f.##n_,fi);break;} 
-                REPEAT(CASE_JPEGTAG,DHT,DQT,DRI,SOS,RSTn,RST7,APPn,COM,EOI)   
+                REPEAT(CASE_JPEGTAG,DHT,DQT,DRI,SOS,RSTn,RST7,APPn,COM)   
                 case _SOF0 : {ld(f.SOF_,fi);f.baseline=true};
                 case _SOF2 : {ld(f.SOF_,fi);f.baseline=false};
                 case _DRI : { DRI s; ld(s,fi);DRI_.push_back(s);data.DRIb=true;};
@@ -2249,6 +2712,10 @@ tree->htInfo=0;tree->length();
 void quantize(modules::image2D& YCC,uint8_t qmat[8][8],uint8_t quality){ // TODO region write
     quantize(YCC,qmat,quality,data.SOF_.componentSubSampling[0],data.SOF_.componentSubSampling[1],data.SOF_.componentSubSampling[2]);
 };
+void quantize(modules::image2D& YCC,uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint8_t qmat[8][8],uint8_t quality){ // TODO region write
+    quantize(YCC,qmat,quality,data.SOF_.componentSubSampling[0],data.SOF_.componentSubSampling[1],data.SOF_.componentSubSampling[2]);
+};
+
 // Inverse DCT
 void idct8x8(double input[8][8], double output[8][8]) {
     for (int x = 0; x < N; ++x) {
@@ -2263,8 +2730,10 @@ void idct8x8(double input[8][8], double output[8][8]) {
         }
     }
 }
-void dequantize(modules::image2D& YCC,uint32_t x,uint32_t y,uint32_t w,uint32_t h){
-    YCC
+
+uint32_t compno=0;
+void dequantize(modules::image2D& YCC,uint32_t x,uint32_t y,uint32_t w,uint32_t h){ // Starts at scan
+    for 
 };
  
 void dequantize(modules::image2D& YCC){ // 
@@ -2315,8 +2784,8 @@ modules::image2D YCCtoRGB(modules::image2D& im){
     modules::image2D decode( uint32_t x,uint32_t y,uint32_t w,uint32_t h){
         modules::image2D im;
         dequantize(im,x,y,w,h);
-        YCCtoRGB(im);
-        return im;
+        modules::image2D res=YCCtoRGB(im);
+        return res;
     }
     void wr(std::string path ,modules::image2D& im, uint8_t quality=100){
         encode(im,quality);
@@ -2413,7 +2882,7 @@ std::vector<GIFIMGDESC> imgs;
                    
     };
     
-    modules::aimage2D ld(std::string path){
+    modules::image2D ld(std::string path){
         std::ifstream fi(path);
         ld(head,fi);
         if(head.ColorTableFlag()){
@@ -2468,7 +2937,7 @@ std::vector<GIFIMGDESC> imgs;
         head.ScreenHeight=aim.sheight;
         head.Packed=0b11110000;
         uint32_t destplt;
-        palettegenerate(aim[0],GIFCOLORTABLE,&destplt);
+        paletteGenerate(aim[0],GIFCOLORTABLE,&destplt);
         uint32_t plts=destplt;
         int i=0;for(;destplt!=0;destplt>>1){i++;};i--;
         head.Packed|=i&0b111;
