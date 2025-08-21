@@ -469,7 +469,6 @@ uint32_t_ vert,uint32_t _Pvert,uint32_t _Nvert,uint32_t _Tvert,uint32_t _lines,u
             std::vector<glm::vec3> Nvertices;
             std::vector<glm::vec3> Tvertices;
 
-            glm::vec3 defVal()){return glm::vec3(1,1,1);}
             std::vector<std::vector<uint32_t>> lines;
             std::vector<face> faces;
             
@@ -484,6 +483,56 @@ uint32_t_ vert,uint32_t _Pvert,uint32_t _Nvert,uint32_t _Tvert,uint32_t _lines,u
             void pushFaces(face o){faces.push_back(o);groups.back().faces.second=faces.size();materials.back().faces.second=faces.size();}
         };
         mesh data;
+
+        glm::vec3 defVal(){return glm::vec3(0,0,0);}
+        template <modules::quality::QUALITY Q>
+        toObj(modules::mesh<3,Q>& m){
+            data.vertices= m.vert;
+            data.Nvertices= m.nvert;
+            data.Tvertices=m.tvert;
+            data.Pvertices = m.Pvert;
+            uint32_t tvi,nvi,pvi,vi;
+            vi=data.vertices.size();
+            tvi=data.Tvertices.size();
+            nvi=data.Nvertices.size();
+            pvi=data.Pvertices.size();
+           
+            for(std::vector<mesh<3,Q>::xyzwVert>& vec: m.lines){
+                data.lines.push_back(std::vector<uint32_t>());
+                for(const mesh<3,Q>::xyzwVert vert : vec){
+                    data.lines.back.push_back(vi);vi++;
+                    data.vertices.push_back(vert);
+                };
+            };
+
+            for(std::vector<mesh<3,Q>::xyzwVert>& vec: m.facevert){
+                data.lines.push_back(std::vector<uint32_t>());
+                for(const mesh<3,Q>::xyzwVert vert : vec){
+                    data.faces.push_back(face()); data.faces.back().vertices.push_back(vi);vi++;
+                    data.vertices.push_back(vert);
+                };
+            };
+            uint32_t faceInd=0;
+            for(std::vector<mesh<3,Q>::xyzwVert>& vec: m.facenvert){
+                data.lines.push_back(std::vector<uint32_t>());
+                for(const mesh<3,Q>::xyzwVert vert : vec){
+                    data.faces[faceInd].vertN.push_back(nvi);nvi++;
+                    data.vertices.push_back(vert);
+                };
+                faceInd++;
+            };
+            uint32_t faceInd=0;
+
+            for(std::vector<mesh<3,Q>::xyzwVert>& vec: m.facetvert){
+                data.lines.push_back(std::vector<uint32_t>());
+                for(const mesh<3,Q>::xyzwVert vert : vec){
+                    data.faces[faceInd].vertT.push_back(tvi);tvi++;
+                    data.vertices.push_back(vert);
+                };
+                faceInd++;
+            };
+
+        };  
         template <typename meshType>
         meshType get(mesh& s){
             meshType res;
@@ -494,30 +543,32 @@ uint32_t_ vert,uint32_t _Pvert,uint32_t _Nvert,uint32_t _Tvert,uint32_t _lines,u
             for(std::vector<uint32_t>& line : s.lines){
                 res.lines.push_back(std::vector<glm::vec4>());
                 for(uint32_t& ind : line){
-                    if(ind==0){res.lines.back().push_back(defVal());}
-                    else {res.lines.back().push_back(s.vertices[ind]);}
+                   res.lines.back().push_back(s.vertices[ind]);
                 }
             };
             for(face& f : s.faces){
                 for(uint32_t& ind : f.vertices){
-                    if(ind==0){res.facevert.back().push_back(defVal());}
-                    else {res.facevert.back().push_back(s.vertices[ind]);}
+res.facevert.back().push_back(s.vertices[ind]);
                 }
                 for(uint32_t& ind : f.vertT){
-                    if(ind==0){res.facetvert.back().push_back(defVal());}
+                    if(ind==0){res.facetvert.back().push_back(defVal());is.push_back(i)}
                     else {res.facetvert.back().push_back(s.Tvertices[ind]);}
-                }
-                for(uint32_t& ind : f.vertices){
+                    i++;
+                }  
+
+                for(uint32_t& ind : f.vertN){
                     if(ind==0){res.facenvert.back().push_back(defVal());}
                     else {res.facenvert.back().push_back(s.Nvertices[ind]);}
                 }
 
             };
+            return res;
         };
 
         template <modules::quality::QUALIY Q>
         modules::mesh<3,Q> getMesh(mesh& s){
-            get<mesh<3,Q>> res = get<modules::mesh<3>>(s);
+            get<mesh<3,Q>> res = get<modules::mesh<3,Q>>(s);
+            return res;
         };
         template <modules::quality::QUALIY Q>
         modules::model<3,Q> getModel(mesh& s){
@@ -526,7 +577,6 @@ uint32_t_ vert,uint32_t _Pvert,uint32_t _Nvert,uint32_t _Tvert,uint32_t _lines,u
             for(group& g: s.groups){
                 if(g.name.substr(0,manifold.size()) == manifold ){
                     res.manifolds.push_back(modules::model<3,Q>::manifold())
-
                 };
             }
         };
@@ -649,16 +699,21 @@ f.faces.size()+1);
                 };
             }
         }
-        Mesh<3> ld(std::string& name){
+        template <modules::quality::QUALITY Q>
+        modules::mesh<3,Q> ld(std::string& name){
             current = name;
             std::ifstream fi(name);
-            load(fi);
+            load(fi);     
+            return getMesh<Q>(data);      
+        };
+        template <modules::quality::QUALITY Q>
+        wr(std::string path,modules::mesh<3,Q>& m,std::string name){
+            std::ofstream of(name);
             
-           
-        };
-        DynamicMesh<3> ldStratumExt(std::ifsream& fi){
-
-        };
+            toObj(m)
+            wr(of);
+        }
+       
     };  
     
     

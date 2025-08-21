@@ -166,7 +166,8 @@
         "version.h": "c",
         "__functional_03": "cpp",
         "__functional_base_03": "cpp",
-        "__std_stream": "cpp"
+        "__std_stream": "cpp",
+        "*.cl": "cpp"
     },
     "svg.preview.background": "custom"
 }

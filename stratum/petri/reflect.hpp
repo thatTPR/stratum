@@ -2,39 +2,28 @@
 #define REFLECT_HPP
 #include <stratum/sgui/strata/nodes_editor.hpp>
 #include <map>
-namespace reflect {
-
-   class refl {
-    public:
-    auto* prev ;
-    auto* next ;
-    auto* ptr;
-    pinsig ps;
-    pintype pt ;
-    alignas(16) std::string type ;
-    alignas(16) std::string name ;
-
+namespace reflect { // TODO use map and list
+    template <typename T>
+   struct refl {
+    T* ptr;
+    std::string type ;
+    std::string name ;
    };
     template <typename T>
     struct fullrefl : public refl {
         using ty = T ;
-        auto* prev ; 
-        auto* next ;
         T* ptr; 
-        pinsig ps;
-        pintype pt;
-        alignas(16) std::string type ;
-        alignas(16) std::string name ;
-
+         std::string type ;
+         std::string name ;
+        fullrefl(std::string _type,std::string _name,T* _ptr) : ptr(_ptr) , type(_type) , name(_name) ;
         fullrefl(T* _ptr,std::string _type,std::string _name) : ptr(_ptr) , type(_type) , name(_name) ;
-        fullrefl(T* _ptr,pinsig _ps, std::string _type,std::string _name) : ptr(_ptr) ,ps(_ps), type(_type) , name(_name), 
+        // fullrefl(T* _ptr,pinsig _ps, std::string _type,std::string _name) : ptr(_ptr) ,ps(_ps), type(_type) , name(_name), 
     };
+    
     template <typename T>
     struct namerefl{
-        auto* prev ; 
-        auto* next ;
         T* ptr; 
-        alignas(16) std::string name; 
+         std::string name; 
     } ;
     template <typename T>
     struct tyrefl {
@@ -160,6 +149,7 @@ namespace reflect {
     
     #define REFL_CLASS(name,macro)\
      class ##name_refl  : public clss_refl { \
+        #define MEMBER_MACRO_LIST
         private: \
         macro \   
         public:  \
@@ -168,7 +158,9 @@ namespace reflect {
             public: \
         
 
-    #define ITREFL_STRUCT_END }; \
+    #define ITREFL_STRUCT_END(name,refltype) 
+            ##name_refl(){reflsys= refltype(MEMBER_MACRO_LIST)}
+}; \
             name strct ; \
             name& get(){return this->strct;};\ 
 
@@ -177,20 +169,24 @@ namespace reflect {
 #define ITREFL_CLASS(name) REFL_CLASS(name,REFLIT_SYS) 
 #define NAREFL_CLASS(name) REFL_CLASS(name,REFLNAME_SYS)
 #define TYREFL_SYS(name) REFL_CLASS(name,REFLTY_SYS)
-    
+
+
 
         // #define REFL_USING(var , value) var = value;
 
-        #define REFL_DECL(sign, type,name,value) type name = value ;\
-        reflsys.add<type>(&(this->name),sign,#type,#name) ;
+        #define REFL_DECL( type,name,value) type name = value ;\
+        #define MEMBER_MACRO_LIST MEMBER_MACRO_LIST , {##type,##name,&name} 
+        #define MEMBER_TYPES MEMBER_TYPES , type
+        // reflsys.add<type>(&(this->name),sign,#type,#name) ;
 
         
-        #define REFL_DECL(sign, type,name,) type name ;\
+        #define REFL_DECL( type,name,) type name ;\
         reflsys.add<type>(&(this->name),sign,#type,#name) ;
 
 
 
-        #define REFL_DECL(type,name , value) type name = value ;\
+        #define REFL_DECL(name , value) type name = value ;\
+        #define MEMBER_MACRO_LIST MEMBER_MACRO_LIST , {##type,##name,&name} 
         reflsys.add<type>(&(this->name),#type,#name) ;
 
         #define REFL_DECL(type,name) type name  ; \

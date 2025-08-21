@@ -1,8 +1,11 @@
+#ifndef STM_GRAPH_HPP
+#define STM_GRAPH_HPP
 
+#include "xml.cpp"
 
-#include <xml.cpp>
+class StmGraph : xmlLib {
+    struct asset {
 
-class StmGraph : xmlFormat {
-    xmlParser parser ;
-    
+    }
 };
+#endif

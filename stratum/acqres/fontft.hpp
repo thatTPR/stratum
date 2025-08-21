@@ -572,10 +572,10 @@ return Sum;
     #include "ft/vorg.hpp" //[x]
     #include "ft/vvar.hpp" //[x]
 
-        constexpr bool wcb = std::is_same<wchar_t,char16_t> wcb; 
+        constexpr bool wcb = std::is_same<wchar_t,char16_t>::value ; 
         std::vector<ftrange<char>> cglyfs ;
         std::vector<ftrange<wchar_t>> wcglyf;
-        std::enable_if<std::is_same<wchar_t,char16_t> wcb, std::vector<ftrange<char16_t>>>  c16glyf;
+        std::enable_if< wcb, std::vector<ftrange<char16_t>>>  c16glyf;
         std::vector<std::vector<char32_t>> c32glyf;
 
         

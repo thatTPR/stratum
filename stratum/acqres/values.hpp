@@ -21,4 +21,5 @@ float val(std::string& line,uint& ind){int n;float pt;
     }
     return pt;
 }
+
 #endif

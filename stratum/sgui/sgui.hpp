@@ -1,5 +1,5 @@
 #pragma once
-#include <strata/backend/impl.hpp>
+#include <stratum/modules.hpp>
 #include <map>
 #include <vector>
 #include <glm/vec4.hpp>
@@ -7,7 +7,7 @@ using namespace std;
 
 #include <strata/sgui.hpp>
 // 
-class canvas : public widget { // Uses SYS form backend to make dockign
+class canvas : public widget { // Uses SYS form backend to make docking
         public:
 
         uint window;
@@ -52,13 +52,11 @@ class canvas : public widget { // Uses SYS form backend to make dockign
         c_cur = this;
     };
     };
+
     #ifndef CANVAS_LIMIT
     #define CANVAS_LIMIT 10
     #endif
-    canvas* canvas_arr[CANVAS_LIMIT];
+    canvas canvas_arr[CANVAS_LIMIT];
     int c_cur=0;
     widget* w_cur;
     int add_canvas(canvas* c){cavas_arr[c_cur+1] = c; c_cur++; w_cur = c;};
-
-
-canvas canv; 

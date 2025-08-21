@@ -1,47 +1,47 @@
-#include "vects.hpp"
+#ifndef PETRI_MAP_HPP
+#define PETRI_MAP_HPP
 
-template <typename f,typename s>
-class pair {    
-    public:
-    f fel ; s sel;
-    f first(){return this->fel;};
-    s second(){return this->sel;};
-  
-    pair(f elf,s els) : f(elf) , s(els){}
-};
 
-template <typename T> 
-class less {
-    size_t dif ;
-    less(T a, T b){
+
+template <typename K, typename V >
+class map {
+    struct node {
+        node* first
         
     };
+
+    node* root ;
+
+
+    bool exists(K key){
+
+    }
+    bool get(K key, V& res){return true }
+    V& operator[](K key){
+        V& res;
+        if(get(key,res)){
+            return res;
+        }
+    };
+    
 };
 
-template <typename k,typename v, class cmp = >
-class map {    
-    public:
-    vect<k,size_buf> keys;
-    vect<v,size_buf> vals;
-    size_t size=0 ;
-    v& operator[](k key){
-        for(int i =0 ; i < this->size;i++ ){
-            if(key==this->keys->size){return this->vals[i];};
-        };
-        this->keys.push(key);
-        v n;
-        this->vals.push(n);
-        this->size++;
-    };
-    k posk(size_t s){return this->keys[s] ;}
-    ClassA(std::initializer_list<pair<k,v>> initList)   {
-        this->keys.resize(initList.size())
-        this->vals.resize(initList.size())
-        for(pair<k,v>& val: initList){
-            this->keys=val.first();
-            this->vals=val.second();
-        };
-    };
-    map()=default;
+#include "pair.hpp"
+template <typename K,typename V>
+class iterMap :  map<K,V> {
 
-};  
+    using iterVal = std::pair<K&,V&> ;
+    std::vector<iterVal> vecs;
+
+    V& operator[](K s){
+
+    };
+    void insert(std::pair<){
+
+    };
+
+
+    iterVal front(){vecs.front();}
+    iterVal back(){vecs.back();}
+};
+#endif

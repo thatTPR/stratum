@@ -15,7 +15,7 @@
 #include <cstring>
 #include <math.h>
 #include <petri\list.hpp>
-
+#include <stratum/backend/impl.hpp>
 
 namespace modules {
 
@@ -41,6 +41,97 @@ struct named {
     named(std::string n, T& d) :name(n),data(d)  {};
 } ;
 
+
+template <tpename T>
+struct memoryPool {
+    list<T> d;
+    list<named<T*>> named;
+    void addNamed(name<T> m){
+        d.push_back(m.data);
+        named<T*>(m.name,&d.back());return;
+    }
+    void add(T m){d.push_back(m);}
+}
+
+template < template <DIM > typename T>
+struct dmemoryPool {
+    list<named<T<DIM::two>*>> named2;
+    list<named<T<DIM::tri>*>> named3;
+    list<T<DIM::two>> d2;
+    list<T<DIM::tri>> d3;
+
+    template <DIM d>
+    void add(T<d> m){
+        if constexpr(d==2){
+d2.push_back(m);return;}
+        if constexpr (d==3) {
+d3.push_back(m);return;}
+    }
+    template <DIM d>
+    void addNamed(named<T<d>> m){
+               if constexpr(d==2){
+d2.push_back(m.data);named2.push_back(named<T<2>*>(m.name,&d2.back()));return;}
+        if constexpr (d==3) {
+d3.push_back(m.data);named3.push_back(named<T<3>*>(m.name,&d3.back());return;}
+    }
+};
+
+
+template < template <quality::QUALITY> typename T>
+struct qmemoryPool {
+
+    #define QUALDEF(q)     list<named<T<q>*>> named##q; \
+    list<T<q>> d##q;
+
+    REPEAT(QUALDEF,QUALITIES_ENUM)
+
+    template <quality::QUALITY q>
+    void add(T<d> m){
+        switch constexpr(q) {
+            #define QUALCASE(q) case q : {d##q.push_back(m);}
+            REPEAT(QUALCASE,QUALITIES_ENUM) 
+        }
+    }
+    template <quality::QUALITY q>
+    void addNamed(named<T<q>> m){
+            switch constexpr(q) {
+            #define QUALCASENAME(q) case q : {d##q.push_back(m.data);named##q.push_back(named<T<q>*>(m.name,&d##q.back());}
+            REPEAT(QUALCASENAME,QUALITIES_ENUM) 
+        }
+
+    }
+
+    template <quality::QUALITY q>
+    list<T<q>>& get(T<d> m){
+        switch constexpr(q) {
+            #define QUALCASEGET(q) case q : {return d##q;}
+            REPEAT(QUALCASE,QUALITIES_ENUM) 
+        }
+    }
+    template <quality::QUALITY q>
+    list<T<q>*> getNamed(named<T<q>> m){
+            switch constexpr(q) {
+            #define QUALCASENAME(q) case q : {return named##q;}
+            REPEAT(QUALCASENAME,QUALITIES_ENUM) 
+        }
+
+    }    
+};
+
+
+#include <stratum/acqres/fontft.hpp>
+memoryPool<ttf::font> fontPool;
+struct fontPrim {
+    std::string text;
+    std::vector<glyfft> vec;
+    
+}
+struct fontColorPrim : font{
+    std::vector<glm::vec3> colorFG;
+    std::vector<glm::vec3> colorBG;
+};
+memoryPool<fontPrim> fontPrimPool;
+memoryPool<fontColorPrim> fontColorPool;
 
 enum image_formats {// Floating-point layout image formats:
 rgba32f,
@@ -420,10 +511,6 @@ glm::lowp_ivec4 uint16torgba(uint16_t color) {
 int32_t f32_to_i32(f32_t s){
     int_32_t r =  s*
 };  
-
-
-
-
 enum texture_format {
 TEXTURE_1D                  = 0  ,  // Images in this texture all are 1-dimensional. They have width, but no height or depth.
 TEXTURE_2D                  = 1  ,  // Images in this texture all are 2-dimensional. They have width and height, but no depth.
@@ -452,6 +539,22 @@ struct image1D {
     uint8_t bdc;
     int8_t bd ;
     uint8_t length;
+    void gamma(float g){
+        uint8_t n[length][byd/length];
+
+        for(uint32_t i=0;i<imageSize;i++){
+            uint8_t s[byd/length] ;
+            
+            for(uint8_t j=0;j<length;j++){
+                std::memcpy(s ,data+byd*i + j*(byd/length) ,byd/length);
+                for(uint8_t h =byd/length-1;h>=0;h++){
+                    float t= s[h];
+                    rem = 
+                }
+                std::memcpy(data+byd*i + j*(byd/length) ,&s + (8-(byd/length)),byd/length);
+            };
+        };
+    };
     uint8_t bitdim(uint8_t pos){
         switch(pos){
             case 0 :{return bitdepth_r(imageFormat);}
@@ -460,6 +563,7 @@ struct image1D {
             case 3 :{return bitdepth_a(imageFormat);}
         }
     };
+  
     template <image_formats fm>
     void putAt(uint64_t pt,enu_vec<fm>::ty v){
         if(fm==imageFormat){
@@ -494,10 +598,10 @@ for(int i=0;i<length;i++){
             return v;
         }
       
-    };
+
     image2D loadChannel(uint8_t s){
         int8_t bypd= bdc/8;
-        image2D i;
+        image2D i;.width=width;i.height=height;
         i.data = new char[imageSize * bdc]
         for(uint32_t i;i<imageSize;i++){
             std::memcpy(i.data+i*bypd,data+i*byd+s*bypd,bypd);
@@ -1132,70 +1236,6 @@ struct qdmemoryPool {
 };
 
 
-template < template <DIM > typename T>
-struct dmemoryPool {
-    list<named<T<DIM::two>*>> named2;
-    list<named<T<DIM::tri>*>> named3;
-    list<T<DIM::two>> d2;
-    list<T<DIM::tri>> d3;
-
-    template <DIM d>
-    void add(T<d> m){
-        if constexpr(d==2){
-d2.push_back(m);return;}
-        if constexpr (d==3) {
-d3.push_back(m);return;}
-    }
-    template <DIM d>
-    void addNamed(named<T<d>> m){
-               if constexpr(d==2){
-d2.push_back(m.data);named2.push_back(named<T<2>*>(m.name,&d2.back()));return;}
-        if constexpr (d==3) {
-d3.push_back(m.data);named3.push_back(named<T<3>*>(m.name,&d3.back());return;}
-    }
-};
-
-
-template < template <quality::QUALITY> typename T>
-struct qmemoryPool {
-
-    #define QUALDEF(q)     list<named<T<q>*>> named##q; \
-    list<T<q>> d##q;
-
-    REPEAT(QUALDEF,QUALITIES_ENUM)
-
-    template <quality::QUALITY q>
-    void add(T<d> m){
-        switch constexpr(q) {
-            #define QUALCASE(q) case q : {d##q.push_back(m);}
-            REPEAT(QUALCASE,QUALITIES_ENUM) 
-        }
-    }
-    template <quality::QUALITY q>
-    void addNamed(named<T<q>> m){
-            switch constexpr(q) {
-            #define QUALCASENAME(q) case q : {d##q.push_back(m.data);named##q.push_back(named<T<q>*>(m.name,&d##q.back());}
-            REPEAT(QUALCASENAME,QUALITIES_ENUM) 
-        }
-
-    }
-
-    template <quality::QUALITY q>
-    list<T<q>>& get(T<d> m){
-        switch constexpr(q) {
-            #define QUALCASEGET(q) case q : {return d##q;}
-            REPEAT(QUALCASE,QUALITIES_ENUM) 
-        }
-    }
-    template <quality::QUALITY q>
-    list<T<q>*> getNamed(named<T<q>> m){
-            switch constexpr(q) {
-            #define QUALCASENAME(q) case q : {return named##q;}
-            REPEAT(QUALCASENAME,QUALITIES_ENUM) 
-        }
-
-    }    
-};
 qmemoryPool<material> materialPool;
 
 
@@ -1217,8 +1257,8 @@ enum TopologyPrimitive {
 
 template <DIM S , quality::QUALITY q>
 struct mesh {
-    using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
-    using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>;
+    using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>::type;
+    using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>::type;
 
     // 0 Indexed
     std::vector<xyzwVert> vert; //..pointVertices
@@ -1229,6 +1269,8 @@ struct mesh {
 
     std::vector<std::vector<xyzwVert>> lines;
 
+    typedef glm::mat3x3 facevert;// v n t
+    
     std::vector<std::vector<xyzwVert>> facevert;
     std::vector<std::vector<xyzwVert>> facenvert;
     std::vector<std::vector<xyzwVert>> facetvert;
@@ -1255,11 +1297,19 @@ struct mesh {
 };
 dqmemoryPool<mesh> meshPool;
 
+struct vectorImage {
+    std::vector<glm::vec2> vert;
+    std::vector<glm::vec2> tvert;
+    std::vector<glm::vec3> nvert;
+
+    
+
+}
 
 
 template <DIM S>
 struct mesh_prim  {
-        using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
+    using xyzwVert = std::conditional<S==DIM::tri,glm::vec4,glm::vec3>;
     using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>;
 
 
@@ -1825,7 +1875,7 @@ namespace sp
     };
 
     template <DIM T , size_t levels>
-    class planet : sp  {
+    class planet {
         std::string name ; 
         std::vector<scene> scene ; 
         rayleigh rayleig_scattering
@@ -1841,26 +1891,44 @@ namespace sp
 };
 
 
-template <DIM d , sp space_part >
+template <DIM d  >
 class scene {
-    template <DIM d, glm::qualifier Q>
-    class lightSource {
-        glm::vec<d,float , Q > position;
-        glm::vec<d, float , >
+    using xyzVert = std::conditional<S==DIM::tri,glm::vec3,glm::vec2>::type;
+    template < typename T>
+    struct coorded {
+        
+        T data;
+        xyzVert position; 
+        xyzVert orientation;
     };
-    template <DIM d>
-    class lightSourceChromatic  {
-        glm::vec<d,float , glm::defaultp > position;
-        glm::vec<d , float> ; 
+    template <typename T>
+    struct coordedResized : coorded<T> {
+        float sizefactor;
     };
-    struct skybox {
-        rgba_dyn_image images ;
-        std::vector<uint > ind_images;  
+
+    struct lightSource : coorded<T>{
+        float intensity;
+    } ;
+
+
+    class lightSourceChromatic : lightSource {
+        glm::vec3 color ;
+    };
+    struct skybox {  
+        image2D im;
+        glm::vec3 rotation;
+        glm::vec3 rotationAxis;  
+        void rotate(uint32_t time);
+    };
+    struct dynamicSkyBox {
+
     };
 
     skybox sky; 
     world world_partition ; 
     space space_partition ;
+
+    std::vector<named<model>* > modoels;
     
     bool pos_culling = true; ;
     bool frustum_culling = true ;  
@@ -1876,6 +1944,7 @@ class scene {
     };
 
 };
+dmemoryPool<scene> scenePool;
     
 enum shader_type {
 all,
@@ -1895,6 +1964,8 @@ rchit,
 rmiss,
 rcall,
 };
+}
+
 
 struct shaderModule {
     shader_type shader_type;
@@ -1935,21 +2006,20 @@ struct shaderModule {
 
 
 class PipeLineAdapter {
-    std::vector<ShaderModule*> points ;
-
+    list<shaderModule> shadersMods ;
     
-    virtual void contribution(){
 
+
+    void readShaderModule(std::string path,shaderModule& shmod){
+        shmod.readCode(path);
+        shaderMods.push_back(shmod);
     };
-};
+    // WindowObjects
+    
+    // Active memoryPool Objects;
 
-class style {
-    virtual void apply(PipeLineAdapter e){};
-};
-
-
-class PipeLines {
-
+    void issueCommand
+    
 };
 
 #endif

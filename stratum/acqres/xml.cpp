@@ -698,6 +698,33 @@ class xmlParser {
     }
 };
 
+
+template <typename... Tags>
+struct xmlLib : xmlParser {
+    template <typename T>
+    struct tag {
+        T data;
+        std::string name ;
+        virtual void parse(xmlParser::eltree& tree);
+        virtual void write(xmlParser::eltree& tree);
+    };
+
+    template <typename ... Args>
+    using elems = tuple<tag<Args>...> ;
+
+    elems<Tags...> tags;
+
+    void parse();
+    void updateTree(){
+
+    };
+    void write(std::ofstream& file){
+        write(&tree,file)
+    };
+
+
+    // Tuple of tags;
+}
 /*
 class xmlVariant {
     enum class var {

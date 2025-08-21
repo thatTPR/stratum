@@ -183,7 +183,10 @@ template <typename T>
             at.ptr->next = s;            
         };
         
-       
+       void insert(T& val, int at ){
+        insert(val,iter_at(at));    
+    };
+        
         // void push_back( T& data){
         //         node* s = new node(last, data);
         //         if(empty()){s->prev = nullptr;
@@ -217,6 +220,19 @@ template <typename T>
                 else {
                     last->next= s;
                     last = last->next;}            
+        };
+        template <typename... Args>
+        void emplace_back(Args&&... args){
+            push_back(T(args));
+        };
+        template <typename... Args>
+        void emplace_insert(iter& at,Args&& ... args){
+            insert(T(args),at);
+        };
+        
+        template <typename... Args>
+        void emplace_insert(int at,Args&& ... args){
+            insert(T(args),at);
         };
         
         // void push_back(T* data){
