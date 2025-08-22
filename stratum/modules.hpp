@@ -123,8 +123,14 @@ struct qmemoryPool {
 memoryPool<ttf::font> fontPool;
 struct fontPrim {
     std::string text;
-    std::vector<glyfft> vec;
-    
+    std::vector<glyfft> vec;    
+    font* font;
+    void insert(size_t pos,std::string text){
+        text.insert(text,pos);
+    };
+    void multiInsert(std::vector<size_t> poss,std::string text){
+        for(size_t p : poss){insert(p,text);};
+    };
 }
 struct fontColorPrim : font{
     std::vector<glm::vec3> colorFG;
@@ -1412,7 +1418,7 @@ struct animation {
 
 template <DIM S,quality::QUALITY Q> 
 struct model : mesh<S,Q> {
-    struct manifold { // Have a group conventiion
+    struct manifold { // Have a group convention
         std::string name;
         std::pair<uint32_t,uint32_t> vert;
         std::pair<uint32_t,uint32_t> tvert;
@@ -1462,15 +1468,17 @@ struct dyn_flora : dynamicMesh<S> {
 };
 // Actors are entities which can be possessed by controlSchemes
 
-struct actor : model  {
 
+struct actor : model  {
+    // Obscure first Person
+        
 };
 struct fauna : model {
 
 };
 struct human : model
 {
-    std::string name ;
+    
 };
 
 struct attach_int {
@@ -1874,19 +1882,7 @@ namespace sp
 
     };
 
-    template <DIM T , size_t levels>
-    class planet {
-        std::string name ; 
-        std::vector<scene> scene ; 
-        rayleigh rayleig_scattering
-        mie mie_scattering ;
-
-    };
-    template <DIM T , size_t level>
-    class MegaStruct : planet {
-
-    };
-   
+    
     
 };
 
@@ -2004,8 +2000,15 @@ struct shaderModule {
     */    
 
 
+struct PipeLineAdapter {
+
+};
+class pipelineContrib {
+
+} ;
 
 class PipeLineAdapter {
+    public:
     list<shaderModule> shadersMods ;
     
 

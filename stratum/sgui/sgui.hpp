@@ -3,54 +3,35 @@
 #include <map>
 #include <vector>
 #include <glm/vec4.hpp>
+#include <cstddef>
 using namespace std; 
 
-#include <strata/sgui.hpp>
+#include <stratum/sgui/sgui_widgets.hpp>
+#include <stratum/backend/impl.hpp>
 // 
-class canvas : public widget { // Uses SYS form backend to make docking
+namespace sgui {
+    template <class... widgetTs>
+    class window : public container<widgetTs...>;
+    
+    #define SGUI_GAME_WINTS window<viewport> 
+    #define SGUI_STRATUM_WINTS window<editor>,window<sidebar>,window<viewport>,window<canvas> 
+
+
+    template <class... windowTs>
+    using Wmanmir = container<widgetTs...>;
+    #ifndef SGUI_WINTS
+    #define SGUI_WINTS SGUI_GAME_WINTS
+    #endif
+    Wmanmir<SGUI_WINTS> wmanmir;
+    template <class... widgetTs>
+    class window : public container<widgetTs...> { // Uses SYS form backend to make docking
         public:
-
-        uint window;
+        containerw* parent;
+        uint8_t  window; // Index to window handle 
         
-
-        font f;
+        font f; // Global font for the 
         
-        uint get_pos_from_widget(widget* w){
-            for(uint i = 0 ; i < this->mat.size(); i++){
-                if(w==(*(this->mat[0]))[0]){
-                    return i;
-                };
-            };
-        };
-        void _add_widget(uint paren_pos ,widget* w){
-            this->mat[0]->push(w);
-        };
-        void _insert_widget(uint paren_pos,uint pos, widget* w){
-            this->mat[paren_pos]->insert(pos,w);
-        };
-
-        struct ext {
-            glm::ivec4 bg_col;
-            glm::ivec4 fg_col;
-        } ext ;
-        SGUI_DECL void begin(widget* w){
-            this->last_opened = w; 
-        };
-        SGUI_DECL void end(widget* w){
-            this->opened =  this->last_opened;
-        };
-        void setFont(font f);
-        canvas(font f, uint x, uint y, uint width , uint height){
-            this->f = f; this->d.coord[0] =x; this->d.coord[1] = y; this->d.coord[2] = x+width;this->d.coord[3] = y+height ;
-            this->d.wh_size[0] = width; this->d.wh_size[1] = height;
-        };
-        canvas(font f,uint x, uint y, uint xsec,uint ysec){
-            this=new canvas(f,x,y,xsec-x,ysec-y);
-        };
-    canvas(font f, uint x, uint y, uint xs , uint ys){
-        this->f = f; this->c[0]=x;this->c[1]=y;this->c[2]=xs;this->c[3]=ys;
-        c_cur = this;
-    };
+        window(){parent=&wmanmir;}
     };
 
     #ifndef CANVAS_LIMIT
@@ -58,5 +39,7 @@ class canvas : public widget { // Uses SYS form backend to make docking
     #endif
     canvas canvas_arr[CANVAS_LIMIT];
     int c_cur=0;
-    widget* w_cur;
+    canvas* canv;
     int add_canvas(canvas* c){cavas_arr[c_cur+1] = c; c_cur++; w_cur = c;};
+    
+}

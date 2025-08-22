@@ -59,7 +59,7 @@ template <typename T>
             init();
         }
         // list() :Size(0){first = last ;};
-        template <typename Ty >
+        
         class iterator {
             public: 
             node* ptr;
@@ -73,34 +73,34 @@ template <typename T>
                 ptr = &f; 
             };
             
-            iterator<Ty> next(){return iterator<Ty>(ptr->next);};
-            iterator<Ty> prev(){return iterator<Ty>(ptr->prev);};
+            iterator next(){return iterator<Ty>(ptr->next);};
+            iterator prev(){return iterator<Ty>(ptr->prev);};
             node* get(){return ptr;};
             Ty* operator->(){return (ptr->data) ;};
             Ty& operator*(){return *(ptr->data);};
-            bool operator==(iterator<Ty>& rhs){return ptr == rhs.ptr ;};
-            // bool operator==(iterator<Ty> rhs){return ptr == rhs.ptr;};
-            // bool operator!=(iterator<Ty>& rhs){return ptr != rhs.ptr ;};
-            bool operator!=(iterator<Ty>& rhs){return ptr != rhs.ptr ;};
+            bool operator==(iterator& rhs){return ptr == rhs.ptr ;};
+            // bool operator==(iterator rhs){return ptr == rhs.ptr;};
+            // bool operator!=(iterator& rhs){return ptr != rhs.ptr ;};
+            bool operator!=(iterator& rhs){return ptr != rhs.ptr ;};
             // bool operator!=(iterator<Ty> rhs){return ptr != rhs.ptr ;};
             void operator++(){ptr=ptr->next;};
             void operator--(){ptr=ptr->prev;};
-            iterator<Ty>& operator++(int){ptr=ptr->next;return *this;};
-            iterator<Ty>& operator--(int){ptr=ptr->prev;return *this;};
+            iterator& operator++(int){ptr=ptr->next;return *this;};
+            iterator& operator--(int){ptr=ptr->prev;return *this;};
             
-            size_t operator-(iterator<Ty>& rhs ){
+            size_t operator-(iterator& rhs ){
                 size_t i = 0 ;
                 iterator<Ty>* t = this ;
                 for(;*t!= rhs;--(*t) ){i++;};
                 return i ;
             };
 
-            iterator<Ty> operator-(int s){
+            iterator operator-(int s){
                 int h = s ; 
                 for(int h=s ; h ; h--){--(*this);}
                 return *this;   
             };
-            iterator<Ty> operator+(int s){
+            iterator operator+(int s){
                 for(int h=s ; h ; h--){++(*this);} 
                 return *this;  
             };
@@ -111,7 +111,7 @@ template <typename T>
             //     delete ptr;
             // };
            
-            iterator(iterator<Ty>& f) : ptr(f.ptr) {};
+            iterator(iterator& f) : ptr(f.ptr) {};
         };
         using iter = iterator<T> ;
         using const_iter = iterator<const T> ;

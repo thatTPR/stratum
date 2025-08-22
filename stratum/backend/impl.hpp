@@ -810,7 +810,7 @@ struct DISPLAY  {
     virtual void handle();
     virtual void init();
     virtual void close(){delete this;};
-\};
+};
 #endif
 #ifdef STRATA_WININFOSTRCT
 struct winstrct {

@@ -1,5 +1,11 @@
 #include "sgui_widgets.hpp"
 
-struct sceneWidget {
+
+
+struct sceneWidget : widget{
+    
+    
 
 };
+
+struct 
