@@ -103,7 +103,7 @@ class json_parser {
     public:
     jsonvalue::jsonobj val; 
 
-    stack<jsonvalue*> cur ;
+    ptr::stack<jsonvalue*> cur ;
     ifstream f;
     size_t p ;
     std::string line ;

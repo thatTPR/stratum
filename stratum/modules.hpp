@@ -120,10 +120,16 @@ struct qmemoryPool {
 
 
 #include <stratum/acqres/fontft.hpp>
+#include <uchar.h>
 memoryPool<ttf::font> fontPool;
+
+template <typename charT>
 struct fontPrim {
-    std::string text;
-    std::vector<glyfft> vec;    
+    std::basic_string<charT> text;
+    ftrange<charT>* range;
+   
+    glm::ivec2 size;
+    
     font* font;
     void insert(size_t pos,std::string text){
         text.insert(text,pos);
@@ -132,12 +138,11 @@ struct fontPrim {
         for(size_t p : poss){insert(p,text);};
     };
 }
-struct fontColorPrim : font{
-    std::vector<glm::vec3> colorFG;
-    std::vector<glm::vec3> colorBG;
-};
-memoryPool<fontPrim> fontPrimPool;
-memoryPool<fontColorPrim> fontColorPool;
+
+memoryPool<fontPrim<char>> fontPrimPool;
+memoryPool<fontPrim<wchar_t>> wcfontPrimPool;
+memoryPool<fontPrim<char32_t>> c32fontPrimPool;
+// memoryPool<fontColorPrim> fontColorPool;
 
 enum image_formats {// Floating-point layout image formats:
 rgba32f,

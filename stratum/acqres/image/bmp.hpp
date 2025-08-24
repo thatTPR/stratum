@@ -49,7 +49,7 @@ int32_t   width;            //12	18	4	the bitmap width in pixels (signed integer
 int32_t   height;           //16	22	4	the bitmap height in pixels (signed integer)
 uint16_t   colorPlaneNum;    //1A	26	2	the number of color planes (must be 1)
 uint16_t   pixeldepth;       //1C	28	2	the number of bits per pixel, which is the color depth of the image. Typical values are 1, 4, 8, 16, 24 and 32.
-uint32_t   compressionMethod;//1E	30	4	the compression method being used. See the next table for a list of possible values
+uint32_t   compressionMethod;//1E	30	4	the compression method being used. See the next table for a ptr::ptr::list of possible values
 uint32_t   imageSize;        //22	34	4	the image size. This is the size of the raw bitmap data; a dummy 0 can be given for BI_RGB bitmaps.
 uint32_t   ppmX;             //26	38	4	the horizontal resolution of the image. (pixel per metre, signed integer)
 uint32_t   ppmY;             //2A	42	4	the vertical resolution of the image. (pixel per metre, signed integer)

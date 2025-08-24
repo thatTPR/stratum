@@ -1,5 +1,7 @@
 #ifndef PETRI_MAP_HPP
 #define PETRI_MAP_HPP
+namespace ptr {
+
 
 
 
@@ -43,5 +45,6 @@ class iterMap :  map<K,V> {
 
     iterVal front(){vecs.front();}
     iterVal back(){vecs.back();}
+};
 };
 #endif

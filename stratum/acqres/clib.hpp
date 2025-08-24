@@ -241,7 +241,7 @@ void operator delete(void* ptr){
     delete right;
 };
 void symSize(huff_tree& ht){
-    list<node*> ptrs;
+    ptr::list<node*> ptrs;
     uint16_t size=0;uint8_t m=0;
     auto l =[&](node* n){
         node* cur;
@@ -266,7 +266,7 @@ huff_tree get(){
     ht.symbols=new uint8_t*[16];
     for(int i=0;i<16;i++){ht.symbols[i] = new uint8_t[codeLenghts[i]];}
     size_t syms=0;
-    list<node*> ptrs;
+    ptr::list<node*> ptrs;
     ptrs.push_back(this);uint8_t l=0; uint8_t s=0;
     uint8_t sym=0;
     auto lam =[&](node* n){
@@ -324,7 +324,7 @@ struct huffman_stream {
         }
     };
     void dict(node& n){
-        list<node*> ptrs;
+        ptr::list<node*> ptrs;
     uint16_t size=0;uint8_t l=0;
     auto lam =[&](node* n){
         node* cur;
@@ -389,7 +389,7 @@ void huffman_encode(char* src,size_t l,huff_tree* tree , char* dest,size_t* dest
     s.weight=new int8_t[s.size];
     int j=2;// traversed
     size_t s=0; int start =0 ; int end=size-1;
-    std::queue<node> vec;
+    ptr::queue<node> vec;
     for(int i=0;i<s.size;i++){
         vec.push(node(s.freq[i],s.pqueue[i]));
     }

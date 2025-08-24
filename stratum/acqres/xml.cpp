@@ -98,7 +98,7 @@ class xmlParser {
         
         std::vector<attribute> attributes ;
         std::string str;
-        list<element> value ;
+        ptr::list<element> value ;
         void clear(){
             eltree* el ;
             for(element& it : value){
@@ -201,17 +201,17 @@ class xmlParser {
         // lexe(tok et,std::string& ds){t=et;d=ds;};
     };
    
-    list<lexe> lexq ;
+    ptr::list<lexe> lexq ;
     xmlParser(){tree.name = "root";  lexq.push_back({tok::el,std::string("root")});}
-    list<lexe>::iter lexqfind(tok t,list<lexe>::iter s){
-        for(list<lexe>::iter c(s); c; ++c){
+    ptr::list<lexe>::iter lexqfind(tok t,ptr::list<lexe>::iter s){
+        for(ptr::list<lexe>::iter c(s); c; ++c){
             if(c->t  == t){return c;}
         };
         return lexq.end();
     };
-    list<lexe>::iter lexqrfind(tok t, list<lexe>::iter s ){
+    ptr::list<lexe>::iter lexqrfind(tok t, ptr::list<lexe>::iter s ){
  
-        for(list<lexe>::iter c(s); c ; --c ){
+        for(ptr::list<lexe>::iter c(s); c ; --c ){
             if(c->t  == t){return c;}
         };
         return lexq.end();
@@ -238,7 +238,7 @@ class xmlParser {
             };
                 
         };
-    void print(list<lexe>& q){
+    void print(ptr::list<lexe>& q){
         for(const lexe& it : q){
             std::cout<<get(it.t)<<" ";
         };
@@ -251,7 +251,7 @@ class xmlParser {
         };
         return i;
     };
-    int lexDepth(){ list<lexe>::iter i = lexqrfind(tok::elStart,lexq.rbegin()); int j = 1;
+    int lexDepth(){ ptr::list<lexe>::iter i = lexqrfind(tok::elStart,lexq.rbegin()); int j = 1;
         if(!i){return 0;};
         while( i ){ i= lexqrfind(tok::elStart,i) ; j++;};
         return j;
@@ -336,20 +336,20 @@ class xmlParser {
                 lexq.push_back({tok::lt,std::string("<")});
                 continue;
             };
-            auto ltHandle = [&](list<lexe>::iter it){
-                list<lexe>::iter k = lexqfind(tok::name, it);
+            auto ltHandle = [&](ptr::list<lexe>::iter it){
+                ptr::list<lexe>::iter k = lexqfind(tok::name, it);
                 if(k){cur->name = k->d ;
                     while(k){
                         k = lexqfind(tok::eqs, k);
-                        list<lexe>::iter prev = k;
-                        list<lexe>::iter next = k;
+                        ptr::list<lexe>::iter prev = k;
+                        ptr::list<lexe>::iter next = k;
                         if(k){cur->attributes.push_back({ (prev--)->d,(next++)->d});++k;}
                     };
                 }; 
                 lexq.erase(it,lexq.end());
             };
             if(line[i] == '/' && line[i+1]=='>'){PRINT(":/>") // />
-                list<lexe>::iter pos = lexqrfind(tok::lt , lexq.rbegin());
+                ptr::list<lexe>::iter pos = lexqrfind(tok::lt , lexq.rbegin());
                 if(pos){ltHandle(pos);};              
                 cur = cur->parent; 
                 i++;
@@ -357,7 +357,7 @@ class xmlParser {
             };
             if(line[i] == '>' ){PRINT(":>") // >
                 PRINTQ(lexq)
-                for(list<lexe>::iter ite=lexq.rbegin() ; ite;--ite) { PRINT("loop")
+                for(ptr::list<lexe>::iter ite=lexq.rbegin() ; ite;--ite) { PRINT("loop")
                     switch(ite->t){
                         case tok::lt : { 
                             ltHandle(ite);
@@ -366,7 +366,7 @@ class xmlParser {
                             ite=lexq.begin() ;break;                            
                         };
                         case tok::ltEnd :{
-                            list<lexe>::iter k = lexqfind(tok::name , ite);
+                            ptr::list<lexe>::iter k = lexqfind(tok::name , ite);
                             if(k){
                                 PRINT("curName:"<<cur->name << " "<< k->d<< " ")
                                     std::string estr = k->d; 
@@ -374,7 +374,7 @@ class xmlParser {
                                     for( ;k and !(k->t == tok::elStart and k->d == estr);--k){};
                                     if(k){lexq.erase(k,lexq.end());}
                                     else break;
-                                    for(list<eltree::element>::iter el = cur->parent->value.rbegin();
+                                    for(ptr::list<eltree::element>::iter el = cur->parent->value.rbegin();
                                     cur->name!=estr ;--el ){
                                         if(!el){cur=cur->parent; el = cur->parent->value.rbegin();};
                                         if(el->child->name == estr){
@@ -481,7 +481,7 @@ class xmlParser {
         };  
         
         
-        bool dfsmatch(list<eltree::element>::iter el, list<eltree::element>::iter patt,T* res){
+        bool dfsmatch(ptr::list<eltree::element>::iter el, ptr::list<eltree::element>::iter patt,T* res){
             if(!patt  ){return true;}
             if(!el){return false;}
             if(el->child->name != patt->child->name){return false;};
@@ -492,8 +492,8 @@ class xmlParser {
                 funct(stoit(patt->child->attributes.back().second),std::string(),res);
             };};
                 if(el->child->value.empty()){return false;};
-                list<eltree::element>::iter patIter = patt->child->value.begin();
-                list<eltree::element>::iter elIter = el->child->value.begin(); 
+                ptr::list<eltree::element>::iter patIter = patt->child->value.begin();
+                ptr::list<eltree::element>::iter elIter = el->child->value.begin(); 
                 if(!dfsmatch(elIter,patIter,res)){return false;};
             }
             if(!patt->child->attributes.empty()){;
@@ -503,8 +503,8 @@ class xmlParser {
                     funct(num,std::string(),res);
                 };
                 iter=true;
-                list<eltree::element>::iter patIter = patt;
-                list<eltree::element>::iter elIter = el; ++elIter;
+                ptr::list<eltree::element>::iter patIter = patt;
+                ptr::list<eltree::element>::iter elIter = el; ++elIter;
                 if(elIter){if(!dfsmatch(elIter,patIter,res)){return false;}}
                 else return true;
             }
@@ -518,8 +518,8 @@ class xmlParser {
             };
             
                 if(!iter){
-                list<eltree::element>::iter  patti= patt;
-                list<eltree::element>::iter eli= el;
+                ptr::list<eltree::element>::iter  patti= patt;
+                ptr::list<eltree::element>::iter eli= el;
                 ++eli;++patti;
                 if(eli ) {if(!dfsmatch(eli,patti,res)){return false;}}
                 else if(patti){return false;}
@@ -527,11 +527,11 @@ class xmlParser {
             }
             return true;
         };      
-        bool matchPat( T* res, list<eltree::element>::iter& l){
+        bool matchPat( T* res, ptr::list<eltree::element>::iter& l){
             
-            list<eltree::element>::iter last = l;
+            ptr::list<eltree::element>::iter last = l;
                        
-            list<eltree::element>::iter patlast = pat->value.begin();
+            ptr::list<eltree::element>::iter patlast = pat->value.begin();
             if(!last){return false;};
             
             if(last->child->name == patlast->child->name ){
@@ -552,9 +552,9 @@ class xmlParser {
         };
     };
  
-    bool open(list<eltree::element>::iter el){
+    bool open(ptr::list<eltree::element>::iter el){
         if(el.next()){return false;};
-        list<lexe>::iter s = lexqrfind(tok::elStart,lexq.rbegin());
+        ptr::list<lexe>::iter s = lexqrfind(tok::elStart,lexq.rbegin());
         std::string parentName = el->child->parent->name;
         for(;s;--s){
             if(s->t == tok::elStart){
@@ -563,7 +563,7 @@ class xmlParser {
         }
         return false;
     };
-     bool lastEl(list<eltree::element>::iter el){
+     bool lastEl(ptr::list<eltree::element>::iter el){
         bool op = open(el);
         if(op){
                 for(bool fd = feed();open(el); fd=feed()){};
@@ -577,24 +577,24 @@ class xmlParser {
     };
 
     template <typename Ty>
-    void match(std::vector<pattern<Ty>>& pats,list<eltree::element>::iter l , void (*cb)(Ty) ){        
-        list<eltree::element>::iter ls = l;
+    void match(std::vector<pattern<Ty>>& pats,ptr::list<eltree::element>::iter l , void (*cb)(Ty) ){        
+        ptr::list<eltree::element>::iter ls = l;
         for(;ls;++ls){
             for(bool fd=feed();ls->child->name.length()==0 and fd ; fd=feed()){};
             bool childsnfed= true;          
-            list<eltree::element>::iter last = ls;  
+            ptr::list<eltree::element>::iter last = ls;  
             for(pattern<Ty>& it : pats){  
             size_t sc=1;
-            last = ls;list<eltree::element>::iter lasts = last;
+            last = ls;ptr::list<eltree::element>::iter lasts = last;
             for(;last and sc<=it.patSize ;++last){lasts = last;sc++;};
             last = lasts;
             for( bool fd = feed();sc<it.patSize and !lastEl(last) and fd;fd = feed() ){ 
                  if(!ls->child->value.empty() and childsnfed  ){
-                    list<eltree::element>::iter lastc = ls->child->value.begin();
+                    ptr::list<eltree::element>::iter lastc = ls->child->value.begin();
                     match<Ty>(pats,lastc,cb);childsnfed = false;
                 }
                 if( it.pat->value.front().child->name != ls->child->name){break;};
-                sc=1; last = ls; list<eltree::element>::iter lasts = last;
+                sc=1; last = ls; ptr::list<eltree::element>::iter lasts = last;
                 for(;last and sc<=it.patSize ;++last){lasts = last;sc++;};
                 last = lasts;
             };
@@ -606,7 +606,7 @@ class xmlParser {
                     if(found)break;
             };   
             if(!ls->child->value.empty() and childsnfed  ){
-                    list<eltree::element>::iter lastc = ls->child->value.begin();
+                    ptr::list<eltree::element>::iter lastc = ls->child->value.begin();
                     match<Ty>(pats,lastc,cb); childsnfed =false;
             };
             
@@ -616,14 +616,14 @@ class xmlParser {
     template <typename T>
     void feed(std::vector<pattern<T>>& pat, void (*cb)(T), std::ifstream& filein){ 
         file = &filein;
-        list<eltree::element>::iter last = tree.value.begin();
+        ptr::list<eltree::element>::iter last = tree.value.begin();
         while(feed()){
             if(tree.value.size()>0){
                 last = tree.value.begin();
                 if(last)break;
             }
         };
-        // list<eltree::element>::iter parent(eltree::element(&tree));
+        // ptr::list<eltree::element>::iter parent(eltree::element(&tree));
         match<T>(pat,last,cb);
     };
 

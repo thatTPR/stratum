@@ -11,11 +11,11 @@
 #include "../petri/vects.hpp"
 #include "sgui_internal.hpp"
 #include <type_traits>
+#include <tuple>
 #include <memory>
 #include <thread>
-#include "../../../../int/ansicode.hpp"
-#include "./shaders/shaders.hpp"
-#include "./sgui_widgets.hpp"
+#include <int/ansicode.hpp>
+#include "./sgui.hpp"
 #ifndef uint  
 #define uint  unsigned int
 #endif
@@ -32,6 +32,7 @@ using namespace std ;
 #define MAX_WIDGET 500
 #define MAX_CHILDS 
 namespace sgui {
+    using namespace ptr;
 // Text arrsize()
 // Maybe make widget childs so that it has static size defined per widget
 
@@ -112,14 +113,15 @@ namespace sgui {
     sgui_attribute Parent(sgui_attribute::atty::align);
     sgui_attribute Align(sgui_attribute::atty::parent);
     sgui_attribute Dockable(sgui_attribute::atty::dockable);
-
-        template <class... containerTs>
+#define WIDGET_EVENT()
+        template < class... containerTs>
         class widget {
         public:
-         variant<containerTs*...> parent ;
+         std::variant<containerTs*...> parent ;
         size_t curPar;
     
 
+        void eventProc
         auto parent(){
             return std::get<curPar>(parent);
         };
@@ -286,7 +288,9 @@ class widlist : public list<widgetT*> {
 
 
         class iterator {
-            std::tuple<list<widgets*>::iterator ...> iter;
+            public:
+            using varty = std::variant<list<widgets*>::iterator ...>;
+            varty iter;
 
             size_t cur=0;
             decltype(*(std::get<cur>(iter))) operator*(){
@@ -304,16 +308,35 @@ class widlist : public list<widgetT*> {
             decltype(*this) operator--(){return decr();}
             decltype(*this) operator--(int){return operator--();}
             decltype(*this) operator++(int){return operator++();}
+            decltype(*this) operator+=(int a){for(int i=0;i<a;i++){++(*this);};}
+            decltype(*this) operator-=(int a){for(int i=0;i<a;i++){-=(*this);};}
+            
+            iterator(size_t cur)
         };
 
 
-    decltype (std::get<0>(tupvecs).front()) begin(){
+    decltype (std::get<0>(tupvecs).front()) front(){
         return *std::get<0>(tupvecs).front();
     }
-    decltype (*std::get<std::tuple_size(tupvecs) -1>(tupvecs).back()) end(){
+    decltype (*std::get<std::tuple_size(tupvecs) -1>(tupvecs).back()) back(){
         return std::get<std::tuple_size(tupvecs) -1>(tupvecs).back();}
 
 
+    iterator begin(){iterator::varty it;std::get<0>(it)=std::get<0>tupvecs.begin();
+        return iterator(0, it );
+    }
+    iterator end(){size_t s = std::tuple_size<tupvecs>()-1;
+        iterator::varty it;std::get<s>(it)=std::get<s>tupvecs.begin();
+        return iterator( s,it);}
+
+
+    iterator active;
+    list<iterator> selected;
+    void addNextToSelected(iterator it = selected.back();++it;selected.push_back(it);)
+    void addPrevToSelected(iterator it = selected.front();--it;selected.push_front(it);)
+    void clearSelected(){selected.clear();}
+        void prevActive(){active--;}
+        void nextActive(){active++;}
         void drawCmd()final{
             for(const auto& t : *this){
                 t->drawCmd();
@@ -434,28 +457,32 @@ template <class... widgetTs>
 
     };
     
-    
+    template <typename charT>
     struct textD {
-        fontPrim& fprim;
-
-    };
-    
-    tempate <class ... containerTs>
-    class text : Widget<textD,containerTs...>{
+        fontPrim<charT>& fprim;
         bool kerning;
         bool multiLine;
         uint16_t lineWidth;
+    };
+    
+    tempate <typename charT,class ... containerTs>
+    class text : Widget<textD<charT>,containerTs...>{
+        
+        size_t getInputPos(glm::vec2 pos){
+            
+        };
+
     } ;
 
-    class scrollableText : Widget<textD> {
+    template <typename charT>
+    class scrollableText : Widget<textD<charT>> {
 
     };
-    class textInput : scrollableText {
+    class textInput : scrollableText<charT> {
         size_t pos;
-        
-        void getInpus(glm::vec2 pos){
-
-        };
+        void setCursor(glm::vec2 pos){
+            pos=getInputPos(pos);
+        }
     };
 
     class code : textInput { 
@@ -464,6 +491,15 @@ template <class... widgetTs>
     };
     class button : widget {
 
+        void (*onclick)() ;
+        void click(){onclick();}
+        void click(glm::vec2 pos){
+            if(is_pt_of(pos)){
+                onclick() ;
+            }
+        };
+        
+        button(void(*_onclick)()) : onclick(_onclick){}
     };
 
     struct textIcoD {

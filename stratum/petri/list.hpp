@@ -4,6 +4,8 @@
 #include <type_traits>
 #include <utility>
 
+namespace ptr {
+
 
 template <typename T>
     class list {
@@ -199,9 +201,7 @@ template <typename T>
                     
             
         // };
-        void push_back(const T& data){
-                
-                node* s = new node(last, std::move(data));
+        void _push_back_(node* s){
                 if(empty()){s->prev = nullptr;
                     last = s;
                     first= last;
@@ -209,18 +209,36 @@ template <typename T>
                 else {
                     last->next= s;
                     last = last->next;}            
+
+        }
+        void push_back(const T& data){
+                
+                node* s = new node(last, std::move(data));
+                _push_back_(s);
         };
         void push_back(T&& data){
 
             node* s =new node(last,std::forward<T>(data),nullptr);
-                if(empty()){s->prev = nullptr;
+              _push_back_(s);  
+        }; // };
+        void _push_front_(node* s){
+                        if(empty()){s->next = nullptr;
                     last = s;
                     first= last;
                 }
                 else {
-                    last->next= s;
-                    last = last->next;}            
+                    first->prev= s;
+                    first = first->prev;}          
+
+        }
+        void push_front(const T& data){                
+            node* s = new node(std::move(data),first);
+            _push_front_(s);
         };
+        void push_front(T&& data) {
+        node* s = new node(nullptr,std::forward<T>(data),first);
+        _push_front_(s);
+};
         template <typename... Args>
         void emplace_back(Args&&... args){
             push_back(T(args));
@@ -353,5 +371,5 @@ template <typename T>
     };
 
             // list::iterator::operator bool() const {return this->ptr != last;};
-
+};
     #endif

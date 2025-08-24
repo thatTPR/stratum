@@ -7,6 +7,7 @@
 using namespace std; 
 
 #include <stratum/sgui/sgui_widgets.hpp>
+#include <stratum/sgui/engine_widgets.hpp>
 #include <stratum/backend/impl.hpp>
 // 
 namespace sgui {
@@ -14,7 +15,7 @@ namespace sgui {
     class window : public container<widgetTs...>;
     
     #define SGUI_GAME_WINTS window<viewport> 
-    #define SGUI_STRATUM_WINTS window<editor>,window<sidebar>,window<viewport>,window<canvas> 
+    #define SGUI_STRATUM_WINTS window<editor,sidebar,viewport,canvas> 
 
 
     template <class... windowTs>

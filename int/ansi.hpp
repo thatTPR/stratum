@@ -5,7 +5,7 @@
 #include <charconv>
 #include <vector>
 #include <iostream>
-using namespace std:: ;
+using namespace std;
 #include "ansicode.hpp"
 
 #define uint unsigned int 

@@ -1,5 +1,7 @@
 #ifndef STACK_HPP
 #define STACK_HPP
+namespace ptr {
+
 template <typename T>
 class Node {
     Node<T>* prev;
@@ -21,6 +23,7 @@ class stack {
             delete *temp;
         }
     };
+};
 };
 
 #endif

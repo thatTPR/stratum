@@ -9,6 +9,7 @@
 #include <petri/defs>
 #include <petri/macros.hpp>
 #include <glm/glm.hpp>
+#include <uchar.h>
 namespace ttf {
 
 typedef uint32_t IndexP;
@@ -277,13 +278,10 @@ struct ftrange {
     
     uint16 startGlyphID;
 
-};
-
-template <typename charT>
-struct glyffrange {
-    charT starc , endc;
-    uint16 startGlyphId;
-    
+    glyfft* get(charT c){
+        if(c>=start and c<=end){return &(glyfft[c-start]);}
+        return &(range[0]);
+    };
 };
 
 

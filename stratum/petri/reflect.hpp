@@ -5,6 +5,9 @@
 #include <map>
 #include <pair>
 #include <tuple>
+
+namespace ptr {
+
 namespace reflect { 
     
 
@@ -85,5 +88,5 @@ namespace reflect {
         reflected::typednamed typednamediter(reflected& refl){refl.typednamedbegin();}
    
 };
-
+}
 #endif

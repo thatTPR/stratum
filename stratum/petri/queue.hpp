@@ -1,5 +1,9 @@
 #ifndef QUEUE_HPP
 #define QUEUE_HPP
+
+namespace ptr {
+
+
 template <typename T>
 class queue {
    
@@ -99,5 +103,5 @@ class queue {
     void pop(){node* cur = first;first=first->next;delete cur;}
 
 };
-
+};
 #endif

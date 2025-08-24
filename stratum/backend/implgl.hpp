@@ -1,4 +1,4 @@
-#include <vector>
+#include <petri/list>
 #include <stratum/modules.hpp>
 
 
@@ -42,31 +42,30 @@ Features structure: VkPhysicalDeviceMultiviewFeatures.
 
 class gl_impl {
     public:
-    std::vector<Pipeline> pipelines;
-    std::vector<uint> winsurfaces;
-    std::vector<device> devices;
+    list<Pipeline> pipelines;
+    list<uint> winsurfaces;
+    list<device> devices;
     
 
-    std::vector<shaderModule> all_modules;
+    list<shaderModule> all_modules;
     
-    std::vector<vertModule> vert_modules;
-    std::vector<fragModule> frag_modules;
-    std::vector<geomModule> geom_modules;
-    std::vector<tescModule> tesc_modules;
-    std::vector<teseModule> tese_modules;
-    std::vector<compModule> comp_modules;
-    std::vector<taskModule> task_modules;
-    std::vector<meshModule> mesh_modules;
-    std::vector<rgenModule> rgen_modules;
-    std::vector<rintModule> rint_modules;
-    std::vector<rahitModule> rahit_modules;
-    std::vector<rchitModule> rchit_modules;
-    std::vector<rmissModule> rmiss_modules;
-    std::vector<rcallModule> rcall_modules;
+    list<shaderModule> vert_modules;
+    list<shaderModule> frag_modules;
+    list<shaderModule> geom_modules;
+    list<shaderModule> tesc_modules;
+    list<shaderModule> tese_modules;
+    list<shaderModule> comp_modules;
+    list<shaderModule> task_modules;
+    list<shaderModule> mesh_modules;
+    list<shaderModule> rgen_modules;
+    list<shaderModule> rint_modules;
+    list<shaderModule> rahit_modules;
+    list<shaderModule> rchit_modules;
+    list<shaderModule> rmiss_modules;
+    list<shaderModule> rcall_modules;
     
 
 
-    std::vector
 virtual auto get_format(image_format imf);
 virtual auto getShaderType(shader_type STAGE)
 
@@ -97,6 +96,7 @@ virtual void updateUniform(device* dev, shaderModule* m );
 void descriptor_set();
 void descriptor_pool();
 void create_swapchain();
+
 virtual void load_SSBO(_shader shader,auto* buffer);
 virtual void load_UBO(_shader shader,auto* buffer);
 virtual void draw(_stage ;);

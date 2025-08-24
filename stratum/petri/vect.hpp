@@ -1,5 +1,7 @@
 #ifndef VECT_HPP
 #define VECT_HPP
+namespace ptr {
+
 template <typename T,typename sizeT>
 void resizeVect(T* d,sizeT* si, sizeT s){
     
@@ -45,7 +47,7 @@ void insert##dataMember(T data, sizeT s){ insertVect<T,sizeT>(dataMember,&sizeMe
 void pop##dataMember( sizeT s){ popVect<T,sizeT>(dataMember,&sizeMember,s); ;} \
 void push_back##dataMember(T data){ push_backVect<T,sizeT>(dataMember,&sizeMember,data); ;} \
 void pop_back##dataMember(T data){ pop_backVect<T,sizeT>(dataMember,&sizeMember); ;} 
-
+}
 
 
 #endif

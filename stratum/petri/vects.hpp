@@ -2,6 +2,8 @@
 #include <assert>
 #include <memory>
 #include <initializer_list>
+namespace ptr {
+
 template<typename T, size_t sizearr>
 class arr {
     public:
@@ -339,5 +341,5 @@ class ten{
     };
     ten();
 };
-
+};
 #endif

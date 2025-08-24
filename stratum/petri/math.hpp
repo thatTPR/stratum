@@ -1,7 +1,7 @@
 #include "vects.hpp"
 #include "glm/geometric.hpp"
 #include "math.h"
-namespace petri{
+namespace ptr{
 
 mat4x4 ortho(float left,float right,float top,float bottom,float near,float far){
     mat4x4 result; result = result(1.0f);
