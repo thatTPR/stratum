@@ -10,65 +10,66 @@ using namespace std;
 
 #define uint unsigned int 
 #define ENUM_TO_STR(x) string(1,static_cast<char>(x))
+
     string ansi(std::string s){
-        return HEX_C_ESC+  "["+ s ;
+        return std::string(HEX_C_ESC)+std::string("[")+ s ;
     };
     string crs_up(uint n) {
-        return ansi( to_string(n) + ENUM_TO_STR((ANSICODE::cursor_up)) );
+        return ansi( to_string(n) + std::string(cursor_up) );
     };
     string crs_down(uint n){
-        return ansi( to_string(n) + ENUM_TO_STR((ANSICODE::cursor_down)) );
+        return ansi( to_string(n) + cursor_down );
     };
       string crs_forward(uint n){
-    return ansi( to_string(n) + ENUM_TO_STR((ANSICODE::cursor_forward)) );
+    return ansi( to_string(n) + cursor_forward );
     };
       string crs_back(uint n){
-    return ansi( to_string(n) + ENUM_TO_STR((ANSICODE::cursor_back)) );
+    return ansi( to_string(n) + cursor_back );
     };
       string crs_next_line(uint n){
-    return ansi( to_string(n) + ENUM_TO_STR((ANSICODE::cursor_next_line)) );
+    return ansi( to_string(n) + cursor_next_line );
     };
       string crs_prev_line(uint n){
-    return ansi( to_string(n) + ENUM_TO_STR((ANSICODE::cursor_prev_line)) );
+    return ansi( to_string(n) + cursor_prev_line );
     };
     string crs_horizontal_abs(uint n){
-    return ansi( to_string(n) + ENUM_TO_STR((ANSICODE::cursor_horizontal_abs)) );
+    return ansi( to_string(n) + cursor_horizontal_abs );
     };
     string crs_pos(uint n){
-        return ansi( to_string(n) + ";"  + ENUM_TO_STR((ANSICODE::cursor_pos)) ) ;
+        return ansi( to_string(n) + ";"  + cursor_pos ) ;
     };
     string er_in_disp(uint n){
         if(n>3){
             throw("Error n cannot be bigger than 3 for erase in display");
         };
-    return ansi(  to_string(n)+";" + ENUM_TO_STR((ANSICODE::erase_in_disp)) );
+    return ansi(  to_string(n)+";" + erase_in_disp );
     };
       string er_in_line(uint n){
         if(n>3){
             throw("Error n cannot be bigger than 2 for erase in display");
         };
-    return ansi( to_string(n)+";"  + ENUM_TO_STR((ANSICODE::erase_in_line)) ) ;
+    return ansi( to_string(n)+";"  + erase_in_line ) ;
     };
       string scr_up(uint n){
-    return ansi(  to_string(n) + ENUM_TO_STR((ANSICODE::scroll_up)) );
+    return ansi(  to_string(n) + scroll_up );
     };
       string scr_down(uint n){
-    return ansi(  to_string(n) + ENUM_TO_STR((ANSICODE::scroll_down)) );
+    return ansi(  to_string(n) + scroll_down );
     };
       string crs_save(){
-    return ansi(   ENUM_TO_STR((ANSICODE::cursor_save)) );
+    return ansi(   cursor_save );
     };
       string crs_restore(){
-    return ansi( ENUM_TO_STR((ANSICODE::cursor_restore)) );
+    return ansi( cursor_restore );
     };
       string crs_save_dec(){
-    return ansi( ENUM_TO_STR((ANSICODE::cursor_save_dec)) );
+    return ansi( cursor_save_dec );
     };
       string crs_restore_dec(){
-    return ansi( ENUM_TO_STR((ANSICODE::cursor_restore_dec)) );
+    return ansi( cursor_restore_dec );
     };
       string crs_horizontal_abso(uint n){
-    return ansi(  to_string(n) + ENUM_TO_STR((ANSICODE::cursor_horizontal_abso)) );
+    return ansi(  to_string(n) + cursor_horizontal_abso );
     };
    
 
@@ -84,45 +85,41 @@ using namespace std;
 #define _s SG_crossed // Strikethrough
 
    
-   string bg(uint r, uint g ,uint b){
+string bg(uint r, uint g ,uint b){
                 return   to_string(BG_color) +";" + "2"+ ";"+ to_string(r)+";"+to_string(g)+ ";"+to_string(b)  ;
 
-   };
-   string bg(uint n){
-                return   to_string(BG_color) +";" + "5"+ ";"+ to_string(n)   ;
-    
-   };
-   string fg(uint r, uint g , uint b){
-        return    to_string(FG_color)+";" + "2"+ ";"+ to_string(r)+";"+to_string(g)+ ";"+to_string(b)  ;  
-    
-   };
-   string fg(uint n){
-        return  to_string(FG_color)+";" + "5"+ ";"+ to_string(n) ;
-   };
-    string col(FG t){
-        if(t==FG_color){
-            throw("Color code not allowed");
-            return NULL ;
-        };
-        return  to_string(t)   ;
+};
+string bg(uint n){
+return   to_string(BG_color) +";" + "5"+ ";"+ to_string(n)   ;
 
-   };
-   string col(BG t){
-         if(t==BG_color){
-            throw("Color code not allowed");
-        }
-            return to_string(t)   ;
-   };
-   
-    string sgr_compose(string s){
-     return HEX_C_ESC  +"["+ s + SGR;
-    };
+};
+string fg(uint r, uint g , uint b){
+return    to_string(FG_color)+";" + "2"+ ";"+ to_string(r)+";"+to_string(g)+ ";"+to_string(b)  ;  
 
- 
-    string sgr(int s ) {
-        std::string s = sgr_compose(std::string(s))  ;
-        return s ;
-    };
+};
+string fg(uint n){
+return  to_string(FG_color)+";" + "5"+ ";"+ to_string(n) ;
+};
+string col(FG t){
+if(t==FG_color){
+throw("Color code not allowed");
+return NULL ;
+};
+return  to_string(t)   ;
+};
+string col(BG t){
+if(t==BG_color){
+throw("Color code not allowed");
+}
+return to_string(t)   ;
+};
+string sgr_compose(string s){
+return HEX_C_ESC  +"["+ s + SGR;
+};
+string sgr(int s ) {
+std::string s = sgr_compose(std::string(s))  ;
+return s ;
+};
    
 
 
@@ -130,6 +127,8 @@ using namespace std;
 //  string operator"" _fmts(char* str , std::size_t ){
     
 //  }; 
+
+
 
 
 class ansis {
@@ -142,7 +141,7 @@ class ansis {
   void operator()(int s ){sgr(s);};
  
   
-  // Example usage
+
 };
 
 class ansio { //ansi stream object to help manage state correctly for 

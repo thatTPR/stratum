@@ -5,35 +5,35 @@
 #include <utility>
 namespace ptr {
 
-struct tupleEmpty {};  // base case
+struct tupleEmpty {using headt = void;};  // base case
 
 // Recursive tuple
 template <typename Head, typename... Tail>
-struct tuple {
-    Head first;
-    tuple<Tail...> rest;
+struct tuple : tupleEmpty{
 
-    // decltype(*this)& operator=(tuple<Head,Tail....>& rhs){
-    //     first = rhs.first;
-    //     rest=rhs.rest;
-    // };
-    // tuple<Head,Tail....>& operator==(tuple<Head,Tail....>& rhs){
-    //     retrun first == rhs.first and ( rest==rhs.rest);
-    // };
-    
+    using headt = Head;
+    using tailtup = tuple<Tail...> ;
+
+    template <typename Head_,typename... Tail_>
+    using conc = tuple<Head,Tail...,Head_,Tail...>;
+    headt first;
+    tailtup rest;
+
+
     tuple() = default;
-
+   
     tuple(const Head& h, const Tail&... t)
         : first(h), rest(t...) {}
 };
 
 // Base case specialization
 template <typename T>
-struct tuple<T>{T first;};
+struct tuple<T>{
+    using tailtup = tupleEmpty;
+    using headt = T;
+    T first;};
 
-// ---------------------- get implementation ----------------------
 
-// Overload for index 0
 
 
 template <typename Head, typename... Tail>
@@ -71,6 +71,91 @@ template <size_t N, typename... Ts>
 auto& get(tuple<Ts...>& t) {
     return get(std::integral_constant<size_t, N>{}, t);
 }
+
+
+// TODO nesteds gener
+template <typname TupA,typename... Tups>
+struct nestedTup : tuple<tupA,Tups...>{
+    using tuple<tupA,Tups...>::
+};
+
+
+
+
+template <size_t s, typename tupT>
+struct tupGet {
+    using head = std::conditional<s==0,typename tupT::headt,tupGet<s-1,typename tupT::tailtup>::type>::type;
+    using tail = std::conditional<s==0,typename tupT::tailtup,tupGet<s-1,typename tupT::tailtup>::type>::type;
+    using trueVal = std::conditional<s==0 , true_type , false_type >::type; 
+}
+
+
+
+
+template <size_t s,typename TupA,typename TupB>
+struct tupconc {
+    using head =  typename tupA::conc<tupGet<s,TupB>::head> ;
+    using type = std::conditional<s==tuple_size<TupB>()-1,head,
+    typename tupconc<s+1,head,tupGet<s+1,TupB>::head>::type>::type ;
+};
+
+
+
+template <size_t s,typename nestedTup>
+struct tupconcnest {
+    using head =  typename tupGet<s,nestedTup>::head ;
+    using next = typename nestedTup::tailtup::headt ;
+    using type = std::conditional<s==tuple_size<nestedTup>()-1,head,
+      tupconc<0,head,tupconcnest<0,next>::type>::type>::type ;
+};
+
+template <typename... Tupts>
+using tupnestt = tupconcnest<0,nestedTup<Tupts>>::type;
+
+    template <typename tup,typename Head_,typename... Tail_>
+    typename tup::conc<Head_,Tail_...> tuple_concat(tup& a,tuple<Head_,Tail_...>& b){
+        tup::conc<Head_,Tail_...> res ;
+        size_t s=0;
+        for(;s<tuple_size<tupA>();s++){
+            get<s>(res) = get<s>(a);
+        };
+        size_t ss = s;
+        for(;s-ss<tuple_size<tupB>();s++){
+            get<s>(res) = get<s-ss>(b);
+        }
+        return res;
+    };
+    template <typename tupA,typename tubB>
+    tupconc<0,tupA,tupB>::type tuple_concat(tupA& a,tupB& b){
+        tupconc<tupA,tupB> res;
+        size_t s=0;
+        for(;s<tuple_size<tupA>();s++){
+            get<s>(res) = get<s>(a);
+        };
+        size_t ss = s;
+        for(;s-ss<tuple_size<tupB>();s++){
+            get<s>(res) = get<s-ss>(b);
+        }
+        return res;
+    };
+
+
+
+template <size_t s,typename tupT, typename... Tupts>
+size_t set_tup(tupnestt<Tupts...>& ref,tupT& r){
+    size_t si = s;
+    for(;si-s<=tuple_size<tupT>();si++){
+        std::get<si>(ref) = std::get<si-s>(r);
+    }
+    return si;
+};
+template <typename... Tupts>
+tupnestt<Tupts...> concat_tuples(Tupts&... tups){    
+    tupnestt<Tupts...> res;
+    size_t s = 0;
+    (s=set_tup<s,decltype(tups),Tupts...>(res,tups))...;
+    return res;
+};
 
 
 }
