@@ -29,35 +29,36 @@
 #define HEX_C_ESC "\x1B"
 #define HEX_C_DEL "\x7F"
 
-    #define cursor_up "A",//	Cursor Up	(n=1)	Move cursor up by n
-    #define cursor_down "B", //	Cursor Down	(n=1)	Move cursor down by n
-    #define cursor_forward "C", //	Cursor Forward	(n=1)	Move cursor forward by n
-    #define cursor_back "D", //	Cursor Back	(n=1)	Move cursor back by n
-    #define cursor_next_line "E", //	Cursor Next Line	(n=1)	Move cursor to the beginning of the line n lines down
-    #define cursor_prev_line "F", //	Cursor Previous Line	(n=1)	Move cursor to the beginning of the line n lines up
-    #define cursor_horizontal_abs "G", //	Cursor Horizontal Absolute	(n=1)	Move cursor to the the column n within the current row
-    #define cursor_pos "H", //	Cursor Position	(n=1, m=1)	Move cursor to row n, column m, counting from the top left corner
-    #define erase_in_disp "J", /*	Erase in Display	(n=0)	Clear part of the screen. 0, 1, 2, and 3 have various specific functions
+enum ANSI_ESC {
+     cursor_up= 'A',//	Cursor Up	(n=1)	Move cursor up by n
+     cursor_down= 'B', //	Cursor Down	(n=1)	Move cursor down by n
+     cursor_forward= 'C', //	Cursor Forward	(n=1)	Move cursor forward by n
+     cursor_back= 'D', //	Cursor Back	(n=1)	Move cursor back by n
+     cursor_next_line= 'E', //	Cursor Next Line	(n=1)	Move cursor to the beginning of the line n lines down
+     cursor_prev_line= 'F', //	Cursor Previous Line	(n=1)	Move cursor to the beginning of the line n lines up
+     cursor_horizontal_abs= 'G', //	Cursor Horizontal Absolute	(n=1)	Move cursor to the the column n within the current row
+     cursor_pos= 'H', //	Cursor Position	(n=1, m=1)	Move cursor to row n, column m, counting from the top left corner
+     erase_in_disp= 'J', /*	Erase in Display	(n=0)	Clear part of the screen. 0, 1, 2, and 3 have various specific functions
      0 ( same as missing) erase unitl end of screen
      1 erase until beggining of screen
      2 erase entire screen
      3 erase saved line */
-    #define erase_in_line "K", /*	Erase in Line	
+    erase_in_line= 'K', /*	Erase in Line	
     
     0 (same as missing )	erase from cursor to end of line
     1 	erase start of line to the cursor
     2 	erase the entire line
     
     */
-    #define scroll_up "S", //	Scroll Up	(n=1)	Scroll window up by n lines
-    #define scroll_down "T", //	Scroll Down	(n=1)	Scroll window down by n lines
-    #define cursor_save "s", //	Save Cursor Position	()	Save current cursor position for use with u
-    #define cursor_restore "u", //	Restore Cursor Position	()	Set cursor back to position last saved by s
-    #define cursor_save_dec 7//	Save Cursor Position	()	Save current cursor position for use with u
-    #define cursor_restore_dec 8//	Restore Cursor Position	()	Set cursor back to position last saved by s
-    #define cursor_horizontal_abso "f", //	…	…	(same as G)
-    #define SGR "m", //	SGR	(*)	Set graphics mode. More below
-
+     scroll_up= 'S', //	Scroll Up	(n=1)	Scroll window up by n lines
+     scroll_down= 'T', //	Scroll Down	(n=1)	Scroll window down by n lines
+     cursor_save= 's', //	Save Cursor Position	()	Save current cursor position for use with u
+     cursor_restore= 'u', //	Restore Cursor Position	()	Set cursor back to position last saved by s
+     cursor_save_dec= 7,//	Save Cursor Position	()	Save current cursor position for use with u
+     cursor_restore_dec= 8,//	Restore Cursor Position	()	Set cursor back to position last saved by s
+     cursor_horizontal_abso= 'f', //	…	…	(same as G)
+     SGR= 'm' //	SGR	(*)	Set graphics mode. More below
+};
 #define _cursor_up 65
 #define _cursor_down 66
 #define _cursor_forward 67

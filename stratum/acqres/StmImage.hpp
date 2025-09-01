@@ -1,7 +1,7 @@
 #ifndef STM_IMAGE_HPP
 #define STM_IMAGE_HPP
 #include "image/stm.hpp"
-image2D StmLoadImage(std::string name){
+mod::image2D StmLoadImage(std::string name){
     // 
     size_t pos = name.find_last_of(".");
     if(pos!=std::string::npos){

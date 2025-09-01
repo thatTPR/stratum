@@ -25,8 +25,8 @@ GIF []
 HDR
 */
 
-modules::image2D sRGBto_YCC(modules::image2D& im){
-    modules::image2D res;
+mod::image2D sRGBto_YCC(mod::image2D& im){
+    mod::image2D res;
     for(uint64_t i=0;i<im.imageSize*im.byd;i++){
         uint8_t rgb[3] ;
         std::memcpy(rgb,im.data+i,3);
@@ -37,8 +37,8 @@ modules::image2D sRGBto_YCC(modules::image2D& im){
         std::memcpy(res.data+i,ycc,3);
     };
 };
-modules::image2D YCCtoRGB(modules::image2D& im){
-    modules::image2D res;
+mod::image2D YCCtoRGB(mod::image2D& im){
+    mod::image2D res;
     for(uint64_t i=0;i<im.imageSize*im.byd;i++){
         int8_t ycc[3] ;
         std::memcpy(ycc,im+i,3);
@@ -263,7 +263,7 @@ for(uint64_t i=0;i<len;i++){
 }
 
 };
-template <modules::image_formats fm>
+template <mod::image_formats fm>
 void loadDataArr(image2D& im,uint64_t destPt,uint64_t len,int8_t pdSrc, int8_t* src ){
                     uint64_t maskDest = (1<<im.bdc) -1;
                     uint64_t maskSrc = (1<<pdSrc)  -1;
@@ -282,7 +282,7 @@ void loadDataArr(image2D& im,uint64_t destPt,uint64_t len,int8_t pdSrc, int8_t* 
             std::memcpy(im.data+destPt+i+j,&res,im.byd);
         }
         }
-template <modules::image_fromats fm>
+template <mod::image_fromats fm>
 void wrDataArr(image2D& im,uint64_t srcPt,uint64_t len,int8_t pdDest, int8_t* dest){
     uint64_t maskDest = (1<<pdDest) -1;
     uint64_t maskSrc = (1<<im.bd)  -1;

@@ -3,16 +3,20 @@
 #include <strata/backend/implgl.hpp>
 #include <strata/modules.hpp>
 #ifdef IMPL_ANDROID
-#include <android/../vk/vulkan.hpp>
-#include <android/../vk/vulkan_core.hpp>
+#include <android/vk/vulkan.hpp>
+#include <android/vk/vulkan_core.hpp>
 #elif
 #include <lib/vk/vulkan.h>
 #include <lib/vk/vulkan_core.h>
-
 #endif
 
 #define GET_VK_FORMAT(image_form) 
 
+
+template <>
+class mod::Pipeline<VkPipeline> {
+    pri::list<VkPipeline> pipelines;
+};
 
 class DescriptorAllocatorSets {
     
@@ -20,14 +24,24 @@ class DescriptorAllocatorSets {
 class Descriptor {
 
 };
-class vk_impl : public gl_impl  {
+template <typename... shadMods>
+class vk_impl : public glimpl<shadMods...>  {
     public:
+    using Pipelinety = VkPipeline;
+    using instty = VkInstance;
+
+    using Pipeline = mod::Pipeline<Pipelinety> ;
+
+
+    using imageBuffer = VkImageBuffer ;
     bool nv = 0 ; // Takes prioriy ext; // else KHRl
     int size_t curdev;
+
+
     VkInstance instance ;
     std::vector<VkPhysicalDevice> physdev;
     VkPhysicalDevice pdevice;
-    VkDevice dev;
+    VkDevice curdev;
 
 
 void instance_set_up(app_info info) {
@@ -174,60 +188,60 @@ void set_up_dev(){
 
 
 
-constexpr VkFormat get_format(image_formats fm){
+constexpr VkFormat get_format(mod::image_formats fm){
     switch(fm){
-image_formats::rgba32f         :{return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;}; 
-image_formats::rgba16f         :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
-image_formats::rg32f           :{return VkFormat::VK_FORMAT_R32G32_SFLOAT;};
-image_formats::rg16f           :{return VkFormat::VK_FORMAT_R16G16_SFLOAT;};
-image_formats::r11f_g11f_b10f  :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
-image_formats::r32f            :{return VkFormat::VK_FORMAT_R32_SFLOAT;};
-image_formats::r16f            :{return VkFormat::VK_FORMAT_R16_SFLOAT;};
-image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
-image_formats::rgb10_a2        :{return VkFormat::VK_FORMAT_A2R10G10B10_SNORM_PACK32;};
-image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SRGB;};
-image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
-image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
-image_formats::r16             :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
-image_formats::r8              :{return VkFormat::VK_FORMAT_R8_SNORM;};
-image_formats::rgba16_snorm    :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
-image_formats::rgba8_snorm     :{return VkFormat::VK_FORMAT_R8G8B8A8_SNORM;};
-image_formats::rg16_snorm      :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
-image_formats::rg8_snorm       :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
-image_formats::r16_snorm       :{return VkFormat::VK_FORMAT_R16_SNORM;};
-image_formats::r8_snorm        :{return VkFormat::VK_FORMAT_R8_SNORM;};
-image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_SINT;};
-image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SINT;};
-image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SINT;};
-image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32_SINT;};
-image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SINT;};
-image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SINT;};
-image_formats::r32i            :{return VkFormat::VK_FORMAT_R32_SINT;};
-image_formats::r16i            :{return VkFormat::VK_FORMAT_R16_SINT;};
-image_formats::r8i             :{return VkFormat::VK_FORMAT_R8_SINT;};
-image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_UINT;};
-image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_UINT;};
-image_formats::rgb10_a2ui      :{return VkFormat::VK_FORMAT_A2R10G10B10_UINT_PACK32;};
-image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_UINT;};
-image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32B32_UINT;};
-image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16B16_UINT;};
-image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8B8_UINT;};
-image_formats::r32             :{return VkFormat::VK_FORMAT_R32_UINT;};
-image_formats::r16             :{return VkFormat::VK_FORMAT_R16_UINT;};
-image_formats::r8              :{return VkFormat::VK_FORMAT_R8_UINT;};
+mod::image_formats::rgba32f         :{return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;}; 
+mod::image_formats::rgba16f         :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
+mod::image_formats::rg32f           :{return VkFormat::VK_FORMAT_R32G32_SFLOAT;};
+mod::image_formats::rg16f           :{return VkFormat::VK_FORMAT_R16G16_SFLOAT;};
+mod::image_formats::r11f_g11f_b10f  :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
+mod::image_formats::r32f            :{return VkFormat::VK_FORMAT_R32_SFLOAT;};
+mod::image_formats::r16f            :{return VkFormat::VK_FORMAT_R16_SFLOAT;};
+mod::image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
+mod::image_formats::rgb10_a2        :{return VkFormat::VK_FORMAT_A2R10G10B10_SNORM_PACK32;};
+mod::image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SRGB;};
+mod::image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
+mod::image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
+mod::image_formats::r16             :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
+mod::image_formats::r8              :{return VkFormat::VK_FORMAT_R8_SNORM;};
+mod::image_formats::rgba16_snorm    :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
+mod::image_formats::rgba8_snorm     :{return VkFormat::VK_FORMAT_R8G8B8A8_SNORM;};
+mod::image_formats::rg16_snorm      :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
+mod::image_formats::rg8_snorm       :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
+mod::image_formats::r16_snorm       :{return VkFormat::VK_FORMAT_R16_SNORM;};
+mod::image_formats::r8_snorm        :{return VkFormat::VK_FORMAT_R8_SNORM;};
+mod::image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_SINT;};
+mod::image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SINT;};
+mod::image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SINT;};
+mod::image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32_SINT;};
+mod::image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SINT;};
+mod::image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SINT;};
+mod::image_formats::r32i            :{return VkFormat::VK_FORMAT_R32_SINT;};
+mod::image_formats::r16i            :{return VkFormat::VK_FORMAT_R16_SINT;};
+mod::image_formats::r8i             :{return VkFormat::VK_FORMAT_R8_SINT;};
+mod::image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_UINT;};
+mod::image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_UINT;};
+mod::image_formats::rgb10_a2ui      :{return VkFormat::VK_FORMAT_A2R10G10B10_UINT_PACK32;};
+mod::image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_UINT;};
+mod::image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32B32_UINT;};
+mod::image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16B16_UINT;};
+mod::image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8B8_UINT;};
+mod::image_formats::r32             :{return VkFormat::VK_FORMAT_R32_UINT;};
+mod::image_formats::r16             :{return VkFormat::VK_FORMAT_R16_UINT;};
+mod::image_formats::r8              :{return VkFormat::VK_FORMAT_R8_UINT;};
 
-image_formats::rgb32f          :{return VkFormat::VK_FORMAT_R32G32B32_SFLOAT };     
-image_formats::rgb16f          :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };     
-image_formats::rgb16           :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };    
-image_formats::rgb8            :{return VkFormat::VK_FORMAT_R8G8B8_SFLOAT };   
-image_formats::rgb16_snorm     :{return VkFormat::VK_FORMAT_R16G16B16_SNORM };          
-image_formats::rgb8_snorm      :{return VkFormat::VK_FORMAT_R8G8B8_SNORM };         
-image_formats::rgb32i          :{return VkFormat::VK_FORMAT_R32G32B32_SINT };     
-image_formats::rgb16i          :{return VkFormat::VK_FORMAT_R16G16B16_SINT };     
-image_formats::rgb8i           :{return VkFormat::VK_FORMAT_R8G8B8_SINT };    
-image_formats::rgb32ui         :{return VkFormat::VK_FORMAT_R32G32B32_UINT };      
-image_formats::rgb16ui         :{return VkFormat::VK_FORMAT_R16G16B16_UINT };      
-image_formats::rgb8ui          :{return VkFormat::VK_FORMAT_R8G8B8_UINT };     
+mod::image_formats::rgb32f          :{return VkFormat::VK_FORMAT_R32G32B32_SFLOAT };     
+mod::image_formats::rgb16f          :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };     
+mod::image_formats::rgb16           :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };    
+mod::image_formats::rgb8            :{return VkFormat::VK_FORMAT_R8G8B8_SFLOAT };   
+mod::image_formats::rgb16_snorm     :{return VkFormat::VK_FORMAT_R16G16B16_SNORM };          
+mod::image_formats::rgb8_snorm      :{return VkFormat::VK_FORMAT_R8G8B8_SNORM };         
+mod::image_formats::rgb32i          :{return VkFormat::VK_FORMAT_R32G32B32_SINT };     
+mod::image_formats::rgb16i          :{return VkFormat::VK_FORMAT_R16G16B16_SINT };     
+mod::image_formats::rgb8i           :{return VkFormat::VK_FORMAT_R8G8B8_SINT };    
+mod::image_formats::rgb32ui         :{return VkFormat::VK_FORMAT_R32G32B32_UINT };      
+mod::image_formats::rgb16ui         :{return VkFormat::VK_FORMAT_R16G16B16_UINT };      
+mod::image_formats::rgb8ui          :{return VkFormat::VK_FORMAT_R8G8B8_UINT };     
 
     };
 };
@@ -258,18 +272,22 @@ case mirror_rotate90:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_
 case mirror_rotate180:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR;};
 case mirror_roate270:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR;};};};
 
-VkResult create_image2d( image im){
-VkImageCreateInfo imageCreateInfo{};
-imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-imageCreateInfo.imageType = (im.dim);
-imageCreateInfo.format = get_vk_format(s); // Use the format
-imageCreateInfo.extent.width = {im.w,im.h, im.depth };
-imageCreateInfo.mipLevels = im.miplevels;
-imageCreateInfo.arrayLayers = i.arrlayers;
-imageCreateInfo.samples = im.sample;
-imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-imageCreateInfo.usage = im.usage;                                                                   
+using imagety= VkImage ;
+pri::list<imagety> imagePool;
 
+pri::list<imagety>::iter create_image2d( mod::image2D& im, imageOpts opts = imageOpts()){
+VkImageCreateInfo imageCreateInfo;
+imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+imageCreateInfo.format = get_format(im.format);
+imageCreateInfo.extent.width = im.width;
+imageCreateInfo.extent.height = im.height;
+if(opts.cubemap){
+    imageCreateInfo.extent.depth = 6;
+    imageCreateIfo.flags|=VK_IMAGE_VIEW_TYPE_CUBE ; 
+}
+imageCreateInfo.mipLevels = 1;
+imageCreateInfo.arrayLayers = 1;
 imageCreateInfo.sharingMode = im.sharing==true?VK_SHARING_MODE_CONCURRENT:VK_SHARING_MODE_EXCLUSIVE;  // Exclusive access (one queue family)
 imageCreateInfo.queueFamilyIndexCount = 0;
 imageCreateInfo.pQueueFamilyIndices = nullptr;
@@ -278,12 +296,20 @@ imageCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;  // Opaque a
 imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;  // Initial layout
 
 VkImage image;
-VkResult result = vkCreateImage(device, &imageCreateInfo, nullptr, &image);
+VkResult result = vkCreateImage(devcur, &imageCreateInfo, nullptr, &image);
 if (result != VK_SUCCESS) {
+    imagePool.push_back(image);
+    return imagePool.rbegin() ;
     std::cerr << "Failed to create image!" << std::endl;
 }
 };
-void create_image2d_cube_map(image_formats s ,size_t x, size_t y)
+using memty =VkDeviceMemory ; 
+void bind_image(pri::list<imagety>::iter imit,pri::list<memty>::iter memit){
+    vkBindImageMemory(devcur,*imit,*memit,0) ;
+
+    VkWriteDescriptorSet write{};
+};
+
 
 
 void ubo(void* buffer, size_t bufsize){
@@ -368,7 +394,8 @@ void updateUBO();
 // VK_SHADER_STAGE_SUBPASS_SHADING_BIT_HUAWEI
 // VK_SHADER_STAGE_CLUSTER_CULLING_BIT_HUAWEI
 
-constexpr VkShaderStageFlagBits getShaderType(shader_type STAGE){
+using shaderStageBits = VkShaderStageFlagBits; 
+constexpr VkShaderStageFlagBits getShaderType(mod::shader_type STAGE){
     switch(STAGE){
         shader_type::all :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;}
         shader_type::gr :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS;}
@@ -388,6 +415,7 @@ constexpr VkShaderStageFlagBits getShaderType(shader_type STAGE){
         shader_type::rcall :{return VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR;}
     }
 };
+
 
 int shaderModule(shaderModule* module,VkShaderStageFlagBits STAGE){
     VkShaderModuleCreateInfo createInfo{};
@@ -412,6 +440,7 @@ if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCC
     };
     return 
 };
+
 int shaderModule(shaderModule* module, shader_type STAGE){
     shaderModule(module,getShaderType(STAGE));
 };
@@ -463,6 +492,10 @@ int rcallModule(rcallModule* module){
 void descriptor_pool(){
 
 };
+void descriptor_set(){
+
+};
+void 
 virtual void descriptors(T* shader ){
     vkCreateDescriptorSetLayout(){
 

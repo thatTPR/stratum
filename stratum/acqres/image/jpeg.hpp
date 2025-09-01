@@ -286,14 +286,14 @@ void idct8x8(double input[8][8], double output[8][8]) {
     }
 }
 
-void dctCoef(modules::image2D& YCC ,uint16_t x,uint16_t y , double* coef[8][8]){ // TODO
+void dctCoef(mod::image2D& YCC ,uint16_t x,uint16_t y , double* coef[8][8]){ // TODO
   
 };
 
-void losslessCoef(modules::image2D& YCC ,uint16_t x,uint16_t y , double* coef[8][8]){ // TODO
+void losslessCoef(mod::image2D& YCC ,uint16_t x,uint16_t y , double* coef[8][8]){ // TODO
   
 };
-void dctCoef(modules::image2D& YCC ,uint16_t x,uint16_t y , double ycoef[8][8],double crcoef[8][8],double cbcoef[8][8]){
+void dctCoef(mod::image2D& YCC ,uint16_t x,uint16_t y , double ycoef[8][8],double crcoef[8][8],double cbcoef[8][8]){
     glm::u8vec3 vec[8][8];
     for(int i=y;i<8;i++){
         std::memcpy(vec+(i-hstep)*24,YCC.data+i*24*YCC.width+x*24,24*8);
@@ -311,7 +311,7 @@ void dctCoef(modules::image2D& YCC ,uint16_t x,uint16_t y , double ycoef[8][8],d
         }
     };
 };
-void losslessCoef(modules::image2D& YCC ,uint16_t x,uint16_t y , double ycoef[8][8],double crcoef[8][8],double cbcoef[8][8]){
+void losslessCoef(mod::image2D& YCC ,uint16_t x,uint16_t y , double ycoef[8][8],double crcoef[8][8],double cbcoef[8][8]){
     glm::u8vec3 vec[8][8];
     for(int i=y;i<8;i++){
         std::memcpy(vec+(i-hstep)*24,YCC.data+i*24*YCC.width+x*24,24*8);
@@ -449,7 +449,7 @@ void addToVec(std::vector<int8_t>& rles,std::vector<std::vector<int8_t>> rl ,int
 };
 
 template <typename table>
-void qt(modules::image2D& YCC,uint8_t quality){
+void qt(mod::image2D& YCC,uint8_t quality){
     std::vector<int8_t> rles;
     std::vector<std::vector<int8_t>> rl; 
     double ycoef[8][8];double crcoef[8][8];double cbcoef[8][8];
@@ -458,7 +458,7 @@ void qt(modules::image2D& YCC,uint8_t quality){
     DQT_.qtable[1].get(cbcoef);
 
     void (*addVec)(std::vector<int8_t>& ,std::vector<std::vector<int8_t>>rl,int8_t* rls,uint8_t size) ;
-    void (*coef)(modules::image2D&,uint32_t,uint32_t,double[8][8],double[8][8],double[8][8]) ; 
+    void (*coef)(mod::image2D&,uint32_t,uint32_t,double[8][8],double[8][8],double[8][8]) ; 
 
     void (*encode)(char* src,size_t srcsize,table* tab,char* dest,size_t* destsie) ;
     if constexpr (std::is_same<table,clib::actbs>::value ){encode = &arithmetic_encode;}
@@ -521,13 +521,13 @@ tree->htInfo=0;tree->length();
 
 uint32_t ind=0;
 template <typename table>
-void dqt(modules::image2D& YCC,uint8_t quality){
+void dqt(mod::image2D& YCC,uint8_t quality){
     std::vector<int8_t> rles;
     std::vector<std::vector<int8_t>> rl; 
   
     offset = 0;
     void (*addVec)(std::vector<int8_t>& ,std::vector<std::vector<int8_t>>rl,int8_t* rls,uint8_t size) ;
-    void (*coefGet)(modules::image2D&,uint32_t,uint32_t,double[8][8],double[8][8],double[8][8]) ; 
+    void (*coefGet)(mod::image2D&,uint32_t,uint32_t,double[8][8],double[8][8],double[8][8]) ; 
 
     void (*decode)(char* src,size_t srcsize,table* tab,char* dest,size_t* destsie) ;
   
@@ -588,7 +588,7 @@ uint32_t inds = ind;
     
    
 }
-modules::image2D qtinit(modules::image2D& im){
+mod::image2D qtinit(mod::image2D& im){
     
     uint8_t wm=YCC.width %8 ; 
     uint8_t hm=YCC.height %8 ; 
@@ -615,15 +615,15 @@ modules::image2D qtinit(modules::image2D& im){
     return sRGBtoYCC(im);
 
 };
-void qtwr(modules::image2D& im,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
-    modules::image2D YCC = qtinit(im);
+void qtwr(mod::image2D& im,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+    mod::image2D YCC = qtinit(im);
     
     qt<clib::huff_tree>(YCC,w,h,x,y);
 
 
 };
-void qtwr(modules::image2D& im,uint8_t quality,segs SOFmark){
-    modules::image2D YCC = qtinit(im);
+void qtwr(mod::image2D& im,uint8_t quality,segs SOFmark){
+    mod::image2D YCC = qtinit(im);
     switch(SOFmark) {
         #define SOFMARK (m) case segs::_##m : {set##m;break;}
         REPEAT(SOFMARK SOF0,SOF1,SOF2,SOF3,SOF5,SOF6,SOF7,SOF9,SOF10,SOF11,SOF13,SOF14,SOF15)
@@ -633,7 +633,7 @@ void qtwr(modules::image2D& im,uint8_t quality,segs SOFmark){
 
 };
 
-void ldStartScan(modules::image2D& im){
+void ldStartScan(mod::image2D& im){
     for(uint8_t i==0;i<SOS_.numberOfCOmponents;i++){
         SOS::cmspec&  SOScs=  SOS_.comSpec[i];
         SOF::cmpspec& SOFcs; bool bocs = SOF_.findCID(SOScs.id,SOFcs);
@@ -657,7 +657,7 @@ void ldStartScan(modules::image2D& im){
 
 
 uint32_t compno=0;
-void dequantize(modules::image2D& YCC,uint32_t x,uint32_t y,uint32_t w,uint32_t h){ // Starts at scan
+void dequantize(mod::image2D& YCC,uint32_t x,uint32_t y,uint32_t w,uint32_t h){ // Starts at scan
     for(uint32_t i=0;data.SOS_.numCom;i++){
         uint8_t dc=data.SOS_.comSpec.tdc();
         uint8_t ac=data.SOS_.comSpec.tac();
@@ -665,12 +665,12 @@ void dequantize(modules::image2D& YCC,uint32_t x,uint32_t y,uint32_t w,uint32_t 
     };
 };
  
-void dequantize(modules::image2D& YCC){ // 
+void dequantize(mod::image2D& YCC){ // 
     dequantize(YCC,0,0,data.SOF_.width,data.SOF_.height);
 };
 
 
-    void ld(modules::image2D& im,std::ifstream& fi){
+    void ld(mod::image2D& im,std::ifstream& fi){
         ld(segstart,fi);
         ld(SOI_,fi);
         uint8_t seg;
@@ -732,7 +732,7 @@ void dequantize(modules::image2D& YCC){ //
         wrSeg(of,segs::_COM);wr(data.COM_,of);
         wrSeg(of,segs::_EOI);
     }
-    void encode(modules::image2D& im,uint8_t quality){
+    void encode(mod::image2D& im,uint8_t quality){
         data.SOF_.width=im.width;
         data.SOF_.height=im.height;
         data.SOF_.numcomponents=3;
@@ -743,29 +743,29 @@ void dequantize(modules::image2D& YCC){ //
         std::memcpy(data.DQT_.qtable,qmatrix,64);
         
 
-        if(im.imageFormat!=modules::image_formats::rgb8){im.to<modules::image_formats::rgb8>();};
+        if(im.imageFormat!=mod::image_formats::rgb8){im.to<mod::image_formats::rgb8>();};
 
         image2D& YCC = sRGBto_YCC(im) ;
         quantize(YCC,qmatrix,quality);
     };  
-    modules::image2D decode( uint32_t x,uint32_t y,uint32_t w,uint32_t h){
-        modules::image2D im;
+    mod::image2D decode( uint32_t x,uint32_t y,uint32_t w,uint32_t h){
+        mod::image2D im;
         dequantize(im,x,y,w,h);
-        modules::image2D res=YCCtoRGB(im);
+        mod::image2D res=YCCtoRGB(im);
         return res;
     }
-    void wr(std::string path ,modules::image2D& im, uint8_t quality=100){
+    void wr(std::string path ,mod::image2D& im, uint8_t quality=100){
         encode(im,quality);
     }
-    modules::image2D ld(std::string path, uint32_t x,uint32_t y,uint32_t w,uint32_t h){
+    mod::image2D ld(std::string path, uint32_t x,uint32_t y,uint32_t w,uint32_t h){
         std::ifstream fi(path);
         ld(data,fi,x,y,w,h);
-        modules::image2D im=decode(x,y,w,h);
+        mod::image2D im=decode(x,y,w,h);
     };
-     modules::image2D ld(std::string path){
+     mod::image2D ld(std::string path){
         std::ifstream fi(path);
         ld(data,fi);
-        modules::image2D im;ld(im,fi);
+        mod::image2D im;ld(im,fi);
     };
 
 

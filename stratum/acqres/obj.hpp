@@ -117,7 +117,7 @@ map_ORM       # alternate definition of map_RMA
 std::vector<named<image2D>> images; 
 struct Tmap {
     
-    modules::image2D image ;
+    mod::image2D image ;
 struct tmapOps{
     bool blendu=true;bool blendv=true;
     float boost;
@@ -133,14 +133,14 @@ struct tmapOps{
         sphere ,cube_top,  cube_bottom,  cube_front,  cube_back,    cube_left,  cube_right 
     }
     TYPE type;
-    Tmap& operator=(modules::Tmap& s){
+    Tmap& operator=(mod::Tmap& s){
         std::memcpy(this ,&s,sizeof(s));
         return *this;
     };
     
 };
-modules::Tmap& operator=(Tmap& s){
-        modules::Tmap t; 
+mod::Tmap& operator=(Tmap& s){
+        mod::Tmap t; 
         std::memcpy( &t,this,sizeof(*this));
         return t;
     };
@@ -185,9 +185,9 @@ struct material {
     Tmap map_Kd ;// diffuse
     Tmap map_Ks ;// specularity
 
-    template <modules::quality::QUALITY q>
-    named<modules::material<q>> get(){
-        named<modules::material<q>> res;
+    template <mod::quality::QUALITY q>
+    named<mod::material<q>> get(){
+        named<mod::material<q>> res;
         res.name=name;
         if constexpr(Q>4){
                     res.data.map_bump =map_bump.image ;
@@ -485,8 +485,8 @@ uint32_t_ vert,uint32_t _Pvert,uint32_t _Nvert,uint32_t _Tvert,uint32_t _lines,u
         mesh data;
 
         glm::vec3 defVal(){return glm::vec3(0,0,0);}
-        template <modules::quality::QUALITY Q>
-        toObj(modules::mesh<3,Q>& m){
+        template <mod::quality::QUALITY Q>
+        toObj(mod::mesh<3,Q>& m){
             data.vertices= m.vert;
             data.Nvertices= m.nvert;
             data.Tvertices=m.tvert;
@@ -565,18 +565,18 @@ res.facevert.back().push_back(s.vertices[ind]);
             return res;
         };
 
-        template <modules::quality::QUALIY Q>
-        modules::mesh<3,Q> getMesh(mesh& s){
-            get<mesh<3,Q>> res = get<modules::mesh<3,Q>>(s);
+        template <mod::quality::QUALIY Q>
+        mod::mesh<3,Q> getMesh(mesh& s){
+            get<mesh<3,Q>> res = get<mod::mesh<3,Q>>(s);
             return res;
         };
-        template <modules::quality::QUALIY Q>
-        modules::model<3,Q> getModel(mesh& s){
+        template <mod::quality::QUALIY Q>
+        mod::model<3,Q> getModel(mesh& s){
             std::string manifold=std::string("manifold");
-            modules::model<3,Q> res= get<modules::model<3>>(s);
+            mod::model<3,Q> res= get<mod::model<3>>(s);
             for(group& g: s.groups){
                 if(g.name.substr(0,manifold.size()) == manifold ){
-                    res.manifolds.push_back(modules::model<3,Q>::manifold())
+                    res.manifolds.push_back(mod::model<3,Q>::manifold())
                 };
             }
         };
@@ -699,15 +699,15 @@ f.faces.size()+1);
                 };
             }
         }
-        template <modules::quality::QUALITY Q>
-        modules::mesh<3,Q> ld(std::string& name){
+        template <mod::quality::QUALITY Q>
+        mod::mesh<3,Q> ld(std::string& name){
             current = name;
             std::ifstream fi(name);
             load(fi);     
             return getMesh<Q>(data);      
         };
-        template <modules::quality::QUALITY Q>
-        wr(std::string path,modules::mesh<3,Q>& m,std::string name){
+        template <mod::quality::QUALITY Q>
+        wr(std::string path,mod::mesh<3,Q>& m,std::string name){
             std::ofstream of(name);
             
             toObj(m)

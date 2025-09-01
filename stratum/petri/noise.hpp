@@ -1,7 +1,7 @@
 #include <iostream>
 // #include <cstdlib>
 
-namespace ptr {
+namespace pri {
 
 
 int* primes(size_t s){

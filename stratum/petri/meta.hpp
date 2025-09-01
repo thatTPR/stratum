@@ -1,5 +1,5 @@
 #include <type_traits>
-namespace ptr {
+namespace pri {
 
     template <typename , typenme = std::void_t<>>
     struct has_value_type : std::false_type {};

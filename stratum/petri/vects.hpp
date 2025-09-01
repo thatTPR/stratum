@@ -2,7 +2,7 @@
 #include <assert>
 #include <memory>
 #include <initializer_list>
-namespace ptr {
+namespace pri {
 
 template<typename T, size_t sizearr>
 class arr {

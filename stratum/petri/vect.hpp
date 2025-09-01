@@ -1,6 +1,6 @@
 #ifndef VECT_HPP
 #define VECT_HPP
-namespace ptr {
+namespace pri {
 
 template <typename T,typename sizeT>
 void resizeVect(T* d,sizeT* si, sizeT s){

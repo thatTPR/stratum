@@ -79,12 +79,12 @@ std::vector<GIFIMGDESC> imgs;
                    
     };
     
-    modules::image2D ld(std::string path){
+    mod::image2D ld(std::string path){
         std::ifstream fi(path);
         ld(head,fi);
         if(head.ColorTableFlag()){
             ld<glm::u8vec3>(GIFCOLORTABLE,sizeGlobalColorTable()/3,fi);}
-        modules::aimage2D vec;
+        mod::aimage2D vec;
         vec.swidth=  width();
         vec.sheight= height();
         void (*ptr)(image2D& ,GIFIMGDESC& ,uint32_t,glm::uvec3* ) ;
@@ -126,7 +126,7 @@ std::vector<GIFIMGDESC> imgs;
         }
     };
 
-    void wr(std::string path, modules::aimage2D aim){
+    void wr(std::string path, mod::aimage2D aim){
         std::ofstream of(path);
         head.Signature="GIF";
         head.Version="87a";

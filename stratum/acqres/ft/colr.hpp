@@ -142,33 +142,38 @@ colrf##fn<varValueBase> get(){colrf##fn<varValueBase> r; \
 REPEAT(COLRF_GET_MEMBER,__VA__ARGS__) \
 return r;\
 }
- struct colrf1 {
+
+template <typename VarIndex,size_t s>
+struct colrff;
+template <typename VarIndex>
+ struct colrff<VarIndex,1> {///PaintColrLayers
 // uint8   format;
 uint8   numLayers;
 uint32   firstLayerIndex;
 
 };//PaintColrLayers
 template <typename VarIndex>
- struct colrf2 {
+ struct colrff<VarIndex,2>{//PaintSolid
 // uint8   format;
 COND_IS_SAME(uint16,glm::uvec4)   paletteIndex;
 COND_IS_SAME(F2DOT14,float)   alpha;
 corlf2<varValueBase> get(){corlf2<varValueBase> r;r.paletteIndex=CPAL().get(paletteIndex).get();r.alpha=alphaval(alpha);}
 };//PaintSolid table ;
 template <typename VarIndex> // Uint32 or struct{uint16,uint8*}
-struct colrf3 {
+struct colrff<VarIndex,3>{//, PaintVarSolid
 // uint8   format;
 COND_IS_SAME(uint16,glm::uvec4)  paletteIndex;
 F2DOT14   alpha;
 VarIndex   varIndexBase;
 corlf4<varValueBase> get(){corlf4<varValueBase> r;r.paletteIndex=CPAL().get(paletteIndex).get();r.alpha=alphaval(alpha);}
 };//PaintVarSolid;
-#define TEMPLATE_TYPE_OFFSET std::enable_if<std::is_same<VarIndex,varIndBase>::value,Offset24>::type
+template <typename VarIndex>
+using colrOffTy = std::enable_if<std::is_same<VarIndex,varIndBase>::value,Offset24>::type;
 #define TEMPLATE_IND_OFFSET COND_IS_SAME(Offset24,IndexP)
 template <typename VarIndex>
- struct colrf4 {
+ struct colrff<VarIndex,4>{//PaintLinearGradient
 // uint8   format;
-TEMPLATE_TYPE_OFFSET colorLineOffset;
+colrOffTy<VarIndex> colorLineOffset;
 FWORD   x0;
 FWORD   y0;
 FWORD   x1;
@@ -176,9 +181,9 @@ FWORD   y1;
 FWORD   x2;
 FWORD   y2;
 ColorLine colorLine;
-COLRF_GET(4,x0,y0,x1,y1,x2,y2,colorLine)
+// COLRF_GET(4,x0,y0,x1,y1,x2,y2,colorLine)
 };//PaintLinearGradient;
-ACQRES(colrf4){
+ACQRES(colrff<varIndBase,4>){
    one(f.colorLineOffset);
    one(f.x0);
    one(f.y0);
@@ -188,11 +193,11 @@ ACQRES(colrf4){
    one(f.y2);
    offone(f.colorLine,f.colorLineOffset);
 };
-USE_ACQRES(colrf4)
+USE_ACQRES(colrff<varValueBase,4>)
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf5 {
+struct colrff<VarIndex,5>{//PaintVarLinearGradient
 // uint8   format;
-TEMPLATE_TYPE_OFFSET colorLineOffset; 
+colrOffTy<VarIndex> colorLineOffset; 
 FWORD   x0;
 FWORD   y0;
 FWORD   x1;
@@ -204,7 +209,7 @@ VarColorLine<VarIndex> colorLine;
 
 CORLF_GET(5,x0,y0,x1,y1,x2,y2)
 };//PaintVarLinearGradient;
-ACQRES(colrf5<varIndBase>){
+ACQRES(colrff<varIndBase,5>){
    one(f.colorLineOffset);
    one(f.x0);
    one(f.y0);
@@ -215,11 +220,11 @@ ACQRES(colrf5<varIndBase>){
    one(f.varIndexBase);
    offone(f.colorLine,f.colorLineOffset);
 };
-USE_ACQRES(colrf5<varIndBase>)
+USE_ACQRES(colrff<varIndBase,5>)
 template <typename VarIndex>
-struct colrf6 {
+struct colrff<VarIndex,6>{//PaintRadialGradient
 \\uint8   format;
-TEMPLATE_TYPE_OFFSET colorLineOffset;
+colrOffTy<VarIndex> colorLineOffset;
 FWORD   x0;
 FWORD   y0;
 UFWORD   radius0;
@@ -229,7 +234,7 @@ UFWORD   radius1;
 ColorLine colorLine;
 COLRF_GET(6,x0,y0,radius0,x1,y1,radius1,colorLine)
 };//PaintRadialGradient:*/;
-ACQRES(colrf6<varIndBase>){
+ACQRES(colrff<varIndBase,6>){
    one(f.colorLineOffset);
    one(f.x0);
    one(f.y0);
@@ -239,11 +244,11 @@ ACQRES(colrf6<varIndBase>){
    one(f.radius1);
    offone(f.colorLine,f.colorLineOffset);
 }
-USE_ACQRES(colrf6<varIndBase>)
+USE_ACQRES(colrff<varIndBase,6>)
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf7 {
+struct colrff<VarIndex,7>{//, PaintVarRadialGradient
 \\uint8   format;
-TEMPLATE_TYPE_OFFSET   colorLineOffset;
+colrOffTy<VarIndex>   colorLineOffset;
 FWORD   x0;
 FWORD   y0;
 UFWORD   radius0;
@@ -254,7 +259,7 @@ VarIndex   varIndexBase;
 VarColorLine<VarIndex> colorLine;
 COLRF_GET(7,x0,y0,radius0,x1,y1,radius1)
 };//PaintVarRadialGradient:*/;
-ACQRES(colrf7<varIndBase>){
+ACQRES(colrff<varIndBase,7>){
       one(f.colorLineOffset);
    one(f.x0);
    one(f.y0);
@@ -265,11 +270,11 @@ ACQRES(colrf7<varIndBase>){
    one(f.varIndexBase);
    offone(f.colorLine,f.colorLineOffset);
 }
-USE_ACQRES(colrf7<varIndBase>)
+USE_ACQRES(colrff<varIndBase,7>)
 template <typename VarIndex>
-struct colrf8 {
+struct colrff<VarIndex,8>{//PaintSweepGradient, 
 \\uint8   format;
-TEMPLATE_TYPE_OFFSET colorLineOffset;
+colrOffTy<VarIndex> colorLineOffset;
 FWORD   centerX;
 FWORD   centerY;
 F2DOT14   startAngle;
@@ -278,7 +283,7 @@ ColorLine colorLine;
 COLRF_GET(8,centerX,centerY,startAngle,endAngle,colorLine)
 };//PaintSweepGradient:*/;
 
-ACQRES(colrf7){
+ACQRES(colrff<varIndBase,8>){
    one(f.colorLineOffset);
    one(f.centerX);
    one(f.centerY);
@@ -286,11 +291,11 @@ ACQRES(colrf7){
    one(f.endAngle);
    offone(f.colorLine,f.colorLineOffset);
 }
-USE_ACQRES(colrf6)
+USE_ACQRES(colrff<varIndBase,8>)
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf9 {
+struct colrff<VarIndex,9>{//PaintVarSweepGradient
 \\uint8   format;
-TEMPLATE_TYPE_OFFSET colorLineOffset;
+colrOffTy<VarIndex> colorLineOffset;
 FWORD   centerX;
 FWORD   centerY;
 F2DOT14   startAngle;
@@ -299,7 +304,7 @@ VarIndex   varIndexBase;
 VarColorLine<VarIndex> colorLine;
 COLRF_GET(9,centerX,centerY,startAngle,endAngle,colorLine)
 };//PaintVarSweepGradient:*/;
-ACQRES(colrf9<varIndBase>){
+ACQRES(colrff<varIndBase,9>){
 one(f.colorLineOffset);
 one(f.centerX);
 one(f.centerY);
@@ -308,9 +313,9 @@ one(f.endAngle);
 one(f.varIndexBase);
 offone(f.colorLine,colorLineOffset);
 }
-USE_ACQRES(colrf9<varIndBase>)
+USE_ACQRES(colrff<varIndBase,9>)
 template <typename VarIndex>
- struct colrf10 {
+ struct colrff<VarIndex,10>{//PaintGlyph
 \\uint8   format;
 TEMPLATE_IND_OFFSET paintOffset;
 uint16   glyphID;
@@ -318,8 +323,8 @@ uint16   glyphID;
 COLRF_GET(10,paintOffset,glyphID)
 colrfu* get(colrf<varIndBase>* start,uint16 index){return (&start[index]+paintOffset);};
 };//PaintGlyph:*/;
-
-struct colrf11 {
+template <typename VarIndex>
+struct colrff<VarIndex,11>{//PainColorGlyph
 \\uint8   format;
 uint16   glyphID;
 };//PaintColrGlyph:*/;
@@ -350,34 +355,34 @@ colrf<varIndBase>* getPaintOffset(SCOLR& start){
 };
 #define TEMPLATE_PAINT_OFFSET Offset24
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf12  {
+struct colrff<VarIndex,12> {//PaintTransform, 
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
-TEMPLATE_TYPE_OFFSET transformOffset; // Stores Index to value in VarValueBase
+colrOffTy<VarIndex> transformOffset; // Stores Index to value in VarValueBase
 Affine2x3 transform;
 COLRF_GET(12,paintOffset,transform)
 } ;//PaintTransform:*/;
-ACQRES(colrf12<varIndBase>){
+ACQRES(colrff<varIndBase,12>){
    one(f.paintOffset);
    one(f.transformOffset);
    offone(f.transform,f.transformOffset);
 }
-USE_ACQRES(colrf12<varIndBase>)
+USE_ACQRES(colrff<varIndBase,12>)
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf13  {
+struct colrff<VarIndex,13> {//PaintVarTransform
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 Offset24 transformOffset; // Stores Index to value in VarValueBase
 VarAffine2x3<VarIndex> transform;
 COLRF_GET(13,paintOffset,transform)
 };//PaintVarTransform:*/;
-ACQRES(colrf13<varIndBase>){
+ACQRES(colrff<varIndBase,13>){
    one(f.paintOffset);
    one(f.transformOffset);
    offone(f.transform,f.transformOffset);
 }
-USE_ACQRES(colrf13<varIndBase>)
-struct colrf14  {
+USE_ACQRES(colrff<varIndBase,13>)
+struct colrff<VarIndex,14> {//PaintTranslate, 
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 FWORD   dx;
@@ -385,7 +390,7 @@ FWORD   dy;
 COLRF_GET(14,dx,dy)
 };//PaintTranslate:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
- struct colrf15  {
+ struct colrff<VarIndex,15> {//PaintVarTranslate
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 FWORD   dx;
@@ -394,15 +399,15 @@ VarIndex   varIndexBase;
 COLRF_GET(15,dx,dy)
 };//PaintVarTranslate:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf16  {
+struct colrff<VarIndex,16> {//PaintScale 
 \\uint8   format;
-TEMPLATE_TYPE_OFFSET   paintOffset;
+colrOffTy<VarIndex>   paintOffset;
 F2DOT14   scaleX;
 F2DOT14   scaleY;
 COLRF_GET(16,scalex,scaley)
 };//PaintScale:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf17 {
+struct colrff<VarIndex,17>{//PaintVarScale
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   scaleX;
@@ -411,7 +416,7 @@ VarIndex   varIndexBase;
 COLRF_GET(17,scalex,scaley)
 };//PaintVarScale:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf18{
+struct colrf18{//PaintScaleAroundCenter
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   scaleX;
@@ -421,7 +426,7 @@ FWORD   centerY;
 COLRF_GET(18,paintOffset,scaleX,scaleY,centerX,centerY)
 };//PaintScaleAroundCenter:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
- struct colrf19  {
+ struct colrff<VarIndex,19> {//PaintVarScaleAroundCente
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   scaleX;
@@ -432,14 +437,14 @@ VarIndex   varIndexBase;
 COLRF_GET(19,paintOffset,scaleX,scaleY,centerX,centerY)
 } ;//PaintVarScaleAroundCenter:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf20  {
+struct colrff<VarIndex,20> {//PaintScaleUniform
 \\uint8   format;
-TEMPLATE_TYPE_OFFSET   paintOffset;
+colrOffTy<VarIndex>   paintOffset;
 F2DOT14   scale;
 COLRF_GET(20,paintOffset,scale)
 };//PaintScaleUniform:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf21{
+struct colrff<VarIndex,21>{//PaintVarScaleUniform
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   scale;
@@ -447,9 +452,9 @@ VarIndex   varIndexBase;
 COLRF_GET(21,paintOffset,scale)
 };//PaintVarScaleUniform:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf22 {
+struct colrff<VarIndex,22>{//PaintScaleUniformAroundCenter
 \\uint8   format;
-TEMPLATE_TYPE_OFFSET  paintOffset;
+colrOffTy<VarIndex>  paintOffset;
 F2DOT14   scale;
 FWORD   centerX;
 FWORD   centerY;
@@ -457,7 +462,7 @@ COLRF_GET(22,paintOffset,scale,centerX,centerY)
 
 };//PaintScaleUniformAroundCenter:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf23 {
+struct colrff<VarIndex,23>{//PaintVarScaleUniformAroundCenter
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   scale;
@@ -467,7 +472,7 @@ VarIndex varIndexBase;
 COLRF_GET(23,paintOffset,scale,centerX,centerY)
 } ;//PaintVarScaleUniformAroundCenter:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf24 {
+struct colrff<VarIndex,24>{//PaintRotate
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   angle;
@@ -475,7 +480,7 @@ COLRF_GET(24,paintOffset,angle)
 
 };//PaintRotate:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf25 {
+struct colrff<VarIndex,25>{//PaintVarRotate
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   angle;
@@ -484,7 +489,7 @@ COLRF_GET(25,paintOffset,angle)
 };//PaintVarRotate:*/;
 
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf26 {
+struct colrff<VarIndex,26>{//PaintRotateAroundCenter
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   angle;
@@ -493,7 +498,7 @@ FWORD   centerY;
 COLRF_GET(26,paintOffset,angle,centerX,centerY)
 };//PaintRotateAroundCenter:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf27 {
+struct colrff<VarIndex,27>{//PaintVarRotateAroundCenter
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   angle;
@@ -502,7 +507,7 @@ FWORD   centerY;
 VarIndex   varIndexBase;
 COLRF_GET(24,paintOffset,angle,centerX,centerY)
 };//PaintVarRotateAroundCenter:*/;
-struct colrf28 {
+struct colrff<VarIndex,28>{//PaintSkew
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   xSkewAngle;
@@ -510,7 +515,7 @@ F2DOT14   ySkewAngle;
 COLRF_GET(28,paintOffset,xSkewAngle,ySkewAngle)
 };//PaintSkew:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf29 {
+struct colrff<VarIndex,29>{//PaintVarSkew
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   xSkewAngle;
@@ -518,7 +523,7 @@ F2DOT14   ySkewAngle;
 VarIndex   varIndexBase;
 COLRF_GET(29,paintOffset,xSkewAngle,ySkewAngle)
 };//PaintVarSkew:*/;
-struct colrf30 {
+struct colrff<VarIndex,30>{//PaintSkewAroundCenter 
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   xSkewAngle;
@@ -528,7 +533,7 @@ FWORD   centerY;
 COLRF_GET(30,paintOffset,xSkewAngle,ySkewAngle,centerX,centerY)
 };//PaintSkewAroundCenter:*/;
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
-struct colrf31 {
+struct colrff<VarIndex,31>{//PaintVarSkewAroundCenter 
 \\uint8   format;
 TEMPLATE_PAINT_OFFSET paintOffset;
 F2DOT14   xSkewAngle;
@@ -569,7 +574,7 @@ enum CompositeMode {
    COMPOSITE_HSL_LUMINOSITY=27
 };
 template <typename VarIndex>
-struct colrf32 {
+struct colrff<VarIndex,32>{
 \\uint8   format;
 TEMPLATE_IND_OFFSET sourcePaintOffset;
 uint8   compositeMode;
@@ -579,14 +584,12 @@ CORLF_GET(32,sourcePaintoffset,compositeMode,backdropPaintOffset)
 
 
 
-template <typename VarIndex>
-union colrfu {
-   #define UNI(n) colrf##n<VarIndex> f##n;
-   colrf1 f1;
-   REPEAT(UNI , 2,3,4,5,6,7,8,9,10)
-   colrf11 f11;
-   REPEAT(UNI,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32)   
-}
+template <typename VarIndex,size_t... ss >
+using _colrfu =pri::variant<colrff<ss,VarIndex>...>;
+
+
+template <typename VarIndex >
+using colrfu = _colrfu<VarIndex,1, 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32>
 template <typename VarIndex>
 struct colrf {
    uint8 format;
@@ -596,9 +599,7 @@ struct colrf {
 
 ACQRES(colrf<varIndBase>){
    one(f.format);
-   switch(f.format){
-      REPEAT(SWCASE,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32);
-   }
+   one(pri::get(f.format,f.f));
 }
 USE_ACQRES(colrf<varIndBase>)
 typedef struct {

@@ -18,8 +18,9 @@ SYS_COMBO
 #include <glm/vec4.hpp>
 #include "impl.hpp"
 #include "implmain.hpp"
-#include <strata/petri/vects.hpp>
-#include <strata/petri/queue.hpp>
+#include <stratum/petri/vects.hpp>
+#include <stratum/petri/queue.hpp>
+#include <stratum/petri/list.hpp>
 #include <vector>
 #include <memory>
 #include <string>
@@ -59,11 +60,10 @@ bool HTT=false;
 // Cores and logical processors
 int cores=1; int logical=1;
 // Hardware Capabilities:
-    //Support for features like 64-bit operation 
-    bool x64=false;
-    // TSX (Transactional Synchronization Extensions).
-    bool TSX=false;
-
+//Support for features like 64-bit operation 
+bool x64=false;
+// TSX (Transactional Synchronization Extensions).
+bool TSX=false;
 } ;
 
     struct cpu_feat_ext {
@@ -117,40 +117,47 @@ return cpuf;
 namespace impl {
 #include "impl.def.hpp"
 #define MAXPOLL 10
-template<typename T , int size>
-struct evq {
+template<typename T , size_t size>
+struct eventq  {
     T d[size];
-    int i[size];
-    int pos ;
-    T operator[](int s){return this->d[s];};
-    int ind(int s){return this->i[s];};
-    int pos(){return this->pos;};
-    void clear(){this->pos=0;};
-    int lastn(){return this->d[pos-1];}
-    void get(uint pos , T* d , int* inde){d = this->d[pos], inde = this->i[pos];};
-    void push(T s){if(pos==size-1){this->clear();return;};this->d[pos]=s;this->i[pos]=0;this->pos++;};
-    void push(T s , int ind){if(pos==size){this->clear();return;};this->d[pos]=s;this->i[pos]=ind;this->pos++;};
-    void operator+=(T s){if(pos==size){this->clear();return;};this->d[pos]=s;this->pos++;};
-    bool operator==(T s){for(int i= 0 ; i < this->pos;i++){if(this->d[i] == s){return true;};} return false;};
+    int i[size] ;
+    size_t pos=0;
+    T& operator[](int s){return this->d[s>=0?(size_t)s:sizes+s];}
+    T& operator[](size_t s){return this->d[s];}
+    void clear(){pos = 0;}
+    int lastn(){return d[pos]};)
+    void push(T&& s){if(pos==size-1){clear();} d[pos] = s;++pos  ;}
+    void push(T&& s,int ind){if(sizes==size-1){clear();return;} d[pos] = s;i[sizes]=ind;++pos  ;}
+
+
+    void operator+=(T&& s){push(s);};
+    bool operator==(T s){for(const T& it  : d){if(it == s){return true;};} return false;};
+
+    eventq() {d.push_back(T()); sizes= 1; pos = d.begin();}
 };
+
+
+
+template <typename T>
+using evq = eventq<T,MAXPOLL>;
 #ifdef STRATA_CAP_MOUSE
-using click        = int        ;//,           _click   >;    
-using dbclick      = int        ;//,   _dbclick>;
-using mousedown    = int        ;//,   _mousedown>;        
-using mouseup      = int        ;//,   _mouseup>;      
-using mouse_move   = glm::ivec2 ;//,   _mouse_move>;//xy
-using mouse_wheel  = int        ;//,   _mouse_wheel>; //x       
-using mouse_wheelh = int        ;//,   _mouse_wheelh>;
+using click        = int        ;// _click    
+using dbclick      = int        ;// _dbclick
+using mousedown    = int        ;// _mousedown        
+using mouseup      = int        ;// _mouseup      
+using mouse_move   = glm::ivec2 ;// _mouse_move
+using mouse_wheel  = int        ;// _mouse_wheel       
+using mouse_wheelh = int        ;// _mouse_wheelh;
 struct MOUSE {  // TODO filters for all
 const uint flag=_MOUSE;
     mouse_move  last_location;
-    evq<click ,MAXPOLL>       last_click; 
-    evq<dbclick ,MAXPOLL>     last_db_click;     
-    evq<mousedown ,MAXPOLL>   last_down;          
-    evq<mouseup ,MAXPOLL>     last_up;        
-    evq<mouse_move,MAXPOLL>  last_move;           
-    evq<mouse_wheel,MAXPOLL> last_wheel;     
-    evq<mouse_wheelh,MAXPOLL> last_wheelh;     
+    evq<click >       last_click; 
+    evq<dbclick >     last_db_click;     
+    evq<mousedown >   last_down;          
+    evq<mouseup >     last_up;        
+    evq<mouse_move>  last_move;           
+    evq<mouse_wheel> last_wheel;     
+    evq<mouse_wheelh> last_wheelh;     
     uint getlastKey(){return this->last_down.lastn();};
     uint getlastaxis(){mouse_move l = this->last_move.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1; };
 
@@ -164,7 +171,7 @@ const uint flag=_MOUSE;
     // void move_lt(glm::ivec2 s);
     // void 
     void clear()final{this->last_click.clear();this->last_down.clear();this->last_up.clear();this->last_press.clear();this->last_move.clear();this->last_wheel.clear();}
-    bool detect_combo(glm::ivec2* s){
+    bool detect_combo(int* s[2]){
         bool x=false;bool y=false;
             for(int i = 0 ; i < this->last_down.pos();i++){
                 if(this->last_down[i]== s[j][0] ){
@@ -189,7 +196,7 @@ const uint flag=_MOUSE;
         };
         return false;
     };
-    int detect_combo(uint size_combos ,glm::ivec2* s){
+    int detect_combo(uint size_combos ,int* s[2]){
 
         for(int j = 0 ; j < size_combos){
             if(detect_combo(s[j])){return j};
@@ -205,20 +212,20 @@ const uint flag=_MOUSE;
     // bool get_state(short int bt){return this->last_press.data==bt};
     
 
-     void dbclick_cb(dbclick_cb ev, int index) final {this->last_dbclick.push(ev,index);}
-     void click_cb(click_cb click,int index) final {this->last_click.push(click,index);}
-     void move_cb(move_cb mv,int index) final {this->last_move.push(mv,index);};
-     void down_cb(down_cb down,int index) final {this->last_down.push(down,index);};
-     void up_cb(up_cb up,int index) final {up_check(up);this->last_up.push(up,index);};
-     void wheel_cb(wheel_cb wheel,int index) final {this->last_wheel.push(wheel,index);};
-     void wheelh_cb(wheelh_cb wheel,int index) final {this->last_wheelh.push(wheel,index);};
-     void dbclick_cb(dbclick ev) final {this->last_dbclick+=ev;}
-     void click_cb(click ev) final {this->last_click+=ev;}
-     void move_cb(mouse_move ev) final {this->last_move+=ev;};
-     void down_cb(mousedown ev) final {this->last_down+=ev;};
-     void up_cb(mouseup ev) final { up_check(ev.data());this->last_up+=ev;};
-     void wheel_cb(mouse_wheel ev) final {this->last_wheel+=ev;};
-     void wheelh_cb(mouse_wheel ev) final {this->last_wheelh+=ev;};
+     void dbclick_cb(dbclick_cb ev, int index) final {last_dbclick.push(ev,index);}
+     void click_cb(click_cb click,int index) final {last_click.push(click,index);}
+     void move_cb(move_cb mv,int index) final {last_move.push(mv,index);};
+     void down_cb(down_cb down,int index) final {last_down.push(down,index);};
+     void up_cb(up_cb up,int index) final {up_check(up);last_up.push(up,index);};
+     void wheel_cb(wheel_cb wheel,int index) final {last_wheel.push(wheel,index);};
+     void wheelh_cb(wheelh_cb wheel,int index) final {last_wheelh.push(wheel,index);};
+     void dbclick_cb(dbclick ev) final {last_dbclick+=ev;}
+     void click_cb(click ev) final {last_click+=ev;}
+     void move_cb(mouse_move ev) final {last_move+=ev;};
+     void down_cb(mousedown ev) final {last_down+=ev;};
+     void up_cb(mouseup ev) final { up_check(ev.data());last_up+=ev;};
+     void wheel_cb(mouse_wheel ev) final {last_wheel+=ev;};
+     void wheelh_cb(mouse_wheel ev) final {last_wheelh+=ev;};
     
      virtual glm::vec2 Pos(int index=0);
      virtual glm::vec2 WinPos();
@@ -229,9 +236,9 @@ const uint flag=_MOUSE;
     };
     void init()override{
         this->_init();};
-    };
+};
    
-}; 
+
 #endif
 #ifdef STRATA_CAP_KEY
 using keyup = int,        ;// _keyup>; // x button, y index    
@@ -250,9 +257,9 @@ struct KEY   {
     bool ctrl, lctrl, rctrl;
     bool alt, lalt, ralt;
     bool shift, lshift, rshift;
-    evq<keyup,MAXPOLL>    last_keyup;
-    evq<keydown,MAXPOLL>  last_keydown;
-    evq<keypress,MAXPOLL> last_keypress;
+    evq<keyup>    last_keyup;
+    evq<keydown>  last_keydown;
+    evq<keypress> last_keypress;
         uint getlastKey(){return this->last_keydown.lastn();};
 
     bool up_cb(char key,int index) final {this->last_keyup.push(keyup(key),index);};
@@ -300,14 +307,14 @@ using joy_throt = float;
 #define JOY_RTHUMB
 struct  JOY   { // TODO handle multi input by calling multiple
 public:
-        evq<joy_hat,MAXPOLL>   last_hat;
-        evq<joy_axis,MAXPOLL>  last_axis;
+        evq<joy_hat>   last_hat;
+        evq<joy_axis>  last_axis;
 
-        evq<joy_up,MAXPOLL>    last_up;  
-        evq<joy_down,MAXPOLL>  last_down;    
-        evq<joy_press,MAXPOLL> last_press;   
-        evq<joy_throt,MAXPOLL> last_throt;   
-        evq<joy_rot,MAXPOLL> last_rot;   
+        evq<joy_up>    last_up;  
+        evq<joy_down>  last_down;    
+        evq<joy_press> last_press;   
+        evq<joy_throt> last_throt;   
+        evq<joy_rot> last_rot;   
     uint getlastKey(){ this->last_down.lastn();};
     uint getlastaxis(){joy_axis l = this->last_axis.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1;};
 
@@ -367,14 +374,14 @@ using CONT_axis = glm::vec2;//        _CONT_axis>;  // Axis index;
 using CONT_trig = float;
 struct CONT  {
 public:
-    evq<CONT_press,MAXPOLL> last_press;      
-    evq<CONT_down,MAXPOLL>  last_down;     
-    evq<CONT_up,MAXPOLL>    last_up;   
-    evq<CONT_dpad,MAXPOLL>  last_dpad;     
-    evq<CONT_axis,MAXPOLL>  last_laxis;     
-    evq<CONT_axis,MAXPOLL>  last_raxis;
-    evq<CONT_trigger,MAXPOLL> last_ltr;
-    evq<CONT_trigger,MAXPOLL> last_rtr;
+    evq<CONT_press> last_press;      
+    evq<CONT_down>  last_down;     
+    evq<CONT_up>    last_up;   
+    evq<CONT_dpad>  last_dpad;     
+    evq<CONT_axis>  last_laxis;     
+    evq<CONT_axis>  last_raxis;
+    evq<CONT_trigger> last_ltr;
+    evq<CONT_trigger> last_rtr;
       uint getlastKey(){ this->last_down.lastn();};
     uint getlastaxis(){CONT_axis l ; this->last_laxis.lastn();CONT_axis r; this->last_raxis.lastn(); return (glm::abs(l)>glm::abs(r)) ? 0 : 1; };
 
@@ -428,18 +435,18 @@ public:
 };  // index
 #endif
 #ifdef STRATA_CAP_TOUCH
-using touch_move =glm::vec4; ///,_touch_move>; //xy last zw move
+using touch_move =glm::vec4; ///,_touch_move>; //xy last zw move // glm::ivec4
 using touch_tap  = glm::vec4; ///,_touch_tap sizex sizey
 using touch_zoom = glm::vec4; ///,_touch_gesture>; // xy move,z rotate,w zoom
-using touch_gesture = evq<glm::vec4,MAXPOLL*MAXPOLL>; ///,_touch_zoom>; // rotate
+using touch_gesture = evq<glm::vec4*>; ///,_touch_zoom>; // rotate
 
 struct TOUCH  { 
  public:
-     evq<touch_tap,MAXPOLL> last_tap;
-     evq<touch_tap,MAXPOLL> last_up;
-     evq<touch_tap,MAXPOLL> last_down;
-     evq<touch_move,MAXPOLL> last_move;
-     evq<touch_zoom,MAXPOLL> last_zoom;
+     evq<touch_tap> last_tap;
+     evq<touch_tap> last_up;
+     evq<touch_tap> last_down;
+     evq<touch_move> last_move;
+     evq<touch_zoom> last_zoom;
        uint getlastaxis(){touch_move l =this->last_move.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1; };
 
      void clear(){
@@ -449,7 +456,7 @@ struct TOUCH  {
         this->last_move.clear();
         this->last_zoom.clear();
      };
-    std::vector<touch_gesture,MAXPOLL> last_gesture;
+    std::vector<touch_gesture> last_gesture;
 
     std::vector<touch_gesture> gestures ;
     std::vector<>
@@ -692,8 +699,8 @@ using lidar = double**; //,_lidar>;
 using cam  =  glm::dvec4**; //,_cam>;    
 struct CAM {
     virtual pos getpos();
-    evq<cam, MAXPOLL >    last_cam;
-    evq<lidar,MAXPOLL>      last_lidar;
+    evq<cam>    last_cam;
+    evq<lidar>      last_lidar;
 
     uint indexFront;
     uint indexBack;
@@ -904,7 +911,7 @@ uint8_t main ;
     void record_key()final{this->rec = true;recordKey();};
     void record_axis()final{this->rec = true;recordAxis();};
 
-    };
+
      
     using winty = win;
     // vect<win> wins;
@@ -1002,7 +1009,8 @@ this->cont.clear();
 };
 
 
-
+}
+}
 
 
 #endif

@@ -1,6 +1,6 @@
 #ifndef PETRI_MAP_HPP
 #define PETRI_MAP_HPP
-namespace ptr {
+namespace pri {
 
 
 

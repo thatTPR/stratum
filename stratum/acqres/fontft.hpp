@@ -56,7 +56,7 @@ typedef uint32_t IndexP;
     return i;};
     
     void font_tag(Tag i, char* s){Tag r=i;s[0] = (char)(r>>24) ; s[1] = (char)(r>>16); s[2] = (char)(r>>8); s[3]=(char)(r);}
-   #include <petri/vect.hpp>
+using coord = glm:::ivec2; 
 struct glyfbm {
     uint16 glyphID;
     coord pos;
@@ -571,11 +571,33 @@ return Sum;
     #include "ft/vvar.hpp" //[x]
 
         constexpr bool wcb = std::is_same<wchar_t,char16_t>::value ; 
-        std::vector<ftrange<char>> cglyfs ;
-        std::vector<ftrange<wchar_t>> wcglyf;
-        std::enable_if< wcb, std::vector<ftrange<char16_t>>>  c16glyf;
-        std::vector<std::vector<char32_t>> c32glyf;
+        using cVec = std::vector<ftrange<char>> cglyfs ;   ; 
+        using wcVec = std::vector<ftrange<wchar_t>> wcglyf;  ;
+        using c16Vec = std::enable_if< wcb, std::vector<ftrange<char16_t>>>::type  c16glyf;  
+        using c32Vec = std::vector<std::vector<char32_t>> c32glyf;   
 
+        template <typename charT>
+        struct vectype {
+            using type = std::conditional<charT>
+            constexpr  type font::* ptr ; 
+        }; 
+        cVec cglyfs ;
+        wcVec wcglyf;
+        c16Vec c16glyf;
+        c32Vec c32glyf;
+        template <> struct vectype <char> {
+             using type = cVec
+            constexpr  type font::* ptr = &font::cglyf; }
+        template <> struct vectype <wchar_t> {
+             using type = wcVec;
+            constexpr  type font::* ptr = &font::wcglyf; }
+        template <> struct vectype <wchar_t> {
+             using type = c16Vec;
+            constexpr  type font::* ptr = &font::c16glyf; }
+        
+        template <> struct vectype <char32_t> {
+             using type = c32Vec;
+            constexpr  type font::* ptr = &font::c32glyf; }
         
         template <typename charT> 
         uint16 getGid(charT c);
@@ -634,6 +656,7 @@ template <>uint16 getGid(char32_t c){
         if(opts.color and COLRI and CPALI){
             res.colors=COLR().get(gid);
         };
+        return res;
     };
     
 template <typename charT>

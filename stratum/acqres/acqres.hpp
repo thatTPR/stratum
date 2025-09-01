@@ -153,13 +153,22 @@ inline void wr( T& f,auto& start ,size_t Offsize , auto* Offset, std::fstream& f
 
 
 #define ACQRES(type) \
-strstruct acqresb_##type : acqres_base<type> {}; \
+struct acqresb_##type : acqres_base<type> {}; \
 void acqresb_##type::function(type& f)
 
+
+
+// template <typename param>
+#define ACQRES_PAR(type,param)
+template <typename param>
+struct acqresb_##type##param : acqres_base_par<type> {}; \
+void acqresb_##type<param>::function(type<param>& f)
+
+
 #define USE_ACQRES(type) \
-struct acqres_##type_ld : acqresSize<type> , acqresb_##type {} ; \
-struct acqres_##type_wr : acqresLd<type> , acqresb_##type {}; \
-struct acqres_##type_si : acqresWr<type> , acqresb_##type {}; \
+struct acqres_##type_ld : acqresLd<type> , acqresb_##type {} ; \
+struct acqres_##type_wr : acqresWr<type> , acqresb_##type {}; \
+struct acqres_##type_si : acqresSize<type> , acqresb_##type {}; \
 template <> ld(type& f,std::ifstream& fi){acqres_##type_ld obj(fi);obj.func(f);} \
 template <> wr(type& f,std::ofstream& fi){acqres_##type_wr obj(fi);obj.func(f);} \
 template <> size(type& f){acqres_##type_ld obj;obj.func(f);} \
@@ -185,6 +194,15 @@ struct acqres_base {
     void function(T& f);
 
 }
+
+
+
+#define ACQRESTS(type,...) \
+struct acqresb_##type : acqres_base<type> {}; \
+void acqresb_##type::function(type& f)
+
+#define USE_ACQRESTS(type,...) \ 
+
 
 
 

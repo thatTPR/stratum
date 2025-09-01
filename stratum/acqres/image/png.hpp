@@ -605,12 +605,12 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
                 loadPixel=&loadData;break;}     
         }
     };
-    void loadIDAT(modules::image2D& im){loadImage(im);}
+    void loadIDAT(mod::image2D& im){loadImage(im);}
     uint32_t seqW;uint32_t seqh;uint32_t seqx;uint32_t seqy;
-    void loadIDATr(modules::image2D& im){loadImage(im,seqW,seqH,seqx,seqy);}
+    void loadIDATr(mod::image2D& im){loadImage(im,seqW,seqH,seqx,seqy);}
     pngChunk pc;
     template <typename stream>
-    bool loadChunks(stream& fstr,modules::image2D& im,void loadidat(modules::image2D&)){
+    bool loadChunks(stream& fstr,mod::image2D& im,void loadidat(mod::image2D&)){
             ld<pngChunk>(pc,fstr);
             switch(pc.name){
                 case pngIDHR :{PIDHR=IDHR(pc);idhrInit(im);return false;}
@@ -635,7 +635,7 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
     };
     image2D ld(std::string path ){
         fi=std::ifstream(path,std::ios::binary);
-        modules::image2D im;
+        mod::image2D im;
         ld<pngHeader>(head,fi);
         while(!fi.eof()){
             bool idatcb = loadChunks<std::ifstream>(fi,im,&loadIDAT);
@@ -644,7 +644,7 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
     };
     image2D ld(std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
         fi=std::ifstream(path,std::ios::binary);
-        modules::image2D im; 
+        mod::image2D im; 
         ld<pngHeader>(p.head,fi);
         seqW=w,seqH=h,seqx=x,seqy=y;
         while(!fi.eof()){
@@ -808,7 +808,7 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
             };
         }
     };
-    void wr(std::string path,modules::image2D& im ){
+    void wr(std::string path,mod::image2D& im ){
         *this = png() ;
         bool plt=true;
         
@@ -831,8 +831,8 @@ inds.resize(na7) ;inds[0]=0;uint64_t wd=width()/2 ;uint64_t hd=height()/2 ;
         #define WR_CHUNK(n) if(b##n){wr<n>(P##n,of);}
         REPEAT(WR_CHUNK,IDHR ,PLTE,bKGD,cHRM,cICP,dSIG,eXIf,gAMA,hIST,iCCP,iTXt,pHYs,sBIT,sPLT,sRGB,sTER,tEXt,tIME,tRNS,zTXt,IDAT,IEND)
     };
-    void loadIDATwrR(modules::image2D& im){wrImage(im,seqW,seqH,seqx,seqy);}
-    void wr(modules::image2D,std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+    void loadIDATwrR(mod::image2D& im){wrImage(im,seqW,seqH,seqx,seqy);}
+    void wr(mod::image2D,std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
         fs = std::fstream(path,std::ios::binary);
         seqW=w;seqH=h;seqx=x;seqy=y; 
         ld<pngHeader>(head,fs);

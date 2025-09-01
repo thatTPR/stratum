@@ -108,7 +108,7 @@ struct bmp {
     DWORD* pixels;
 
     uint32_t imageSize;
-    modules::image2D im;
+    mod::image2D im;
 
     
 bool alpha;
@@ -719,7 +719,7 @@ im = image2d();
 
         
     };
-    modules::image2D ld(std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y ){
+    mod::image2D ld(std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y ){
         fi=std::ifstream(path);
         ld(this->head,fi);
         init();

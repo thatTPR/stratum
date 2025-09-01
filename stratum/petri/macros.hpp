@@ -1,18 +1,10 @@
 
 
+#define REPEAT(macro , first, ...) macro(first) REPEATA(macro,__VA_ARGS__)
+#define REPEAT(macro , first, ...) macro(first) REPEATA(macro,__VA_ARGS__)
 
+#define EXPAND(macrodef) macrodef 
 
-
-
-#define REPEAT(macro , first) macro(first)
-#define REPEAT(macro , first, second) macro(first) macro(second)
-
-#define REPEAT(macro , first, ...) macro(first) REPEAT(macro, __VA_ARGS__)
-#define REPEAT(macro , ...) 
-
-
-#define defm(FLAG) #define FLAG
-#define undefm(FLAG) #undef FLAG
 #define def_mult(...) REPEAT(defm,__VA_ARGS__)
 #define undef_mult(...) REPEAT(undefm,__VA_ARGS__)
 

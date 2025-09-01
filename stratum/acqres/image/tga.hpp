@@ -57,7 +57,7 @@ int nm;
 int nch;
 uint8_t imageFormatBytes ;
 uint32_t imDatas;
-    modules::image2D im ;
+    mod::image2D im ;
     std::ifstream fi;
 
     uint8_t& cm_EntrySize(){return head.Color_map.entrySize;}
@@ -67,9 +67,9 @@ uint32_t imDatas;
 void setFormat(){
         im.imageFormat = ac>0?rgba32ui:rgb32ui;
 if (ac > 0){im.imageFormat = rgba32ui;
-    imageFormatBytes = modules::imageFormatBytes(image_formats::rgba32ui);}
+    imageFormatBytes = mod::imageFormatBytes(image_formats::rgba32ui);}
 else {im.imageFormat = rgb32ui;    
-    imageFormatBytes = modules::imageFormatBytes(image_formats::rgb32ui);}
+    imageFormatBytes = mod::imageFormatBytes(image_formats::rgb32ui);}
     }
     template <typename K>
     int8_t& getColorMap(int indt,int Offset){
@@ -354,7 +354,7 @@ im = image2d();
     imDatas=this->head.Image.width*this->head.Image.height * this->head.Image.pixelDepth/8;
     
 };
-// modules::image2D mipMap(std::string path,uint8_t level){
+// mod::image2D mipMap(std::string path,uint8_t level){
 //     fi=std::ifstream(path);
 //     loadSet();
 //     im.width = this->head.Image.width/level;
@@ -370,7 +370,7 @@ im = image2d();
 //     }       
 //     return im;
 // };
-modules::image2D ld(std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
+mod::image2D ld(std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
      fi=std::ifstream(path);
     loadSet();
 
@@ -387,7 +387,7 @@ modules::image2D ld(std::string path,uint32_t w,uint32_t h,uint32_t x,uint32_t y
     return im;
 
 };
-modules::image2D ld(std::string path){
+mod::image2D ld(std::string path){
     fi=std::ifstream(path);
     loadSet();
 
@@ -707,7 +707,7 @@ void wrRLEsize0(uint32_t w,uint32_t h,uint32_t x,uint32_t y,uint8_t* cmdata){ //
 void wrCmapRLE(image2D& image,uint32_t w,uint32_t h,uint32_t x,uint32_t y){
     std::vector<uint8_t> cmdata;
     uint32_t size = updateCmap(image,cmdata);
-    modules::image2D img ;
+    mod::image2D img ;
     img.data = cmdata.data();
     if(size==0){
         // wrRLEsize0(w,h,x,y,cmdata.data())
@@ -826,7 +826,7 @@ void wrRLE(image2D& image){
 }
 
 void wr(image2D& image,std::string path,bool cpl=false,bool rle=true){
-    uint8_t bda =modules::bitdepth_a(image.imageFormat);
+    uint8_t bda =mod::bitdepth_a(image.imageFormat);
     head.Image.descriptor=bda &0b1111 + 0b110000; 
     head.Image.width=image.width;head.Image.height=image.height;
     cm_entrySize() = image.byd;

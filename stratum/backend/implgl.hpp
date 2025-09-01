@@ -1,9 +1,9 @@
 #include <petri/list>
 #include <stratum/modules.hpp>
 
+#include <stratum/petri/list.hpp> 
 
-
-
+#ifndef SHADMODS 
 struct gpu_info {
 
     bool robustBufferAccess       ,  //Ensures bounds-checking for buffer accesses.
@@ -40,34 +40,47 @@ Features structure: VkPhysicalDeviceMultiviewFeatures.
 #define Buffer
 #define Size
 
-class gl_impl {
-    public:
-    list<Pipeline> pipelines;
-    list<uint> winsurfaces;
-    list<device> devices;
+template <modules::shader_types sty, typename shmod,typename... shadMods>
+struct get_tys {
+    using type = std::conditional<shmod::sty == sty, ,get_tys<sty,shadMods>;
+}; 
+template <modules::shader_types sty, typename shmod>
+struct get_tys {
+    using type = std::conditional<shmod::sty == sty, shmod,emptyShmod>;
+}; 
+
+template <typename... shadMods>
+struct glimpl {
+    using Pipeline = void ;
+    using wsurfaces = void;
+    
+    using imageBuffer = void;
+
+    using imageBufferIter = pri::list<imageBuffer>::iter ;
+
+    using shadModTup = pri::utuple<pri::list<shadMods>...> ;
+    shadModTup shaderModules;
+
+    pri::list<Pipeline> pipelines;
+    pri::list<uint> winsurfaces;
+    pri::list<device> devices;
     
 
-    list<shaderModule> all_modules;
-    
-    list<shaderModule> vert_modules;
-    list<shaderModule> frag_modules;
-    list<shaderModule> geom_modules;
-    list<shaderModule> tesc_modules;
-    list<shaderModule> tese_modules;
-    list<shaderModule> comp_modules;
-    list<shaderModule> task_modules;
-    list<shaderModule> mesh_modules;
-    list<shaderModule> rgen_modules;
-    list<shaderModule> rint_modules;
-    list<shaderModule> rahit_modules;
-    list<shaderModule> rchit_modules;
-    list<shaderModule> rmiss_modules;
-    list<shaderModule> rcall_modules;
-    
 
+virtual void get_format(modules::image_format imf);
+virtual void bindImage(modules::image2D& im) ;
 
-virtual auto get_format(image_format imf);
-virtual auto getShaderType(shader_type STAGE)
+using imagety = void;
+pri::list<imagety> imagePool ;
+struct imageOpts {
+    bool cubemap;
+    
+    imageOpts() = default ;
+};
+virtual void create_image2d( modules::image2D& im,imageOpts opts= imageOpts());
+using shaderStageBits = void;
+virtual void getShaderType(shader_type STAGE);
+
 
      
 virtual void createSwapChain();
@@ -75,23 +88,46 @@ virtual void set_up_dev();
 virtual void create_fullscreen();
 virtual void get_gpu_info(gpu_info gpinfo);
 virtual _shader load_shader(const uint32_t shader[] );
-virtual bool shaderModule(shaderModule* module);
-virtual int grModule(shaderModule* module);
-virtual int glslModule(shaderModule* module);
-virtual int vertModule(vertModule* module);
-virtual int fragModule(fragModule* module);
-virtual int geomModule(geomModule* module);
-virtual int tescModule(tescModule* module);
-virtual int teseModule(teseModule* module);
-virtual int compModule(compModule* module);
-virtual int taskModule(taskModule* module);
-virtual int meshModule(meshModule* module);
-virtual int rgenModule(rgenModule* module);
-virtual int rintModule(rintModule* module);
-virtual int rahitModule(rahitModule* module);
-virtual int rchitModule(rchitModule* module);
-virtual int rmissModule(rmissModule* module);
-virtual int rcallModule(rcallModule* module);
+
+template <modules::shader_type sty,typename ssboT,typename uboT>
+virtual bool shaderModule(modules::shaderModule<sty,ssboT,uboT>* module);
+template <typename ssboT,typename uboT>
+virtual int grModule(modules::grModule<>* module);
+virtual int glslModule(modules::shaderModule* module);
+template <typename ssboT,typename uboT> 
+virtual int vertModule(modules::vertModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int fragModule(modules::fragModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int geomModule(modules::geomModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int tescModule(modules::tescModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int teseModule(modules::teseModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int compModule(modules::compModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int taskModule(modules::taskModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int meshModule(modules::meshModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int rgenModule(modules::rgenModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int rintModule(modules::rintModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int rahitModule(modules::rahitModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int rchitModule(modules::rchitModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int rmissModule(modules::rmissModule<ssboT,uboT>* module);
+template <typename ssboT,typename uboT> 
+virtual int rcallModule(modules::rcallModule<ssboT,uboT>* module);
+
+
+
+
+
+
 virtual void updateUniform(device* dev, shaderModule* m );
 void descriptor_set();
 void descriptor_pool();
@@ -113,19 +149,23 @@ void pipeline_create(size_t shad_size , shader_module* modules )final{
 
 #ifdef STRATA_VK
 #include <strata/backend/impl_vk.hpp>
-using gl_impl= vk_impl;
+template <typename... shadMods>
+using gl_impl= vk_impl<shadMods...>;
 #endif 
 #ifdef STRATA_DX
 #include <strata/backend/impl_dx.hpp>
-using gl_impl= dx_impl ;
+template <typename... shadMods>
+using gl_impl= dx_impl<shadMods...> ;
 #endif
 #ifdef STRATA_GL
 #include <strata/backend/impl_gl.hpp>
-using gl_impl = gl_impl;
+template <typename... shadMods>
+using gl_impl = gl_impl<shadMods...>;
 #endif
 #ifdef IMPL_CL
 #include <strata/backend/impl_cl.hpp>
-using gl_impl = cl_impl ;
+template <typename... shadMods>
+using gl_impl = cl_impl<shadMods...> ;
 #endif
 
 gl_impl gl;

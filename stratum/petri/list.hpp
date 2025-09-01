@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ptr {
+namespace pri {
 
 
 template <typename T>
@@ -61,34 +61,28 @@ template <typename T>
             init();
         }
         // list() :Size(0){first = last ;};
-        
+        template <typename Ty>
         class iterator {
             public: 
-            node* ptr;
-            iterator(Ty& f ){
-                ptr->data = &f;
-            }
-            iterator(node* f) {
-                ptr = f; 
-            };
-            iterator(node f){
-                ptr = &f; 
-            };
+            node* Ptr;
+            iterator(Ty& f ){Ptr->data = &f;}
+            iterator(node* f) {Ptr = f; };
+            iterator(node f){Ptr = &f; };
             
-            iterator next(){return iterator<Ty>(ptr->next);};
-            iterator prev(){return iterator<Ty>(ptr->prev);};
-            node* get(){return ptr;};
-            Ty* operator->(){return (ptr->data) ;};
-            Ty& operator*(){return *(ptr->data);};
-            bool operator==(iterator& rhs){return ptr == rhs.ptr ;};
-            // bool operator==(iterator rhs){return ptr == rhs.ptr;};
-            // bool operator!=(iterator& rhs){return ptr != rhs.ptr ;};
-            bool operator!=(iterator& rhs){return ptr != rhs.ptr ;};
-            // bool operator!=(iterator<Ty> rhs){return ptr != rhs.ptr ;};
-            void operator++(){ptr=ptr->next;};
-            void operator--(){ptr=ptr->prev;};
-            iterator& operator++(int){ptr=ptr->next;return *this;};
-            iterator& operator--(int){ptr=ptr->prev;return *this;};
+            iterator next(){return iterator<Ty>(Ptr->next);};
+            iterator prev(){return iterator<Ty>(Ptr->prev);};
+            node* get(){return Ptr;};
+            Ty* operator->(){return (Ptr->data) ;};
+            Ty& operator*(){return *(Ptr->data);};
+            bool operator==(iterator& rhs){return Ptr == rhs.Ptr ;};
+            // bool operator==(iterator rhs){return Ptr == rhs.Ptr;};
+            // bool operator!=(iterator& rhs){return Ptr != rhs.Ptr ;};
+            bool operator!=(iterator& rhs){return Ptr != rhs.Ptr ;};
+            // bool operator!=(iterator<Ty> rhs){return Ptr != rhs.Ptr ;};
+            void operator++(){Ptr=Ptr->next;};
+            void operator--(){Ptr=Ptr->prev;};
+            iterator& operator++(int){Ptr=Ptr->next;return *this;};
+            iterator& operator--(int){Ptr=Ptr->prev;return *this;};
             
             size_t operator-(iterator& rhs ){
                 size_t i = 0 ;
@@ -107,21 +101,21 @@ template <typename T>
                 return *this;  
             };
             explicit operator bool() const {
-                if(ptr){return true;} 
+                if(Ptr){return true;} 
                 else return false;};
             // operator delete(){
-            //     delete ptr;
+            //     delete Ptr;
             // };
            
-            iterator(iterator& f) : ptr(f.ptr) {};
+            iterator(iterator& f) : Ptr(f.Ptr) {};
         };
         using iter = iterator<T> ;
         using const_iter = iterator<const T> ;
         template <typename Ty>
         class reverse_iterator : public iterator<Ty> {
             
-            void operator++(reverse_iterator<Ty>& rhs){this->ptr=this->ptr->prev;};
-            void operator--(reverse_iterator<Ty>& rhs){this->ptr=this->ptr->next;};
+            void operator++(reverse_iterator<Ty>& rhs){this->Ptr=this->Ptr->prev;};
+            void operator--(reverse_iterator<Ty>& rhs){this->Ptr=this->Ptr->next;};
             size_t operator-(reverse_iterator<Ty>& rhs){
                 size_t i = 0 ; 
                 for(;*this!=rhs;--(*this)){i++;};return i;
@@ -140,6 +134,7 @@ template <typename T>
             for(int j = 1 ; j <= s ; j++){cur=first.next;            }
             return cur;
         };
+
         T& value(node* n){return n->data;};
 
         const_iter rend() const  {return const_iter(first)--;};
@@ -154,7 +149,7 @@ template <typename T>
         bool empty() const {return (last->next == first);};
         
         
-        // iterator::operator bool() const {return this->ptr != last;};
+        // iterator::operator bool() const {return this->Ptr != last;};
 
          inline size_t SIZE() const {
             // if(empty()){return 0;};
@@ -180,14 +175,15 @@ template <typename T>
             };
         };
         void insert(T& val, iter& at ){
-            node* s = new node(at.ptr,val,at.ptr->next) ;
-            if(at.ptr->next) at.ptr->next->prev = s; 
-            at.ptr->next = s;            
+            node* s = new node(at.Ptr,val,at.Ptr->next) ;
+            if(at.Ptr->next) at.Ptr->next->prev = s; 
+            at.Ptr->next = s;            
         };
+
+        T& operator[](size_t s){return *(node_at(s)->data);}
         
        void insert(T& val, int at ){
-        insert(val,iter_at(at));    
-    };
+        insert(val,iter_at(at));   };
         
         // void push_back( T& data){
         //         node* s = new node(last, data);
@@ -241,16 +237,16 @@ template <typename T>
 };
         template <typename... Args>
         void emplace_back(Args&&... args){
-            push_back(T(args));
+            push_back(T(args...));
         };
         template <typename... Args>
         void emplace_insert(iter& at,Args&& ... args){
-            insert(T(args),at);
+            insert(T(args...),at);
         };
         
         template <typename... Args>
         void emplace_insert(int at,Args&& ... args){
-            insert(T(args),at);
+            insert(T(args...),at);
         };
         
         // void push_back(T* data){
@@ -287,7 +283,7 @@ template <typename T>
         };
         void erase(iter& at){
             if(at){
-                delete at.ptr;
+                delete at.Ptr;
             };
         };
         void pop(iter& at){
@@ -298,13 +294,13 @@ template <typename T>
             if(prev ){p=true;}
             if(next){n=true;}
             if(p and n){
-                prev.ptr->next = next.ptr;
-                next.ptr->prev = prev.ptr;
+                prev.Ptr->next = next.Ptr;
+                next.Ptr->prev = prev.Ptr;
             }
-            else if(p){prev.ptr->next = nullptr;
-                last = prev.ptr;}
-                else if(n){next.ptr->prev = nullptr;
-                    first = prev.ptr;}
+            else if(p){prev.Ptr->next = nullptr;
+                last = prev.Ptr;}
+                else if(n){next.Ptr->prev = nullptr;
+                    first = prev.Ptr;}
                     else {init();}            
 
         };
@@ -316,7 +312,7 @@ template <typename T>
             iter c(from);
             iter prev=from?from-1:from;
             iter next=to?to+1:to;
-            for(node* n = c.ptr ;c!=next ;c = iter(n)){
+            for(node* n = c.Ptr ;c!=next ;c = iter(n)){
                 if(n)n=n->next;
                 else break;
                 erase(c);
@@ -325,13 +321,13 @@ template <typename T>
             if(prev){p=true;}
             if(next){n=true;}
             if(p and n){
-                prev.ptr->next = next.ptr;
-                next.ptr->prev = prev.ptr;
+                prev.Ptr->next = next.Ptr;
+                next.Ptr->prev = prev.Ptr;
             }
-            else if(p){prev.ptr->next = nullptr;
-                last = prev.ptr;}
-            else if(n){next.ptr->prev = nullptr;
-                first = next.ptr;}
+            else if(p){prev.Ptr->next = nullptr;
+                last = prev.Ptr;}
+            else if(n){next.Ptr->prev = nullptr;
+                first = next.Ptr;}
             else {init();}            
             
         };
@@ -370,6 +366,6 @@ template <typename T>
         };
     };
 
-            // list::iterator::operator bool() const {return this->ptr != last;};
+            // list::iterator::operator bool() const {return this->Ptr != last;};
 };
     #endif

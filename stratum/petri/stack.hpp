@@ -1,6 +1,6 @@
 #ifndef STACK_HPP
 #define STACK_HPP
-namespace ptr {
+namespace pri {
 
 template <typename T>
 class Node {
