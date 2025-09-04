@@ -1,6 +1,7 @@
 #ifndef STRATA_FONT_HPP
 #define STRATA_FONT_HPP
 #include <cstdint>
+#include <cstring>
 #include <stdexcept>
 #include <cstddef>
 #include <type_traits>
@@ -10,9 +11,47 @@
 #include <petri/macros.hpp>
 #include <glm/glm.hpp>
 #include <uchar.h>
+#include <stratum/acqres/acqres.hpp>
+#include <algorithm>
+#include <stratum/mod_paint.hpp>
+#include <stratum/mod_font.hpp>
+#include <type_traits>
+#include <petri/tuple.hpp>
+#include <petri/variant.hpp>
+#include <petri/templates.hpp>
 namespace ttf {
 
 typedef uint32_t IndexP;
+
+
+template <size_t s>
+struct uintTT {
+    uint8_t d[s];
+    template <typename uintT>
+    void fit(uintT r){
+        constexpr size_t size = sizeof(uintT) ;
+        for(size_t ss = 0 ; ss<s;ss++){
+            if(size>ss){ d[s-ss] = r & ((1<<8 -1)<<(ss*8));}
+        }
+    }
+    template <typename uintT>
+    uintT get(){
+                constexpr size_t size = sizeof(uintT) ;
+        uintT r=0;
+        for(size_t ss = 0 ; ss<s;ss++){
+            if(size>ss){r|=d[s-ss]<<(8*ss);}
+        }
+    };
+     operator size_t() {
+        return get<size_t>();
+    };
+    decltype(*this) operator=(size_t s){
+        fit<size_t>(s);return *this;
+    };
+    uintTT()
+
+};
+typedef uintTT<3> uint24_t ;
 
  typedef signed long Fixed; 
     typedef uint32_t Tag ;
@@ -79,19 +118,118 @@ struct glyfbm {
     };
 };  
 
+
+template <size_t s>
+constexpr size_t fontColorTupPos() {
+    return pri::get_size<ptype<s>,mod::font::fontColor::tytup>(); 
+};
+
+template <> struct fontColorTupPos<1> {using ty = void;};
+
+
+
 struct colorFT  {
     glm::uvec4 color;
     float alpha;
     uint16 numbaseGlyphs;
     uint16* baseGlyphs;
     uint16 numLayers;
-    colrf<varValueBase>* layers;
+    colrff<varValueBase,1>* layers;
     uint16 numValues;
     colrf<varValueBase>* values;
 
     ALIAS_VECT(colrf<varValueBase>,uint16,layers,numLayers)
     ALIAS_VECT(colrf<varValueBase>,uint16,values,numValues)
     
+template < template <size_t > typename T,size_t s>
+struct Tcase {
+    static bool operator()(size_t is){
+        if(is==s){T<is>();return true;}
+        else {Tcase<T,sS...>()}
+    };
+};
+
+
+template < template <size_t > typename T>
+struct Tcase {
+    static bool operator()(size_t is){
+        if(is==s){T<is>();return true;}
+        else {return false;}
+    };
+};
+
+    template <typename charT,typename COLRFty>
+    mod::fontColor<charT> get(COLRFty& colrft){
+        mod::fontColor<charT> r ;
+        size_t cur;
+        #define CFXMACRO(x)  x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)   x(12) x(13) x(14) x(15) x(16) x(17) x(18) x(19) x(20) x(21) x(22) x(23) x(24) x(25) x(26) x(27) x(28) x(29) x(30) x(31) 
+         #define CFIXMACRO(x) x(1) x(10) x(11) x(32)
+
+         #define COMMACRO(n) ,n
+         size_t indV;
+         std::vector<size_t> colGlyphs;
+         size_t curColGlyph=0;
+         std::vector<std::pair<size_t,size_t>> composePaints;
+         size_t curComposePaint=0;
+         std::vector<std::pair<size_t,size_t>> inds;
+          size_t curTup ;
+
+         auto lamcase = [&]<size_t s>(){ptype<n>::ty h= pri::get<n-1>(values[indV].f).getPaint();
+            std::vector<ptype<n>::ty& ref =pri::get<std::vector<ptype<n>::ty>>(r.tupvec) 
+            ref.push_back(h) ;  r.layers.back().push_back(mod::fontColor::layerE(fontColorTupPos<n>(),ref.size()-1));
+            inds.push_back(std::pair<size_t,size_t>(fontColrTupPos<n>(),pri::get<fontColrTupPos<n>()>(r.tupvec).size()-1)) ;
+            curTup =fontColrTupPos<n>();
+            continue;}
+                
+            auto swlam = [&](){
+                if(Tcase<lamcase CFXMACRO(COMMACRO)>()){return;};
+                switch(values[indV].format){
+
+                    case 10 :{
+                        colrff<varValueBase,10>& h = pri::get<10>(values[indV].f);
+                        mod::fontColor::ColGlyph g(h.glyphID);
+                        r.colglyph.push_back(g) ;
+                        colGlyphs.push_back(h.paintOffset);continue;}
+                    case 11 :{
+colrff<varValueBase,11>& h = pri::get<11>(values[indV].f);
+                    mod::fontColor::SubGlyph g(h.glyphID);r.subGlyph.push_back(g) ;continue;}
+
+                    case 32 :{
+                        colrff<varValueBase,32>& h = pri::get<11>(values[indV].f);
+                        composePaints.push_back(std::pair<size_t,size_t>(h.sourcePaintOffset,h.backfropPaintOffset)) ;
+                        // pri::get<std::vector<ptype<32>::ty>>(r.tupvec) 
+                        r.composePts.push_back(h); 
+                        continue;}
+                }
+            }
+            auto incr = [&](){
+                if(indV == colGlyphs[curColGlyph]){
+                    pri::get<std::vector<mod::fontColor<ColGlyph>>(r.tupVec)[curColGlyph].lyr=mod::fontColor::layerE(curTup, pri::get(curTup,r.tupvec).size()-1);
+                };
+            }
+         for(size_t s =0;s<numLayers;s++){
+         auto lyrlam =[&](colrff<varValueBase,1>& lyr){
+            if(lyr.firstLayerIndex>numLayers){
+                size_t p = lyr.firstLayerIndex-numLayers;s++;
+                for(size_t j=0;j<p;j++){
+                    lyrlam(layers[s])
+                    for(indV=lyr.firstLayerIndex;indV<lyt.numLayers;indV++){
+                       swlam();incr();  }                   
+                    s++; 
+                };
+            }
+            else {
+            for( indV=lyr.firstLayerIndex;indV<lyr.numLayers;indV++){
+                    swlam();
+                };
+            }
+
+            }
+            r.layers.push_back(pri::list<mod::fontColor::layerE>());
+            lyrlam(layers[s]);
+
+        };
+    };
 };
 struct glyfft{
     uint16 glyphID;
@@ -338,7 +476,6 @@ macro("VORG",VORG)\
 macro("VVAR",VVAR)\
 
 
-#include <stratum/acqres/acqres.hpp>
 
   typedef union  {
         avar _avar;
@@ -805,7 +942,6 @@ font getFont(fontcollection* fc,uint tdIndex){
 };
 
 #include "fontansi.hpp"
-#include <algorithm>
 
 typedef struct {
     uint16 em; // Size of space

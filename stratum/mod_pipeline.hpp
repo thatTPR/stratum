@@ -25,6 +25,41 @@ rchit,
 rmiss,
 rcall,
 };
+enum BufferUsage {
+    // USAGE_TRANSFER_SRC_BIT
+    // USAGE_TRANSFER_DST_BIT
+    // USAGE_UNIFORM_TEXEL_BUFFER_BIT
+    // USAGE_STORAGE_TEXEL_BUFFER_BIT
+    // USAGE_UNIFORM_BUFFER_BIT
+    // USAGE_STORAGE_BUFFER_BIT
+    // USAGE_INDEX_BUFFER_BIT
+    // USAGE_VERTEX_BUFFER_BIT
+    // USAGE_INDIRECT_BUFFER_BIT
+    // USAGE_SHADER_DEVICE_ADDRESS_BIT
+    // USAGE_VIDEO_DECODE_SRC_BIT_KHR
+    // USAGE_VIDEO_DECODE_DST_BIT_KHR
+    // USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT
+    // USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT
+    // USAGE_CONDITIONAL_RENDERING_BIT_EXT
+    // USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
+    // USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR
+    // USAGE_SHADER_BINDING_TABLE_BIT_KHR
+}
+enum BindingType {
+SAMPLER,
+COMBINED_IMAGE_SAMPLER,
+SAMPLED_IMAGE,
+STORAGE_IMAGE,
+UNIFORM_TEXEL_BUFFER,
+STORAGE_TEXEL_BUFFER,
+UNIFORM_BUFFER,
+STORAGE_BUFFER,
+UNIFORM_BUFFER_DYNAMIC,
+STORAGE_BUFFER_DYNAMIC,
+INPUT_ATTACHMENT,
+INLINE_UNIFORM_BLOCK,
+ACCELERATION_STRUCTURE,
+};
 
 
 enum bindingDtype {
@@ -35,22 +70,34 @@ enum bindingDtype {
 
 struct binding {
     size_t pos ;
-    bindingDtype dtype; 
+    bindingDtype dtype;
+    BindingType btype; 
+    binding() = default ;
     binding(size_t p,bindingDtype _dt) : pos(p),dtype(_dt) {}
 };
+template <typename >
+struct bindingData {
 
-template <shader_type shadTy,typename ssboT,typename uboT>
+};
+
+struct bindingList : pri::list<binding> {
+
+};
+
+template <typename buf,BindingType bty, bindingDtype bdt>
+struct bindingData {
+    static constexpr BindingType bt = bty;
+    static constexpr bindingDtype bd = bdt;
+    buf* buffer;
+    bindings(buf& _buffer) : buffer(&_buffer) {}
+};
+template <shader_type shadTy,typename buf,BindingType bt>
 struct shaderModule {
     static constexpr shader_type sty = shadTy ;
-    constexpr bool uboB = !std::is_same<uboT,void>::value;
-    constexpr bool ssboB = !std::is_same<uboT,void>::value;
-    using uboty = uboT;
-    using ssboty = ssboT;
-    using tyubo = std::enable_if<uboB,uboT>::type ;
-    using tyssbo = std::enable_if<ssboB,ssboT>::type ;   
-
-    tyubo* ubo  ;
-    tyssbo* ssbo  ;
+    constexpr bool uboB = pri::is_one_of<bt,BindingType::UNIFORM_TEXEL_BUFFER,BindingType::UNIFORM_BUFFER,BindingType::UNIFORM_BUFFER_DYNAMIC,BindingType::INLINE_UNIFORM_BLOCK>::value;
+    constexpr bool ssboB = pri::is_one_of<bt,BindingType::STORAGE_TEXEL_BUFFER,BindingType::STORAGE_BUFFER,BindingType::STORAGE_BUFFER_DYNAMIC>::value;
+    using ty = buf;
+    ty buf; 
 
     pri::list<binding> bindings;
 
@@ -58,6 +105,7 @@ struct shaderModule {
     const uint32_t* code; // SPIR-V Module
     std::string name ;
     std::vector<std::string> entry_points; // all entry points
+    size_t entryPt;
     std::string codePath;
     void readCode(){
         
@@ -69,16 +117,7 @@ struct shaderModule {
     file.read(buffer.data(), fileSize);
     c = reinterpret_cast<const uint32_t*>(buffer.data());
     }
-    
-    void ssboBind(ssboty& ssBuf);
-    void uboBind(ubotyy& uBuf);
-
-
-
-    struct loader(){
-        
-    };
-
+  
     void update(){
         if constexpr (uboB){ubo->update();}
         if constexpr (ssboB){ssbo->update();}
@@ -87,9 +126,12 @@ struct shaderModule {
     shaderModule(std::string _codePath,uboty& _ubo) : ubo(_ubo) ,codePath(_codePath){};
     shaderModule(std::string _codePath,uboty& _ubo,ssboty& _ssbo) : ubo(_ubo),ssbo(_ssbo) ,codePath(_codePath){};
 
-
-
 }
+
+template <typename ssboT,typename uboT>
+using allModule = shaderModule<shader_type::all,ssboT,uboT>;
+template <typename ssboT,typename uboT>
+using grModule = shaderModule<shader_type::gr,ssboT,uboT>;
 
 
 template <typename ssboT,typename uboT>
@@ -153,20 +195,18 @@ using mesh_vert_shadmod = shaderModule<shader_type::vert,void,mesh<d,q>> ;
 
 
 
+struct viewPort {
+    float x,y,width,height;float minDepth=0.0,maxDepth=1.0;
+    viewPort() = default; 
+    
+};
+
 template <class... shaderMod >
 struct lineCon {
     pri::tuple<shaderMod...> shadMods; // Each of these shaderModules conribute to a pipeline stage and they are 
 
     template <size_t s>
     void update_inst(){pri::get<s>(shadMods).update();}
-
-
-    template <size_t s>
-    void inst_
-
-    void update(){
-
-    };
 
 };
 

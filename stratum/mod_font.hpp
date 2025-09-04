@@ -1,8 +1,10 @@
-#include <stratum/acqres/fontft.hpp>
-#include <uchar.h>
 #ifndef MOD_FONT_HPP
 #define MOD_FONT_HPP
+#include <pair>
+#include <stratum/acqres/fontft.hpp>
+#include <uchar.h>
 #include "mod_util.hpp"
+#include "mod_paint.hpp"
 namespace mod {
 memoryPool<ttf::font> fontPool;
 
@@ -12,11 +14,83 @@ template <typename T>
             int h = s%size();
             return h<0?data()[size()+s]:s ;}
 };
+template <typename charT>
+struct glyfEdit ;
+template <typename charT,bool bm>
+struct glyfPrim ;
 
-struct fontColorEdit {
 
+
+
+template <typename charT>
+struct glyfEdit;
+
+template <typename charT>
+struct fontColor {
+    
+    struct layerE {
+        size_t posTup;
+        size_t posVec;
+        layerE(size_t _posTup,size_t _posVec) : posTup(_posTup),posVec(_posVec){}
+    };
+    struct compose{
+        layerE src;
+        layerE b;
+        font::COMPOSITE_MODE mode ;
+        compose(layerE& _src,layerE& _b,font::COMPOSITE_MODE m ) : src(_src),b(_b),mode(m){}
+    };
+
+struct SubGlyph {
+    glyfEdit<charT>* subglyf; 
+    uint16_t gid;
+    fontColSubGlyph(uint16_t gi) : gid(gi){};
 };
-struct fontEdit {
+struct ColGlyph {
+    glyfEdit<charT>* subglyf; 
+    uint16_t gid;
+    layerE lyr;
+    fontColSubGlyph(uint16_t gi) : gid(gi){};
+    fontColSubGlyph(uint16_t gi,layerE _ly) : gid(gi) ,lyr(ly){};
+};
+
+
+    struct paintGlyph {
+
+    };
+    template <typename... Paints>
+    using tyt = pri::utuple<std::vector<Paints>...> ;
+    
+    struct subGlyph {
+        glyfEdit<charT>* subGlyf;
+    };
+    using tytup = tyt<compose,paint::solid,paint::var<paint::solid>,
+    paint::gradientLinear,paint::var<paint::gradientLinear>,
+    paint::gradientSweep, paint::var<paint::gradientSweep>,
+    paint::gradientRadial, paint::var<paint::gradientRadial>,
+    paint::Affine, paint::var<paint::Affine>,
+    paint::rotate, paint::var<paint::rotate>,
+    paint::skew, paint::var<paint::skew>,
+    paint::rotateAroundCenter, paint::var<paint::rotateAroundCenter>,
+    paint::skewAroundCenter, paint::var<paint::skewAroundCenter>,
+    paint::translate, paint::var<paint::translate>> ;
+
+    std::vector<SubGlyph> subglyph;
+    std::vector<ColGlyph> colglyph;
+    std::vector<compose> composePnts;
+    
+    std::vector<size_t> graphTransforms;
+
+    pri::list<pri::list<layerE>> layers;
+
+    tytup tupvec;
+
+
+
+    
+};
+template <typename charT>
+struct glyfEdit {
+    charT c ;
     std::vector<contour<glm::ivec2>> contours;
     std::vector<contour<bool>> onCurve;
     uint16 glyphID;
@@ -35,7 +109,7 @@ struct fontEdit {
             endPl=f.endPts[i] + 1;
         };
     }
-    fontEdit(ttf::glyfft& f){
+    glyfEdit(ttf::glyfft& f){
         glyphID = f.glyphID;
         pos = f.pos;
         xMin = f.xMin;
@@ -44,6 +118,13 @@ struct fontEdit {
         yMax = f.yMax;set();
     }
 };
+
+
+memoryPool<glyfEdit<char>> glyfEditPool;
+memoryPool<glyfEdit<wchar_t>> wglyfEditPool;
+memoryPool<glyfEdit<char32_t>> c32glyfEditPool;
+
+
 template <typename charT, bool bm>
 struct fontPrim {
 
@@ -96,10 +177,10 @@ struct fontPrim {
     };
 
     std::vector<ftPrim> ftprims;
-    std::vector<bmPrim>> bmprims; 
+    std::vector<bmPrim> bmprims; 
     uint8_t tesc = 0;
     
-     pri::list<ftPrim::vert::prty> tesselate(fontEdit& fe){
+     pri::list<ftPrim::vert::prty> tesselate(glyfEdit<charT>& fe){
         pri::list<ftPrim::vert::prty> ret;
         for(size_t s =0 ; s<fe.contours.size();s++){        ret.push_back(ftPrim::vert::prty());       
 
@@ -309,7 +390,7 @@ struct fontPrim {
 
 
     void VertProc(ttf::glyfft&  f,ftPrim& r) {
-        fontEdit fe;fe.set(f) ;
+        glyfEdit<charT> fe;fe.set(f) ;
          pri::list<ftPrim::vert::prty> ret = tesselate(fe);
          std::vector<size_t> inside(ret.size());
          std::vector<size_t> outside(ret.size());
@@ -399,6 +480,8 @@ for(size_t s=0;s<ret.size() and lastP < ret.size();s++){
 memoryPool<fontPrim<char>> fontPrimPool;
 memoryPool<fontPrim<wchar_t>> wcfontPrimPool;
 memoryPool<fontPrim<char32_t>> c32fontPrimPool;
+
+
 
 }
 #endif

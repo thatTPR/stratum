@@ -2,7 +2,14 @@
 #define PTR_TEMPLATES
 #include <type_traits>
 #include <stratum/petri/tuple.hpp>
+template <typename T,typename...Ts>
+constexpr size_t sizeOf(){return sizeof(T)+sizeOf<Ts...>();}
+template <typename T>
+constexpr size_t sizeOf(){return sizeof(T);}
+
+
 namespace pri {
+
     template <typename T, typename A , typename... Ts>
     struct is_one_of {
         static  constexpr bool value = std::is_same<T,A>::value || is_one_of<T,Ts...>::value ; 

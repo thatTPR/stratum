@@ -72,12 +72,8 @@ virtual void bindImage(modules::image2D& im) ;
 
 using imagety = void;
 pri::list<imagety> imagePool ;
-struct imageOpts {
-    bool cubemap;
-    
-    imageOpts() = default ;
-};
-virtual void create_image2d( modules::image2D& im,imageOpts opts= imageOpts());
+
+virtual void create_image2d( modules::image2D& im,mod::imageOpts opts= imageOpts());
 using shaderStageBits = void;
 virtual void getShaderType(shader_type STAGE);
 
@@ -89,46 +85,43 @@ virtual void create_fullscreen();
 virtual void get_gpu_info(gpu_info gpinfo);
 virtual _shader load_shader(const uint32_t shader[] );
 
-template <modules::shader_type sty,typename ssboT,typename uboT>
-virtual bool shaderModule(modules::shaderModule<sty,ssboT,uboT>* module);
-template <typename ssboT,typename uboT>
-virtual int grModule(modules::grModule<>* module);
-virtual int glslModule(modules::shaderModule* module);
-template <typename ssboT,typename uboT> 
-virtual int vertModule(modules::vertModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int fragModule(modules::fragModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int geomModule(modules::geomModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int tescModule(modules::tescModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int teseModule(modules::teseModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int compModule(modules::compModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int taskModule(modules::taskModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int meshModule(modules::meshModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int rgenModule(modules::rgenModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int rintModule(modules::rintModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int rahitModule(modules::rahitModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int rchitModule(modules::rchitModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int rmissModule(modules::rmissModule<ssboT,uboT>* module);
-template <typename ssboT,typename uboT> 
-virtual int rcallModule(modules::rcallModule<ssboT,uboT>* module);
+template <modules::shader_type sty,typename buf,mod::BindingType bt>
+virtual bool shaderModule(modules::shaderModule<sty,buf,bt>* module);
+template <typename buf,mod::BindingType bt>
+virtual int grModule(modules::grModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt>
+virtual int allModule(modules::allModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int vertModule(modules::vertModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int fragModule(modules::fragModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int geomModule(modules::geomModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int tescModule(modules::tescModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int teseModule(modules::teseModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int compModule(modules::compModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int taskModule(modules::taskModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int meshModule(modules::meshModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int rgenModule(modules::rgenModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int rintModule(modules::rintModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int rahitModule(modules::rahitModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int rchitModule(modules::rchitModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int rmissModule(modules::rmissModule<buf,bt>* module);
+template <typename buf,mod::BindingType bt> 
+virtual int rcallModule(modules::rcallModule<buf,bt>* module);
 
 
-
-
-
-
-virtual void updateUniform(device* dev, shaderModule* m );
+void updateUniform(device* dev, shaderModule* m );
 void descriptor_set();
 void descriptor_pool();
 void create_swapchain();

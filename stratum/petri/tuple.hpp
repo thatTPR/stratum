@@ -35,6 +35,8 @@ using tuple = tupleAddBack<tupleEmpty,Head,Tail...> ;
 
 
 
+
+
 template <typename T,typename empty,typename Head , typename... Ts>
 T& get(tupleAddBack<empty,Head,Ts...>& t){
     if constexpr(std::is_same<Head,T>::value){
@@ -161,6 +163,38 @@ struct utupConcats {
 
 template <typename T , typename... Ts>
 using utuple =  typename std::conditional<pri::is_one_of<T,Ts...>::value,tupleAddBack<utuple<Ts...>,T> , utuple<Ts...>>::type;
+
+template <typename T,typename Head,typename... Ts>
+constexpr size_t _get_size<>(){
+    if constexpr (std::is_same<T,Head>::value){
+        return 0;    
+    }
+    else {return 1 + get_size<T,Ts...>();}
+};
+
+
+template <typename T,typename Head>
+constexpr size_t _get_size<>(){
+    return 2;
+};
+
+template <typename T,typename utupty>
+constexpr size_t get_size<>(){
+    if constexpr (std::is_same<T,utupty::headt>::value){
+        return 0;    
+    }
+    else {return 1 + get_size<T,utupty::tailtup>();}
+};
+
+template <typename T>
+constexpr size_t get_size<T,tupleEmpty>(){
+return 1;
+};
+
+
+
+
+
 
 template <typename tupBack,typename Head,typename... Tail>
 tupleAddBack<tupBack,Head,Tail...> concat_tuples(tupleAddBack<tupleEmpty,Head,Tail...>& tup , tupBack& back){

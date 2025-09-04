@@ -37,11 +37,20 @@ enum tupleIndex{
    Reserved = 0x1000,
    TUPLE_INDEX_MASK = 0x0FFF
 };
+
+enum ENTRY_FORMAT_MASK {
+INNER_INDEX_BIT_COUNT_MASK=0x0F,//		Mask for the low 4 bits, which give the count of bits minus one that are used in each entry for the inner-level index.
+MAP_ENTRY_SIZE_MASK=0x30,//		Mask for bits that indicate the size in bytes minus one of each entry.
+Reserved=0xC0//		Reserved for future use — set to 0.
+}
 typedef struct {
 // uint8   format;
 uint8   entryFormat;
 uint16   mapCount;
 uint8*   mapData;//[variable]
+   uint8* operator[](uint32_t i){
+      return mapData + i*(ENTRY_FORMAT_MASK::MAP_ENTRY_SIZE_MASK & entryFormat) ;   }
+
 }DeltaSetIndexMapf0;
 ACQRES(DeltaSetIndexMapf0){
 one(f.format);
@@ -56,6 +65,9 @@ typedef struct {
 uint8   entryFormat;
 uint32   mapCount;
 uint8*   mapData;//[variable]
+   uint8* operator[](uint32_t i){
+      return mapData + i*(ENTRY_FORMAT_MASK::MAP_ENTRY_SIZE_MASK & entryFormat) ;
+   }
 }DeltaSetIndexMapf1;
 ACQRES(DeltaSetIndexMapf1){
 one(f.format);
@@ -65,7 +77,7 @@ arr(f.mapData, f.variable);
  };
 USE_ACQRES(DeltaSetIndexMapf1)
 
-typedef struct {
+ struct DeltaSetIndexMap {
    uint8 format;
    union {
       DeltaSetIndexMapf0 f0;     
@@ -77,7 +89,13 @@ typedef struct {
          case 1 : {mapCount = &u.f1.mapCount;mapData=u.f1.mapData;}
       }
    };
-}DeltaSetIndexMap ;
+   uint8* operator[](uint32_t i){
+      switch(format){
+         case 0 : {return u.f0[i];}
+         case 1 : {return u.f1[i];}
+      }
+   };
+} ;
 ACQRES(DeltaSetIndexMap){
    one(f.format);
    switch(f.format){

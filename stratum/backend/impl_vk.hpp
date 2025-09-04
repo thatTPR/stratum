@@ -11,19 +11,173 @@
 #endif
 
 #define GET_VK_FORMAT(image_form) 
+constexpr VkShaderStageFlagBits getShaderType(mod::shader_type STAGE){
+    switch(STAGE){
+        shader_type::all :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;}
+        shader_type::gr :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS;}
+        shader_type::vert :{return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;}
+        shader_type::frag :{return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;}
+        shader_type::geom :{return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;}
+        shader_type::tesc :{return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;}
+        shader_type::tese :{return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;}
+        shader_type::comp :{return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;}
+        shader_type::task :{return VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_EXT;}
+        shader_type::mesh :{return VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_EXT;}
+        shader_type::rgen :{return VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR;}
+        shader_type::rint :{return VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR;}
+        shader_type::rahit :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR;}
+        shader_type::rchit :{return VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;}
+        shader_type::rmiss :{return VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR;}
+        shader_type::rcall :{return VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR;}
+    }
+};
 
+
+constexpr VkFormat get_format(mod::image_formats fm){
+    switch(fm){
+mod::image_formats::rgba32f         :{return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;}; 
+mod::image_formats::rgba16f         :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
+mod::image_formats::rg32f           :{return VkFormat::VK_FORMAT_R32G32_SFLOAT;};
+mod::image_formats::rg16f           :{return VkFormat::VK_FORMAT_R16G16_SFLOAT;};
+mod::image_formats::r11f_g11f_b10f  :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
+mod::image_formats::r32f            :{return VkFormat::VK_FORMAT_R32_SFLOAT;};
+mod::image_formats::r16f            :{return VkFormat::VK_FORMAT_R16_SFLOAT;};
+mod::image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
+mod::image_formats::rgb10_a2        :{return VkFormat::VK_FORMAT_A2R10G10B10_SNORM_PACK32;};
+mod::image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SRGB;};
+mod::image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
+mod::image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
+mod::image_formats::r16             :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
+mod::image_formats::r8              :{return VkFormat::VK_FORMAT_R8_SNORM;};
+mod::image_formats::rgba16_snorm    :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
+mod::image_formats::rgba8_snorm     :{return VkFormat::VK_FORMAT_R8G8B8A8_SNORM;};
+mod::image_formats::rg16_snorm      :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
+mod::image_formats::rg8_snorm       :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
+mod::image_formats::r16_snorm       :{return VkFormat::VK_FORMAT_R16_SNORM;};
+mod::image_formats::r8_snorm        :{return VkFormat::VK_FORMAT_R8_SNORM;};
+mod::image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_SINT;};
+mod::image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SINT;};
+mod::image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SINT;};
+mod::image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32_SINT;};
+mod::image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SINT;};
+mod::image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SINT;};
+mod::image_formats::r32i            :{return VkFormat::VK_FORMAT_R32_SINT;};
+mod::image_formats::r16i            :{return VkFormat::VK_FORMAT_R16_SINT;};
+mod::image_formats::r8i             :{return VkFormat::VK_FORMAT_R8_SINT;};
+mod::image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_UINT;};
+mod::image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_UINT;};
+mod::image_formats::rgb10_a2ui      :{return VkFormat::VK_FORMAT_A2R10G10B10_UINT_PACK32;};
+mod::image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_UINT;};
+mod::image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32B32_UINT;};
+mod::image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16B16_UINT;};
+mod::image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8B8_UINT;};
+mod::image_formats::r32             :{return VkFormat::VK_FORMAT_R32_UINT;};
+mod::image_formats::r16             :{return VkFormat::VK_FORMAT_R16_UINT;};
+mod::image_formats::r8              :{return VkFormat::VK_FORMAT_R8_UINT;};
+
+mod::image_formats::rgb32f          :{return VkFormat::VK_FORMAT_R32G32B32_SFLOAT };     
+mod::image_formats::rgb16f          :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };     
+mod::image_formats::rgb16           :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };    
+mod::image_formats::rgb8            :{return VkFormat::VK_FORMAT_R8G8B8_SFLOAT };   
+mod::image_formats::rgb16_snorm     :{return VkFormat::VK_FORMAT_R16G16B16_SNORM };          
+mod::image_formats::rgb8_snorm      :{return VkFormat::VK_FORMAT_R8G8B8_SNORM };         
+mod::image_formats::rgb32i          :{return VkFormat::VK_FORMAT_R32G32B32_SINT };     
+mod::image_formats::rgb16i          :{return VkFormat::VK_FORMAT_R16G16B16_SINT };     
+mod::image_formats::rgb8i           :{return VkFormat::VK_FORMAT_R8G8B8_SINT };    
+mod::image_formats::rgb32ui         :{return VkFormat::VK_FORMAT_R32G32B32_UINT };      
+mod::image_formats::rgb16ui         :{return VkFormat::VK_FORMAT_R16G16B16_UINT };      
+mod::image_formats::rgb8ui          :{return VkFormat::VK_FORMAT_R8G8B8_UINT };     
+
+    };
+};
+
+constexpr VkPrimitiveTopology getTopology(TopologyPrimitive TP){
+    switch(TP){
+case TopologyPrimitive::POINT_LIST : {return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;}
+case TopologyPrimitive::LINE_LIST : {return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;}
+case TopologyPrimitive::LINE_STRIP : {return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;}
+case TopologyPrimitive::TRIANGLE_LIST : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;}
+case TopologyPrimitive::TRIANGLE_STRIP : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;}
+case TopologyPrimitive::TRIANGLE_FAN : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;}
+case TopologyPrimitive::LINE_LIST_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY;}
+case TopologyPrimitive::LINE_STRIP_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY;}
+case TopologyPrimitive::TRIANGLE_LIST_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;}
+case TopologyPrimitive::TRIANGLE_STRIP_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;}
+case TopologyPrimitive::PATCH_LIST : {return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;}
+};
+}
+constexpr VkSurfaceTransformFlagBitsKHR get_transform(mod::transform_image s){
+    switch(s){
+case mod::transform_image::none:  {return VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;};
+case mod::transform_image::rotate90:  {return VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR;};
+case mod::transform_image::rotate180:  {return VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR;};
+case mod::transform_image::roate270:  {return VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR;};
+case mod::transform_image::mirror:  {return VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR;};
+case mod::transform_image::mirror_rotate90:  {return VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR;};
+case mod::transform_image::mirror_rotate180:  {return VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR;};
+case mod::transform_image::mirror_roate270:  {return VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR;};};};
+
+
+constexpr VkDescriptorType getBindingType(modules::BindingType bt){
+    switch constexpr (bt){
+        case mod::BindingType::SAMPLER                  : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLER;}     
+        case mod::BindingType::COMBINED_IMAGE_SAMPLER   : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;}                    
+        case mod::BindingType::SAMPLED_IMAGE            : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;}           
+        case mod::BindingType::STORAGE_IMAGE            : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;}           
+        case mod::BindingType::UNIFORM_TEXEL_BUFFER     : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;}                  
+        case mod::BindingType::STORAGE_TEXEL_BUFFER     : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;}                  
+        case mod::BindingType::UNIFORM_BUFFER           : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;}            
+        case mod::BindingType::STORAGE_BUFFER           : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;}            
+        case mod::BindingType::UNIFORM_BUFFER_DYNAMIC   : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;}                    
+        case mod::BindingType::STORAGE_BUFFER_DYNAMIC   : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;}                    
+        case mod::BindingType::INPUT_ATTACHMENT         : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;}              
+        case mod::BindingType::INLINE_UNIFORM_BLOCK     : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK;}                  
+        case mod::BindingType::ACCELERATION_STRUCTURE   : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE;}                    
+    };
+}
+
+
+constexpr VkImageUsageFlagBits get_image_usage(mod::image_usage iu){
+switch constexpr(iu)
+{
+    case mod::image_usage::TRANSFER_SRC_BIT             :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;}      
+    case mod::image_usage::TRANSFER_DST_BIT             :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;}      
+    case mod::image_usage::SAMPLED_BIT                  :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;} 
+    case mod::image_usage::STORAGE_BIT                  :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT;} 
+    case mod::image_usage::COLOR_ATTACHMENT_BIT         :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;}          
+    case mod::image_usage::DEPTH_STENCIL_ATTACHMENT_BIT :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;}                  
+    case mod::image_usage::TRANSIENT_ATTACHMENT_BIT     :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;}              
+    case mod::image_usage::INPUT_ATTACHMENT_BIT         :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;}          
+    case mod::image_usage::VIDEO_DECODE_DST_BIT         :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR;}          
+    case mod::image_usage::VIDEO_DECODE_SRC_BIT         :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR;}          
+    case mod::image_usage::VIDEO_DECODE_DPB_BIT         :{return VkImageUsageFlagBits::VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;}          
+}
+};
+
+constexpr VkDescriptorType getDescriptor(mod::BindingType bt){
+    switch constexpr (bt){
+        case mod::BindingType::SAMPLER :{return VK_DESCRIPTOR_TYPE_SAMPLER;}
+        case mod::BindingType::COMBINED_IMAGE_SAMPLER :{return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;}
+        case mod::BindingType::SAMPLED_IMAGE :{return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;}
+        case mod::BindingType::STORAGE_IMAGE :{return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;}
+        case mod::BindingType::UNIFORM_TEXEL_BUFFER :{return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;}
+        case mod::BindingType::STORAGE_TEXEL_BUFFER :{return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;}
+        case mod::BindingType::UNIFORM_BUFFER :{return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;}
+        case mod::BindingType::STORAGE_BUFFER :{return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;}
+        case mod::BindingType::UNIFORM_BUFFER_DYNAMIC :{return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;}
+        case mod::BindingType::STORAGE_BUFFER_DYNAMIC :{return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;}
+        case mod::BindingType::INPUT_ATTACHMENT :{return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;}
+        case mod::BindingType::INLINE_UNIFORM_BLOCK :{return VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK;}
+        case mod::BindingType::ACCELERATION_STRUCTURE :{return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;}
+    }
+}
 
 template <>
 class mod::Pipeline<VkPipeline> {
     pri::list<VkPipeline> pipelines;
 };
 
-class DescriptorAllocatorSets {
-    
-};
-class Descriptor {
 
-};
 template <typename... shadMods>
 class vk_impl : public glimpl<shadMods...>  {
     public:
@@ -167,110 +321,6 @@ void set_up_dev(){
 
 };
 
-// VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-// VK_BUFFER_USAGE_TRANSFER_DST_BIT
-// VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT
-// VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT
-// VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
-// VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
-// VK_BUFFER_USAGE_INDEX_BUFFER_BIT
-// VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
-// VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
-// VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
-// VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR
-// VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR
-// VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT
-// VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT
-// VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT
-// VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
-// VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR
-// VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR
-
-
-
-constexpr VkFormat get_format(mod::image_formats fm){
-    switch(fm){
-mod::image_formats::rgba32f         :{return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;}; 
-mod::image_formats::rgba16f         :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
-mod::image_formats::rg32f           :{return VkFormat::VK_FORMAT_R32G32_SFLOAT;};
-mod::image_formats::rg16f           :{return VkFormat::VK_FORMAT_R16G16_SFLOAT;};
-mod::image_formats::r11f_g11f_b10f  :{return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;};
-mod::image_formats::r32f            :{return VkFormat::VK_FORMAT_R32_SFLOAT;};
-mod::image_formats::r16f            :{return VkFormat::VK_FORMAT_R16_SFLOAT;};
-mod::image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
-mod::image_formats::rgb10_a2        :{return VkFormat::VK_FORMAT_A2R10G10B10_SNORM_PACK32;};
-mod::image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SRGB;};
-mod::image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
-mod::image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
-mod::image_formats::r16             :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
-mod::image_formats::r8              :{return VkFormat::VK_FORMAT_R8_SNORM;};
-mod::image_formats::rgba16_snorm    :{return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;};
-mod::image_formats::rgba8_snorm     :{return VkFormat::VK_FORMAT_R8G8B8A8_SNORM;};
-mod::image_formats::rg16_snorm      :{return VkFormat::VK_FORMAT_R16G16_SNORM;};
-mod::image_formats::rg8_snorm       :{return VkFormat::VK_FORMAT_R8G8_SNORM;};
-mod::image_formats::r16_snorm       :{return VkFormat::VK_FORMAT_R16_SNORM;};
-mod::image_formats::r8_snorm        :{return VkFormat::VK_FORMAT_R8_SNORM;};
-mod::image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_SINT;};
-mod::image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_SINT;};
-mod::image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_SINT;};
-mod::image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32_SINT;};
-mod::image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16_SINT;};
-mod::image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8_SINT;};
-mod::image_formats::r32i            :{return VkFormat::VK_FORMAT_R32_SINT;};
-mod::image_formats::r16i            :{return VkFormat::VK_FORMAT_R16_SINT;};
-mod::image_formats::r8i             :{return VkFormat::VK_FORMAT_R8_SINT;};
-mod::image_formats::rgba32          :{return VkFormat::VK_FORMAT_R32G32B32A32_UINT;};
-mod::image_formats::rgba16          :{return VkFormat::VK_FORMAT_R16G16B16A16_UINT;};
-mod::image_formats::rgb10_a2ui      :{return VkFormat::VK_FORMAT_A2R10G10B10_UINT_PACK32;};
-mod::image_formats::rgba8           :{return VkFormat::VK_FORMAT_R8G8B8A8_UINT;};
-mod::image_formats::rg32            :{return VkFormat::VK_FORMAT_R32G32B32_UINT;};
-mod::image_formats::rg16            :{return VkFormat::VK_FORMAT_R16G16B16_UINT;};
-mod::image_formats::rg8             :{return VkFormat::VK_FORMAT_R8G8B8_UINT;};
-mod::image_formats::r32             :{return VkFormat::VK_FORMAT_R32_UINT;};
-mod::image_formats::r16             :{return VkFormat::VK_FORMAT_R16_UINT;};
-mod::image_formats::r8              :{return VkFormat::VK_FORMAT_R8_UINT;};
-
-mod::image_formats::rgb32f          :{return VkFormat::VK_FORMAT_R32G32B32_SFLOAT };     
-mod::image_formats::rgb16f          :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };     
-mod::image_formats::rgb16           :{return VkFormat::VK_FORMAT_R16G16B16_SFLOAT };    
-mod::image_formats::rgb8            :{return VkFormat::VK_FORMAT_R8G8B8_SFLOAT };   
-mod::image_formats::rgb16_snorm     :{return VkFormat::VK_FORMAT_R16G16B16_SNORM };          
-mod::image_formats::rgb8_snorm      :{return VkFormat::VK_FORMAT_R8G8B8_SNORM };         
-mod::image_formats::rgb32i          :{return VkFormat::VK_FORMAT_R32G32B32_SINT };     
-mod::image_formats::rgb16i          :{return VkFormat::VK_FORMAT_R16G16B16_SINT };     
-mod::image_formats::rgb8i           :{return VkFormat::VK_FORMAT_R8G8B8_SINT };    
-mod::image_formats::rgb32ui         :{return VkFormat::VK_FORMAT_R32G32B32_UINT };      
-mod::image_formats::rgb16ui         :{return VkFormat::VK_FORMAT_R16G16B16_UINT };      
-mod::image_formats::rgb8ui          :{return VkFormat::VK_FORMAT_R8G8B8_UINT };     
-
-    };
-};
-
-constexpr VkPrimitiveTopology(TopologyPrimitive TP){
-    switch(TP){
-case TopologyPrimitive::POINT_LIST : {return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;}
-case TopologyPrimitive::LINE_LIST : {return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;}
-case TopologyPrimitive::LINE_STRIP : {return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;}
-case TopologyPrimitive::TRIANGLE_LIST : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;}
-case TopologyPrimitive::TRIANGLE_STRIP : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;}
-case TopologyPrimitive::TRIANGLE_FAN : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;}
-case TopologyPrimitive::LINE_LIST_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY;}
-case TopologyPrimitive::LINE_STRIP_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY;}
-case TopologyPrimitive::TRIANGLE_LIST_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;}
-case TopologyPrimitive::TRIANGLE_STRIP_WITH_ADJACENCY : {return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;}
-case TopologyPrimitive::PATCH_LIST : {return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;}
-};
-}
-constexpr VkSurfaceTransformFlagBitsKHR get_transform(transform::image s){
-    switch(s){
-case none:  {return VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;};
-case rotate90:  {return VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR;};
-case rotate180:  {return VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR;};
-case roate270:  {return VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR;};
-case mirror:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR;};
-case mirror_rotate90:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR;};
-case mirror_rotate180:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR;};
-case mirror_roate270:  {return VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR;};};};
 
 using imagety= VkImage ;
 pri::list<imagety> imagePool;
@@ -294,6 +344,7 @@ imageCreateInfo.pQueueFamilyIndices = nullptr;
 imageCreateInfo.preTransform = VK_TRANSFORM_IDENTITY_BIT_KHR;  
 imageCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;  // Opaque alpha
 imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;  // Initial layout
+imageCreateInfo.usage = get_image_usage(opt.usage); 
 
 VkImage image;
 VkResult result = vkCreateImage(devcur, &imageCreateInfo, nullptr, &image);
@@ -304,6 +355,7 @@ if (result != VK_SUCCESS) {
 }
 };
 using memty =VkDeviceMemory ; 
+
 void bind_image(pri::list<imagety>::iter imit,pri::list<memty>::iter memit){
     vkBindImageMemory(devcur,*imit,*memit,0) ;
 
@@ -395,29 +447,9 @@ void updateUBO();
 // VK_SHADER_STAGE_CLUSTER_CULLING_BIT_HUAWEI
 
 using shaderStageBits = VkShaderStageFlagBits; 
-constexpr VkShaderStageFlagBits getShaderType(mod::shader_type STAGE){
-    switch(STAGE){
-        shader_type::all :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;}
-        shader_type::gr :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS;}
-        shader_type::vert :{return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;}
-        shader_type::frag :{return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;}
-        shader_type::geom :{return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;}
-        shader_type::tesc :{return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;}
-        shader_type::tese :{return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;}
-        shader_type::comp :{return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;}
-        shader_type::task :{return VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_EXT;}
-        shader_type::mesh :{return VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_EXT;}
-        shader_type::rgen :{return VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR;}
-        shader_type::rint :{return VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR;}
-        shader_type::rahit :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR;}
-        shader_type::rchit :{return VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;}
-        shader_type::rmiss :{return VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR;}
-        shader_type::rcall :{return VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR;}
-    }
-};
-
-
-int shaderModule(shaderModule* module,VkShaderStageFlagBits STAGE){
+pri::list<VkShaderModule> shadMods;
+template <modules::shader_type sty,typename buf,mod::BindType bt>
+pri::list<VkShaderModule>::iter shaderModule(shaderModule<sty,buf,bt>* module,VkShaderStageFlagBits STAGE){
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = module->size;
@@ -426,80 +458,78 @@ int shaderModule(shaderModule* module,VkShaderStageFlagBits STAGE){
 if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
     throw std::runtime_error("Failed to create shader module!");
 }
-    VkPipelineShaderStageCreateInfo shaderStageInfo{};
-    shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStageInfo.stage = STAGE ;
-    shaderStageInfo.module = shaderModule ;
-    shaderStageInfo.pName = module->entry_point;
+    shadMods.push_back(shaderModule);
+    return shadMods.rbegin();
+}
 
-    if(module->unib){
-
-    };
-    if(module->shab){
-        this->ssbo(module,)
-    };
-    return 
+template <modules::shader_type sty,typename buf,mod::BindType bt>
+void shaderStage(mod::shaderModule<sty,buf,bt>* module,pri::list<VkShaderModule>::iter it,size_t entryPt=0){
+    VkPipelineShaderStageCreateInfo crinfo{};
+    crinfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    crinfo.stage = getShaderType(module->sty);
+    crinfo.module = *it;
+    crinfo.pName = module->entry_points[entryPt];
+};
+void pipelineStage(pri::list<VkShaderModule>::iter... it,pri::list<VkShaderModule>::iter... its){
+    VkPipelineShaderStageCreateInfo shaderStages[]
+};
+template <modules::shader_type sty,typename buf,mod::BindingType bt>
+bool shaderModule(mod::shaderModule<sty,buf,bt>* module, shader_type STAGE){
+    shaderModule<sty,buf,bt>(module,getShaderType(STAGE));
 };
 
-int shaderModule(shaderModule* module, shader_type STAGE){
-    shaderModule(module,getShaderType(STAGE));
-};
-
-
-int grModule(shaderModule* module){
-    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS);
-};
-int glslModule(shaderModule* module){
-    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_ALL);
-};
-int vertModule(vertModule* module){
-    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT);};
-int fragModule(fragModule* module){
-    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT);};
-int geomModule(geomModule* module){
-    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT);};
-int tescModule(tescModule* module){
-    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);};
-int teseModule(teseModule* module){
-    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);};
-int compModule(compModule* module){
-    this->shaderModule(module,VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT);
-    VkComputePipelineCreateInfo pipelineInfo{};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-    pipelineInfo.stage = shaderStageInfo;              // Shader stage info
-    pipelineInfo.layout = pipelineLayout;              // Pipeline layout
-    if()
-};
-int taskModule(taskModule* module){
-    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_EXT);};
-int meshModule(meshModule* module){
+template <typename buf,mod::BindType bt>
+int grModule(mod::grModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::gr,buf,bt>(module,VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS);};
+template <typename buf,mod::BindType bt>
+int allModule(mod::allModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::all,buf,bt>(module,VkShaderStageFlagBits::VK_SHADER_STAGE_ALL);};
+template <typename buf,mod::BindType bt>
+int vertModule(mod::vertModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::vert,buf,bt>(module,VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT);};
+template <typename buf,mod::BindType bt>
+int fragModule(mod::fragModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::frag,buf,bt>(module,VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT);};
+template <typename buf,mod::BindType bt>
+int geomModule(mod::geomModuleM<buf,bt>* module){
+    this->shaderModule<mod::shader_type::geom,buf,bt>(module,VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT);};
+template <typename buf,mod::BindType bt>
+int tescModule(tescModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::tesc,buf,bt>(module,VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);};
+template <typename buf,mod::BindType bt>
+int teseModule(teseModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::tese,buf,bt>(module,VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);};
+template <typename buf,mod::BindType bt>
+int compModule(compModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::comp,buf,bt>(module,VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT);};
+template <typename buf,mod::BindType bt>
+int taskModule(taskModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::task,buf,bt>(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_EXT);};
+template <typename buf,mod::BindType bt>
+int meshModule(meshModule<buf,bt>* module){
     this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_EXT);};
-int rgenModule(rgenModule* module){
-    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_NV: VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-};
-int rintModule(rintModule* module){
-    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR);};
-int rahitModule(rahitModule* module){
-    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR);};
-int rchitModule(rchitModule* module){
-    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);};
-int rmissModule(rmissModule* module){
-    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR);};
-int rcallModule(rcallModule* module){
-    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR);};
+template <typename buf,mod::BindType bt>
+int rgenModule(rgenModule<buf,bt>* module){
+    this->shaderModule(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_NV: VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);};
+template <typename buf,mod::BindType bt>
+int rintModule(rintModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::rint,buf,bt>(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR);};
+template <typename buf,mod::BindType bt>
+int rahitModule(rahitModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::rahit,buf,bt>(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR);};
+template <typename buf,mod::BindType bt>
+int rchitModule(rchitModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::rchit,buf,bt>(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);};
+template <typename buf,mod::BindType bt>
+int rmissModule(rmissModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::rmiss,buf,bt>(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR);};
+template <typename buf,mod::BindType bt>
+int rcallModule(rcallModule<buf,bt>* module){
+    this->shaderModule<mod::shader_type::rcall,buf,bt>(module,(this->nv)?VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_NV:VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR);};
 
 
-void descriptor_pool(){
-
-};
-void descriptor_set(){
-
-};
-void 
-virtual void descriptors(T* shader ){
-    vkCreateDescriptorSetLayout(){
-
-    };
+void descriptors( ){
+    vkCreateDescriptorSetLayout(devcur,);
 };
 
 
