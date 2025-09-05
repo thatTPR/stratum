@@ -28,16 +28,24 @@ struct glyfEdit;
 template <typename charT>
 struct fontColor {
     
+    struct indexE {
+        int s;
+        size_t num;
+    };  
     struct layerE {
         size_t posTup;
         size_t posVec;
-        layerE(size_t _posTup,size_t _posVec) : posTup(_posTup),posVec(_posVec){}
+        
+        layerE(bool h,int _posTup,int _posVec) :layer(h), posTup(_posTup),posVec(_posVec){}
+    
+        layerE(int _posTup,int _posVec) : posTup(_posTup),posVec(_posVec){layer=false;}
     };
     struct compose{
         layerE src;
         layerE b;
         font::COMPOSITE_MODE mode ;
         compose(layerE& _src,layerE& _b,font::COMPOSITE_MODE m ) : src(_src),b(_b),mode(m){}
+        compose(font::COMPOSITE_MODE m ) :mode(m){}
     };
 
 struct SubGlyph {
@@ -63,7 +71,8 @@ struct ColGlyph {
     struct subGlyph {
         glyfEdit<charT>* subGlyf;
     };
-    using tytup = tyt<compose,paint::solid,paint::var<paint::solid>,
+    using tytup = tyt<SubGlyph,ColGlyph,
+compose,paint::solid,paint::var<paint::solid>,
     paint::gradientLinear,paint::var<paint::gradientLinear>,
     paint::gradientSweep, paint::var<paint::gradientSweep>,
     paint::gradientRadial, paint::var<paint::gradientRadial>,
@@ -74,13 +83,15 @@ struct ColGlyph {
     paint::skewAroundCenter, paint::var<paint::skewAroundCenter>,
     paint::translate, paint::var<paint::translate>> ;
 
-    std::vector<SubGlyph> subglyph;
-    std::vector<ColGlyph> colglyph;
-    std::vector<compose> composePnts;
+    // std::vector<SubGlyph> subglyph;
+    // std::vector<ColGlyph> colglyph;
+    // std::vector<compose> composePnts;
     
-    std::vector<size_t> graphTransforms;
-
-    pri::list<pri::list<layerE>> layers;
+    
+    std::vector<layerE> index;
+    
+    std::vector<indexE> layers; 
+    
 
     tytup tupvec;
 
@@ -124,8 +135,44 @@ memoryPool<glyfEdit<char>> glyfEditPool;
 memoryPool<glyfEdit<wchar_t>> wglyfEditPool;
 memoryPool<glyfEdit<char32_t>> c32glyfEditPool;
 
+template <typename charT>
+struct fontBm {
+    struct bmPrim {
+    uint16 glyphID;
+    coord pos;
+    int16   xMin;
+    int16   yMin;
+    int16   xMax;
+    int16   yMax;
+    glm::uvec4 color;
+    float alpha ;
+        image2D bm;
+    };
 
-template <typename charT, bool bm>
+        font::options opts ;
+std::basic_string<charT> text;
+    std::vector<bmPrim> prims; 
+
+    void push(font::glyfbm f){
+        image2D im(f.width,f.height, image_formats::rgba16ui);
+        std::memcpy(im.data,f.bitmap,im.byd * im.imageSize);
+        
+        bmPrim r{f.glyphID,f.pos,f.xMin,f.yMin,f.xMax,f.yMax,f.color,f.alpha,im} ;
+
+        prims.push_back(r);
+    };
+    ttf::font* f;
+
+    template <typename charTy>
+    using vectype = ttf::font::bvectype<charTy> ;
+
+    void loadAll(ttf::font* f){
+        loadAllBm()
+    };
+    fontBm(ttf::font* _f) : f(_f) {}
+};
+
+template <typename charT>
 struct fontPrim {
 
     font::options opts ;
@@ -164,20 +211,8 @@ struct fontPrim {
         vert v;
         frag f;
     };
-    struct bmPrim {
-    uint16 glyphID;
-    coord pos;
-    int16   xMin;
-    int16   yMin;
-    int16   xMax;
-    int16   yMax;
-    glm::uvec4 color;
-    float alpha ;
-        image2D bm;
-    };
 
     std::vector<ftPrim> ftprims;
-    std::vector<bmPrim> bmprims; 
     uint8_t tesc = 0;
     
      pri::list<ftPrim::vert::prty> tesselate(glyfEdit<charT>& fe){
@@ -385,9 +420,7 @@ struct fontPrim {
         /// Betas get local maximums
         
 
-
     }
-
 
     void VertProc(ttf::glyfft&  f,ftPrim& r) {
         glyfEdit<charT> fe;fe.set(f) ;
@@ -418,10 +451,9 @@ for(size_t s=0;s<ret.size() and lastP < ret.size();s++){
         };
         
         r.v =  {f.pos,xMin,yMin,xMax,yMax,s};
-        
     }
 
-    void FragProc(ttf::glyfft&  f,ftPrim& r) {
+    void FragProc(ttf::glyfft<charT>&  f,ftPrim& r) {
         
     }
     void Proc(ttf::glyfft&  f,ftPrim& r){
@@ -430,23 +462,14 @@ for(size_t s=0;s<ret.size() and lastP < ret.size();s++){
     };
     
     void push(font::glyfft& f){
-        
         ftPrim::vert s = Proc(f,r);
         ftprims.push_back(s);
     };
     
     
-    void push(font::glyfbm f){
-        image2D im(f.width,f.height, image_formats::rgba16ui);
-        std::memcpy(im.data,f.bitmap,im.byd * im.imageSize);
-        
-        bmPrim r {f.glyphID,f.pos,f.xMin,f.yMin,f.xMax,f.yMax,f.color,f.alpha,im} ;
-
-        bmprims.push_back(r);
-    };
     glm::ivec2 size;
     
-    font* f;
+    ttf::font* f;
 
     // template <typename charTy>
     // void getf(){
@@ -473,6 +496,105 @@ for(size_t s=0;s<ret.size() and lastP < ret.size();s++){
     void multiInsert(std::vector<size_t> poss,std::string text){
         for(size_t p : poss){insert(p,text);};
     };
+
+    decltype(*this) operator[](charT c){
+        return ftprims[c];
+    };
+
+    template <typename charTy>
+    using vectype = ttf::font::vectype<charTy> ;
+
+
+    fontPrim(ttf::font* _f) : f(_f) {}
+    fontPrim(ttf::font* _f, ttf::ftrange<charT>& r) : f(_f) {
+        text.clear();
+        text.resize(r.size);
+        text[0] = r.start;
+        ftprims.clear();
+            push(r.range[0]);
+        for(size_t s = 1; s<r.size;s++){
+            text[s] = text[s-1] + 1;
+            push(r.range[s]);
+        }
+    }
+}
+
+template <typename charT , template <typename charTy> typename fPrimT >
+struct fontPool {
+    font* f;
+    
+struct rangeE {
+    charT first;
+    size_t num;
+    rangeE(charT f,size_t n) : first(f) , num(_n) {}
+
+};
+
+     std::vector<fPrimT<charT>> ranges;
+
+    std::vector<rangeE> index;
+
+
+    fontPrim<chatT>& get(charT c){
+        size_t ind = 0;
+        for(const rangeE& it : index){
+            if(c>=it.first){
+                if( c-it.first < it.num) {
+                    return ranges[s][c-it.first] ;
+                };
+            }
+            ind++;}
+    };
+    fontPrim<charT>& operator[](charT c){return get(c)}
+    template <typename charTy>
+    using vectype = fPrimT<charTy>::vectype ;
+
+    void loadAll(ttf::font* f){
+        vectype<charT>::type vecs = f->*(vectype<charT>::ptr) ; 
+        for(const auto& it : vecs){
+            fPrimT<charT> r(f,it);
+            ranges.push_back(ranges);
+            index.push_back(it.start,it.size);
+        };
+    };  
+    fontPool(ttf::font* _f) : f(_f) {};
+};
+
+template <typename charT>
+using ftPrim = fontPool<charT,fontPrim> ;
+
+template <typename charT>
+using bmPrim = fontPool<charT,fontBm> ;
+
+
+strucf ftprimFull {
+    ftprim<char> c_ftprim;
+    ftprim<wchar_t> wc_ftprim;
+    ftprim<char32_t> c32_ftprim;
+
+    ftprimFull(font* f){
+        if(f->floaded){
+            c_ftprim = ftprim<char>(f); 
+            wc_ftprim = ftprim<wchar_t>(f); 
+            c32_ftprim = ftprim<char32_t>(f); 
+            c_ftprim.loadAll(f);
+            wc_ftprim.loadAll(f);
+            c32_ftprim.loadAll(f);
+        };
+    };
+}
+struct bmprimFull {
+    bmprim<char> c_bmprim;
+    bmprim<wchar_t> wc_bmprim;
+    bmprim<char32_t> c32_bmprim;
+    bmprimFull(font* f){
+        c_bmprim = bmprim<char>(f);
+        wc_bmprim = bmprim<wchar_t>(f);
+        c32_bmprim = bmprim<char32_t>(f);
+        c_bmprim.loadAll();
+        wc_bmprim.loadAll();
+        c32_bmprim.loadAll();
+    };  
 }
 
 

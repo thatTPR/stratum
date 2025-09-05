@@ -48,6 +48,8 @@ typedef struct {
 uint8   entryFormat;
 uint16   mapCount;
 uint8*   mapData;//[variable]
+   uint32 getSize(){return mapCount;}
+
    uint8* operator[](uint32_t i){
       return mapData + i*(ENTRY_FORMAT_MASK::MAP_ENTRY_SIZE_MASK & entryFormat) ;   }
 
@@ -65,6 +67,7 @@ typedef struct {
 uint8   entryFormat;
 uint32   mapCount;
 uint8*   mapData;//[variable]
+   uint32 getSize(){return mapCount;}
    uint8* operator[](uint32_t i){
       return mapData + i*(ENTRY_FORMAT_MASK::MAP_ENTRY_SIZE_MASK & entryFormat) ;
    }
@@ -93,6 +96,13 @@ USE_ACQRES(DeltaSetIndexMapf1)
       switch(format){
          case 0 : {return u.f0[i];}
          case 1 : {return u.f1[i];}
+      }
+      uint16 getSize(){
+               switch(format){
+         case 0 : {return u.f0.getSize();}
+         case 1 : {return u.f1.getSize();}
+      }
+
       }
    };
 } ;

@@ -35,8 +35,6 @@ using tuple = tupleAddBack<tupleEmpty,Head,Tail...> ;
 
 
 
-
-
 template <typename T,typename empty,typename Head , typename... Ts>
 T& get(tupleAddBack<empty,Head,Ts...>& t){
     if constexpr(std::is_same<Head,T>::value){

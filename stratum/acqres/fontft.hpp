@@ -19,39 +19,13 @@
 #include <petri/tuple.hpp>
 #include <petri/variant.hpp>
 #include <petri/templates.hpp>
+#include <petri/defs>
 namespace ttf {
 
 typedef uint32_t IndexP;
 
 
-template <size_t s>
-struct uintTT {
-    uint8_t d[s];
-    template <typename uintT>
-    void fit(uintT r){
-        constexpr size_t size = sizeof(uintT) ;
-        for(size_t ss = 0 ; ss<s;ss++){
-            if(size>ss){ d[s-ss] = r & ((1<<8 -1)<<(ss*8));}
-        }
-    }
-    template <typename uintT>
-    uintT get(){
-                constexpr size_t size = sizeof(uintT) ;
-        uintT r=0;
-        for(size_t ss = 0 ; ss<s;ss++){
-            if(size>ss){r|=d[s-ss]<<(8*ss);}
-        }
-    };
-     operator size_t() {
-        return get<size_t>();
-    };
-    decltype(*this) operator=(size_t s){
-        fit<size_t>(s);return *this;
-    };
-    uintTT()
-
-};
-typedef uintTT<3> uint24_t ;
+typedef uintT<3> uint24_t ;
 
  typedef signed long Fixed; 
     typedef uint32_t Tag ;
@@ -129,34 +103,15 @@ template <> struct fontColorTupPos<1> {using ty = void;};
 
 
 struct colorFT  {
+    uint8 compositeMode;
     glm::uvec4 color;
     float alpha;
     uint16 numbaseGlyphs;
     uint16* baseGlyphs;
-    uint16 numLayers;
-    colrff<varValueBase,1>* layers;
-    uint16 numValues;
-    colrf<varValueBase>* values;
-
-    ALIAS_VECT(colrf<varValueBase>,uint16,layers,numLayers)
-    ALIAS_VECT(colrf<varValueBase>,uint16,values,numValues)
-    
-template < template <size_t > typename T,size_t s>
-struct Tcase {
-    static bool operator()(size_t is){
-        if(is==s){T<is>();return true;}
-        else {Tcase<T,sS...>()}
-    };
-};
+    std::vector<colrff<varValueBase,1>> layers;
+    std::vector<colrf<varValueBase>> values;
 
 
-template < template <size_t > typename T>
-struct Tcase {
-    static bool operator()(size_t is){
-        if(is==s){T<is>();return true;}
-        else {return false;}
-    };
-};
 
     template <typename charT,typename COLRFty>
     mod::fontColor<charT> get(COLRFty& colrft){
@@ -167,6 +122,9 @@ struct Tcase {
 
          #define COMMACRO(n) ,n
          size_t indV;
+
+
+
          std::vector<size_t> colGlyphs;
          size_t curColGlyph=0;
          std::vector<std::pair<size_t,size_t>> composePaints;
@@ -174,31 +132,39 @@ struct Tcase {
          std::vector<std::pair<size_t,size_t>> inds;
           size_t curTup ;
 
-         auto lamcase = [&]<size_t s>(){ptype<n>::ty h= pri::get<n-1>(values[indV].f).getPaint();
-            std::vector<ptype<n>::ty& ref =pri::get<std::vector<ptype<n>::ty>>(r.tupvec) 
-            ref.push_back(h) ;  r.layers.back().push_back(mod::fontColor::layerE(fontColorTupPos<n>(),ref.size()-1));
-            inds.push_back(std::pair<size_t,size_t>(fontColrTupPos<n>(),pri::get<fontColrTupPos<n>()>(r.tupvec).size()-1)) ;
-            curTup =fontColrTupPos<n>();
-            continue;}
+
+
+
+         auto lamcase = [&]<size_t s>(size_t i){ 
+             ptype<n>::ty h= pri::get<n-1>(values[indV].f).getPaint();
+             std::vector<ptype<n>::ty& ref =pri::get<std::vector<ptype<n>::ty>>(r.tupvec) 
+             ref.push_back(h) ;  r.layers.back().push_back(mod::fontColor::layerE(fontColorTupPos<n>(),ref.size()-1));
+             inds.push_back(std::pair<size_t,size_t>(fontColrTupPos<n>(),pri::get<fontColrTupPos<n>()>(r.tupvec).size()-1)) ;
+             curTup =fontColrTupPos<n>();
+            
+            return ;}
                 
             auto swlam = [&](){
-                if(Tcase<lamcase CFXMACRO(COMMACRO)>()){return;};
+                if(pri::Tcase<lamcase CFXMACRO(COMMACRO)>(values[indV].format)){return;};
                 switch(values[indV].format){
 
                     case 10 :{
                         colrff<varValueBase,10>& h = pri::get<10>(values[indV].f);
                         mod::fontColor::ColGlyph g(h.glyphID);
-                        r.colglyph.push_back(g) ;
-                        colGlyphs.push_back(h.paintOffset);continue;}
+                        // r.Colglyph.push_back(g) ;
+                    pri::get<std::vector<mod::fontColor::ColGlyph>>(r.tupvec).push_back(g); 
+                        colGlyphs.push_back(h.paintOffset);inds.push_back(std::pair<size_t,size_t>(1,pri::get<1>(r.tupvec).size()-1)),continue;}
                     case 11 :{
 colrff<varValueBase,11>& h = pri::get<11>(values[indV].f);
-                    mod::fontColor::SubGlyph g(h.glyphID);r.subGlyph.push_back(g) ;continue;}
-
+                    mod::fontColor::SubGlyph g(h.glyphID);
+                    // r.subGlyph.push_back(g) ;
+                    pri::get<std::vector<mod::fontColor::SubGlyph>>(r.tupvec).push_back(g); inds.push_back(std::pair<size_t,size_t>(0,pri::get<0>(r.tupvec).size()-1));
+                    continue;}
                     case 32 :{
                         colrff<varValueBase,32>& h = pri::get<11>(values[indV].f);
                         composePaints.push_back(std::pair<size_t,size_t>(h.sourcePaintOffset,h.backfropPaintOffset)) ;
-                        // pri::get<std::vector<ptype<32>::ty>>(r.tupvec) 
-                        r.composePts.push_back(h); 
+                        pri::get<std::vector<ptype<32>::ty>>(r.tupvec).push_back(mod::fontColor::compose(h.compositeMode)); inds.push_back(std::pair<size_t,size_t>(2,pri::get<2>(r.tupvec).size()-1)); 
+                        // r.composePts.push_back(h); 
                         continue;}
                 }
             }
@@ -207,29 +173,47 @@ colrff<varValueBase,11>& h = pri::get<11>(values[indV].f);
                     pri::get<std::vector<mod::fontColor<ColGlyph>>(r.tupVec)[curColGlyph].lyr=mod::fontColor::layerE(curTup, pri::get(curTup,r.tupvec).size()-1);
                 };
             }
-         for(size_t s =0;s<numLayers;s++){
-         auto lyrlam =[&](colrff<varValueBase,1>& lyr){
-            if(lyr.firstLayerIndex>numLayers){
-                size_t p = lyr.firstLayerIndex-numLayers;s++;
-                for(size_t j=0;j<p;j++){
-                    lyrlam(layers[s])
-                    for(indV=lyr.firstLayerIndex;indV<lyt.numLayers;indV++){
-                       swlam();incr();  }                   
-                    s++; 
-                };
-            }
-            else {
-            for( indV=lyr.firstLayerIndex;indV<lyr.numLayers;indV++){
-                    swlam();
-                };
-            }
+         for(size_t s =0;s<layers.size();s++){
+            colrff<varValueBase,1>& lyr = layers[s];
 
+            if(lyr.firstLayerIndex>layers.size()){
+                size_t p = lyr.firstLayerIndex-layers.size();s++;
+                r.layers.push_back(mod::fontColor::indexE(-p,lyr.layers.size()));      
+            
             }
-            r.layers.push_back(pri::list<mod::fontColor::layerE>());
-            lyrlam(layers[s]);
+            else { r.layers.push_back(mod::fontColor::layerE(lyr.firstLayerIndex,lyr.layers.size()));}
+
+         }
+         for(indV=0;s<values.size();indV++){swlam()};
+
+         for( std::pair<size_t,size_t>& i :inds){
+            r.index.push_back(i.first,i.second)
+         };
+        
+
+        for(size_t it =0;it<inds.size();it++){
+            std::pair<size_t,size_t>& iter =  inds[it];
+            if(it==colGlyphs[curColGlyph]){
+                pri::get<1>(r.tupvec)[curColGlyph].lyr=mod::fontColor::layerE(iter.first,iter.second);curColGlyph++;
+            };
+        };
+        for(size_t it=0;it<composePaints.size();it++){
+            size_t src = composePaints[it].first;
+            size_t dst = composePaints[it].second;
+            pri::get<2>(r.tupvec)[it].src=mod::fontColor::layerE(inds[src].first,inds[src].second);
+            pri::get<2>(r.tupvec)[it].b=mod::fontColor::layerE(inds[dst].first,inds[dst].second);
+        };
+        size_t s=0;
+        for(mod::fontColor::layerE& it : r.layers){
+            if(it.posTup>=0){
+                it.posTup = inds[it.posTup];
+                }
+            
+            s++;
 
         };
     };
+
 };
 struct glyfft{
     uint16 glyphID;
@@ -389,39 +373,26 @@ for(int i=0;i<sizeContour;i++){
 return gh;
 };
 };
-struct glyfftprim { // To convert to primitives
-    coord pos;
-    int16 nStrips;
-    int16 nFans;
 
-    int16* nStripsPts;//Triangle+2
-    int16* nFansPts;//
-
-    glm::ivec2* strips;//nStripsPts 
-    glm::ivec2* fan; // n
-    
-    colorFT* colors;//[nstrips]
-
-
-    void from(glyfft g){
-
-    };
-};  
-
-template <typename charT>
-struct ftrange {
-    glyfft* range;
+template <typename charT , typename ty>
+struct ftrangeT {
+    ty* range;
     charT start,end;
     uint16 size;
     
     uint16 startGlyphID;
 
-    glyfft* get(charT c){
+    ty* get(charT c){
         if(c>=start and c<=end){return &(glyfft[c-start]);}
         return &(range[0]);
     };
 };
 
+template <typename charT>
+using ftrange = ftrangeT<charT,glyfft>;
+
+template <typename charT>
+using bmrange = ftrangeT<charT,glyfbm>;
 
 #define TAG_MEMBER(macro)\
 macro("avar",avar)\
@@ -708,22 +679,66 @@ return Sum;
     #include "ft/vvar.hpp" //[x]
 
         constexpr bool wcb = std::is_same<wchar_t,char16_t>::value ; 
-        using cVec = std::vector<ftrange<char>> cglyfs ;   ; 
-        using wcVec = std::vector<ftrange<wchar_t>> wcglyf;  ;
-        using c16Vec = std::enable_if< wcb, std::vector<ftrange<char16_t>>>::type  c16glyf;  
-        using c32Vec = std::vector<std::vector<char32_t>> c32glyf;   
+
+        using bcVec = std::vector<bmrange<char>> ;
+        using bwcVec = std::vector<bmrange<wchar_t>> ;
+        using bc16Vec = std::enable_if< wcb, std::vector<bmrange<char16_t>>>::type  ; 
+        using bc32Vec = std::vector<bmrange<char32_t>> ; 
+
+bcVec bcglyfs; 
+bwcVec bwcglyf; 
+bc16Vec bc16glyf; 
+bc32Vec  bc32glyf; 
+
+bool bloaded;
+template <typename charT>
+struct bvectype {
+    using type = void;
+    constexpr type font::* ptr  ;
+};
+template <>
+struct bvectype<char> {
+    using type = bcVec;
+    constexpr type font::* ptr= font::bcglyfs  ;
+};
+template <>
+struct bvectype<wchar_t> {
+    using type = bwcVec;
+    constexpr type font::* ptr= font::bwcglyfs  ;
+};
+template <>
+struct bvectype<char16_t> {
+    using type = bc16Vec;
+    constexpr type font::* ptr= font::bc16glyfs  ;
+};
+template <>
+struct bvectype<char32_t> {
+    using type = bc32Vec;
+    constexpr type font::* ptr= font::bc32glyfs  ;
+};
+
+        using cVec = std::vector<ftrange<char>> ;
+        using wcVec = std::vector<ftrange<wchar_t>> ;
+        using c16Vec = std::enable_if< wcb, std::vector<ftrange<char16_t>>>::type  ; 
+        using c32Vec = std::vector<std::vector<char32_t>> ; 
 
         template <typename charT>
         struct vectype {
-            using type = std::conditional<charT>
+            using type = void
             constexpr  type font::* ptr ; 
         }; 
+
+        bool floaded;
         cVec cglyfs ;
         wcVec wcglyf;
         c16Vec c16glyf;
         c32Vec c32glyf;
+
+
+bm
+
         template <> struct vectype <char> {
-             using type = cVec
+             using type = cVec;
             constexpr  type font::* ptr = &font::cglyf; }
         template <> struct vectype <wchar_t> {
              using type = wcVec;
@@ -840,7 +855,7 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
     
     if(opts.color and COLRI and CPALI){
         for(int i =0 ;i<s;i++){
-            // TODO
+            
         }  
     };
     
@@ -850,10 +865,12 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
         
        
         void loadAll(options opts=NULL){
+            
             uint16 numRanges;
             uint16* starts;uint16* ends;
             cmap().getRanges(&numRanges,starts,ends);
             loadGlyphs(numRanges,starts,ends,opts);
+            floaded = true;
         };
 
     void setGLYF(glyf& g){
@@ -869,9 +886,17 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
             loca().f.s=offs;}
             else { loca().f.l=offsets;};
     };
-    void setCOLR(COLR& c){//TODO
+    
+    void setCOLR(mod::ftPrimFull& c){//TODO
 
     };
+    void setLoca(mod::ftPrimFull& c);
+    void setCmap(mod::ftPrimFull& c);
+    void setGlyf(mod::ftPrimFull& c);
+
+    void set(mod::ftPrimFull& c){
+
+    }
 
     template <typename Tb>
     void addTable(Tb table,int index){

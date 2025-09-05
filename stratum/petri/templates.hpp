@@ -10,6 +10,26 @@ constexpr size_t sizeOf(){return sizeof(T);}
 
 namespace pri {
 
+    template < template <size_t > typename T,size_t s>
+struct Tcase {
+    static bool operator()(size_t is){
+        if(is==s){T<is>();return true;}
+        else {Tcase<T,sS...>()}
+    };
+};
+
+
+template < template <size_t > typename T>
+struct Tcase {
+    static bool operator()(size_t is){
+        if(is==s){T<is>();return true;}
+        else {return false;}
+    };
+};
+
+
+
+
     template <typename T, typename A , typename... Ts>
     struct is_one_of {
         static  constexpr bool value = std::is_same<T,A>::value || is_one_of<T,Ts...>::value ; 

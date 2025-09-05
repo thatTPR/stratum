@@ -19,7 +19,28 @@ FWORD   yMin;
 FWORD   xMax;
 FWORD   yMax;
 };
-using varIndBase = uint32;
+
+DeltaSetIndexMap* dsim;
+
+struct varIndBase : uint32;
+
+struct varValueBase {
+   uint32 mapCount;
+   uint8* mapValue;
+   varValueBase(varIndBase& r,size_t s){
+      mapValue = (*dsim)[r] ;
+      mapCount = s;
+   };
+    varValueBase(varIndBase& r){
+      mapValue = (*dsim)[r] ;
+      mapCount = dsim->getSize();
+   };
+};
+struct varIndBase : uint32 {
+   varValueBase get(){
+      return varValueBase(*this);
+   }
+};
 
 template <template <typename VarIndex> typename T>
 T<varIndBase> getVarInd(T<varIndBase>& s,DeltaSetIndexMap& dmap){
@@ -31,16 +52,6 @@ T<varIndBase> getVarInd(T<varIndBase>& s,DeltaSetIndexMap& dmap){
    return res;
 };
 
-DeltaSetIndexMap* dsim;
-
-struct varValueBase {
-   uint16 mapCount;
-   uint8* mapValue;
-   varValueBase(varIndBase& r,size_t s){
-      mapValue = (*dsim)[r] ;
-      mapCount = s;
-   };
-};
  
 template <typename VarIndex>
 struct ClipBoxFormat2 {
@@ -198,15 +209,6 @@ void getCpal(T* colf, colorFT* cf){
 };
 template <typename VarIndex>
 union colrfu;
-#define REPEAT(macro, n) macro(n)
-#define REPEAT(macro, n,...) REPEAT(macro,n)\
-REPEAT(macro,__VA__ARGS__)
-#define COLRF_GET_MEMBER(member) r.member =member;
-#define COLRF_GET(fn,...) \
-colrf##fn<varValueBase> get(){colrf##fn<varValueBase> r; \
-REPEAT(COLRF_GET_MEMBER,__VA__ARGS__) \
-return r;\
-}
 
 template <typename VarIndex,size_t s>
 struct colrff_base ;
@@ -335,7 +337,7 @@ colrff<varValueBase,3>  r;r.paletteIndex=CPAL().get(paletteIndex).get();r.alpha=
 
 
 template <typename VarIndex>
-using colrLineOffTy  = std::enable_if<std::is_same<VarIndex,varIndBase>::value,Offset24>::type;
+using colrLineOffTy  = std::conditional<std::is_same<VarIndex,varIndBase>::value,Offset24,size_t>::type;
 
 template <typename VarIndex>
 using varcolrLineOffTy  = std::conditional<std::is_same<VarIndex,varIndBase>::value,Offset24,VarColorLine<varIndValueBase>>::type;
@@ -354,7 +356,7 @@ FWORD   x2;
 FWORD   y2;
 ColorLine colorLine;
  
-// COLRF_GET(4,x0,y0,x1,y1,x2,y2,colorLine)
+// 
 };template<typename VarIndex> using colrff4=colrff<VarIndex,4> ; //PaintLinearGradient;
 
 colrff<varValueBase,4> colrff<varIndexBase,4>::get(){
@@ -402,7 +404,15 @@ CORLF_GET(5,x0,y0,x1,y1,x2,y2)
 
 colrff<varValueBase,5> colrff<varIndexBase,5>::get(){
    colrff<varValueBase,5> g;
-
+   g.colorLineOffset = this->colorLineOffset.get();
+   g.x0 = this->x0;
+   g.y0 = this->y0;
+   g.x1 = this->x1;
+   g.y1 = this->y1;
+   g.x2 = this->x2;
+   g.y2 = this->y2;
+   g.varIndexBase = this->varIndexBase.get();
+   g.colorLine = this->colorLine.get();return g;
 };
  ptype<5>::ty colrff<varValueBase,5>::getPaint(){
       ptype<5>::ty r;
@@ -432,17 +442,7 @@ USE_ACQRES(colrff<varIndBase,5>)
 
 
 
-template <>
-colrff5<varIndBase> getVarInd<colrff5>(colrff5<varIndBase>& s,DeltaSetIndexMap& dmap){
-   colrff5<varIndBase> res ;
-   std::memcpy(&(res.x0), ,sizeof ) 
-   std::memcpy(&(res.y0), ,sizeof ) 
-   std::memcpy(&(res.x1), ,sizeof ) 
-   std::memcpy(&(res.y1), ,sizeof ) 
-   std::memcpy(&(res.x2), ,sizeof ) 
-   std::memcpy(&(res.y2), ,sizeof ) 
 
-}
 template <typename VarIndex>
 struct colrff<VarIndex,6>{//PaintRadialGradient
 \\uint8   format;
@@ -454,9 +454,18 @@ FWORD   x1;
 FWORD   y1;
 UFWORD   radius1;
 ColorLine colorLine;
-COLRF_GET(6,x0,y0,radius0,x1,y1,radius1,colorLine)
 };template<typename VarIndex> using colrff6=colrff<VarIndex,6> ; //PaintRadialGradient:*/;
-colrff<varValueBase,6> colrff<varIndexBase,6>::get();
+colrff<varValueBase,6> colrff<varIndexBase,6>::get(){
+   colrff<varValueBase,5> g;
+   g.colorLineOffset = this->colorLineOffset.get();
+   g.x0 = this->x0;
+   g.y0 = this->y0;
+   g.radius0 = this->radius0;
+   g.x1 = this->x1;
+   g.y1 = this->y1;
+   g.radius1 = this->radius1;
+   g.colorLine = this->colorLine;
+};
  ptype<6>::ty colrff<varValueBase,6>::getPaint(){
    ptype<6>::ty r;r.startCenter=glm::vec2(this->x0,this->y0);
    ptype<6>::ty r;r.endCenter=glm::vec2(this->x1,this->y1);
@@ -487,9 +496,20 @@ FWORD   y1;
 UFWORD   radius1;
 VarIndex   varIndexBase;
 VarColorLine<VarIndex> colorLine;
-COLRF_GET(7,x0,y0,radius0,x1,y1,radius1)
+
 };template<typename VarIndex> using colrff7=colrff<VarIndex,7> ; //PaintVarRadialGradient:*/;
-colrff<varValueBase,7> colrff<varIndexBase,7>::get();
+colrff<varValueBase,7> colrff<varIndexBase,7>::get(){
+   colrff<varValueBase,7> g;
+   g.colorLineOffset = this->colorLineOffset.get();
+   g.x0 = this->x0;
+   g.y0 = this->y0;
+   g.radius0 = this->radius0;
+   g.x1 = this->x1;
+   g.y1 = this->y1;
+   g.radius1 = this->radius1;
+   g.varIndexBase = this->varIndexBase;
+   g.colorLine = this->colorLine.get();return g;
+}
  ptype<7>::ty colrff<varValueBase,7>::getPaint(){
    ptype<7>::ty r ; r.data.startCenter=glm::vec2(this->x0,this->y0);
    ptype<7>::ty r ; r.data.endCenter=glm::vec2(this->x1,this->y1);
@@ -520,9 +540,17 @@ FWORD   centerY;
 F2DOT14   startAngle;
 F2DOT14   endAngle;
 ColorLine colorLine;
-COLRF_GET(8,centerX,centerY,startAngle,endAngle,colorLine)
+
 };template<typename VarIndex> using colrff8=colrff<VarIndex,8> ; //PaintSweepGradient:*/;
-colrff<varValueBase,8> colrff<varIndexBase,8>::get();
+colrff<varValueBase,8> colrff<varIndexBase,8>::get(){
+   colrff<varValueBase,8> g;
+   g.colorLineOffset=this->colorLineOffset;
+   g.centerX=this->centerX;
+   g.centerY=this->centerY;
+   g.startAngle=this->startAngle;
+   g.endAngle=this->endAngle;
+   g.colorLine=this->colorLine;return g;
+};
  ptype<8>::ty colrff<varValueBase,8>::getPaint(){
    ptype<8>::ty r;
    r.data.center = glm::vec2(this->centerX,this->centerY);
@@ -550,9 +578,16 @@ F2DOT14   startAngle;
 F2DOT14   endAngle;
 VarIndex   varIndexBase;
 VarColorLine<VarIndex> colorLine;
-COLRF_GET(9,centerX,centerY,startAngle,endAngle,colorLine)
+
 };template<typename VarIndex> using colrff9=colrff<VarIndex,9> ; //PaintVarSweepGradient:*/;
-colrff<varValueBase,9> colrff<varIndexBase,9>::get();
+colrff<varValueBase,9> colrff<varIndexBase,9>::get(){
+   colrff<varValueBase,9> g;g.centerX=this->centerX;
+   g.centerY=this->centerY;
+   g.startAngle=this->startAngle;
+   g.endAngle=this->endAngle;
+   g.varIndexBase=this->varIndexBase;
+   g.colorLine=this->colorLine.get();return g;
+};
  ptype<9>::ty colrff<varValueBase,9>::getPaint(){
       ptype<8>::ty r;
    r.data.data.center = glm::vec2(this->centerX,this->centerY);
@@ -592,23 +627,23 @@ using PAINT_OFFSET = typename std::conditional<std::is_same<VarIndex,varIndBase>
 template <typename VarIndex>
  struct colrff<VarIndex,10>{//PaintGlyph
 \\uint8   format;
-PAINT_OFFSET paintOffset;
+PAINT_OFFSET<VarIndex> paintOffset;
 uint16   glyphID;
 // SpecialHandle
-COLRF_GET(10,paintOffset,glyphID)
-
 template <typename charT>
 mod::fontColor<charT>::SubGlyph getPaint(){return mod::fontColor<charT>::SubGlyph(glyhID);};
 colrfu* get(colrf<varIndBase>* start,uint16 index){return (&start[index]+paintOffset);};
 };template<typename VarIndex> using colrff10=colrff<VarIndex,10> ; //PaintGlyph:*/;
-colrff<varValueBase,10> colrff<varIndexBase,10>::get();
+colrff<varValueBase,10> colrff<varIndexBase,10>::get(){colrff<varValueBase,10> g;
+g.glyphID=this->glyphID;
+   return g ;}
 //  ptype<10>::ty colrff<varValueBase,10>::getPaint(){}
 template <typename VarIndex>
 struct colrff<VarIndex,11>{//PainColorGlyph
 \\uint8   format;
 uint16   glyphID; // BaseGlyphList Glyph ID
 };template<typename VarIndex> using colrff11=colrff<VarIndex,11> ; //PaintColrGlyph:*/;
-colrff<varValueBase,11> colrff<varIndexBase,11>::get();
+colrff<varValueBase,11> colrff<varIndexBase,11>::get(){colrff<varValueBase,11> g;return g ;}
 //  ptype<11>::ty colrff<varValueBase,11>::getPaint(){}
  struct Affine2x3  {
 Fixed   xx;
@@ -660,11 +695,14 @@ template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
 struct colrff<VarIndex,12>{//PaintTransform, 
 \\uint8   format;
 PAINT_OFFSET<VarIndex>  paintOffset;
-colrLineOffTy <VarIndex> transformOffset; // Stores Index to value in VarValueBase
-Affine2x3 transform;
-COLRF_GET(12,paintOffset,transform)
+colrLineOffTy<VarIndex> transformOffset; // Stores Index to value in VarValueBase
+Affine2x3               transform;
+
 };template<typename VarIndex> using colrff12=colrff<VarIndex,12> ; //PaintTransform:*/;
-colrff<varValueBase,12> colrff<varIndexBase,12>::get();
+colrff<varValueBase,12> colrff<varIndexBase,12>::get(){colrff<varValueBase,12> g;
+   g.transformOffset=this->transformOffset;
+   g.transform=this->transform;
+   return g ;}
  ptype<12>::ty colrff<varValueBase,12>::getPaint(){return this->transform.getPaint();}
 ACQRES(colrff<varIndBase,12>){
    one(f.paintOffset);
@@ -678,9 +716,12 @@ struct colrff<VarIndex,13>{//PaintVarTransform
 PAINT_OFFSET<VarIndex>  paintOffset;
 Offset24 transformOffset; // Stores Index to value in VarValueBase
 VarAffine2x3<VarIndex> transform;
-COLRF_GET(13,paintOffset,transform)
+
 };template<typename VarIndex> using colrff13=colrff<VarIndex,13> ; //PaintVarTransform:*/;
-colrff<varValueBase,13> colrff<varIndexBase,13>::get();
+colrff<varValueBase,13> colrff<varIndexBase,13>::get(){colrff<varValueBase,13> g;
+   g.transformOffset = this->transformOffset;
+   g.transform = this->transform.get();
+   return g ;}
  ptype<13>::ty colrff<varValueBase,13>::getPaint(){return this->transform.getPaint();}
 ACQRES(colrff<varIndBase,13>){
    one(f.paintOffset);
@@ -695,9 +736,11 @@ struct colrff<VarIndex,14>{//PaintTranslate,
 PAINT_OFFSET<VarIndex>  paintOffset;
 FWORD   dx;
 FWORD   dy;
-COLRF_GET(14,dx,dy)
+
 };template<typename VarIndex> using colrff14=colrff<VarIndex,14> ; //PaintTranslate:*/;
-colrff<varValueBase,14> colrff<varIndexBase,14>::get();
+colrff<varValueBase,14> colrff<varIndexBase,14>::get(){colrff<varValueBase,14> g;
+   g.dx=this->dx;g.dy=this->dy;
+   return g ;}
  ptype<14>::ty colrff<varValueBase,14>::getPaint(){
    return glm::vec(this->dx,this->dy);  
 }
@@ -710,9 +753,13 @@ PAINT_OFFSET<VarIndex>  paintOffset;
 FWORD   dx;
 FWORD   dy;
 VarIndex   varIndexBase;
-COLRF_GET(15,dx,dy)
+
 };template<typename VarIndex> using colrff15=colrff<VarIndex,15> ; //PaintVarTranslate:*/;
-colrff<varValueBase,15> colrff<varIndexBase,15>::get();
+colrff<varValueBase,15> colrff<varIndexBase,15>::get(){colrff<varValueBase,15> g;
+   g.dx=this->dx;
+   g.dy=this->dy;
+   g.varIndexBase=this->varIndexBase.get();
+   return g ;}
  ptype<15>::ty colrff<varValueBase,15>::getPaint(){
    ptype<15>::ty g;g.data = glm::vec(this->dx,this->dy);
    struct {
@@ -729,9 +776,9 @@ struct colrff<VarIndex,16>{//PaintScale
 PAINT_OFFSET <VarIndex>   paintOffset;
 F2DOT14   scaleX;
 F2DOT14   scaleY;
-COLRF_GET(16,scalex,scaley)
+
 };template<typename VarIndex> using colrff16=colrff<VarIndex,16> ; //PaintScale:*/;
-colrff<varValueBase,16> colrff<varIndexBase,16>::get();
+colrff<varValueBase,16> colrff<varIndexBase,16>::get(){colrff<varValueBase,16> g{ this->scaleX, this->scaleY};return g ;}
  ptype<16>::ty colrff<varValueBase,16>::getPaint(){return glm::vec2(alphaval(this->scaleX),alphaval(this->scaleY));}
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
 struct colrff<VarIndex,17>{//PaintVarScale
@@ -740,10 +787,11 @@ PAINT_OFFSET<VarIndex>  paintOffset;
 F2DOT14   scaleX;
 F2DOT14   scaleY;
 VarIndex   varIndexBase;
-COLRF_GET(17,scalex,scaley)
+
 };template<typename VarIndex> using colrff17=colrff<VarIndex,17> ; //PaintVarScale:*/;
 
-colrff<varValueBase,17> colrff<varIndexBase,17>::get();
+colrff<varValueBase,17> colrff<varIndexBase,17>::get(){colrff<varValueBase,17> 
+   g{this->scaleX,this->scaleY,this->varIndexBase.get()};return g ;}
  ptype<17>::ty colrff<varValueBase,17>::getPaint(){
       ptype<17>::ty g;g.data =  glm::vec2(alphaval(this->scaleX),alphaval(this->scaleY));
       struct {
@@ -766,8 +814,15 @@ F2DOT14   scaleX;
 F2DOT14   scaleY;
 FWORD   centerX;
 FWORD   centerY;
-COLRF_GET(18,paintOffset,scaleX,scaleY,centerX,centerY)
+
 };//PaintScaleAroundCenter:*/;
+colrff<varValueBase,18> colrff<varIndexBase,18>::get(){return colrff<varValueBase,17>{
+   this->scaleX,this->scaleY,this->centerX,this->centerY};}
+ptype<18>::ty colrff<varValueBase,18>::getPaint(){
+   ptype<18>::ty g;g.d =  glm::vec2(alphaval(this->scaleX),alphaval(this->scaleY));g.center = glm::vec2(this->centerX,this->centerY);
+   return g; 
+
+ }
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
  struct colrff<VarIndex,19>{//PaintVarScaleAroundCente
 \\uint8   format;
@@ -777,11 +832,12 @@ F2DOT14   scaleY;
 FWORD   centerX;
 FWORD   centerY;
 VarIndex   varIndexBase;
-COLRF_GET(19,paintOffset,scaleX,scaleY,centerX,centerY)
+
 };template<typename VarIndex> using colrff19=colrff<VarIndex,19> ; //PaintVarScaleAroundCenter:*/;
-colrff<varValueBase,19> colrff<varIndexBase,19>::get();
+colrff<varValueBase,19> colrff<varIndexBase,19>::get(){colrff<varValueBase,19> g{
+         this->scaleX,   this->scaleY,   this->centerX,   this->centerY,   this->varIndexBase.get()};return g ;}
  ptype<19>::ty colrff<varValueBase,19>::getPaint(){
-   ptype<19>::ty g;g.data =  glm::vec2(alphaval(this->scaleX),alphaval(this->scaleY));g.center = glm::vec2(this->centerX,this->centerY);
+   ptype<19>::ty g;g.data.d =  glm::vec2(alphaval(this->scaleX),alphaval(this->scaleY));g.data.center = glm::vec2(this->centerX,this->centerY);
       struct {
 F2DOT14   scaleX;
 F2DOT14   scaleY;
@@ -790,10 +846,10 @@ FWORD   centerY;
       }*x;
       size_t s = this->varIndexBase.mapCount/((sizeof(F2DOT14)+sizeof(FWORD))*2);
    x=new decltype(*x)[s];std::memcpy(x,this->varIndexBase.mapValues,this->varIndexBase.mapCount);g.vars.resize(s)
-   for(size_t i=0;i<s;i++){g.vars[i]={glm::vec2(x[i].dx,x[i].dy),glm::vec2(x[i].centerX,x[i].centerY)}
+   for(size_t i=0;i<s;i++){g.vars[i]={glm::vec2(x[i].dx,x[i].dy),glm::vec2(x[i].centerX,x[i].centerY)}}
    return g; 
-}
 
+ }
 
 
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
@@ -801,9 +857,9 @@ struct colrff<VarIndex,20>{//PaintScaleUniform
 \\uint8   format;
 PAINT_OFFSET <VarIndex>   paintOffset;
 F2DOT14   scale;
-COLRF_GET(20,paintOffset,scale)
+
 };template<typename VarIndex> using colrff20=colrff<VarIndex,20> ; //PaintScaleUniform:*/;
-colrff<varValueBase,20> colrff<varIndexBase,20>::get();
+colrff<varValueBase,20> colrff<varIndexBase,20>::get(){colrff<varValueBase,20> g{this->scale};return g ;}
  ptype<20>::ty colrff<varValueBase,20>::getPaint(){float r=alphaval(this->scale);
    return glm::vec2(r,r);
 }
@@ -813,9 +869,9 @@ struct colrff<VarIndex,21>{//PaintVarScaleUniform
 PAINT_OFFSET<VarIndex>  paintOffset;
 F2DOT14   scale;
 VarIndex   varIndexBase;
-COLRF_GET(21,paintOffset,scale)
+
 };template<typename VarIndex> using colrff21=colrff<VarIndex,21> ; //PaintVarScaleUniform:*/;
-colrff<varValueBase,21> colrff<varIndexBase,21>::get();
+colrff<varValueBase,21> colrff<varIndexBase,21>::get(){colrff<varValueBase,21> g{this->scale,this->varIndexBase.get()};return g ;}
  ptype<21>::ty colrff<varValueBase,21>::getPaint(){
    ptype<21>::ty g;float r = alphaval(this->scale);g.d = glm::vec2(r,r);
     F2DOT14 *x;
@@ -833,10 +889,10 @@ PAINT_OFFSET<VarIndex>  paintOffset;
 F2DOT14   scale;
 FWORD   centerX;
 FWORD   centerY;
-COLRF_GET(22,paintOffset,scale,centerX,centerY)
+
 
 };template<typename VarIndex> using colrff22=colrff<VarIndex,22> ; //PaintScaleUniformAroundCenter:*/;
-colrff<varValueBase,22> colrff<varIndexBase,22>::get();
+colrff<varValueBase,22> colrff<varIndexBase,22>::get(){colrff<varValueBase,22> g{this->scale,this->centerX,this->centerY};return g ;}
  ptype<22>::ty colrff<varValueBase,22>::getPaint(){
        ptype<22>::ty g; float r =alphaval(this->scale);g.d = glm::vec2(r,r);g.center=glm::vec2(this->centerX,this->centerY);return g;
   
@@ -849,10 +905,11 @@ F2DOT14   scale;
 FWORD   centerX;
 FWORD   centerY;
 VarIndex varIndexBase;
-COLRF_GET(23,paintOffset,scale,centerX,centerY)
+
 } ;//PaintVarScaleUniformAroundCenter:*/;
 template<typename VarIndex> using colrff23=colrff<VarIndex,23> ; //PaintRotate:*/;
-colrff<varValueBase,23> colrff<varIndexBase,23>::get();
+colrff<varValueBase,23> colrff<varIndexBase,23>::get(){colrff<varValueBase,23> g{
+   this->scale,this->centerX,this->centerY,this->varIndexBase.get()};return g ;}
  ptype<23>::ty colrff<varValueBase,23>::getPaint(){   
    ptype<23>::ty g;g.data.d = alphaval(this->scale);
    g.data.center=glm::vec2(this->centerX,this->centerY);
@@ -874,10 +931,10 @@ struct colrff<VarIndex,24>{//PaintRotate
 \\uint8   format;
 PAINT_OFFSET<VarIndex>  paintOffset;
 F2DOT14   angle;
-COLRF_GET(24,paintOffset,angle)
+
 
 };template<typename VarIndex> using colrff24=colrff<VarIndex,24> ; //PaintRotate:*/;
-colrff<varValueBase,24> colrff<varIndexBase,24>::get();
+colrff<varValueBase,24> colrff<varIndexBase,24>::get(){colrff<varValueBase,24> g{this->angle};return g ;}
  ptype<23>::ty colrff<varValueBase,24>::getPaint(){   return alphaval(this->angle);}
 
 
@@ -887,9 +944,9 @@ struct colrff<VarIndex,25>{//PaintVarRotate
 PAINT_OFFSET<VarIndex>  paintOffset;
 F2DOT14   angle;
 VarIndex   varIndexBase;
-COLRF_GET(25,paintOffset,angle)
+
 };template<typename VarIndex> using colrff25=colrff<VarIndex,25> ; //PaintVarRotate:*/;
-colrff<varValueBase,25> colrff<varIndexBase,25>::get();
+colrff<varValueBase,25> colrff<varIndexBase,25>::get(){colrff<varValueBase,25> g{this->angle,this->varIndexBase.get()};return g ;}
  ptype<25>::ty colrff<varValueBase,25>::getPaint(){
    ptype<25>::ty g;g.data = alphaval(this->angle);
    F2DOT14 *x;
@@ -909,9 +966,10 @@ PAINT_OFFSET<VarIndex>  paintOffset;
 F2DOT14   angle;
 FWORD   centerX;
 FWORD   centerY;
-COLRF_GET(26,paintOffset,angle,centerX,centerY)
+
 };template<typename VarIndex> using colrff26=colrff<VarIndex,26> ; //PaintRotateAroundCenter:*/;
-colrff<varValueBase,26> colrff<varIndexBase,26>::get();
+colrff<varValueBase,26> colrff<varIndexBase,26>::get(){colrff<varValueBase,26> g{
+   this->angle,this->centerX,this->centerY,};return g ;}
  ptype<26>::ty colrff<varValueBase,26>::getPaint(){
    ptype<26>::ty g;g.d=alphaval(this->angle);g.center=glm::vec2(this->centerX,this->centerY);
    return g;
@@ -924,9 +982,10 @@ F2DOT14   angle;
 FWORD   centerX;
 FWORD   centerY;
 VarIndex   varIndexBase;
-COLRF_GET(24,paintOffset,angle,centerX,centerY)
+
 };template<typename VarIndex> using colrff27=colrff<VarIndex,27> ; //PaintVarRotateAroundCenter:*/;
-colrff<varValueBase,27> colrff<varIndexBase,27>::get();
+colrff<varValueBase,27> colrff<varIndexBase,27>::get(){colrff<varValueBase,27> g{
+   this->angle,this->centerX,this->centerY,this->varIndexBase.get()};return g ;}
  ptype<27>::ty colrff<varValueBase,27>::getPaint(){
     ptype<27>::ty g;g.data.d=alphaval(this->angle);g.data.center=glm::vec2(this->centerX,this->centerY);
    
@@ -946,9 +1005,10 @@ struct colrff<VarIndex,28>{//PaintSkew
 PAINT_OFFSET<VarIndex>  paintOffset;
 F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
-COLRF_GET(28,paintOffset,xSkewAngle,ySkewAngle)
+
 };template<typename VarIndex> using colrff28=colrff<VarIndex,28> ; //PaintSkew:*/;
-colrff<varValueBase,28> colrff<varIndexBase,28>::get();
+colrff<varValueBase,28> colrff<varIndexBase,28>::get(){colrff<varValueBase,28> g{
+   this->xSkewAngle,this->ySkewAngle};return g ;}
  ptype<28>::ty colrff<varValueBase,28>::getPaint(){
    return glm::vec2(alphaval(this->xSkewAngle),alphaval(this->ySkewAngle));}
 template <typename VarIndex>// Uint32 or struct{uint16,uint8*}
@@ -958,9 +1018,10 @@ PAINT_OFFSET<VarIndex>  paintOffset;
 F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
 VarIndex   varIndexBase;
-COLRF_GET(29,paintOffset,xSkewAngle,ySkewAngle)
+
 };template<typename VarIndex> using colrff29=colrff<VarIndex,29> ; //PaintVarSkew:*/;
-colrff<varValueBase,29> colrff<varIndexBase,29>::get();
+colrff<varValueBase,29> colrff<varIndexBase,29>::get(){colrff<varValueBase,29> g{
+   this->xSkewAngle,this->ySkewAngle,this->varIndexBase.get()};return g ;}
  ptype<29>::ty colrff<varValueBase,29>::getPaint(){
    ptype<29>::ty g;g.data=glm::vec2(alphaval(this->xSkewAngle),alphaval(this->ySkewAngle));
    struct {
@@ -981,9 +1042,10 @@ F2DOT14   xSkewAngle;
 F2DOT14   ySkewAngle;
 FWORD   centerX;
 FWORD   centerY;
-COLRF_GET(30,paintOffset,xSkewAngle,ySkewAngle,centerX,centerY)
+
 };template<typename VarIndex> using colrff30=colrff<VarIndex,30> ; //PaintSkewAroundCenter:*/;
-colrff<varValueBase,30> colrff<varIndexBase,30>::get();
+colrff<varValueBase,30> colrff<varIndexBase,30>::get(){colrff<varValueBase,30> g{
+   this->xSkewAngle,this->ySkewAngle,this->centerX,this->centerY};return g ;}
  ptype<30>::ty colrff<varValueBase,30>::getPaint(){
    return {glm::vec2(alphaval(this->xSkewAngle),alphaval(this->ySkewAngle)),glm::vec2(this->centerX,this->centerY)};
 }
@@ -996,9 +1058,10 @@ F2DOT14   ySkewAngle;
 FWORD   centerX;
 FWORD   centerY;
 VarIndex   varIndexBase;
-COLRF_GET(31,paintOffset,xSkewAngle,ySkewAngle,centerX,centerY)
+
 };template<typename VarIndex> using colrff31=colrff<VarIndex,31> ; //PaintVarSkewAroundCenter:*/;
-colrff<varValueBase,31> colrff<varIndexBase,31>::get();
+colrff<varValueBase,31> colrff<varIndexBase,31>::get(){colrff<varValueBase,31> g{
+   this->xSkewAngle,this->ySkewAngle,this->centerX,this->centerY,this->varIndexBase.get()};return g ;}
  ptype<31>::ty colrff<varValueBase,31>::getPaint(){
       ptype<31>::ty g;g.data={glm::vec2(alphaval(this->xSkewAngle),alphaval(this->ySkewAngle)),glm::vec2(this->centerX,this->centerY)};
 
@@ -1051,9 +1114,12 @@ struct colrff<VarIndex,32>{
 COND_IS_VARIND(Offset24,size_t) sourcePaintOffset;
 uint8   compositeMode;
 COND_IS_VARIND(Offset24,size_t) backdropPaintOffset;
-CORLF_GET(32,sourcePaintoffset,compositeMode,backdropPaintOffset)
 };template<typename VarIndex> using colrff32=colrff<VarIndex,32> ; //PaintComposite:*/;
-// colrff<varValueBase,32> colrff<varIndexBase,32>::get();
+colrff<varValueBase,32> colrff<varIndexBase,32>::get(){colrff<varValueBase,32> g;
+   g.sourcePaintOffset=this->sourcePaintOffset,
+   g.compositeMode=this->compositeMode,
+   g.backdropPaintOffset=this->backdropPaintOffset
+   return g ;}
  ptype<32>::ty colrff<varValueBase,32>::getPaint(){ }
 
 template <typename VarIndex,size_t... ss >
@@ -1065,7 +1131,22 @@ template <typename VarIndex>
 struct colrf {
    uint8 format;
    colrfu<varIndex> f;
+   
+   template <size_t s>
+   decltype(*this) operator=(colrff<VarIndex,s>& h ){pri::get<colrff<VarIndex,s>>(f) = h;return *this;};
 };
+colrf<varValueBase> colrf<varIndexBase>::get(){
+   colrf<varValueBase> g;
+   auto lam = [&]<size_t s>(){
+      g.format = s; pri::get<colrff<varValueBase,s>>(g.f)=pri::get<colrff<varIndexBase,s>(this->f).get();
+   }
+   if(pri::Tcase<lam,1, 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32>
+      (this->format)){
+         return g;
+      }
+
+};
+
 #define SWCASE(n) case n : {one(f.f##n);};
 
 ACQRES(colrf<varIndBase>){
@@ -1090,7 +1171,7 @@ Offset32   paintOffset;
  struct BaseGlyphList{
 uint32   numBaseGlyphPaintRecords;
 BaseGlyphPaintRecord*   baseGlyphPaintRecords;//[numBaseGlyphPaintRecords]
-colrf<varIndBase>* paintTables;
+colrf<varIndBase>* paintTables;// TODO probably only in layerlist
 };
 ACQRES(BaseGlyphList){
 one(f.numBaseGlyphPaintRecords);
@@ -1132,19 +1213,35 @@ uint16   numLayerRecords;
 // OffsetTables;
 BaseGlyph* baseGlyphRecords;
 Layer* layerRecords ;
-   colorFT get(uint16 gid){
-      colorFT result ;
-      auto cmpBg =  [](BaseGlyph& a  ){BaseGlyph res ;res.glyphID=gid;return res.glyphID==a.glyphID ? 0 : (res.glyphID<a.glyphID)? -1 : 1 ;}
 
-      BaseGlyph Bg = bsearch<BaseGlyph>(baseGlyphRecords,numBaseGlyphRecords,cmpBg);       
-      // GetNumGlyphs;
-      result.baseGlyphs=new colrf<varValueBase>[result.numbaseGlyphs];
-      for(int i=res.firstLayerIndex;i<res.numLayers-1+res.firstLayerIndex;i++)
-      {
-         result.baseGlyphs[i].format=2;
-         result.baseGlyphs[i].f.f2.paletteIndex= CPAL().get(layerRecords[i].paletteIndex).get();  
-      }
-      return result;
+
+
+   colorFT get(uint16 gid){
+      colorFT r ;
+      size_t firstLyr;size_t numLyr ;
+      for(size_t s=0;s<numBaseGlyphRecords;s++){
+         if(baseGlyphRecords[s].glyphID == gid){
+            firstLyr= baseGlyphRecords[s].firstLayerIndex;
+            numLyr= baseGlyphRecords[s].numLayers;break;
+         };
+      };
+      r.values.resize(numLyr);
+      r.numValues = numLyr;
+      r.numLayers = 1;
+      r.layers.resize(1);
+      r.layers[0].numLayers=1;
+      r.firstLayerIndex=0;
+
+      std::vector<colrff<varValueBase,2>> ra;
+      for(size_t n = firstLyr;n<firstLyr+numLyr;n++){
+         colrff<varIndexBase,2> t;t.paletteIndex = layerRecords[n].paletteIndex; 
+         ra.push_back(t.get());
+      };
+      size_t s=0;
+      for( colrff<varValueBase,2>& it : r){
+         pri::get<colrff<varValueBase,2>&>(r.values[s].f) = it;s++;
+      };
+
    };
  
 };
@@ -1177,86 +1274,49 @@ LayerList layerList;
 ClipList clipList;
 DeltaSetIndexMap deltaSetIndexMap;
 ItemVariationStore itemVariationStore;
+   #define CFXMACRO(x)  x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)   x(12) x(13) x(14) x(15) x(16) x(17) x(18) x(19) x(20) x(21) x(22) x(23) x(24) x(25) x(26) x(27) x(28) x(29) x(30) x(31) 
+         #define CFIXMACRO(x) x(1) x(10) x(11) x(32)
 
-
-colrf<varValueBase> get(colrf<varIndBase>& cfvar){
-   dsim = &deltaSetIndexMap;
-   colrf<varValueBase> r;r.format=cfvar.format;
-  
-      #define CFXMACRO(x) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9) x(10) x(11) x(12) x(13) x(14) x(15) x(16) x(17) x(18) x(19) x(20) x(21) x(22) x(23) x(24) x(25) x(26) x(27) x(28) x(29) x(30) x(31) x(32)    switch (cfvar.format)
-      #define CFIXMACRO(x) x(1) x(10) x(11)
-      
-      #define CFXMACRO(x)
-      #define CASE_CFSW(n) case n : {pri::get<n>(r.f) = pri::get<n>(cfvar.f).get();}
-   switch (cfvar.format)
-   {
-      CFXMACRO(CASE_CFSW)
-   }
-return r;
-};
-colrf<varValueBase>* getLayers(colrff<varIndBase,1>& f , size_t* s){
-   *s=f.numLayers;
-   colrf<varValueBase>* r = new colrf<varValueBase>[*s];
-   for(int i=f.firstLayerIndex;i<*s;i++){
-      r[i]=get(layerList.paintTables[i]);
-   } ;
-};
-varValueBase varIndexBaseCopy(uint32 s){
-varValueBase b;
-switch(deltaSetIndexMap.format){
-   case 0 :{b.mapValue =deltaSetIndexMap.f0.mapData+s;b.mapCount=deltaSetIndexMap.f0.mapCount *( ((deltaSetIndexMap.f0.entryFormat & MAP_ENTRY_SIZE_MASK) >> 4) + 1); };
-   case 1 :{b.mapValue =deltaSetIndexMap.f1.mapData+s;b.mapCount=deltaSetIndexMap.f1.mapCount *( ((deltaSetIndexMap.f1.entryFormat & MAP_ENTRY_SIZE_MASK) >> 4) + 1); }
-};              
-};
-
-VarColorLine<varValueBase> varColorLineCopy(VarColorLine<varIndBase>& l){
-   VarColorLine<varValueBase> r;
-   r.extend=l.extend;r.numStops=l.numStops;
-   r.colorStops=new VarColorStop<varValueBase>[r.numStops];
-   for(int i=0;i<r.numStops;i++){
-      r.colorStops[i].paletteIndex=CPAL().get(l.colorStops[i].paletteIndex).get();
-      r.colorStops[i].alpha=alphaval(l.colorStops[i].alpha);
-      r.colorStops[i].varIndexBase=varColorLineCopy(l.colorStops[i].varIndexBase);
-   }
-}
+         #define COMMACRO(n) ,n
 
 colorFT get( uint16 gid){
       dsim = &deltaSetIndexMap;
-     colorFT result ;
-      if(numBaseGlyphRecords>0){
+     colorFT r ;
+      size_t firstLyr;size_t numLyr ;size_t firstOff;
+      for(size_t s=0;s<baseGlyphList.numBaseGlyphPaintRecords;s++){
+         if(baseGlyphList.baseGlyphPaintRecords[s].glyphID == gid){
+            firstOff= baseGlyphList.baseGlyphPaintRecords[s].paintOffset;
+            break;
+         };
+      };
+      numLyr= baseGlyphRecords[s].numLayers;
+      size_t baseGlSize = sizeof(uint32_t )+ baseGlyphList.numBaseGlyphPaintRecords * sizeof(BaseGlyphPaintRecord);
+      for(firstLyr=0;firstLyr<layerList.numLayers;firstLyr++){
+         if(firstOff + baseGlSize ==layerList.paintOffsets[firstLyr] ){break;}
+      };
 
-         auto cmpBg =  [&](BaseGlyph& a  ){BaseGlyph res ;res.glyphID=gid;return res.glyphID==a.glyphID ? 0 : (res.glyphID<a.glyphID)? -1 : 1 ;}
-         BaseGlyph res ;res.glyphID=gid;
+      
+      size_t sizeLayers;
+      size_t sizeValues;
+   corlff<varIndBase,1> first= pri::get<corlff<varIndBase,1>(baseGlyphList.paintTables[firstLyr].f) ; 
+   size_t firstLyrIndex = first.firstLayerIndex;
+   size_t numLayers = first.numLayers;
 
-      res= bsearch<BaseGlyph>(baseGlyphRecords,numBaseGlyphRecords,cmpBg);
-      result.numbaseGlyphs = res.numLayers;
-      result.baseGlyphs=res.
-      // GetNumGlyphs;
-      result.baseGlyphs=new colrf<varValueBase>[result.numbaseGlyphs];
-      for(int i=res.firstLayerIndex;i<res.numLayers-1+res.firstLayerIndex;i++)
-      {
-         result.baseGlyphs[i].format=2;
-         result.baseGlyphs[i].f.f2.paletteIndex= CPAL().get(layerRecords[i].paletteIndex).get();  
-      }
-   } 
-// BaseGlyphList
+   r.numValues=0;
+   r.numLayers=0;
+   
+   colrf<varIndBase>& g;
+   
+      r.compositeMode =CompositeMode::COMPOSITE_SRC_OVER;
 
-auto cmpBgl = [&](BaseGlyphPaintRecord& a){BaseGlyphPaintRecord r;r.glyphID=gid;return r.glyphID==a.glyphID ? 0 : (r.glyphID<a.glyphID)? -1 : 1 ;};
-baseGlyphList.baseGlyphPaintRecords[i].
-BaseGlyphPaintRecord a = bsearch<BaseGlyphPaintRecord>(baseGlyphList.baseGlyphPaintRecords,BaseGlyphList.numBaseGlyphPaintRecords,cmpBgl);
-colrf<varIndBase>* colrTable = (&baseGlyphList + baseGlyphList.paintOffset);
+for(size_t i=0;i<numLayers;i++){
 
-// LayerList 
-
-   colrf<varValueBase> colrStart = get(colrTable);
-   if(colrStart.format==1){
-      size_t s;
-      result.values = getLayers(colrStart.f.f1,&s);  
-      result.numValues=s;
-   }
-   else (colrStart.format==32){}
-
-
+    g= baseGlyphList.paintTables[i+firstLyrIndex];
+   if(g.format!=1){r.values.push_back(g.get())}
+   else {
+      colrff<varIndBase,1> x = pri::get<colrff<varIndBase,1>>(g.f).get();
+      r.layers.push_back(x)}
+};
    
 };
 
