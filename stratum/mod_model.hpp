@@ -187,6 +187,7 @@ using vertex = typename std::conditional<alpha, vertA<d> , vert<d>>::type;
 
 template <DIM d,TopologyPrimitive tp,bool alpha>
 struct topology_primitive_vec : std::vector<vertex<d,alpha>> {
+    using ty = vertex<d,alpha>;
  T& operator[](int s){
             int h = s%size();
             return h<0?data()[size()+s]:s ;}

@@ -251,7 +251,7 @@ class xmlParser {
         };
         return i;
     };
-    int lexDepth(){ pri::list<lexe>::iter i = lexqrfind(tok::elStart,lexq.rbegin()); int j = 1;
+    int lexDepth(){ pri::list<lexe>::iter i = lexqrfind(tok::elStart,lexq.ibegin()); int j = 1;
         if(!i){return 0;};
         while( i ){ i= lexqrfind(tok::elStart,i) ; j++;};
         return j;
@@ -349,7 +349,7 @@ class xmlParser {
                 lexq.erase(it,lexq.end());
             };
             if(line[i] == '/' && line[i+1]=='>'){PRINT(":/>") // />
-                pri::list<lexe>::iter pos = lexqrfind(tok::lt , lexq.rbegin());
+                pri::list<lexe>::iter pos = lexqrfind(tok::lt , lexq.ibegin());
                 if(pos){ltHandle(pos);};              
                 cur = cur->parent; 
                 i++;
@@ -357,7 +357,7 @@ class xmlParser {
             };
             if(line[i] == '>' ){PRINT(":>") // >
                 PRINTQ(lexq)
-                for(pri::list<lexe>::iter ite=lexq.rbegin() ; ite;--ite) { PRINT("loop")
+                for(pri::list<lexe>::iter ite=lexq.ibegin() ; ite;--ite) { PRINT("loop")
                     switch(ite->t){
                         case tok::lt : { 
                             ltHandle(ite);
@@ -374,9 +374,9 @@ class xmlParser {
                                     for( ;k and !(k->t == tok::elStart and k->d == estr);--k){};
                                     if(k){lexq.erase(k,lexq.end());}
                                     else break;
-                                    for(pri::list<eltree::element>::iter el = cur->parent->value.rbegin();
+                                    for(pri::list<eltree::element>::iter el = cur->parent->value.ibegin();
                                     cur->name!=estr ;--el ){
-                                        if(!el){cur=cur->parent; el = cur->parent->value.rbegin();};
+                                        if(!el){cur=cur->parent; el = cur->parent->value.ibegin();};
                                         if(el->child->name == estr){
                                             cur = el->child;
                                         }                                        
@@ -554,7 +554,7 @@ class xmlParser {
  
     bool open(pri::list<eltree::element>::iter el){
         if(el.next()){return false;};
-        pri::list<lexe>::iter s = lexqrfind(tok::elStart,lexq.rbegin());
+        pri::list<lexe>::iter s = lexqrfind(tok::elStart,lexq.ibegin());
         std::string parentName = el->child->parent->name;
         for(;s;--s){
             if(s->t == tok::elStart){

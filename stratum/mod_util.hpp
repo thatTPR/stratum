@@ -27,7 +27,6 @@ struct app_info {
 #define NAME_TRUE true
 
 
-
 template <typename T>
 struct named {
     std::string name;
@@ -36,7 +35,7 @@ struct named {
     named(std::string n, T& d) :name(n),data(d)  {};
 } ;
 
-
+/// Maybe change pools so that the referrence everything through pointers
 template <tpename T>
 struct memoryPool {
     list<T> d;
@@ -65,11 +64,9 @@ struct  dmemoryPool  : dim_t<d>{
     void add<DIM::Bi>(T<DIM::Bi> m){
 d2.push_back(m);}
 
-
     template <>
     void add<DIM::Tri>(T<DIM::Tri> m){d3.push_back(m);}
     
-
     template <DIM d>
     void addNamed(named<T<d>> m);
 

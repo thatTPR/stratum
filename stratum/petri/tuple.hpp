@@ -190,7 +190,11 @@ return 1;
 };
 
 
-
+template <template <typename T> typename Func ,typename Head,typename... Tail>
+void applyAll(tupleAddBack<tupleEmpty,Head,Tail...>& s){
+    func<Head>(s.first);
+    applyAll<Func,Tail...>(s.rest);
+};
 
 
 
@@ -208,4 +212,17 @@ tupleAddBack<tupBack,Head,Tail...> concat_tuples(tupleAddBack<tupleEmpty,Head,Ta
     return set;
 };
 }
+
+
+template <template <typename A>typename T, typname Head,typename... Tail>
+void for_each_tup(tuple<Head,Tail>& r){
+    T<tuple<Head,Tail>::headt>(r.first);
+    for_each_tup<T,Tail...>(r.rest);
+};
+template <template <typename A>typename T, typname Head>
+void for_each_tup<T,Head>(tuple<Head>& r){
+    T<tuple<Head,Tail>::headt>(r.first);
+};
+
+
 #endif

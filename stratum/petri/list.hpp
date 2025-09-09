@@ -137,13 +137,17 @@ template <typename T>
 
         T& value(node* n){return n->data;};
 
-        const_iter rend() const  {return const_iter(first)--;};
-        const_iter rbegin() const  {return const_iter(last); };
-        const_iter end() const {return const_iter(last)++ ;};
-        const_iter begin() const {return const_iter(first);};
+        const_iter ciend() const  {return const_rev(first)--;};
+        const_iter cibegin() const  {return const_rev(last); };
+        const_iter crend() const  {return const_rev(last)--;};
+        const_iter crbegin() const  {return const_rev(first); };
+        const_iter cend() const {return const_iter(last)++ ;};
+        const_iter cbegin() const {return const_iter(first);};
         
-        iter rend() {return iter(first)--;};
-        iter rbegin() { return iter(last);}
+        iter rend() {return rev(last)--;};
+        iter rbegin() { return rev(first);}
+        iter iend() {return rev(first)--;};
+        iter ibegin() { return rev(last);}
         iter end(){ return iter(last)++ ;};
         iter begin(){ return iter(first);};
         bool empty() const {return (last->next == first);};

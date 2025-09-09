@@ -47,9 +47,9 @@ namespace paint {
     };
     struct gradientRadial{
         glm::vec2 startCenter;
-        unsigned float rad1;
+        float rad1;
         glm::vec2 endCenter;
-        unsigned float rad2;
+        float rad2;
 
     };
     struct Affine{
@@ -68,7 +68,7 @@ namespace paint {
     };
 
     typedef float rotate ;
-    };
+
     struct rotateAroundCenter {
         rotate d;
         glm::vec2 center;
@@ -87,7 +87,6 @@ namespace paint {
     struct paintPrim {
         
     };
-
 }
-} // namespace mod
+}
 #endif

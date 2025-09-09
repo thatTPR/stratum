@@ -135,6 +135,24 @@ constexpr VkDescriptorType getBindingType(modules::BindingType bt){
         case mod::BindingType::ACCELERATION_STRUCTURE   : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE;}                    
     };
 }
+constexpr VkBufferUsageFlagBits get_buffer_usage(modules::BindingType bt){
+    switch constexpr (bt){
+        // case mod::BindingType::SAMPLER                  : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_SAMPLER_BIT;}     
+        // case mod::BindingType::COMBINED_IMAGE_SAMPLER   : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_COMBINED_IMAGE_SAMPLER_BIT;}                    
+        case mod::BindingType::SAMPLED_IMAGE            : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_SAMPLED_IMAGE_BIT;}           
+        case mod::BindingType::STORAGE_IMAGE            : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_IMAGE_BIT;}           
+        case mod::BindingType::UNIFORM_TEXEL_BUFFER     : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;}                  
+        case mod::BindingType::STORAGE_TEXEL_BUFFER     : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;}                  
+        case mod::BindingType::UNIFORM_BUFFER           : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;}            
+        case mod::BindingType::STORAGE_BUFFER           : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;}            
+        // case mod::BindingType::UNIFORM_BUFFER_DYNAMIC   : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_DYNAMIC_BIT;}                    
+        // case mod::BindingType::STORAGE_BUFFER_DYNAMIC   : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_BUFFER_DYNAMIC_BIT;}                    
+        // case mod::BindingType::INPUT_ATTACHMENT         : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_INPUT_ATTACHMENT_BIT;}              
+        // case mod::BindingType::INLINE_UNIFORM_BLOCK     : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_INLINE_UNIFORM_BLOCK_BIT;}                  
+        // case mod::BindingType::ACCELERATION_STRUCTURE   : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BIT;}                    
+    };
+}
+
 
 
 constexpr VkImageUsageFlagBits get_image_usage(mod::image_usage iu){
@@ -172,6 +190,12 @@ constexpr VkDescriptorType getDescriptor(mod::BindingType bt){
     }
 }
 
+constexpr VkSharingMode getShareMode(mod::shareMode sm){
+    switch constexpr (sm){
+        case shareMode::EXCLUSIVE :{return VK_SHARING_MODE_EXCLUSIVE;}
+        case shareMode::CONCURRENT :{return VK_SHARING_MODE_CONCURRENT;}
+    };
+}
 template <>
 class mod::Pipeline<VkPipeline> {
     pri::list<VkPipeline> pipelines;
@@ -398,16 +422,18 @@ vkBindBufferMemory(this->device[device_index], unibuffer, ssboMemory, 0);
 
 
 };
-int ssbo(void* buffer, size_t strcts ){
+
+template <typename bindT>
+int buffer(bindT::iterator& bufferi,mod::shareMode sm){
 // Buffer size
-const VkDeviceSize bufferSize = sizeof(strcts); 
+const VkDeviceSize bufferSize = sizeof(*bufferi); 
 
 // Create the buffer
 VkBufferCreateInfo bufferInfo{};
 bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 bufferInfo.size = bufferSize;
-bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-bufferInfo.sharingMode = concurrent?VK_SHARING_MODE_CONCURRENT:VK_SHARING_MODE_EXCLUSIVE;
+bufferInfo.usage = get_buffer_usage(bindT::Bty) //VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+bufferInfo.sharingMode = getShareMode(sm);
 
 VkBuffer ssboBuffer;
 if (vkCreateBuffer(this->device[device_index], &bufferInfo, nullptr, &ssboBuffer) != VK_SUCCESS) {
@@ -441,7 +467,6 @@ void unmap_ssbo(){
 vkUnmapMemory(this->device_index[index_dev],this->ssbo_mem_index[index_ssbomem]);
 };
 
-void updateUBO();
 // Unuse shader module flags
 // VK_SHADER_STAGE_SUBPASS_SHADING_BIT_HUAWEI
 // VK_SHADER_STAGE_CLUSTER_CULLING_BIT_HUAWEI
@@ -462,17 +487,23 @@ if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCC
     return shadMods.rbegin();
 }
 
-template <modules::shader_type sty,typename buf,mod::BindType bt>
-void shaderStage(mod::shaderModule<sty,buf,bt>* module,pri::list<VkShaderModule>::iter it,size_t entryPt=0){
+template <modules::shader_type sty,typename bindingT, typename... bindingTs>
+void shaderStage(mod::shaderModule<sty,bindingT,bindingTs...>* module,pri::list<VkShaderModule>::iter it,size_t entryPt=0){
     VkPipelineShaderStageCreateInfo crinfo{};
     crinfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    crinfo.stage = getShaderType(module->sty);
+    crinfo.stage = getShaderType(sty);
     crinfo.module = *it;
-    crinfo.pName = module->entry_points[entryPt];
+    crinfo.pName = module->entry_points[entryPt].data();
 };
 void pipelineStage(pri::list<VkShaderModule>::iter... it,pri::list<VkShaderModule>::iter... its){
     VkPipelineShaderStageCreateInfo shaderStages[]
 };
+
+template <typename T, mod::BindingType bt>
+void updateBinding(mod::binding<T,bt>& binding){
+
+}
+
 template <modules::shader_type sty,typename buf,mod::BindingType bt>
 bool shaderModule(mod::shaderModule<sty,buf,bt>* module, shader_type STAGE){
     shaderModule<sty,buf,bt>(module,getShaderType(STAGE));

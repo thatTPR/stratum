@@ -3,7 +3,7 @@
 #include "_glyphMetrics.hpp"
 #include "eblc.hpp"
 
-
+            #define XCBDT(x) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9) x(17) x(18) x(19)
 typedef struct {
 SmallGlyphMetrics   glyphMetrics;
 uint32   dataLen;
@@ -39,8 +39,7 @@ arr(f.data, f.dataLen);
 USE_ACQRES(GlyphBitmapFormat19)
 typedef union {
     #define UMEMB(n) GlyphBitmapFormat##n f##n; 
-    REPEAT(UMEMB,1,2,3,4,5,6,7,8,9, //CBDT:
-        17,18,18)
+    XCBDT(UMEMB)
 
 
 }CBDTf;
@@ -68,7 +67,8 @@ for(int i=0;i<CBLC().numSizes;i++){
         }
         switch(ist->header.imageFormat){
             #define OFFMEMBCASE(n) case n:{offone(f.f.f##n,ist->header.imageDataOffset);};
-            REPEAT(OFFMEMBCASE,1,2,3,4,5,6,7,8,9,17,18,19)
+
+            XCBDT(OFFMEMBCASE)
         }
         f.numBitmaps++;
 

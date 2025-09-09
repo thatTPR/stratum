@@ -20,6 +20,7 @@
 #include <petri/variant.hpp>
 #include <petri/templates.hpp>
 #include <petri/defs>
+
 namespace ttf {
 
 typedef uint32_t IndexP;
@@ -114,7 +115,7 @@ struct colorFT  {
 
 
     template <typename charT,typename COLRFty>
-    mod::fontColor<charT> get(COLRFty& colrft){
+    mod::fontColor<charT> get(){
         mod::fontColor<charT> r ;
         size_t cur;
         #define CFXMACRO(x)  x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)   x(12) x(13) x(14) x(15) x(16) x(17) x(18) x(19) x(20) x(21) x(22) x(23) x(24) x(25) x(26) x(27) x(28) x(29) x(30) x(31) 
@@ -394,112 +395,63 @@ using ftrange = ftrangeT<charT,glyfft>;
 template <typename charT>
 using bmrange = ftrangeT<charT,glyfbm>;
 
-#define TAG_MEMBER(macro)\
-macro("avar",avar)\
-macro("BASE",BASE)\
-macro("CBDT",CBDT)\
-macro("CBLC",CBLC)\
-macro("CFF ",CFF)\
-macro("CFF2",CFF2)\
-macro("cmap",cmap)\
-macro("COLR",COLR)\
-macro("CPAL",CPAL)\
-macro("cvar",cvar)\
-macro("cvt ",cvt)\
-macro("DSIG",DSIG)\
-macro("EBDT",EBDT)\
-macro("EBLC",EBLC)\
-macro("EBSC",EBSC)\
-macro("fpgm",fpgm)\
-macro("fvar",fvar)\
-macro("gasp",gasp)\
-macro("GDEF",GDEF)\
-macro("glyf",glyf)\
-macro("GPOS",GPOS)\
-macro("GSUB",GSUB)\
-macro("gvar",gvar)\
-macro("hdmx",hdmx)\
-macro("head",head)\
-macro("hhea",hhea)\
-macro("hmtx",hmtx)\
-macro("HVAR",HVAR)\
-macro("JSTF",JSTF)\
-macro("kern",kern)\
-macro("loca",loca)\
-macro("LTSH",LTSH)\
-macro("MATH",MATH)\
-macro("maxp",maxp)\
-macro("MERG",MERG)\
-macro("meta",meta)\
-macro("MVAR",MVAR)\
-macro("name",name)\
-macro("OS/2",os2)\
-macro("PCLT",PCLT)\
-macro("post",post)\
-macro("prep",prep)\
-macro("sbix",sbix)\
-macro("STAT",STAT)\
-macro("SVG ",SVG)\
-macro("VDMX",VDMX)\
-macro("vhea",vhea)\
-macro("vmtx",vmtx)\
-macro("VORG",VORG)\
-macro("VVAR",VVAR)\
+#define TAG_MEMBER(x)\
+x("avar",avar)\
+x("BASE",BASE)\
+x("CBDT",CBDT)\
+x("CBLC",CBLC)\
+x("CFF ",CFF)\
+x("CFF2",CFF2)\
+x("cmap",cmap)\
+x("COLR",COLR)\
+x("CPAL",CPAL)\
+x("cvar",cvar)\
+x("cvt ",cvt)\
+x("DSIG",DSIG)\
+x("EBDT",EBDT)\
+x("EBLC",EBLC)\
+x("EBSC",EBSC)\
+x("fpgm",fpgm)\
+x("fvar",fvar)\
+x("gasp",gasp)\
+x("GDEF",GDEF)\
+x("glyf",glyf)\
+x("GPOS",GPOS)\
+x("GSUB",GSUB)\
+x("gvar",gvar)\
+x("hdmx",hdmx)\
+x("head",head)\
+x("hhea",hhea)\
+x("hmtx",hmtx)\
+x("HVAR",HVAR)\
+x("JSTF",JSTF)\
+x("kern",kern)\
+x("loca",loca)\
+x("LTSH",LTSH)\
+x("MATH",MATH)\
+x("maxp",maxp)\
+x("MERG",MERG)\
+x("meta",meta)\
+x("MVAR",MVAR)\
+x("name",name)\
+x("OS/2",os2)\
+x("PCLT",PCLT)\
+x("post",post)\
+x("prep",prep)\
+x("sbix",sbix)\
+x("STAT",STAT)\
+x("SVG ",SVG)\
+x("VDMX",VDMX)\
+x("vhea",vhea)\
+x("vmtx",vmtx)\
+x("VORG",VORG)\
+x("VVAR",VVAR)\
 
+        #define XTABLES(x) x(avar) x( BASE) x( CBDT) x( CBLC) x( CFF) x( CFF2) x( cmap) x( COLR) x( CPAL) x( cvar) x( cvt) x( DS) x(G) x( EBDT) x( EBLC) x( EBSC) x( fpgm) x( fvar) x( gasp) x( GDEF) x( glyf) x( GPOS) x( GSUB) x( gvar) x( hdmx) x( head) x( hhea) x( hmtx) x( HVAR) x( JSTF) x( kern) x( loca) x( LTSH) x( MATH) x( maxp) x( MERG) x( meta) x( MVAR) x( name) x( os2) x( PCLT) x( post) x( prep) x( sbix) x( STAT) x( SVG) x( VDMX) x( vhea) x( vmtx) x( VORG) x( VVAR)
 
+    #define comma(n) ,n
+    typedef char reservedType;
 
-  typedef union  {
-        avar _avar;
-        BASE _BASE;
-        CBDT _CBDT;
-        CBLC _CBLC;
-        CFF _CFF;
-        CFF2 _CFF2;
-        cmap _cmap;
-        COLR _COLR;
-        CPAL _CPAL;
-        cvar _cvar;
-        cvt _cvt;
-        DSIG _DSIG;
-        EBDT _EBDT;
-        EBLC _EBLC;
-        EBSC _EBSC;
-        fpgm _fpgm;
-        fvar _fvar;
-        gasp _gasp;
-        GDEF _GDEF;
-        glyf _glyf;
-        GPOS _GPOS;
-        GSUB _GSUB;
-        gvar _gvar;
-        hdmx _hdmx;
-        head _head;
-        hhea _hhea;
-        hmtx _hmtx;
-        HVAR _HVAR;
-        JSTF _JSTF;
-        kern _kern;
-        loca _loca;
-        LTSH _LTSH;
-        MATH _MATH;
-        maxp _maxp;
-        MERG _MERG;
-        meta _meta;
-        MVAR _MVAR;
-        name _name;  
-        os2 _os2;
-        PCLT _PCLT;
-        post _post;
-        prep _prep;
-        sbix _sbix;
-        STAT _STAT;
-        SVG _SVG;
-        VDMX _VDMX;
-        vhea _vhea;
-        vmtx _vmtx;
-        VORG _VORG;
-        VVAR _VVAR;
-    }tableu;
     /// @brief otff //[]
 
 
@@ -557,50 +509,7 @@ one(f.dsigOffset);
 USE_ACQRES(TTCHeader2)
 
 
-struct TTChead  { // TODO
-    Tag   ttcTag;
-uint16   majorVersion;
-uint16   minorVersion;
-uint32   numFonts;
-Offset32*   tableDirectoryOffsets;//[numFonts]
-    //
-    TTCHeader2 f2;
-    TableDirectory* tableDirectories;//[numFonts]
 
-    tableu* tbs ;//[ td.numTables]
-
- 
-};
-ACQRES(TTChead){
-one(f.ttcTag);
-one(f.majorVersion);
-one(f.minorVersion);
-one(f.numFonts);
-size_t tbsSize=0;
-switch(f.majorVersion){
-    case 2 : {one(f.f2);    }
-};
-
-if(!f.tableDirectories){f.tableDirectories = new TableDirectory[f.numFonts];};
-for(int i=0;i<f.numFonts;i++){offone(f.tableDirectories[i],f.tableDirectoryOffsets[i]);};
-size_t s=0;
-for(int i=0;i<f.numFonts;i++){s+=f.tableDirectories.numTables;};
-if(!f.tbs){f.tbs=new tableu[s];};
-_ftTBI=0;
-for(int i=0;i<f.numFonts;i++){
-    for(int j =0;j<f.tableDirectories[i].numTables){
-        switch(f.tableDirectories[i].tableRecords[j].tableTag){
-            #define TABLE_RECORD_COL(tag,member) case font_tag(tag):{offone(f.tbs[_ftTBI]._##member,f.tableDirectories[i].tableRecords[j].offset);\
-                f.tableDirectories[i].tableRecords[j].length=f.tbs[_ftTBI]._##member  ;\
-            };
-            TAG_MEMBER(TABLE_RECORD_COL)
-        }
-        _ftTBI++;
-    }
-}
-}
-USE_ACQRES(TTChead)
-typedef TTChead fontcollection ;
 
 
 uint32_t CalcTableChecksum(uint32_t *Table, uint32_t Length){
@@ -618,12 +527,8 @@ return Sum;
 
 
      struct font {
-                TableDirectory td ;
-        tableu* table;
-
-        #define TBINDEX(m) int ##mI=-1;m& m(){return table[##mI]._##m;};
-        REPEAT(TBINDEX,avar, BASE, CBDT, CBLC, CFF, CFF2, cmap, COLR, CPAL, cvar, cvt, DS,G, EBDT, EBLC, EBSC, fpgm, fvar, gasp, GDEF, glyf, GPOS, GSUB, gvar, hdmx, head, hhea, hmtx, HVAR, JSTF, kern, loca, LTSH, MATH, maxp, MERG, meta, MVAR, name, os2, PCLT, post, prep, sbix, STAT, SVG, VDMX, vhea, vmtx, VORG, VVAR)
-     
+         
+        
         #include "ft/avar.hpp" //[x]
 #include "ft/base.hpp" //[x]
 #include "ft/ebsc.hpp" //[x]
@@ -677,6 +582,74 @@ return Sum;
     #include "ft/vmtx.hpp" //[x]
     #include "ft/vorg.hpp" //[x]
     #include "ft/vvar.hpp" //[x]
+
+typedef pri::variant<reservedType,XTABLES(n) > tableu;
+
+struct TTChead  { // TODO
+    Tag   ttcTag;
+uint16   majorVersion;
+uint16   minorVersion;
+uint32   numFonts;
+Offset32*   tableDirectoryOffsets;//[numFonts]
+    //
+    TTCHeader2 f2;
+    TableDirectory* tableDirectories;//[numFonts]
+
+    tableu* tbs ;//[ td.numTables]
+
+ 
+};
+ACQRES(TTChead){
+one(f.ttcTag);
+one(f.majorVersion);
+one(f.minorVersion);
+one(f.numFonts);
+size_t tbsSize=0;
+switch(f.majorVersion){
+    case 2 : {one(f.f2);    }
+};
+
+if(!f.tableDirectories){f.tableDirectories = new TableDirectory[f.numFonts];};
+for(int i=0;i<f.numFonts;i++){offone(f.tableDirectories[i],f.tableDirectoryOffsets[i]);};
+size_t s=0;
+for(int i=0;i<f.numFonts;i++){s+=f.tableDirectories.numTables;};
+if(!f.tbs){f.tbs=new tableu[s];};
+_ftTBI=0;
+for(int i=0;i<f.numFonts;i++){
+    for(int j =0;j<f.tableDirectories[i].numTables;j++){
+        switch(f.tableDirectories[i].tableRecords[j].tableTag){
+            #define TABLE_RECORD_COL(tag,member) case font_tag(tag):{offone(pri::get<member>(f.tbs[_ftTBI]),f.tableDirectories[i].tableRecords[j].offset);\
+                f.tableDirectories[i].tableRecords[j].length=pri::get<member>(f.tbs[_ftTBI])  ;continue;\
+            };
+            TAG_MEMBER(TABLE_RECORD_COL)
+        }
+        _ftTBI++;
+    }
+}
+}
+USE_ACQRES(TTChead)
+typedef TTChead fontcollection ;
+
+
+TableDirectory td ;
+        tableu* table;
+
+
+#define PTR_MEMB_TABLE(name)  indexTable<name> _name; \
+
+XTABLES(PTR_MEMB_TABLE)        
+
+     template <typename tableTy>
+        struct tableTyPtr {
+            constexpr tableTy tablue::* ptr =void
+        }
+        
+                template <typename tableTy>
+                struct indexTable {
+                    int i = -1;
+                    operator bool(){return i!=(-1);}
+                    tableTy& operator(){return pri::get<tableTy>(table[ind]);}
+                };
 
         constexpr bool wcb = std::is_same<wchar_t,char16_t>::value ; 
 
@@ -734,9 +707,6 @@ struct bvectype<char32_t> {
         c16Vec c16glyf;
         c32Vec c32glyf;
 
-
-bm
-
         template <> struct vectype <char> {
              using type = cVec;
             constexpr  type font::* ptr = &font::cglyf; }
@@ -751,70 +721,43 @@ bm
              using type = c32Vec;
             constexpr  type font::* ptr = &font::c32glyf; }
         
-        template <typename charT> 
-        uint16 getGid(charT c);
-template <>uint16 getGid(char c){
-            uint16 res=0;
-            for(int j=0;i<f->cglyfs.size();j++){
-                if(f->cglyfs[j].start<=fstr.c and f->cglyfs[j].start>=fstr.c ){
-                    return f->cglyfs[j].startGlyphId  f->cglyfs[j].range[fstr.c -f->cglyfs[j].end]; 
-                }
-            }
-            return res;
-        };
-template <>uint16 getGid(wchar_t c){
-            uint16 res=0;
-            for(int j=0;i<f->wcglyfs.size();j++){
-                if(f->wcglyfs[j].start<=fstr.c and f->wcglyfs[j].start>=fstr.c ){
-                    return  f->wcglyfs[j].startGlyphId+ f->wcglyfs[j].range[fstr.c -f->wcglyfs[j].start]; 
-                }
-            }
-            return res;
-        };
-template <>uint16 getGid(char16_t c){
-        if constexpr (std::is_same<wchar_t,char16_t>::value ){return getGid<wchar_t>(c);};
-             uint16 res=0;
-            for(int j=0;i<f->c16glyfs.size();j++){
-                if(f->c16glyfs[j].start<=fstr.c and f->c16glyfs[j].start>=fstr.c ){
-                    return  f->c16glyfs[j].startGlyphId+ f->c16glyfs[j].range[fstr.c -f->c16glyfs[j].start]; 
-                }
-            }
-            return res;
-        };
-template <>uint16 getGid(char32_t c){
-             uint16 res=0;
-            for(int j=0;i<f->c32glyfs.size();j++){
-                if(f->c32glyfs[j].start<=fstr.c and f->c32glyfs[j].start>=fstr.c ){
-                    return  f->c32glyfs[j].startGlyphId+ f->c32glyfs[j].range[fstr.c -f->c32glyfs[j].start]; 
-                }
-            }
-            return res;
-        };
 
+            template <typename charT> 
+        uint16 getGid(charT c){
+            vectype<charT>::type& v =this->*(vectype<charT>::ptr); 
+            uint16 res=0;
+            for(int j=0;i<v.size();j++){
+                if(v[j].start<=c and  v[j].end<=c ){
+                    return v[j].startGlyphId  + c- v[j].start; 
+                }
+            }
+            return res;
+        };
+       
     
     template <typename charT>
-    glyfft get(charT c,options opts){glyfft res;
+    glyfft get(charT c,mod::fontPrim::options opts){glyfft res;
         uint16 gid;
-        if(cmapI>=0 and locaI>=0 and glyfI>=0){
-            gid=  cmapGlyphId<charT>((&cmap()),c)
+        if(_cmap and _loca and _glyf){
+            gid=  cmapGlyphId<charT>((&cmap()),c);
             if(_indexToLocFormat==0){
                 res.fromtGlyfHead(glyf().loca(loca().f.s.offsets[gid]));
             };
         }  
-        if(hmtxI>=0; and hheaI>=0){
+        if(_hmtx>=0; and _hhea>=0){
             res.advanceWidth=hmtx().hMetrics[gid].advanceWidth;
             res.lisb=hmtx().hMetrics[gid].lsb;
         };
-        if(opts.color and COLRI and CPALI){
+        if(opts.color and _COLR and _CPAL){
             res.colors=COLR().get(gid);
         };
         return res;
     };
     
 template <typename charT>
-void loadGlyphs(uint16 size, charT* start, charT *end,options opts){
+void loadGlyphs(uint16 size, charT* start, charT *end,mod::fontPrim::options opts){
 
-if(cmapI>=0 and locaI>=0 and glyfI>=0){
+if(_cmap  and _loca and _glyf){
     
     for(int i=0;i<s;i++){uint32* r;size_t s;
         std::vector<glyfft> re; 
@@ -826,36 +769,24 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
                 glyfft ftr;ftr.fromGlyfHead(gh);ftr.glyphID = r[j];
                 re.push_back(ftr);
                 
-            }
-            else {
-                for(int j=0;j<s;j++){
-                    glyfHead* gh = glyf().loca(loca().f.s.offsets[r[j]]);
-                    glyfft ftr;ftr.fromGlyfHead(gh);ftr.glyphID = r[j];
-                    re.push_back(ftr);   
-                }
-            };            
+            }      
         }
         
-       if(hmtxI>=0 and hheaI>=0){
+       if(_hmtx_ and _hhea_){
                 re.back().advanceWidth=hmtx().hMetrics[r[j]].advanceWidth;
                 re.back().lsb=hmtx().hMetrics[r[j]].lsb;}
 
         ftrange fr ;
         fr.range = re.data();
         fr.start = start[i];re.end=end[i];re.size=s;
-        if constexpr(std::is_same<charT,char>::value){cglyphs.push_back(fr);} 
-        if constexpr(std::is_same<charT,wchar_t>::value){wcglyphs.push_back(fr);}
-        if constexpr(std::is_same<charT,char16_t>::value ){
-            if constexpr(std::is_same<wchar_t,char16_t>::value){
-                wcglyphs.push_back(fr);}
-            else c16glyph.push_back(fr);
-            }
-        if constexpr(std::is_same<charT,char32_t>::value){wcglyphs.push_back(fr);}
+
+        vectype::type& v = this->*(vectpe<charT>::ptr) ;
+        v.push_back(fr)
     }
     
-    if(opts.color and COLRI and CPALI){
+    if(opts.color and _COLR and _CPAL){
         for(int i =0 ;i<s;i++){
-            
+
         }  
     };
     
@@ -864,10 +795,10 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
 };
         
        
-        void loadAll(options opts=NULL){
+        void loadAll(mod::fontPrim::options opts=NULL){
             
             uint16 numRanges;
-            uint16* starts;uint16* ends;
+            uint16* starts, ends;
             cmap().getRanges(&numRanges,starts,ends);
             loadGlyphs(numRanges,starts,ends,opts);
             floaded = true;
@@ -903,12 +834,14 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
         
     };
 
-     };
+
+
+}
     // font* ftcur;
     ACQRES(font){
         ftcur = &f;
         one(f.td);
-        int headI=-1;
+        int _head_.i=-1;
         int16 xMin,yMin,xMax,yMax;xMin=-8192;yMin=-8192;xMax=8192;yMax=8192;
         if(!f.table){f.table = new tableu[f.td.numTables];};
         for(int i  =0 ;i<f.td.numTables;i++){
@@ -922,29 +855,29 @@ if(cmapI>=0 and locaI>=0 and glyfI>=0){
             if(f.td.tableRecords[i].tableTag== Tag("head")){headI=f.td.tableRecords[i].index;};
             bool EBLCfound;
             switch(f.td.tableRecords[i].tableTag){
-                #define TABLE_RECORD(tag,member) case font_tag(tag):{offone((f.table[i]._##member),f.td.tableRecords[i].offset);f.td.tableRecords[i].length=size(f.table[i]._##member);f.##memberI=i;};
-                case font_tag("EBLC"):{offone(f.table[i]._EBLC),f.td.tableRecords[i].offset;f.td.tableRecords[i].length=size(f.table[i]._EBLC);f.EBLCI=i;
+                #define TABLE_RECORD(tag,member) case font_tag(tag):{offone((pri::get<member>(f.table[i])),f.td.tableRecords[i].offset);f.td.tableRecords[i].length=size(pri::get<member>(f.table[i]));f._##member.i=i;};
+                case font_tag("EBLC"):{offone(pri::get<EBLC>(f.table[i])),f.td.tableRecords[i].offset;f.td.tableRecords[i].length=size(pri::get<EBLC>(f.table[i]));f._EBLC.i=i;
                     EBLCfound=true;
                 };
-                case font_tag("EBDT"):{offone(f.table[i]._EBDT),f.td.tableRecords[i].offset;f.td.tableRecords[i].length=size(f.table[i]._EBDT);f.EBLCI=i;}
+                case font_tag("EBDT"):{offone(pri::get<EBDT>(f.table[i])),f.td.tableRecords[i].offset;f.td.tableRecords[i].length=size(pri::get<EBDT>(f.table[i]));f._EBDT.i=i;}
                 TAG_MEMBER(TABLE_RECORD)          
             }
             _length=f.td.tableRecords[i].length;
         }
-        if(headI>=0){
-        f.table[headI]._head.xMin=xMin;
-        f.table[headI]._head.yMin=yMin;
-        f.table[headI]._head.xMax=xMax;
-        f.table[headI]._head.xMax=xMax;
+        if(_head>=0){
+        _head().xMin=xMin;
+        _head().yMin=yMin;
+        _head().xMax=xMax;
+        _head().xMax=xMax;
         }
     }   
     USE_ACQRES(font)
 
 
-void reduce(fontcollection& fc){
+void reduce(font::fontcollection& fc){
     size<TTChead>(fc);
 };
-fontcollection makeCollection(font* f,size_t num){// TODO make it correct
+font::fontcollection makeCollection(font* f,size_t num){// TODO make it correct
     fontcollection ret;ret.numFonts=num;
     ret.tableDirectories = TableDirectories[num];size_t numTables=0;
     for(int i=0;i<num;i++){ret.tableDirectories[i]=f[i].td;numTables+=f[i].td.numTables;};
@@ -956,7 +889,7 @@ fontcollection makeCollection(font* f,size_t num){// TODO make it correct
     };
     size<TTChead>(ret);
 };
-font getFont(fontcollection* fc,uint tdIndex){
+font getFont(font::fontcollection* fc,uint tdIndex){
     font f;size_t tableNum;f.td=fc->tableDirectories[tdIndex];
     f.table = new tableu[fc->tableDirectories[tdIndex].numTables];
     for(int i=0;i<fc->tableDirectories[tdIndex].numTables;i++){
@@ -966,68 +899,6 @@ font getFont(fontcollection* fc,uint tdIndex){
     return f;
 };
 
-#include "fontansi.hpp"
-
-typedef struct {
-    uint16 em; // Size of space
-    bool kern; // shrink spaces between faces
-    bool color;
-    uint16 lineSize;
-}options;
-
-template <typename charT>
- using facemap = std::map<charT,glyfvec> ; 
-
-template <typename charT>
-ftrange vectorize(font* f,std::basic_string<charT> ansistr,options opts){
-    using strT=std::basic_string<charT>;
-    int i;
-    strT s;
-    formatStr fstr= ansiStrip(s);
-    ftrange<charT> res;
-    if(f->cmapI>=0 and f->locaI>=0 and f->glyfI>=0){
-        res=f->loadGlyphs(str,f,opts);
-    }
-    else {
-        throw std::string("no cmap or loca or glyf");
-    }
-    res.range[0].pos = glm::uvec2(opts.em,0);
-    if(f->hmtxI>=0 and f->hheaI>=0){
-        for(int i=1;i<fstr.str.size();i++){
-            res.range[i].pos=glm::uvec2(0,0);
-            uint16 left=f->getGid(str[i-1]);
-            uint16 right=f->getGid(str[i]);
-        if(opts.kerning){
-                int16 k = kern().getPair(left,right);
-                res.line[i].pos.x =res.range[i-1].pos.x+ res.range[i-1].advanceWidth +res.range[i].lsb + k ;
-        }
-        else {
-            for(int i=1;i<fstr.str.size();i++){
-                // Make sure all characters are 1 em in width
-                int16 dif = (opts.em-(res.range[i].xMax - res.range[i].xMin))/2;
-                dif=dif>0?dif:-dif;
-                res.range[i].pos.x =res.range[i-1].pos.x+ opts.em + dif;
-            };
-        }
-        }
-    }
-    else {throw std::string("no hmtx or hheai tables");};
-
-    res.em = opts.em;
-    // colors
-    
-    return res;
-};
-
-
-typedef struct {
-    uint16 x,y;
-    uint8** data;
-}ftbm;
-
-ftbm rasterize(font* f,std::wstring ansistr,){
-
-};
 
 
 };

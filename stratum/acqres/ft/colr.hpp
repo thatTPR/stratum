@@ -123,7 +123,7 @@ COND_IS_VARIND(uint16,glm::uvec4)   paletteIndex;
 F2DOT14   alpha;
 mod::paint::colorStop getPaint(){
    if constexpr (std::is_same<varIndexBase,varIndBase>::value){
-      return mod::paint::colorStop{CPAL().get(paletteIndex),alphaval(alpha);};
+      return mod::paint::colorStop{_CPAL().get(paletteIndex),alphaval(alpha);};
    }
    return  mod::paint::colorStop{paletteIndex,alphaval(alpha)};}
 };
@@ -203,7 +203,7 @@ EXTEND_REFLECT=2
 };
 template <typename T>
 void getCpal(T* colf, colorFT* cf){
-   ColorRecord cr = CPAL().get(colrf->paletteIndex);
+   ColorRecord cr = _CPAL().get(colrf->paletteIndex);
    cf->color= glm::uvec4(cr.red,cr.green,cr.blue,cr.alpha);
    cf->alpha=colf->alpha;
 };
@@ -304,7 +304,7 @@ COND_IS_VARIND(F2DOT14,float)   alpha;
 };template<typename VarIndex> using colrff2=colrff<VarIndex,2> ; //PaintSolid table ;
 
  colrff<varValueBase,2> colrff<varIndexBase,2>::get(){
-   corlff<varValueBase,2> r;r.paletteIndex=CPAL().get(this->paletteIndex).get();r.alpha=alphaval(this->alpha);      
+   corlff<varValueBase,2> r;r.paletteIndex=_CPAL().get(this->paletteIndex).get();r.alpha=alphaval(this->alpha);      
    return r;
 };
  ptype<2>::ty colrff<varValueBase,2>::getPaint(){
@@ -323,7 +323,7 @@ VarIndex   varIndexBase;
 
 };template<typename VarIndex> using colrff3=colrff<VarIndex,3> ; //PaintVarSolid;
    colrff<varValueBase,3> colrff<varIndexBase,3>::get(){
-colrff<varValueBase,3>  r;r.paletteIndex=CPAL().get(paletteIndex).get();r.alpha=alphaval(alpha);return r;}
+colrff<varValueBase,3>  r;r.paletteIndex=_CPAL().get(paletteIndex).get();r.alpha=alphaval(alpha);return r;}
    ptype<3>::ty colrff<varValueBase,3>::getPaint(){
       ptype<3>::ty r;
          r.data.col = paletteIndex;
