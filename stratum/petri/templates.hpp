@@ -7,8 +7,16 @@ constexpr size_t sizeOf(){return sizeof(T)+sizeOf<Ts...>();}
 template <typename T>
 constexpr size_t sizeOf(){return sizeof(T);}
 
-
+#include <cstring>
 namespace pri {
+    template <typename T>
+    void memcpy(T* dest,T* src,size_t s){std::memcpy(dest,src,s*sizeof(T));}
+
+    template <typename T>
+    int memcmp(T* dest,T* src,size_t s){std::memcmp(dest,src,sizeof(T));}
+
+
+
 
     template < template <size_t > typename T,size_t s>
 struct Tcase {

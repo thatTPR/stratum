@@ -1,7 +1,6 @@
 #ifndef STRATA_FONT_HPP
 #define STRATA_FONT_HPP
 #include <cstdint>
-#include <cstring>
 #include <stdexcept>
 #include <cstddef>
 #include <type_traits>
@@ -231,6 +230,135 @@ struct glyfft{
     uint16 sizeContour;
     glm::ivec2* contours;/// [sizeContour]
     bool* onCurve;//[sizeContour] 
+
+    float slope(glm::vec2 left,glm::vec2 center,glm::vec2 right){
+    glm::vec2 x = center - left +(right - center);
+    return x.y/x.x; 
+}
+glm::vec2 ovec(float t){
+    return glm::vec2(1,t);
+};
+glm::vec2 ovec(mat2x2 i){
+    glm::vec2 r = i.y - i.x;
+    return r; 
+};
+
+float der(vec2 o){return o.y/o.x }
+
+
+bool intersect(glm::imat2x2 line , imat2x2 seg){
+    glm::vec2 ol = ovec(line) ;
+    glm::mat2x2 os = glm::mat2x2(seg.x - line.x,seg.y -line.x)  ;
+
+    float dx = der(os.x);
+    float dy = der(os.y);
+
+    float dl = der(ol);
+
+    return dx<dl ? dl<dy : ((dy<dl) ? true : false);
+};
+bool isInside(glm::vec2 pt,uint indFirst,uint indLast){
+    
+    uint count=0;
+        glm::vec2 cur = curved.pts[indLast];
+        glm::vec2 next = curved.pts[indFirst];
+        glm::vec2 midPt = (cur + next)/2;
+
+        glm::mat2x2 firstPtSeg = glm::mat2x2(midPt,pt) ;        
+    count = 1;
+    for(uint i=indFirst;i<indLast;i++){
+        cur= contours.pts[i];
+        next= contours.pts[i+1];
+        glm::mat2x2 seg(cur,next) ;
+        if(intersect(firstPtSeg,seg)){count++;};
+    }
+    
+    return count%2? true :  false;
+};
+
+    void swap(size_t end1,size_t end2){
+        size_t start1=end1!=0?endPts[end1-1]+1:0 ;
+        size_t start2 = endPts[end2-1] + 1;
+        size_t s1=endPts[end1]-start1+1;
+        size_t s2=(endPts[end2]-start2+1);
+
+        size_t dif = end2-end1;
+            glm::ivec2* temp1 = new glm::ivec2[s1];
+            pri::memcpy(temp , contours+start1,s1);
+            glm::ivec2* temp2 = new glm::ivec2[s2];
+            pri::memcpy(temp2 , contours+start2,s2);
+            
+            size_t st ;size_t en ;size_t s ;
+            glm::ivec2* between ;
+
+        if(dif>1){
+            size_t st = endPts[end1]+1;size_t en=start2-1;size_t s=en-st+1;
+            glm::ivec2* between = new glm::ivec2[s];
+        }
+            pri::memcpy(between,contours+st,s);
+            
+            size_t t = endPts[end2] - start2 ;
+            endPts[end1] = start1 + s2 - 1;
+            start2 = endPts[end1]+1; 
+            endPts[end2] = start2 + s1 - 1;
+
+            pri::memcpy(contours+start1,temp2,s2);
+            pri::memcpy(contours+start2,temp1,s1);
+            if(dif>1){
+                pri::memcpy(contours+endPts[end1]+1,between ,s)
+            }
+    };
+    void order(){
+        bool badtree = false;
+
+        size_t start=0;
+        for(size_t i=0;i<numberOfContours;i++){
+            size_t curE = endPts[i];
+            size_t startn=curE + 1;
+            std::vector<uint16> startsizes{curE-start+1};
+            for(size_t j=i+1;j<numberOfContours;j++){
+                size_t curEn = endPts[j];
+                startsizes.push_back(curEn-startn+1);
+                if(isInside(contours[curE],startn,curEn)){
+                    size_t curEn2 = endPts[j+1];
+                    size_t startn2 = curEn+1;
+                    size_t k ;
+                    std::vector<uint16> endsizes;
+                    for( k=j+1;isInside(contours[curE],startn2,curEn2);k++;){
+                        curEn2 = endPts[k+1];
+                        endsizes.push_back(curEn2 - startn2+1);
+                        startn2 = curEn2+1;
+                    };
+                    curEn2 = endPts[k-1];
+                    startn2 = endPts[k-2] + 1;
+
+                    size_t s = curEn2 - startn2 + 1;
+                    glm::ivec2 temp = new glm::ivec2[s];
+                    pri::memcpy(temp,contours+startn2,s);
+                    size_t sc=curE-startn + 1;glm::ivec2 tcur = new glm::ivec2[sc];
+                    pri::memcpy(tcur,contours+startn,sc);
+                    
+                    pri::memcpy(contours+startn,temp,s);
+                    pri::memcpy(contours+startn+s,tcur,sc) ;
+                    // UpdateEndPts
+                    size_t s;
+                    for(s=0;s<endsizes.size();s++){endPts[i+s]=endPts[i+s-1]+endsizes[s];}
+                    size_t m =s;
+                    for(;s<startsizes.size();s++){endPts[i+s]=endPts[i+s-1]+endsizes[s-m];}
+                    badtree =true;
+                    break;
+                }
+
+                startn = curEn + 1;
+            };
+
+            start = curE + 1;
+        };
+        return badtree;
+    };
+    void sort(){
+        for(size_t i=0;i<numberOfContours and !order();i++){}
+    };
     int16 righSideBearing(font* f){return advanceWidth - xMax ;}
     int16 width(font* f){return xMax-xMin;}
     void popContour(uint index){
@@ -347,6 +475,7 @@ struct glyfft{
     else {
         
     }
+    sort();
 }
     glyfHead get(){
         glyfHead gh;
