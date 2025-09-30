@@ -15,7 +15,7 @@ class stack {
     Node<T*>* last;
 
     void back(){return last->data;};
-    void push(T n){last = &(Node<T>(last,n));};
+    void push(T n){last = new Node<T>(last,n);};
     void pop(){
         if(last->prev != nullptr){
             Node<T>* temp = last ;

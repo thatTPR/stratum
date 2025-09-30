@@ -167,7 +167,8 @@
         "__functional_03": "cpp",
         "__functional_base_03": "cpp",
         "__std_stream": "cpp",
-        "*.cl": "cpp"
+        "*.cl": "cpp",
+        "__errc": "cpp"
     },
     "svg.preview.background": "custom"
 }

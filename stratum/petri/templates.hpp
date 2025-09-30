@@ -69,6 +69,42 @@ struct Tcase {
     };
     
 
+
+template <typename... T>
+struct EnumTs{
+    static constexpr size_t size = sizeof...(T);
+    using tup = pri::tuple<T...>;
+
+    template <typename T,typename tupleEmpty,size_t s>
+    constexpr size_t get(){
+        return s;
+    }
+    template <typename T,typename subTup,size_t s>
+    constexpr size_t get(){
+        if constexpr(std::is_same<T,subTup::headt>::value){return s;}
+        else return get<T,subTup::tailt,s+1>()
+    }
+
+    template <typename T>
+    constexpr size_t get(){
+        if constexpr(std::is_same<T,tup::headt>::value){return s;}
+        else return get<T,tup::tailt,1>();
+    }
+
+
+    template <size_t s,typename A,typename... B>
+    struct gett{
+        using type =typename  std::conditional<s==0,A,gett<s-1,B...>>::type;
+    }
+    template <size_t s>
+    gett<s,T...>::type get(tup& t){
+        return get<gett<s,T...>::type>(t);
+    };
+
+};
+ 
+
+
     // template <typename... S>
     // using cases_type = pri::tuple<S...> ; 
     // template <typename casesTy ,casesTy val,bool Bool,bool... Booleans>
