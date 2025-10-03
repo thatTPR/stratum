@@ -17,6 +17,9 @@ template <typename T>
             node* prev;
             node* next;
             T* data; 
+
+            // template <typename... Args>
+            // node(Args... V){data= new T(Args...);};
             node(){};
             node(node* l, node* r = nullptr){
                 prev = l;
@@ -242,6 +245,10 @@ template <typename T>
         template <typename... Args>
         void emplace_back(Args&&... args){
             push_back(T(args...));
+        };
+        template <typename... Args>
+        void emplace_front(Args&&... args){
+            push_front(T(args...));
         };
         template <typename... Args>
         void emplace_insert(iter& at,Args&& ... args){

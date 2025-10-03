@@ -6,6 +6,7 @@
 
 namespace stmsl
 {
+
     
 
 struct macro {
@@ -180,6 +181,19 @@ bool Werror = false;
 bool Wfatal_error = false;
 
 
+struct _errs{
+    parser& p;
+    enum sys{
+        template_instance,
+    };
+    void operator(sys s){
+
+    };
+
+};
+_errs syserr;
+
+
 void wrcph(std::filesystem::path pth,ast<meta> astm){
 std::filesystem::path parent = pth.parent_path();
 std::filesystem::path name = pth.stem();name+="chstmsl";
@@ -203,8 +217,9 @@ void emitBinary(ast<meta> a){
 };
 void emitBinaryNolink(ast<meta> a){emitBinary(a);}
 void emit(std::filesystem::path pth){
+    
     parser prsr;
-
+    syserr _errs;errs.p = prsr;prsr.syserr=syserr;
     if(preprocOnly){
         prsr.fromFilePreproc(pth);return;    
     }
