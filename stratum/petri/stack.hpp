@@ -12,9 +12,10 @@ class Node {
 template <typename T>
 class stack {
     Node<T> start(nullptr , T());
-    Node<T*>* last;
+    Node<T>* last;
 
-    void back(){return last->data;};
+    T& back(){return last->data;};
+    T& prev(){return last->prev->data; }
     void push(T n){last = new Node<T>(last,n);};
     void pop(){
         if(last->prev != nullptr){
@@ -23,6 +24,7 @@ class stack {
             delete *temp;
         }
     };
+
 };
 };
 

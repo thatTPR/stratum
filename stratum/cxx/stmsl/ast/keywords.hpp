@@ -19,8 +19,8 @@ enum pcntxt {
 
 enum kwty {
     macro,
-    name_attrib,qualifier,
-    stmt,prim,layout_at,layout_qual
+    qualifier,
+    stmt,tempstmt,prim,layout_at,layout_qual,layout_Stmt
     builtinFunc,builtinVar,
     funcStmt
 };
@@ -115,21 +115,60 @@ struct context_tuple {
     template <pcntxt p>
     bool hasCntxt(){return kwCntxt&p;};
 };
-#define KW_LIST
-template <kwty kTY>
-struct kw : context_tuple<kTY> {
-    static constexpr kwty KT= kTY;
-    const std::string name;
-    bool _check(parser& p,std::string s){ 
-        for(pcntxt it : *this){
-            if(it==p.cntxt){return true;}
-        };
-        return false;
+
+#define KW_LIST 
+
+template <size_t N>
+struct Str {
+    std::array<char, N> data;
+
+    constexpr Str(const char (&s)[N]) {
+        std::copy_n(s, N, data.begin());
     }
+
+    std::string get() const { return std::string(data.data()); }
+};
+
+// Now Str is literal → usable as NTTP
+template <Str S>
+struct hs {
+    static constexpr auto value = S;
+    static std::string name() { return std::string(value.data.data()); }
+};
+
+template <typename KW>
+struct kwordMeta {
+    static constexpr bool macro;
+    static constexpr bool
+};
+
+template <Str s,typename KW,kwty kTY>
+struct kw : hs<S>,context_tuple<kTY> {
+    using type = KW;
+    static constexpr kwty KT= kTY;
+    static std::string name() {return S.name();}
+    // bool _check(parser& p,std::string s){ 
+    //     for(pcntxt it : *this){
+    //         if(it==p.cntxt){return true;}
+    //     };
+    //     return false;
+    // }
     bool check(parser& p,std::string s){
-        if(s!= name){return false;}
-        return _check();}
-    void proc(parser& p);
+        if(s!= name()){return false;}
+        return true;
+    };
+    template <kwty kT>
+    void _proc(parser& p);
+    template <>void _proc<kwty::macro>(parser& p){p.getMacro(p.getMacro()<KW>());};
+    template <>void _proc<kwty::qualifier>(parser& p){p.putQualifier<KW>();};
+    template <>void _proc<kwty::layout_Stmt>(parser& p){p.LayoutNew<KW>();};
+    template <>void _proc<kwty::layout_at>(parser& p){p.putLayout<KW>();};
+    template <>void _proc<kwty::layout_qual>();
+    template <>void _proc<kwty::builtinFunc>();
+    template <>void _proc<kwty::builtinVar>();
+    template <>void _proc<kwty::funcStmt>();  
+    void proc(parser& p){_proc<kTY>(p);};
+    // void lex(parser& p);
 };
 
 template <typename T,typename... Ts>
@@ -149,229 +188,88 @@ struct context_join {
 
 #define KW_NDECL(name,sname,KWTY) struct name : kw<KWTY> ;
 
-struct kw_version :  kw_mat<kwty::macro> {
-static const std::string name = #version;
-void proc(parser& p){    p.setVersion(p.getNum(p.untilEOL()));}
+using kw_version =  kw<"version",macroStmt::mStmtVersion,kwty::macro> ;
+// void kw_version::proc(parser& p){    p.setVersion(p.getNum(p.untilEOL()));}
 
-};
+#define KW_LIST kw_version,
 
+using kw_Incl = kw<"#include",macroStmt::mStmtInclude,kwty::macro> ;
+#define KW_LIST KW_LIST kw_Incl, 
 
+using kw_Define =  kw<"#define",macroStmt::mStmtDefine,kwty::macro> ;
+#define KW_LIST KW_LIST, kw_Define 
 
-struct kw_Incl : kw<kwty::macro> {
-    static const std::string name = "#include";
-    void proc(parser& p){
-        std::string s=p.untilEOL();
-        std::string name;
-        for(i=0;i<s.length() and s[i]==' ';i++){}
-        for(i=0;i<s.length() and s[i]!=' ';i++){name+=line[i];}
-        std::string str = name.substr(1,name.length()-2);
-        if(name[0]=='<'){if(name[name.length()-1]=='>'){
-            std::filesystem::path pth;
-                if(p.pushRel(str,&pth)){
-                    ast<meta> Ast;
-                    ast<meta>& curTU = ast_stack.back();
-                    if(CPHU && cph(pth,&Ast)){curTU.include(Ast);}
-                    else {cphAst = p.include(pth);curTU.include(Ast);}
-                }
-                else {syserr<err::t::include_closing_angle_bracket>(p);}}
-                else{ if(name[name.length()-1]=='\"'){
-                    p.pushRelcwd(str);}
-                    else {syserr<err::t::include_closing_dq>(p);}}
-        }
-    };
-};
-#define KW_LIST kw_Incl 
+using kw_if =  kw<"#if",macroStmt::mStmtIf,kwty::macro> ;
+#define KW_LIST KW_LIST, kw_if 
+using kw_else =  kw<"#else",macroStmt::mStmtElse,kwty::macro>;
+#define KW_LIST KW_LIST, kw_elif 
 
+using kw_elif =  kw<"#elif",macroStmt::mStmtElif,kwty::macro> ;
+#define KW_LIST KW_LIST, kw_elif 
 
-struct kw_Define :  kw<kwty::macro> ; 
+using kw_elifdef =  kw<"#elifdef",macroStmt::mStmtElifdef,kwty::macro> ;
+#define KW_LIST KW_LIST, kw_elifdef 
 
+using kw_endif =  kw<"#endif",macroStmt::mStmtEndIf,kwty::macro> ;
+#define KW_LIST KW_LIST, kw_endif 
 
+    using kw_ifndef =  kw<"#ifndef",macroStmt::mStmtIfndef,kwty::macro> ;
+#define KW_LIST KW_LIST, kw_ifndef 
 
-struct kw_if :  kw<kwty::macro> ;
-struct kw_else :  kw<kwty::macro> ;
-struct kw_elif :  kw<kwty::macro> ;
-struct kw_elifdef :  kw<kwty::macro> ;
-struct kw_endif :  kw<kwty::macro> ;
-struct kw_ifndef :  kw<kwty::macro> ;
+using kw_ifdef =  kw<"#ifdef",macroStmt::mStmtIfdef,kwty::macro> ;
+#define KW_LIST KW_LIST, kw_ifdef 
 
+using kw_Layout =  kw<"layout",stmt<meta>::StmtLayout,kwty::layout_Stmt> ;
+#define KW_LIST KW_LIST, kw_Layout 
 
-struct kw_Define :  kw<kwty::macro> {
-static const std::string name = "#define";
-void proc(parser& p){
-    std::string s=p.untilEOL();
-    std::string name ;std::string value;size_t i;
-    for(i=0;i<s.length() and s[i]==' ' ;i++){}
-    for(i=0;i<s.length() and s[i]!=' ';i++){name+=line[i];}
-    for(i=0;i<s.length() ;i++){value+=line[i];}
-    macros.push(macro(name,value));
-};
-};
+using kw_Location =  kw<"location",stmt<meta>::Location,kwty::layout_at> ;
+#define KW_LIST KW_LIST, kw_Location 
 
-struct kw_if :  kw<kwty::macro> {
-static const std::string name = "#if";
-void proc(parser& p){
-    expr<meta> Ex = p.parse(p.untilEOL());
-    ex.
-    p.cast.push_back(tu<meta>(Ex));
-};
-};
-struct kw_else :  kw<kwty::macro> {
-static const std::string name = "#else";
-void proc(parser& p){ 
-    expr<meta> Ex = p.parse(p.untilEOL());
-    p.cast.push_back(tu<meta>(Ex));
-};
-};
-    struct kw_elif :  kw<kwty::macro> {
-static const std::string name = "#elif";
-void proc(parser& p){ 
-    expr<meta> Ex = p.parse(p.untilEOL());
-    p.cast.push_back(tu<meta>(Ex));
-};
-};
-    struct kw_elifdef :  kw<kwty::macro> {
-static const std::string name = "#elifdef";
-void proc(parser& p){};
-};
-    struct kw_endif :  kw<kwty::macro> {
-static const std::string name = "#endif";
-void proc(parser& p){};
-};
-    struct kw_ifndef :  kw<kwty::macro> {
-static const std::string name = "#ifndef";
-void proc(parser& p){ 
-    std::string str=p.untilEOL();
-    std::string s;for(size_t i=0;i<str.length();i++){
-        if(str[i]!=' '){size_t p=str.find_first_of(" ");
-            if(p!=std::string::npos){s=str.substr(i,p-i+1);break;};
-            else {s.str.substr(i);}
-        }
-    } ;
-    bool found=false;
-    for(macro mit : macros.mlist){
-        if(mit.name==s){found=true;break;}
-    };
-    if(found){
-        p.cast.push_back(tu<meta>(expr<meta>(true)))
-    }
-    else {p.untilKWs<kw_else,kw_elif,kw_elifdef,kw_endif>();}
-};
-};
-struct kw_ifdef :  kw<kwty::macro> {
-static const std::string name = "#ifdef";
-void proc(parser& p){ 
-    
-};
-};
-struct kw_Layout :  kw<kwty::stmt> {
-static const std::string name = "layout";
-void proc(parser& p){ 
-    
-};
-};
-struct kw_Location :  kw<kwty::layout_at> {
-static const std::string name = "location";
-void proc(parser& p){
-};
-};
-struct kw_Binding :  kw<kwty::layout_at> {
-static const std::string name = "binding";
-void proc(parser& p){
-};
-};
-struct kw_uniform :  kw<kwty::qualifier> {
-static const std::string name = "uniform";
-void proc(parser& p){
-};
-};
-struct kw_in :  kw<kwty::qualifier> {
-static const std::string name = "in";
-void proc(parser& p){
-};
-};
-struct kw_out :  kw<kwty::qualifier> {
-static const std::string name = "out";
-void proc(parser& p){
-};
-};
-struct kw_inout :  kw<kwty::qualifier> {
-static const std::string name = "inout";
-void proc(parser& p){ 
-    
-};
-};
-struct kw_Return :  kw<kwty::funcStmt> {
-static const std::string name = "return";
-void proc(parser& p){ 
-    expr<q> ex=p.untilSemiColon(); 
-};
-};
-#define KW_LIST
-struct kw_Buffer :  kw<kwty::prim> {
-static const std::string name = "buffer";
-void proc(parser& p){
-};
-};
-#define KW_LIST
+using kw_Binding =  kw<"binding",stmt<meta>::Binding,kwty::layout_at> ;
+#define KW_LIST KW_LIST, kw_Binding 
 
-struct kw_Image2D :  kw<kwty::prim> {
-static const std::string name = "image2D";
-void proc(parser& p){
-};
-};
-#define KW_LIST
-struct kw_Image3D :  kw<kwty::prim> {
-static const std::string name = "image3D";
-void proc(parser& p){
-};
-};
-#define KW_LIST
-struct kw_Sampler :  kw<kwty::prim> {
-static const std::string name = "sampler";
-void proc(parser& p){
-};
-};
-#define KW_LIST
-struct kw_Void :  kw<kwty::prim> {
-static const std::string name = "void";
-void proc(parser& p){
-};
-};
-#define KW_LIST
-struct kw_Float :  kw<kwty::prim> {
-static const std::string name = "float";
-void proc(parser& p){
-};
-};
-#define KW_LIST
-struct kw_Int :  kw<kwty::prim> {
-static const std::string name = "int";
-void proc(parser& p){
-};
-};
-#define KW_LIST
-struct kw_Uint :  kw<kwty::prim> {
-static const std::string name = "uint";
-void proc(parser& p){
-};
-};
-#define KW_LIST
-struct kw_Bool :  kw<kwty::prim> {
-static const std::string name = "bool";
-void proc(parser& p){
-};
-};
-#define KW_LIST
+using kw_uniform =  kw<"uniform",stmt<meta>::StmtLayout,kwty::layout_qual> ;
+#define KW_LIST KW_LIST, kw_uniform 
+using kw_Buffer =  kw<"buffer",kwty::layout_qual> ;
+#define KW_LIST KW_LIST,kw_Buffer
 
 
+using kw_Const =  kw_mat<"const",atConst,kwty::qualifier> ;
+#define KW_LIST KW_LIST, kw_Const
+using kw_Flat =  kw_mat<"flat",atFlat,kwty::qualifier> ;
+#define KW_LIST KW_LIST, kw_Flat 
+using kw_in =  kw<"in",atIn,kwty::qualifier> ;
+#define KW_LIST KW_LIST, kw_in 
+using kw_out =  kw<"out",atOut,kwty::qualifier> ;
+#define KW_LIST KW_LIST, kw_out 
+using kw_inout =  kw<"inout",atInout,kwty::qualifier> ;
+#define KW_LIST KW_LIST, kw_inout 
 
+using kw_Return =  kw<"return",kwty::funcStmt> ;
+#define KW_LIST KW_LIST, kw_Return 
+using kw_Image2D =  kw<"image2D",kwty::prim> ;
+#define KW_LIST KW_LIST,kw_Image2D
+using kw_Image3D =  kw<"image3D",kwty::prim> ;
+#define KW_LIST KW_LIST,kw_Image3D
+using kw_Sampler =  kw<"sampler",kwty::prim> ;
+#define KW_LIST KW_LIST,kw_Sampler
+using kw_Void =  kw<"void",kwty::prim> ;
+#define KW_LIST KW_LIST,kw_Void
+using kw_Float =  kw<"float",kwty::prim> ;
+#define KW_LIST KW_LIST,kw_Float
+using kw_Int =  kw<"int",kwty::prim> ;
+#define KW_LIST KW_LIST,kw_Int
+using kw_Uint =  kw<"uint",kwty::prim> ;
+#define KW_LIST KW_LIST,kw_Uint
+using kw_Bool =  kw<"bool",kwty::prim> ;
+#define KW_LIST KW_LIST,kw_Bool
 
-template <kwty kTY,pcntxt pc,pcntxt... pcs>
-struct kw_vec : kw<kTY,pc,pcs...> {    size_t d;
+template <Str s,typename T>
+struct kw_vec : kw<s,T,kwty::builtinVar> {    size_t d;
     bool check(parser& p,std::string s){
-        if(s.substr(0,this->name.length()) != this->name){return false;}
-        else if(!isdigit(s[this->name.length()])){return false;}
-        size_t d = this->name[this->name.length()-1] - '0' ;if(d<2 or d>4){return false;}
+        if(s.substr(0,this->name().length()) != this->name){return false;}
+        else if(!isdigit(s[this->name().length()])){return false;}
+        size_t d = this->name()[this->name().length()-1] - '0' ;if(d<2 or d>4){return false;}
 
         return true;}
     void proc(parser& p){
@@ -379,217 +277,150 @@ struct kw_vec : kw<kTY,pc,pcs...> {    size_t d;
     };
 };
 
-template <kwty kTY,pcntxt pc,pcntxt... pcs>
-struct kw_mat : kw<kTY,pc,pcs...> {
+template <Str s,typename T>
+struct kw_mat : kw<s,T,kwty::builtinVar> {
     size_t dx,dy;
     bool check(parser& p,std::string s){
-        if(s.substr(0,this->name.length()) != this->name){return false;}
-        else if(!isdigit(s[this->name.length()])){return false;}
-        dy=s[this->name.length()] - '0';if(dy<2 or dy>4){return false;}
-        if(s[this->name.length()+1] !='x'){return false;}
-        if(!isdigit(s[this->name.length()+2] )){return false;}
-        dx=s[this->name.length()+2] - '0';if(dx<2 or dx>4){return false;}
+        if(s.substr(0,this->name().length()) != this->name){return false;}
+        else if(!isdigit(s[this->name().length()])){return false;}
+        dy=s[this->name().length()] - '0';if(dy<2 or dy>4){return false;}
+        if(s[this->name().length()+1] !='x'){return false;}
+        if(!isdigit(s[this->name().length()+2] )){return false;}
+        dx=s[this->name().length()+2] - '0';if(dx<2 or dx>4){return false;}
         return true;}
     void proc(parser& p){
 
     };
 };
-#define KW_VEC(name,sname,KWTY) struct name : kw_vec<KWTY> {const std::string name = sname;}; \
-#define KW_LIST KW_LIST, name
-#define KW_MAT(name,sname,KWTY) struct name : kw_mat<KWTY> {const std::string name = sname;}; \
-#define KW_LIST KW_LIST, name
 
-struct kw_Vec :  kw_vec<      kwty::prim> {
-static const std::string name =       "vec";
-void proc(parser& p){
-};
-};
+using kw_Vec =kw_vec<"vec",primVec,kwty::prim> ;
 #define KW_LIST KW_LIST, kw_Vec
-struct kw_Mat :  kw_mat<      kwty::prim> {
-static const std::string name =       "mat";
-void proc(parser& p){
-};
-};
+using kw_Mat =kw_mat<"mat",primMat,kwty::prim> ;
 #define KW_LIST KW_LIST, kw_Mat
-struct kw_Ivec :  kw_vec<     kwty::prim> {
-static const std::string name =      "ivec";
-void proc(parser& p){
-};
-};
+using kw_Ivec =kw_vec<"ivec",primiVec,kwty::prim> ;
 #define KW_LIST KW_LIST, kw_Ivec
-struct kw_Imat :  kw_mat<     kwty::prim> {
-static const std::string name =      "imat";
-void proc(parser& p){
-};
-};
+using kw_Imat =kw_mat<"imat",primiMat,kwty::prim> ;
 #define KW_LIST KW_LIST, kw_Imat
-struct kw_Uvec :  kw_vec<     kwty::prim> {
-static const std::string name =      "uvec";
-void proc(parser& p){
-};
-};
+using kw_Uvec =kw_vec<"uvec",primuVec,kwty::prim> ;
 #define KW_LIST KW_LIST, kw_Uvec
-struct kw_Umat :  kw_mat<     kwty::prim> {
-static const std::string name =      "umat";
-void proc(parser& p){
-};
-};
+using kw_Umat =kw_mat<"umat",primuMat,kwty::prim> ;
 #define KW_LIST KW_LIST, kw_Umat
-struct kw_Bvec :  kw_vec<     kwty::prim> {
-static const std::string name =      "bvec";
-void proc(parser& p){
-};
-};
+using kw_Bvec =kw_vec<"bvec",primbVec,kwty::prim> ;
 #define KW_LIST KW_LIST, kw_Bvec
-struct kw_Bmat :  kw_mat<     kwty::prim> {
-static const std::string name =      "bmat";
-void proc(parser& p){
-};
-};
+using kw_Bmat =kw_mat<"bmat",primbMat,kwty::prim> ;
 #define KW_LIST KW_LIST, kw_Bmat
-struct kw_Flat :  kw_mat<     kwty::qualifier> {
-static const std::string name =      "flat";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_Flat
-struct kw_Const :  kw_mat<    kwty::qualifier> {
-static const std::string name =     "const";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_Const
-struct kw_Template :  kw_mat< kwty::name_attrib> {
-static const std::string name =  "template";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST,  kw_Template
-struct kw_Typename :  kw_mat< kwty::name_attrib> {
-static const std::string name =  "typename";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_Typename
-struct kw_Constexpr :  kw<kwty::qualifier> {
-static const std::string name = "constexpr";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_Constexpr 
-struct kw_Do :  kw_mat<       kwty::funcStmt> {
-static const std::string name =        "do";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_Do 
-struct kw_While :  kw_mat<    kwty::funcStmt> {
-static const std::string name =     "while";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST,  kw_While
-struct kw_For :  kw_mat<      kwty::funcStmt> {
-static const std::string name =       "for";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_For 
-struct kw_If :  kw_mat<       kwty::funcStmt> {
-static const std::string name =        "if";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_If  
-struct kw_Else :  kw_mat<     kwty::funcStmt> {
-static const std::string name =      "else";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_Else  
-struct kw_Switch :  kw_mat<   kwty::funcStmt> {
-static const std::string name =    "switch";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_Switch
-struct kw_Case :  kw_mat<   kwty::funcStmt> {
-static const std::string name =      "switch";
-void proc(parser& p){
-};
-};
-#define KW_LIST KW_LIST, kw_Case
-kw_Case::proc(parser& p){
 
-};
+using kw_Template =  kw<"template",kwty::Tempstmt> ;
+#define KW_LIST KW_LIST,  kw_Template
+using kw_Typename =  kw<"typename",kwty::stmt> ;
+#define KW_LIST KW_LIST, kw_Typename
+using kw_Constexpr =  kw<"constexpr",kwty::qualifier> ;
+#define KW_LIST KW_LIST, kw_Constexpr 
+using kw_Do =  kw<"do",kwty::funcStmt> ;
+#define KW_LIST KW_LIST, kw_Do 
+using kw_While =  kw<"while",kwty::funcStmt> ;
+#define KW_LIST KW_LIST,  kw_While
+using kw_For =  kw<"for",kwty::funcStmt> ;
+#define KW_LIST KW_LIST, kw_For 
+using kw_If =  kw<"if",kwty::funcStmt> ;
+#define KW_LIST KW_LIST, kw_If  
+using kw_Else =  kw<"else",kwty::funcStmt> ;
+#define KW_LIST KW_LIST, kw_Else  
+using kw_Switch =  kw<"switch",kwty::funcStmt> ;
+#define KW_LIST KW_LIST, kw_Switch
+using kw_Case =  kw<"switch",kwty::funcStmt> ;
+#define KW_LIST KW_LIST, kw_Case
 
 
 template <temp q,typename kw>
-struct stmt_kw_ty{using type = stmt<q>::stmtExpr;};
-
+struct stmt_kw_ty{using type = stmt<q>::stmtVarDecl;};
 template <temp q>
 struct stmt_kw_ty<q,kw_Incl>{using type = macroStmt::mStmtInclude;
     using clsty = macroStmt;
 };
-
 template <temp q>
 struct stmt_kw_ty<q,kw_Define>{using type = macroStmt::mStmtDefine;
     using clsty = macroStmt;
 };
-
 template <temp q>
 struct stmt_kw_ty<q,kw_if>{using type = macroStmt::mStmtIf;
     using clsty = macroStmt;
 };
-
 template <temp q>
 struct stmt_kw_ty<q,kw_elif>{using type = macroStmt::mStmtElif;
     using clsty = macroStmt;
 };
-
 template <temp q>
 struct stmt_kw_ty<q,kw_elifdef>{using type = macroStmt::mStmtElifdef;
     using clsty = macroStmt;
 };
-
-template <temp q>
-struct stmt_kw_ty<q,kw_else>{using type = macroStmt::mStmtElse;
-    using clsty = macroStmt;
-};
-
 template <temp q>
 struct stmt_kw_ty<q,kw_else>{using type = macroStmt::mStmtElse;
     using clsty = macroStmt;
 };
 template <temp q>
-struct stmt_kw_ty<q,kw_>{using type = macroStmt::mStmtElse;
+struct stmt_kw_ty<q,kw_else>{using type = stmt<q>::StmtElse;
+    using clsty = macroStmt;
+};
+template <temp q>
+struct stmt_kw_ty<q,kw_Layout>{using type = stmt<q>::StmtLayout;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_Location>{using type = stmt<q>::StmtLayout;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_Binding>{using type = stmt<q>::StmtLayout;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_Uniform>{using type = stmt<q>::StmtLayout;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_Flat>{using type = stmt<q>::StmtLayout;
     using clsty = Stmt;};
 
 template <temp q>
-struct stmt_kw_ty<q,kw_While>{using type = Stmt::StmtWhile;
+struct stmt_kw_ty<q,kw_in>{using type = stmt<q>::StmtVardecl;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_inout>{using type = stmt<q>::StmtVardecl;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_out>{using type = stmt<q>::StmtVardecl;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_Return>{using type = stmt<q>::StmtFuncDef;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_Buffer>{using type = stmt<q>::StmtLayout;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_Image2D>{using type = stmt<q>::StmtVardecl;
+    using clsty = Stmt;};
+template <temp q>
+struct stmt_kw_ty<q,kw_While>{using type = stmt<q>::StmtWhile;
     using clsty = Stmt;};
 
 template <temp q>
-struct stmt_kw_ty<q,kw_For>{using type = Stmt::StmtFor;
+struct stmt_kw_ty<q,kw_For>{using type = stmt<q>::StmtFor;
     using clsty = Stmt;};
 
 template <temp q>
-struct stmt_kw_ty<q,kw_If>{using type = Stmt::StmtIf;
+struct stmt_kw_ty<q,kw_If>{using type = stmt<q>::StmtIf;
     using clsty = Stmt;};
 
 template <temp q>
-struct stmt_kw_ty<q,kw_Else>{using type = Stmt::StmtElse;
+struct stmt_kw_ty<q,kw_Else>{using type = stmt<q>::StmtElse;
     using clsty = Stmt;};
 
 template <temp q>
-struct stmt_kw_ty<q,kw_Switch>{using type = Stmt::StmtSwitch;
+struct stmt_kw_ty<q,kw_Switch>{using type = stmt<q>::StmtSwitch;
     using clsty = Stmt;};
 
 template <temp q>
-struct stmt_kw_ty<q,kw_Case>{using type = Stmt::StmtCase;
+struct stmt_kw_ty<q,kw_Case>{using type = stmt<q>::StmtCase;
     using clsty = Stmt;};
 template <temp q>
-struct stmt_kw_ty<q,kw_Do>{using type = Stmt::block;
+struct stmt_kw_ty<q,kw_Do>{using type = stmt<q>::block;
     using clsty = Stmt;};
 
 

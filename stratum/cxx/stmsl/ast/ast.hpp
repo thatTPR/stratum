@@ -5,6 +5,7 @@
 #include <petri/stack.hpp>
 #include <petri/variant.hpp>
 #include "sys.cpp"
+#include "lex.hpp"
 namespace stmsl{
 
 #include <string>
@@ -16,66 +17,41 @@ template <template<typename... As> typename AS,template <typename... T> typename
 using _AST_TEMPT = typename AS<A<ASTNODES<q>>...>;
 
 struct op {
-    enum tyop {
-        plus,pp,
-        minus,mm,
-        div,mul,
-        eq,eqeq,neq,
-        lt,gt,lteq,gteq,
-        condq,conde,
-        Or,And,Xor,Not,
-        member,
+    enum ty {
+        opdot=lex::ty::dot,
+        oplus=lex::ty::plus,
+        ominus=lex::ty::minus,
+        oband=lex::ty::band,
+        obor=lex::ty::bor,
+        obxor=lex::ty::bxor,
+        omul=lex::ty::mul,
+        odiv=lex::ty::div,
+        olt=lex::ty::ltangle,
+        ogt=lex::ty::gtangle,
+        opp=lex::ty::pp,
+        omm=lex::ty::mm,
+        opand=lex::ty::oand,
+        opor=lex::ty::oor,
+        opcond=lex::ty::cond,
         err,none
-    };
-    struct nop {const tyop oper;const std::string n;
-        nop(const tyop op,const std::string _s) : oper(op), n(_s) {}  
-    };
-
-    tyop oper;
-    // #define NOP_LIST
-    // #define OPER_MA(NAME,TYOP,STROP) nop NAME = nop(TYOP,STROP);\
-    // #define NOP_LIST, NAME \
-
-    //  nop plus=nop( tyop::plus,"+")
-    //  OPER_MA(pp, tyop::pp,"++")
-    //  OPER_MA(minus, tyop::minus,"-")
-    //  OPER_MA(mm, tyop::mm,"--")
-    //  OPER_MA(div, tyop::div,"/")
-    //  OPER_MA(mul, tyop::mul,"*")
-    //  OPER_MA(eq, tyop::eq,"=")
-    //  OPER_MA(eqeq, tyop::eqeq,"==")
-    //  OPER_MA(neq, tyop::neq,"!=")
-    //  OPER_MA(lt, tyop::lt,"<")
-    //  OPER_MA(gt, tyop::gt,">")
-    //  OPER_MA(lteq, tyop::lteq,"<=")
-    //  OPER_MA(gteq, tyop::gteq,">=")
-    //  nop arr[]={NOP_LIST};
-    op(std::string s){
-        // size_t s=sizeof(arr)/sizeof(arr[0]);
-        if(s=="+"){oper=tyop::plus;return;}
-        if(s=="++"){oper=tyop::pp;return;}
-        if(s=="-"){oper=tyop::minus;return;}
-        if(s=="--"){oper=tyop::mm;return;}
-        if(s=="/"){oper=tyop::div;return;}
-        if(s=="*"){oper=tyop::mul;return;}
-        if(s=="="){oper=tyop::eq;return;}
-        if(s=="=="){oper=tyop::eqeq;return;}
-        if(s=="!="){oper=tyop::neq;return;}
-        if(s=="<"){oper=tyop::lt;return;}
-        if(s==">"){oper=tyop::gt;return;}
-        if(s=="<="){oper=tyop::lteq;return;}
-        if(s==">="){oper=tyop::gteq;return;}
-        if(s=="?"){oper=tyop::condq;return;}
-        if(s==":"){oper=tyop::conde;return;}
-        if(s=="||"){oper=tyop::Or;return;}
-        if(s=="&&"){oper=tyop::And;return;}
-        if(s=="^"){oper=tyop::Xor;return;}
-        if(s=="!"){oper=tyop::Not;return;}
-        if(s=="."){oper=tyop::member;return;}
-        // for(size_t i=0;i<s;i++){if(arr[i].n==s){oper=arr[i].oper;}}
-        oper=tyop::err;
     }
-    op(tyop tp): oper(tp){}
+    ty oper;
+    op(lex::ty tp) {
+        case::lex::plus : {oper=ty::oplus;break;}
+        case::lex::minus : {oper=ty::ominus;break;}
+        case::lex::band : {oper=ty::oband;break;}
+        case::lex::bor : {oper=ty::obor;break;}
+        case::lex::bxor : {oper=ty::obxor;break;}
+        case::lex::mul : {oper=ty::omul;break;}
+        case::lex::div : {oper=ty::odiv;break;}
+        case::lex::ltangle : {oper=ty::olt;break;}
+        case::lex::gtangle : {oper=ty::ogt;break;}
+        case::lex::pp : {oper=ty::opp;break;}
+        case::lex::mm : {oper=ty::omm;break;}
+        case::lex::oand : {oper=ty::opoand;break;}
+        case::lex::oor : {oper=ty::opoor;break;}
+        default : {oper=ty::err;}
+    }
 };
 
 
@@ -115,10 +91,28 @@ struct type {
     enum ty {expr,func,Buffer,strct,arr,
         Image2D,Image3D,Sampler,Void,Float,Int,Uint,Bool,
         Vec,Mat,Ivec,Imat,Uvec,Umat,Bvec,Bmat}
+    template <ty t>
+    constexpr bool hasSwizzle(){return false;};
+template <>constexpr bool hasSwizzle<Vec>(){return true;};
+template <>constexpr bool hasSwizzle<Mat>(){return true;};
+template <>constexpr bool hasSwizzle<Ivec>(){return true;};
+template <>constexpr bool hasSwizzle<Imat>(){return true;};
+template <>constexpr bool hasSwizzle<Uvec>(){return true;};
+template <>constexpr bool hasSwizzle<Umat>(){return true;};
+template <>constexpr bool hasSwizzle<Bvec>(){return true;};
+template <>constexpr bool hasSwizzle<Bmat>(){return true;};
 
-    size_t dim;std::vector<size_t> dims;
 
-    op::tyop arr[]= {optyop::conde} 
+size_t dim;std::vector<size_t> dims;
+
+struct swizzle {
+    size_t size;
+    std::vector<size_t> s;
+    swizzle(std::string s){
+        
+    } 
+};
+    op::tyop arr[]= {op::ty::con} 
     
     std::string name ; 
     std::vector<param<q>> prms;bool tempTy=false;
@@ -161,10 +155,20 @@ struct type {
     type(type::ty _t,std::initializer_list<param<q>> _prms) :t(_t) {prms=_prms;tempTy=true;};
 };
 
+enum AttribType {
+    LayoutOnly,LayoutExcl,Every
+};
+enum qual {Const,in,inout,out,flat};
+template <AttribType at,qual q>
+struct Attrib{using ats=at;using qualty = q;};
+using atConst = Attrib<AttribType::LayoutExcl,qual::Const>;
+using atIn  =Attrib<AttribType::Every,qual::In>;
+using atInout =Attrib<AttribType::Every,qual::Inout>;
+using atOut =Attrib<AttribType::Every,qual::Out>;
+using atFlat =Attrib<AttribType::LayoutOnly,qual::Flat>;
 template <temp q>
 struct decl {
     enum ty {func,memberFunc,constructor,strct,varDecl}
-    enum qual {const,in,inout,out,flat};
     std::vector<qual> qualifies;
     ty dty;
     type t;    
@@ -215,6 +219,8 @@ template <temp q>
 struct def : decl<q>{
     enum defty {specialization,fulldef };
 };
+
+
 
 template <temp q>
 struct typeDecl {
@@ -267,28 +273,26 @@ struct value {
     
     type<q>& getType() {return *t;}
     struct dataVarVal {
+        type<q>* ptr;
 
+    };
+    struct dataVar {
+        std::string name;
+        type<q>* ptr;
+        
     };
     struct dataVarRef{
-        std::string name;
+        dataVar ref;
+        
     };
-    struct dataMemberRef{
-        dataVarRef
+    struct dataMemberRef : dataVarRef {
+        dataVarRef* parent;
     };
-    union data {
-
-    }
-
+    pri::tuple<dataVarVal,dataVarRef,dataMemberRef> val;
     std::string name;
 
 };
 
-
-template <temp q>
-struct tu ;
-
-template <temp q>
-struct ast ;
 
 
 template <temp q>
@@ -362,7 +366,7 @@ struct expr {
 
     };
     node tree;
-    
+    expr cond;
 
     template <typename retTy>
     retTy parseTree(retTy(*ptr)(node& n)){
@@ -397,35 +401,53 @@ struct expr {
 
 
     // LiteralConstructors:
-    expr(type _t) : ty(_t);
-    expr(bool s) : type(ty::literal) , bliteral(s){}
+    // expr() = default ;
+    // expr(pri::deque<lex> stripped){}; 
+    // expr(type _t) : ty(_t);
+    // expr(bool s) : type(ty::literal) , bliteral(s){}
     
-    expr(stmsl::parser& prs,std::string s){
+    // expr(stmsl::parser& prs,std::string s){
 
-    };
-    expr(ast<q> ,  std::string s){
+    // };
+    // expr(ast<q> ,  std::string s){
 
-    };
+    // };
     // template <typename T>
     // expr(T s) : type(ty::literal) {if(s){bliteral=true}else{bliteral=false}}
 };
 
 
+template <temp q>
+struct parameterType {
+    enum ty {
+        Typename,uint,float,
+    };
+    using typeTypename =  type<q>  ;
+    // typedef typeUint = uint;
+    using typeFloat = float;
 
+    pri::variant<>
+};
 
 
 template <temp q>
 struct stmt {
-    struct block {
-        pri::list<stmt> stmts;
-    };
     struct argList {
-        pri::list<stmt> stmts;
+        struct arg {
+
+        };
+        pri::list<stmt<q>> stmts;
     };
-    struct parList {
-        pri::list<stmt> stmts;
-    }
+    struct parameterList {
+    struct arg {
+        type<q> ty;
+        std::string name; 
+    };
+    pri::deque<arg> args;
+    };
+
     enum stmtty {
+        Block,
         Assign,
         Do,DoWhile,DoFor,
         While,For,ForRange,
@@ -440,9 +462,10 @@ struct stmt {
     };
     stmtty s;
 
-
-
-
+    struct block {
+        pri::list<stmt<q>> stmts;
+        block(pri::list<stmt<qt>> _stmts) :stmts(_stmts) {}
+    };
     struct StmtAssign {expr<q> lhs;expr<q> rhs;};
     struct StmtWhile {
         expr<q> condition;
@@ -473,12 +496,17 @@ struct stmt {
 
 
     struct StmtFuncDecl {
+       
         std::vector<param<q>> prms;
         type<q>* return;
         argList args;
     };
     struct StmtFuncDef : StmtFuncDecl {block body;};
     struct StmtVardecl {
+        enum qualif {
+            Const,in,inout,out
+        };
+        uint qualifiers;
         type<q>* t;std::string name;
         bool Default;expr<q> DefaultValue;
     };
@@ -499,13 +527,18 @@ struct stmt {
         std::string name ;
         type<q> get(){};        
     };
+    // template <>
+    // struct StmtLayoutTy
+    struct Location ;
+    struct Binding
     struct StmtLayout {
         enum stand {std430,std140};
         enum ty {location,binding};
-        enum tyT { buffer,var}
+        enum tyT { buffer,var,uniform}
         stand st;
         ty t;
         size_t loc;
+        bool uniform;bool flat;
         pri::variant<StmtVardecl,StmtDefType> data;
     };
     struct StmtExpr {
@@ -551,20 +584,17 @@ template <>struct getTy<stmtty::Expr>{using ty =StmtExpr; };
     block get(std::string s){
 
     };
-
-    stmt(stmtty ty,std::string s) { // TODO
-
-    };
-    stmt(stmtty ty,stmsl::parser prsr) { // TODO
-
-    };
-
     struct fileRange {
+        size_t filePos;
         size_t linestart,lineend;
         std::filesystem::path pathFile;
         fileRange(size_t s,size_t e,std::filesystem::path pth) : linestart(s) , lineend(e) pathFile(path) {}  
     };
     std::enable_if<q==temp::meta,fileRange>::type range;
+    std::enable_if<q==temp::meta,parList>::type paramters;
+
+     
+
     stmt(stmsl::parser& p,std::string s){
         range.linestart=fileRange(p.linecur,p.linecurnext,p.curFilePath);
     };
@@ -573,6 +603,7 @@ template <>struct getTy<stmtty::Expr>{using ty =StmtExpr; };
 
 struct macroStmt {
     enum ty{            _include,_define,_if,_ifdef,_ifndef,_elif,_elifdef,_else};
+    struct mStmtVersion;
 struct mStmtInclude {
 
 };
@@ -583,7 +614,7 @@ struct mStmtElifdef {};
 struct mStmtIfdef {};
 struct mStmtIfndef {};
 struct mStmtElse {};
-
+struct mStmtEndIf{}
 
 };
 
@@ -660,7 +691,28 @@ struct tu {
 template <temp q>
 struct ast   {
     uint version;
+    pri::deque<stmt<q>::StmtLayout> layouts;
 
+    
+struct macro {
+    std::string name ,val;
+    std::vector<std::string> args;
+    macro(std::string _name,std::string _val) : name(_name) : val(_val) {}
+    macro(std::string _name,std::string _val,std::vector<std::string> arg) : name(_name) , val(_val) , args(arg) {}
+};
+
+struct macrosl {
+    pri::list<macro> mlist ;
+    void push(macro m ){
+        for(macro mit : mlist){
+            if(m.name == mit.name){
+                mit.val=m.val;return;
+            };
+        }
+        mlist.push_back(m);
+    }
+};
+macrosl macros;
     pri::list<tu<q>> lst;
 
     struct metaSpace {

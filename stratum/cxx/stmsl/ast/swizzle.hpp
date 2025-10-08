@@ -5,8 +5,8 @@ namespace stmsl
 {
     
     struct vec {
-    
-    }
+        
+    };
     
     struct matn {
     

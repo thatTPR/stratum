@@ -9,23 +9,6 @@ namespace stmsl
 
     
 
-struct macro {
-    std::string name ,val;
-    macro(std::string _name,std::string _val) : name(_name) : val(_val) {}
-}
-
-struct macrosl {
-    pri::list<macro> mlist ;
-    void push(macro m ){
-        for(macro mit : mlist){
-            if(m.name == mit.name){
-                mit.val=m.val;return;
-            };
-        }
-        mlist.push_back(m);
-    }
-};
-macrosl macros;
 bool CPH=false;bool CPHU=false;
 bool preprocAndCompileOnly= false;
 bool preprocOnly= false;
@@ -181,17 +164,31 @@ bool Werror = false;
 bool Wfatal_error = false;
 
 
-struct _errs{
+struct err{
     parser& p;
-    enum sys{
-        template_instance,
+    enum t{
+        include_closing_angle_bracket,include_closing_dq,
+        template_param_mismatch,template_param_list_incomplete,
     };
-    void operator(sys s){
+    template <t ts>
+    std::string get(){
 
+    };
+    template <t ts>
+    void _err(stmsl::parser& prs);
+    template <>void _err<template_param_mismatch>(stmsl::parser& prs){};
+    template <>void _err<include_closing_angle_bracket>(stmsl::parser& prs){std::err<<"error on line "<<prs.linen<<"Expected closing \'>\' in include statement:\n"<<prs.line<<std::endl;};
+    template <>void _err<include_closing_dq>(stmsl::parser& prs){std::err<<"error on line "<<p.line<<"Expected closing \'\"\' in include statement:\n"<<p.line<<std::endl;};
+    
+
+    template <t ts>
+    void err(stmsl::parser& prs){
+        if(wfatal_error){}
+        _err<ts>(prs);
     };
 
 };
-_errs syserr;
+err syserr;
 
 
 void wrcph(std::filesystem::path pth,ast<meta> astm){
@@ -219,7 +216,7 @@ void emitBinaryNolink(ast<meta> a){emitBinary(a);}
 void emit(std::filesystem::path pth){
     
     parser prsr;
-    syserr _errs;errs.p = prsr;prsr.syserr=syserr;
+    syserr.p = prsr;prsr.syserr=syserr;
     if(preprocOnly){
         prsr.fromFilePreproc(pth);return;    
     }
