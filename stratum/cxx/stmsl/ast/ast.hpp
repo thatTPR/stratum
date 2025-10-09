@@ -102,15 +102,39 @@ template <>constexpr bool hasSwizzle<Umat>(){return true;};
 template <>constexpr bool hasSwizzle<Bvec>(){return true;};
 template <>constexpr bool hasSwizzle<Bmat>(){return true;};
 
+struct Image2DTy {
 
+};
+struct Image3DTy {
+
+};
+struct SamplerTy {
+
+};
+struct FloatTy;
+struct IntTy;
+struct UintTy;
+struct BoolTy;
 size_t dim;std::vector<size_t> dims;
 
 struct swizzle {
     size_t size;
     std::vector<size_t> s;
-    swizzle(std::string s){
-        
-    } 
+    bool operator==(type<inst>& f){
+        if(s.size()<=f.dim)
+    };
+    swizzle(type<inst>& f,std::string s){
+        for(char c : s){
+            size_t h = c-'x';
+            if(h>size){
+                // TODO syserr<swizzle_toLarge>
+            };
+        };
+    };
+};
+
+struct swizzleTy {
+
 };
     op::tyop arr[]= {op::ty::con} 
     
@@ -211,6 +235,9 @@ case type<q>::ty::Bmat : {n="Bmat";n+=dims[0];n+=dims[1];break;}
 return n;
 }
     std::string name;
+    lex ltok; 
+    size_t fpos;size_t ln,col;
+    decl(lex l ) : name(l.u.name),fpos(l.filePos),ln(l.ln) ,col(l.col) :
 } ;
 
 
@@ -224,16 +251,19 @@ struct def : decl<q>{
 
 template <temp q>
 struct typeDecl {
-
+    
 };
 template <temp q>
 struct typeDef : typeDecl<q> {
 
 };
 
-struct varDecl {
+template <temp q>
+struct varDecl : decl {
     decl<inst>* obj;
     std::string name;
+    std::vector<value<q>> constructorArgs;
+    std::vector<
 };
 struct varDef : varDecl {
     std::vector<param<q>> ps;
@@ -290,6 +320,8 @@ struct value {
     };
     pri::tuple<dataVarVal,dataVarRef,dataMemberRef> val;
     std::string name;
+    size_t fpos,ln,col;
+    value(lex l) name(l.u.name),fpos(l.filePos),ln(l.ln),col(l.col) {}
 
 };
 
@@ -639,13 +671,14 @@ using AST_tup_list= AST_TEMPT<pri::tuple,pri::list> ;
 template <temp q>
 struct tu {
     expr<q> condition;
-    bool evalTrue(){
+    bool evalCondTrue(){
 
     };
     using list_tup = AST_tup_list<q> ;
     list_tup tup;
 
-
+    pri::list<type<q>> Types;
+    pri::list<stmt<q>::StmtFunc> Funcs;
 
     template <typename astNd>
     pri::list<astNd>& get(){pri::get<pri::list<astNd>>(tup);};
@@ -653,9 +686,13 @@ struct tu {
     varDecl<q> findVarDecl(std::string name){
 
     };
-    void findTypeDecl(std::string name){
+    
+    type<q> findTypeDecl(std::string name){
 
-    }
+    };
+    type<q> findTypeDecl(std::string name,pri::list<param<q>> ps){
+
+    };  
     void findTypeDef(std::string name)
     void findTemptyDecl(std::string name)
     void findTemptyDefAll(std::string name)
@@ -671,6 +708,7 @@ struct tu {
         pri::list<index>::iter ; 
     };
 
+    
 
     template <typename astNd>
     void push(astNd& s){pri::get<pri::list<astNd>>(tup).push_back(s);};
@@ -679,7 +717,6 @@ struct tu {
         ind.push_back
     };
 
-    void include(ast<q> s){}//TODO
 
     tu(ast<meta>& q){
 
@@ -723,7 +760,14 @@ macrosl macros;
     pri::list<metaSpace> metaSpaces;
 
 
-    void getTu(){}
+    void include(ast<q> s){
+        for(stmt<q>::StmtLayout& lyt : s.layouts){
+            layouts.push_back(lyt);
+            };
+            for(macro& mcr : s.macros.mlist){macros.push(mcr);};
+            for(tu<q> t : s.lst){lst.push_back(t);}
+        };
+
     tu<q> back(){return lst.back();}
     tu<q> front(){return lst.front();}
     

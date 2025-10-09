@@ -4,7 +4,7 @@
 namespace stmsl {
     struct lex {
             enum ty {Name,NumFlt,NumUint,
-                kw,typeName,member,
+                kw,typeName,typeNameConstructor,member,
                 escape='\\',
                 lparen='(',
                 rparen=')',
@@ -36,6 +36,8 @@ namespace stmsl {
                 float flt;int unum;
                 std::string name;
             }u;
+            size_t filePos;
+            size_t ln,col;
             void setUnum(char c){u.unum=(c-'0');}
             void addUnum(char c){u.unum*=10;u.unum+=(c-'0');}
             void addflt(char c){u.unum*=10;u.unum+=(c-'0');}
@@ -55,6 +57,12 @@ namespace stmsl {
             lex(uint n) : u.unum(n){t=NumUint;};
             lex(int n) : u.inum(n){t=NumInt;};
             lex(float n) : u.flt(n){t=NumFlt;};
+
+            lex(size_t fpos,size_t _ln,size_t _col,ty tt) : filePos(fpos),ln(_ln),col(_col)  t(tt){} 
+            lex(size_t fpos,size_t _ln,size_t _col,char c) : filePos(fpos),ln(_ln),col(_col) {t=ty::Name;u.name=std::string(c);}
+            lex(size_t fpos,size_t _ln,size_t _col,uint n) : filePos(fpos),ln(_ln),col(_col)  u.unum(n){t=NumUint;};
+            lex(size_t fpos,size_t _ln,size_t _col,int n) : filePos(fpos),ln(_ln),col(_col)  u.inum(n){t=NumInt;};
+            lex(size_t fpos,size_t _ln,size_t _col,float n) : filePos(fpos),ln(_ln),col(_col)  u.flt(n){t=NumFlt;};
         };
                 using tylexq=pri::deque<lex>;
 

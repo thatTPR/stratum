@@ -116,7 +116,6 @@ struct context_tuple {
     bool hasCntxt(){return kwCntxt&p;};
 };
 
-#define KW_LIST 
 
 template <size_t N>
 struct Str {
@@ -158,15 +157,18 @@ struct kw : hs<S>,context_tuple<kTY> {
         return true;
     };
     template <kwty kT>
-    void _proc(parser& p);
-    template <>void _proc<kwty::macro>(parser& p){p.getMacro(p.getMacro()<KW>());};
+    void _proc(parser& p){p.Continue();};
+    template <>void _proc<kwty::macro>(parser& p){p.getMacro<KW>();};
     template <>void _proc<kwty::qualifier>(parser& p){p.putQualifier<KW>();};
     template <>void _proc<kwty::layout_Stmt>(parser& p){p.LayoutNew<KW>();};
     template <>void _proc<kwty::layout_at>(parser& p){p.putLayout<KW>();};
-    template <>void _proc<kwty::layout_qual>();
-    template <>void _proc<kwty::builtinFunc>();
-    template <>void _proc<kwty::builtinVar>();
+    template <>void _proc<kwty::layout_qual>(p.putLayoutQual<KW>());
+    template <>void _proc<kwty::funcStmt>(p.Stmt();)
+    // template <>void _proc<kwty::
+    // template <>void _proc<kwty::builtinFunc>();
+    // template <>void _proc<kwty::builtinVar>();
     template <>void _proc<kwty::funcStmt>();  
+    template <pcntxt... pcs>
     void proc(parser& p){_proc<kTY>(p);};
     // void lex(parser& p);
 };
@@ -183,155 +185,173 @@ struct context_join {
 
 
 #define KW_LIST 
+#define KW_LISTKW
+#define KW_LISTPRIM
+#define KW_LISTLYT
 #define KW_N(name,sname,KWTY) struct name : kw<KWTY> {static const std::string name = sname;void proc(smtsl_parser& p) ;}; \
 #define KW_LIST KW_LIST, name
 
-#define KW_NDECL(name,sname,KWTY) struct name : kw<KWTY> ;
 
 using kw_version =  kw<"version",macroStmt::mStmtVersion,kwty::macro> ;
 // void kw_version::proc(parser& p){    p.setVersion(p.getNum(p.untilEOL()));}
-
-#define KW_LIST kw_version,
+#define KW_LISTKW kw_version,
 
 using kw_Incl = kw<"#include",macroStmt::mStmtInclude,kwty::macro> ;
-#define KW_LIST KW_LIST kw_Incl, 
+#define KW_LISTKW KW_LISTKW kw_Incl, 
 
 using kw_Define =  kw<"#define",macroStmt::mStmtDefine,kwty::macro> ;
-#define KW_LIST KW_LIST, kw_Define 
+#define KW_LISTKW KW_LISTKW, kw_Define 
 
 using kw_if =  kw<"#if",macroStmt::mStmtIf,kwty::macro> ;
-#define KW_LIST KW_LIST, kw_if 
+#define KW_LISTKW KW_LISTKW, kw_if 
 using kw_else =  kw<"#else",macroStmt::mStmtElse,kwty::macro>;
-#define KW_LIST KW_LIST, kw_elif 
+#define KW_LISTKW KW_LISTKW, kw_elif 
 
 using kw_elif =  kw<"#elif",macroStmt::mStmtElif,kwty::macro> ;
-#define KW_LIST KW_LIST, kw_elif 
+#define KW_LISTKW KW_LISTKW, kw_elif 
 
 using kw_elifdef =  kw<"#elifdef",macroStmt::mStmtElifdef,kwty::macro> ;
-#define KW_LIST KW_LIST, kw_elifdef 
+#define KW_LISTKW KW_LISTKW, kw_elifdef 
 
 using kw_endif =  kw<"#endif",macroStmt::mStmtEndIf,kwty::macro> ;
-#define KW_LIST KW_LIST, kw_endif 
+#define KW_LISTKW KW_LISTKW, kw_endif 
 
     using kw_ifndef =  kw<"#ifndef",macroStmt::mStmtIfndef,kwty::macro> ;
-#define KW_LIST KW_LIST, kw_ifndef 
+#define KW_LISTKW KW_LISTKW, kw_ifndef 
 
 using kw_ifdef =  kw<"#ifdef",macroStmt::mStmtIfdef,kwty::macro> ;
-#define KW_LIST KW_LIST, kw_ifdef 
+#define KW_LISTKW KW_LISTKW, kw_ifdef 
 
 using kw_Layout =  kw<"layout",stmt<meta>::StmtLayout,kwty::layout_Stmt> ;
-#define KW_LIST KW_LIST, kw_Layout 
+#define KW_LISTKW KW_LISTKW, kw_Layout 
 
 using kw_Location =  kw<"location",stmt<meta>::Location,kwty::layout_at> ;
-#define KW_LIST KW_LIST, kw_Location 
+#define KW_LISTLYT KW_LISTLYT kw_Location 
 
 using kw_Binding =  kw<"binding",stmt<meta>::Binding,kwty::layout_at> ;
-#define KW_LIST KW_LIST, kw_Binding 
+#define KW_LISTLYT KW_LISTLYT, kw_Binding 
 
 using kw_uniform =  kw<"uniform",stmt<meta>::StmtLayout,kwty::layout_qual> ;
-#define KW_LIST KW_LIST, kw_uniform 
+#define KW_LISTLYT KW_LISTLYT, kw_uniform 
 using kw_Buffer =  kw<"buffer",kwty::layout_qual> ;
-#define KW_LIST KW_LIST,kw_Buffer
+#define KW_LISTLYT KW_LISTLYT,kw_Buffer
 
 
 using kw_Const =  kw_mat<"const",atConst,kwty::qualifier> ;
-#define KW_LIST KW_LIST, kw_Const
+#define KW_LISTKW KW_LISTKW, kw_Const
 using kw_Flat =  kw_mat<"flat",atFlat,kwty::qualifier> ;
-#define KW_LIST KW_LIST, kw_Flat 
+#define KW_LISTKW KW_LISTKW, kw_Flat 
 using kw_in =  kw<"in",atIn,kwty::qualifier> ;
-#define KW_LIST KW_LIST, kw_in 
+#define KW_LISTKW KW_LISTKW, kw_in 
 using kw_out =  kw<"out",atOut,kwty::qualifier> ;
-#define KW_LIST KW_LIST, kw_out 
+#define KW_LISTKW KW_LISTKW, kw_out 
 using kw_inout =  kw<"inout",atInout,kwty::qualifier> ;
-#define KW_LIST KW_LIST, kw_inout 
+#define KW_LISTKW KW_LISTKW, kw_inout 
 
 using kw_Return =  kw<"return",kwty::funcStmt> ;
-#define KW_LIST KW_LIST, kw_Return 
-using kw_Image2D =  kw<"image2D",kwty::prim> ;
-#define KW_LIST KW_LIST,kw_Image2D
-using kw_Image3D =  kw<"image3D",kwty::prim> ;
-#define KW_LIST KW_LIST,kw_Image3D
-using kw_Sampler =  kw<"sampler",kwty::prim> ;
-#define KW_LIST KW_LIST,kw_Sampler
+#define KW_LISTKW KW_LISTKW, kw_Return 
+
+template <Str s, typename T>
+struct kw_prim  : kw<s,T,kwty::prim> {
+    template <pcntxt pcs>
+    void proc(parser& p){
+        if constexpr (pcs == pcntxt::stexpr){pushConstructor<T>(d);}
+        else pushDecl<T>(d);
+    };
+};
+using kw_Image2D =  kw_prim<"image2D",type<meta>::Image2DTy> ;
+#define KW_LISTPRIM KW_LISTPRIM,kw_Image2D
+using kw_Image3D =  kw_prim<"image3D",type<meta>::Image3DTy> ;
+#define KW_LISTPRIM KW_LISTPRIM,kw_Image3D
+using kw_Sampler =  kw_prim<"sampler",type<meta>::SamplerTy> ;
+#define KW_LISTPRIM KW_LISTPRIM,kw_Sampler
 using kw_Void =  kw<"void",kwty::prim> ;
-#define KW_LIST KW_LIST,kw_Void
-using kw_Float =  kw<"float",kwty::prim> ;
-#define KW_LIST KW_LIST,kw_Float
-using kw_Int =  kw<"int",kwty::prim> ;
-#define KW_LIST KW_LIST,kw_Int
-using kw_Uint =  kw<"uint",kwty::prim> ;
-#define KW_LIST KW_LIST,kw_Uint
-using kw_Bool =  kw<"bool",kwty::prim> ;
-#define KW_LIST KW_LIST,kw_Bool
+#define KW_LISTPRIM KW_LISTPRIM,kw_Void
+using kw_Float =  kw_prim<"float",type<meta>::FloatTy> ;
+#define KW_LISTPRIM KW_LISTPRIM,kw_Float
+using kw_Int =  kw_prim<"int",type<meta>::IntTy> ;
+#define KW_LISTPRIM KW_LISTPRIM,kw_Int
+using kw_Uint =  kw_prim<"uint",type<meta>::UintTy> ;
+#define KW_LISTPRIM KW_LISTPRIM,kw_Uint
+using kw_Bool =  kw_prim<"bool",type<meta>::BoolTy> ;
+#define KW_LISTPRIM KW_LISTPRIM,kw_Bool
 
 template <Str s,typename T>
-struct kw_vec : kw<s,T,kwty::builtinVar> {    size_t d;
+struct kw_vec : kw<s,T,kwty::prim> {    size_t d;
     bool check(parser& p,std::string s){
-        if(s.substr(0,this->name().length()) != this->name){return false;}
+        if(s.substr(0,this->name().length()) != this->name()){return false;}
         else if(!isdigit(s[this->name().length()])){return false;}
-        size_t d = this->name()[this->name().length()-1] - '0' ;if(d<2 or d>4){return false;}
-
+         d = this->name()[this->name().length()-1] - '0' ;if(d<2 or d>4){return false;}
         return true;}
+    template <pcntxt... pcs>
+    void proc(parser& p);
+
+    template <pcntxt... pcs>
     void proc(parser& p){
-        
+        if constexpr (pcs == pcntxt::stexpr){pushVecConstructor(d);}
+        else pushVecDecl(d);
     };
+
 };
 
 template <Str s,typename T>
-struct kw_mat : kw<s,T,kwty::builtinVar> {
+struct kw_mat : kw<s,T,kwty::prim> {
     size_t dx,dy;
     bool check(parser& p,std::string s){
-        if(s.substr(0,this->name().length()) != this->name){return false;}
+        if(s.substr(0,this->name().length()) != this->name()){return false;}
         else if(!isdigit(s[this->name().length()])){return false;}
         dy=s[this->name().length()] - '0';if(dy<2 or dy>4){return false;}
         if(s[this->name().length()+1] !='x'){return false;}
         if(!isdigit(s[this->name().length()+2] )){return false;}
         dx=s[this->name().length()+2] - '0';if(dx<2 or dx>4){return false;}
+        p.pushMat(dx,dy);
+        
         return true;}
     void proc(parser& p){
-
+        if constexpr (pcs == pcntxt::stexpr){pushMatConstructor(d);}
+        else pushMatDecl(d);
     };
 };
 
 using kw_Vec =kw_vec<"vec",primVec,kwty::prim> ;
-#define KW_LIST KW_LIST, kw_Vec
+#define KW_LISTPRIM KW_LISTPRIM, kw_Vec
 using kw_Mat =kw_mat<"mat",primMat,kwty::prim> ;
-#define KW_LIST KW_LIST, kw_Mat
+#define KW_LISTPRIM KW_LISTPRIM, kw_Mat
 using kw_Ivec =kw_vec<"ivec",primiVec,kwty::prim> ;
-#define KW_LIST KW_LIST, kw_Ivec
+#define KW_LISTPRIM KW_LISTPRIM, kw_Ivec
 using kw_Imat =kw_mat<"imat",primiMat,kwty::prim> ;
-#define KW_LIST KW_LIST, kw_Imat
+#define KW_LISTPRIM KW_LISTPRIM, kw_Imat
 using kw_Uvec =kw_vec<"uvec",primuVec,kwty::prim> ;
-#define KW_LIST KW_LIST, kw_Uvec
+#define KW_LISTPRIM KW_LISTPRIM, kw_Uvec
 using kw_Umat =kw_mat<"umat",primuMat,kwty::prim> ;
-#define KW_LIST KW_LIST, kw_Umat
+#define KW_LISTPRIM KW_LISTPRIM, kw_Umat
 using kw_Bvec =kw_vec<"bvec",primbVec,kwty::prim> ;
-#define KW_LIST KW_LIST, kw_Bvec
+#define KW_LISTPRIM KW_LISTPRIM, kw_Bvec
 using kw_Bmat =kw_mat<"bmat",primbMat,kwty::prim> ;
-#define KW_LIST KW_LIST, kw_Bmat
+#define KW_LISTPRIM KW_LISTPRIM, kw_Bmat
 
 using kw_Template =  kw<"template",kwty::Tempstmt> ;
-#define KW_LIST KW_LIST,  kw_Template
+#define KW_LISTKW KW_LISTKW,  kw_Template
 using kw_Typename =  kw<"typename",kwty::stmt> ;
-#define KW_LIST KW_LIST, kw_Typename
+#define KW_LISTKW KW_LISTKW, kw_Typename
 using kw_Constexpr =  kw<"constexpr",kwty::qualifier> ;
-#define KW_LIST KW_LIST, kw_Constexpr 
+#define KW_LISTKW KW_LISTKW, kw_Constexpr 
 using kw_Do =  kw<"do",kwty::funcStmt> ;
-#define KW_LIST KW_LIST, kw_Do 
+#define KW_LISTKW KW_LISTKW, kw_Do 
 using kw_While =  kw<"while",kwty::funcStmt> ;
-#define KW_LIST KW_LIST,  kw_While
+#define KW_LISTKW KW_LISTKW,  kw_While
 using kw_For =  kw<"for",kwty::funcStmt> ;
-#define KW_LIST KW_LIST, kw_For 
+#define KW_LISTKW KW_LISTKW, kw_For 
 using kw_If =  kw<"if",kwty::funcStmt> ;
-#define KW_LIST KW_LIST, kw_If  
+#define KW_LISTKW KW_LISTKW, kw_If  
 using kw_Else =  kw<"else",kwty::funcStmt> ;
-#define KW_LIST KW_LIST, kw_Else  
+#define KW_LISTKW KW_LISTKW, kw_Else  
 using kw_Switch =  kw<"switch",kwty::funcStmt> ;
-#define KW_LIST KW_LIST, kw_Switch
+#define KW_LISTKW KW_LISTKW, kw_Switch
 using kw_Case =  kw<"switch",kwty::funcStmt> ;
-#define KW_LIST KW_LIST, kw_Case
+#define KW_LISTKW KW_LISTKW, kw_Case
 
-
+#define KW_LIST KW_LISTKW ,KW_LISTLYT,KW_LISTPRIM
 template <temp q,typename kw>
 struct stmt_kw_ty{using type = stmt<q>::stmtVarDecl;};
 template <temp q>

@@ -169,10 +169,20 @@ struct err{
     enum t{
         include_closing_angle_bracket,include_closing_dq,
         template_param_mismatch,template_param_list_incomplete,
+
     };
     template <t ts>
     std::string get(){
 
+    };
+    std::string goTo(stmsl::parser& p,lex l){
+        size_t sp = p.f.tellg();
+        // Go to lineStart
+        p.f.seekg(l.filePos-l.col);
+        std::string line;
+        std::getline(f,line);
+        p.f.seekg(sp);
+        return line;
     };
     template <t ts>
     void _err(stmsl::parser& prs);

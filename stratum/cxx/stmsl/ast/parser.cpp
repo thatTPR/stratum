@@ -45,11 +45,12 @@ struct macrosl {
 macrosl macros;
 
 
-        err& syserr;
+        // err& syserr = syserr;
         
         size_t linen=0;
         
-        std::string line;size_t pos=0;size_t filePos;
+        std::string line;
+        size_t pos=0;size_t filePos;
         size_t linepos;
         ast<meta> cast;
 
@@ -83,36 +84,36 @@ size_t Mag=0;
 
                 switch(line[pos]){
                     case lex::ty::escape :{pos++;continue;}
-                    case lex::ty::lparen :{lexq.emplace_back(lex::ty::lparen);continue;}
-                    case lex::ty::rparen :{lexq.emplace_back(lex::ty::rparen);continue;}
-                    case lex::ty::lbrace :{lexq.emplace_back(lex::ty::lbrace);continue;}
-                    case lex::ty::rbrace :{lexq.emplace_back(lex::ty::rbrace);continue;}
-                    case lex::ty::lbrack :{lexq.emplace_back(lex::ty::lbrack);continue;}
-                    case lex::ty::rbrack :{lexq.emplace_back(lex::ty::rbrack);continue;}
-                    case lex::ty::ltangle :{lexq.emplace_back(lex::ty::ltangle);continue;}
-                    case lex::ty::dot :{lexq.emplace_back(lex::ty::dot);continue;}
-                    case lex::ty::comma :{lexq.emplace_back(lex::ty::comma);continue;}
-                    case lex::ty::semicolon :{lexq.emplace_back(lex::ty::semicolon);continue;}
-                    case lex::ty::colon :{lexq.emplace_back(lex::ty::colon);continue;}
+                    case lex::ty::lparen :{lexq.emplace_back(filePos,linen,pos,lex::ty::lparen);continue;}
+                    case lex::ty::rparen :{lexq.emplace_back(filePos,linen,pos,lex::ty::rparen);continue;}
+                    case lex::ty::lbrace :{lexq.emplace_back(filePos,linen,pos,lex::ty::lbrace);continue;}
+                    case lex::ty::rbrace :{lexq.emplace_back(filePos,linen,pos,lex::ty::rbrace);continue;}
+                    case lex::ty::lbrack :{lexq.emplace_back(filePos,linen,pos,lex::ty::lbrack);continue;}
+                    case lex::ty::rbrack :{lexq.emplace_back(filePos,linen,pos,lex::ty::rbrack);continue;}
+                    case lex::ty::ltangle :{lexq.emplace_back(filePos,linen,pos,lex::ty::ltangle);continue;}
+                    case lex::ty::dot :{lexq.emplace_back(filePos,linen,pos,lex::ty::dot);continue;}
+                    case lex::ty::comma :{lexq.emplace_back(filePos,linen,pos,lex::ty::comma);continue;}
+                    case lex::ty::semicolon :{lexq.emplace_back(filePos,linen,pos,lex::ty::semicolon);continue;}
+                    case lex::ty::colon :{lexq.emplace_back(filePos,linen,pos,lex::ty::colon);continue;}
                     case lex::ty::space :{
                         if(!(lexq.back().t == lex::ty::space or (lexq.back().t == lex::ty::nl))){
-                            lexq.emplace_back(lex::ty::space);};
+                            lexq.emplace_back(filePos,linen,pos,lex::ty::space);};
                             continue;}
-                    case lex::ty::nl :{if(lexq.back().t == lex::ty::nl){lexq.emplace_back(lex::ty::nl);};continue;}
-                    case lex::ty::plus : {if(line[pos+1]==lex::ty::plus){lexq.emplace_back(lex::ty::pp);}else{lexq.emplace_back(lex::ty::plus);};continue;}
-                    case lex::ty::minus : {{if(line[pos+1]==lex::ty::minus){lexq.emplace_back(lex::ty::mm);}else{lexq.emplace_back(lex::ty::minus);};continue;}}
-                    case lex::ty::band : {if(line[pos+1]==lex::ty::band){lexq.emplace_back(lex::ty::oand);}else{lexq.emplace_back(lex::ty::band);};continue;}
-                    case lex::ty::bor :{if(line[pos+1]==lex::ty::bor){lexq.emplace_back(lex::ty::oor);}else{lexq.emplace_back(lex::ty::bor);};continue;}
-                    case lex::ty::bxor : {lex.emplace_back(lex::ty::bxor);continue;}
-                    case lex::ty::mul : {lex.emplace_back(lex::ty::mul);continue;}
-                    case lex::ty::div : {lex.emplace_back(lex::ty::div);continue;}
-                    case lex::ty::cond : {lex.emplace_back(lex::ty::cond);continue;}
+                    case lex::ty::nl :{if(lexq.back().t == lex::ty::nl){lexq.emplace_back(filePos,linen,pos,lex::ty::nl);};continue;}
+                    case lex::ty::plus : {if(line[pos+1]==lex::ty::plus){lexq.emplace_back(filePos,linen,pos,lex::ty::pp);}else{lexq.emplace_back(filePos,linen,pos,lex::ty::plus);};continue;}
+                    case lex::ty::minus : {{if(line[pos+1]==lex::ty::minus){lexq.emplace_back(filePos,linen,pos,lex::ty::mm);}else{lexq.emplace_back(filePos,linen,pos,lex::ty::minus);};continue;}}
+                    case lex::ty::band : {if(line[pos+1]==lex::ty::band){lexq.emplace_back(filePos,linen,pos,lex::ty::oand);}else{lexq.emplace_back(filePos,linen,pos,lex::ty::band);};continue;}
+                    case lex::ty::bor :{if(line[pos+1]==lex::ty::bor){lexq.emplace_back(filePos,linen,pos,lex::ty::oor);}else{lexq.emplace_back(filePos,linen,pos,lex::ty::bor);};continue;}
+                    case lex::ty::bxor : {lex.emplace_back(filePos,linen,pos,lex::ty::bxor);continue;}
+                    case lex::ty::mul : {lex.emplace_back(filePos,linen,pos,lex::ty::mul);continue;}
+                    case lex::ty::div : {lex.emplace_back(filePos,linen,pos,lex::ty::div);continue;}
+                    case lex::ty::cond : {lex.emplace_back(filePos,linen,pos,lex::ty::cond);continue;}
                                     
                 };
                 if(lexq.back().t==lex::ty::Name){lexq.back().u.name+=line[pos];}
                 else{
-                    if(lexq.back().t==lex::ty::dot){lexq.emplace_back(line[pos]);lexq.back().t=lex::ty::member;};)}
-                    else{lexq.emplace_back(line[pos]);}
+                    if(lexq.back().t==lex::ty::dot){lexq.emplace_back(filePos,linen,pos,line[pos]);lexq.back().t=lex::ty::member;};)}
+                    else{lexq.emplace_back(filePos,linen,pos,line[pos]);}
                 };
        
         pri::deque<lex>::iter itPtr;
@@ -171,6 +172,13 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
             return i;
         };
         ast<meta> include(std::filesystem::path pth){parser p;return p.fromFile(pth);};
+        void includeRel(std::string l){
+            std::filesystem::path wd=cwd;
+
+        };
+        void includeAbs(std::string l){// TODO
+
+        };
         template <lex::ty t,template <temp q> typename T>
         T<meta> getFromUntilStripped(pri::deque<lex> stripped);
 
@@ -250,27 +258,58 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
 
         };
         template <typename KW,typename... KWs>
-        bool kwFound() ;
+        bool kwFound(pri::deque<lex>::iter it) ;
         template <typename KW>
-        bool kwFound(){
-            size_t s= line.find(KW::name);  
-            if(s==std::string::npos){
-                pos=s+KW::name().length();KW inst;inst.proc(*this);
-                return true;
-            };
-            return false;
-        };
+        bool kwFound(pri::deque<lex>::iter it){return KW::check(*this,it->u.name);};
         template <typename KW,typename... KWs>
-        bool kwFound(){
+        bool kwFound(pri::deque<lex>::iter it){
             if(kwFound<KW>()){return true;}
             else {return kwFound<KWs...>();}
         } ;
         
+        expr<meta> resExpr;stmt<meta> resStmt;
+        template <lex::ty T>
+        bool lexTyOneOf(lex& l){
+            return (l.t==T);
+        };
+        template <lex::ty T,lex::ty... Ts>
+        bool lexTyOneOf(lex& l){
+            if(lexTyOneOf<T>(l)){return true;}
+            return lexTyOneOf<Ts...>(l);
+        };
+        
+        template <typename KW,typename... KWs>
+        expr<meta> kwsExpr(pri::deque<lex> stripped){
+            resExpr=expr<meta>();
+            for(lex s : stripped){
+                if(lexTyOneOf<lex::ty::Name,lex::ty::typeName>(s)){
+
+                };
+            };
+        };
+        template <typename KW,typename... KWs>
+        stmt<meta> kwsStmt(pri::deque<lex> stripped){
+            resStmt=stmt<meta>();
+             for(lex s : stripped){
+                if(lexTyOneOf<lex::ty::Name,lex::ty::kw,lex::ty::typeName>(s)){
+
+                };
+            };
+        };
+        
+
+        void pushVecDecl(size_t d);
+        void pushMatDecl(size_t dx,size_t dy);
+        void pushVecConstructor(size_t d);
+        void pushMatConstructor(size_t dx,size_t dy);
+        stmt<meta> Stmt(pri::deque<lex> stripped){return kwsStmt<KW_LIST>(stripped);};
+        expr<meta> Expr(pri::deque<lex> stripped){return kwsExpr<KW_LISTPRIM>(stripped);};
+
         template <typename KW,typename... KWs >
-        void untilKW(char del);
+        void untilKW(lex::ty del);
         
         template <typename KW >
-        void untilKW(char del){
+        void untilKW(lex::ty del){
 
         };
         
@@ -283,6 +322,8 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
         void untilKW();
         template <typename KW>
         void untilKW(){KW k;while(kwFound(k)==std::string::npos){getLine();}};
+
+
         template <typename KW,typename... KWs>
         void untilKW(){
         KW k;
@@ -305,8 +346,17 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
 
         };  
         template <typename MSTMT_TY>
-        void getMacro();
-        template<>void getMacro<mStmtInclude>(){};
+        void getMacro(){expr<meta> e = kwsExpr();};
+
+        
+        template<>void getMacro<mStmtInclude>(){
+            pri::deque<lex>::iter itp = itPtr;
+            ++itp;
+            if(itp->t==lex::ty::ltangle){
+                itp.u.name
+            };
+            }
+        };
         template<>void getMacro<mStmtIf>(){};
         template<>void getMacro<mStmtDefine>(){};
         template<>void getMacro<mStmtElif>(){};
