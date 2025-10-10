@@ -167,8 +167,11 @@ bool Wfatal_error = false;
 struct err{
     parser& p;
     enum t{
+        fileNotFound,
         include_closing_angle_bracket,include_closing_dq,
+        
         template_param_mismatch,template_param_list_incomplete,
+        
 
     };
     template <t ts>
@@ -189,8 +192,8 @@ struct err{
     template <>void _err<template_param_mismatch>(stmsl::parser& prs){};
     template <>void _err<include_closing_angle_bracket>(stmsl::parser& prs){std::err<<"error on line "<<prs.linen<<"Expected closing \'>\' in include statement:\n"<<prs.line<<std::endl;};
     template <>void _err<include_closing_dq>(stmsl::parser& prs){std::err<<"error on line "<<p.line<<"Expected closing \'\"\' in include statement:\n"<<p.line<<std::endl;};
+    template <>void _err<
     
-
     template <t ts>
     void err(stmsl::parser& prs){
         if(wfatal_error){}

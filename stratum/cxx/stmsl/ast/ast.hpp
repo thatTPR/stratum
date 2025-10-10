@@ -18,6 +18,7 @@ using _AST_TEMPT = typename AS<A<ASTNODES<q>>...>;
 
 struct op {
     enum ty {
+        opNot=lex::ty::Not,
         opdot=lex::ty::dot,
         oplus=lex::ty::plus,
         ominus=lex::ty::minus,
@@ -344,7 +345,7 @@ struct expr {
         ConstVal cval=ConstVal::unknown;
         bool isConstExpr(){return cval==ConstVal::ConstExpr;}
         bool isConst(){return cval==ConstVal::Const;}
-        op o;
+        op::ty o;
         enum opty {prefixUnary,postfixUnary,binary};
         opty  opT;
         value val;        
@@ -397,8 +398,43 @@ struct expr {
 
 
     };
+    template <op::ty tyOp,node::opty Op>
+    node::opty getOpTy(){
+        switch constexpr (Op){
+            case node::opty::prefixUnary :{
+                switch constexpr (tyOp){
+                    case op::ty::opp :{return true;}
+                    case op::ty::omm :{return true;}
+                    case op::ty::opNot :{return true;}
+                };
+                return false;
+            };
+            case node::opty::postfixUnary :{
+                                switch constexpr (tyOp){
+                    case op::ty::opp :{return true;}
+                    case op::ty::omm :{return true;}
+                };
+                return false;
+            };
+            case node::opty::binary :{
+                switch constexpr (tyOp){
+                    case op::ty::opp :{return false;}
+                    case op::ty::omm :{return false;}
+                    case op::ty::opNot :{return false;}
+                };
+                return true;
+            };
+        }
+    };
     node tree;
     expr cond;
+    expr<q> Not(){
+        expr<q> res;
+        res.tree.opT=node::opty::prefixUnary;
+        res.tree.o=op::ty::opNot;
+        res.tree.rhs=&tree;
+        return res;
+    };
 
     template <typename retTy>
     retTy parseTree(retTy(*ptr)(node& n)){
@@ -436,7 +472,7 @@ struct expr {
     // expr() = default ;
     // expr(pri::deque<lex> stripped){}; 
     // expr(type _t) : ty(_t);
-    // expr(bool s) : type(ty::literal) , bliteral(s){}
+    expr(bool s) : type(ty::literal) {bvalue=s;}
     
     // expr(stmsl::parser& prs,std::string s){
 
@@ -643,6 +679,7 @@ struct mStmtIf {};
 struct mStmtDefine {};
 struct mStmtElif {};
 struct mStmtElifdef {};
+struct mStmtElifndef {};
 struct mStmtIfdef {};
 struct mStmtIfndef {};
 struct mStmtElse {};
@@ -668,7 +705,6 @@ template <temp q>
 using AST_tup_list= AST_TEMPT<pri::tuple,pri::list> ;
 
 
-template <temp q>
 struct tu {
     expr<q> condition;
     bool evalCondTrue(){
@@ -677,6 +713,7 @@ struct tu {
     using list_tup = AST_tup_list<q> ;
     list_tup tup;
 
+    
     pri::list<type<q>> Types;
     pri::list<stmt<q>::StmtFunc> Funcs;
 
@@ -723,10 +760,11 @@ struct tu {
 
     };
     tu(expr<q>& e) : condition(e){}
-
+    tu(bool b) : condition(expr<q>(true)) {}
 };
-template <temp q>
+
 struct ast   {
+    std::filesystem::path pth;
     uint version;
     pri::deque<stmt<q>::StmtLayout> layouts;
 
@@ -738,19 +776,9 @@ struct macro {
     macro(std::string _name,std::string _val,std::vector<std::string> arg) : name(_name) , val(_val) , args(arg) {}
 };
 
-struct macrosl {
-    pri::list<macro> mlist ;
-    void push(macro m ){
-        for(macro mit : mlist){
-            if(m.name == mit.name){
-                mit.val=m.val;return;
-            };
-        }
-        mlist.push_back(m);
-    }
-};
-macrosl macros;
-    pri::list<tu<q>> lst;
+pri::list<ast*> asts;
+
+    pri::list<tu> tus;
 
     struct metaSpace {
         type<temp::meta>* ty;
@@ -759,22 +787,30 @@ macrosl macros;
     // pri::list<type<temp::meta>*, type<temp::inst>> metaSpaces;
     pri::list<metaSpace> metaSpaces;
 
-
-    void include(ast<q> s){
+    typeDecl<temp::meta> searchTypeDecl();
+    varDecl<temp::inst> searchVarDecl();
+    void add(tu u){tus.push_back(u);};
+    void include(ast s){
         for(stmt<q>::StmtLayout& lyt : s.layouts){
             layouts.push_back(lyt);
             };
             for(macro& mcr : s.macros.mlist){macros.push(mcr);};
-            for(tu<q> t : s.lst){lst.push_back(t);}
-        };
+            for(tu t : s.tus){tus.push_back(t);}
+    };
+    void include(ast* s){
+        asts->push_back(s);
+    };
 
-    tu<q> back(){return lst.back();}
-    tu<q> front(){return lst.front();}
-    
-}
+    tu<q> back(){return tus.back();}
+    tu<q> front(){return tus.front();}
+    ast(std::filesystem::path _pth) : pth(_pth){};
+};
 
-pri::stack<ast<meta>> ast_stack;
-ast<meta> curAst(){return ast_stack.back();};
 
+pri::list<ast> asts;
+
+void emplace_asts(std::filesystem::path pth){
+    asts.emplace_back(pth);
+};
 
 #endif

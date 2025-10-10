@@ -14,16 +14,6 @@
 // #include <petri/regex.hpp>
 
 namespace stmsl {
-
-
-
-    class cphParser {
-        public:
-        ast<meta> fromFile(std::filesystem::path())
-    }
-    class parser {
-        public:
-        
 struct macro {
     std::string name ,val;
     std::vector<std::string> args;
@@ -41,8 +31,27 @@ struct macrosl {
         }
         mlist.push_back(m);
     }
+    template <typename... T>
+    void emplace(T... arg){push(macro(arg...));};
+    bool exists(std::string name){
+        for(macro m : mlist){
+            if(m.name==name){return true;}
+        };
+        return false;
+    };
 };
 macrosl macros;
+
+
+
+    class cphParser {
+        public:
+        ast fromFile(std::filesystem::path())
+    };
+    
+    class parser {
+        public:
+        
 
 
         // err& syserr = syserr;
@@ -52,7 +61,7 @@ macrosl macros;
         std::string line;
         size_t pos=0;size_t filePos;
         size_t linepos;
-        ast<meta> cast;
+        ast cast;
 
         
         pcntxt cntxt ;
@@ -84,6 +93,8 @@ size_t Mag=0;
 
                 switch(line[pos]){
                     case lex::ty::escape :{pos++;continue;}
+                    case lex::ty::dq : {lexq.emplace_back(filePos,linen,pos,lex::ty::dq);continue;}
+                    case lex::ty::sq : {lexq.emplace_back(filePos,linen,pos,lex::ty::sq);continue;}
                     case lex::ty::lparen :{lexq.emplace_back(filePos,linen,pos,lex::ty::lparen);continue;}
                     case lex::ty::rparen :{lexq.emplace_back(filePos,linen,pos,lex::ty::rparen);continue;}
                     case lex::ty::lbrace :{lexq.emplace_back(filePos,linen,pos,lex::ty::lbrace);continue;}
@@ -94,7 +105,10 @@ size_t Mag=0;
                     case lex::ty::dot :{lexq.emplace_back(filePos,linen,pos,lex::ty::dot);continue;}
                     case lex::ty::comma :{lexq.emplace_back(filePos,linen,pos,lex::ty::comma);continue;}
                     case lex::ty::semicolon :{lexq.emplace_back(filePos,linen,pos,lex::ty::semicolon);continue;}
-                    case lex::ty::colon :{lexq.emplace_back(filePos,linen,pos,lex::ty::colon);continue;}
+                    case lex::ty::colon :{
+                        if(lexq.back().t==lex::ty::colon){lexq.back().t=lex::ty::dcolon;}
+                        else {lexq.emplace_back(filePos,linen,pos,lex::ty::colon);continue;}
+                    }
                     case lex::ty::space :{
                         if(!(lexq.back().t == lex::ty::space or (lexq.back().t == lex::ty::nl))){
                             lexq.emplace_back(filePos,linen,pos,lex::ty::space);};
@@ -116,15 +130,18 @@ size_t Mag=0;
                     else{lexq.emplace_back(filePos,linen,pos,line[pos]);}
                 };
        
-        pri::deque<lex>::iter itPtr;
-
+        pri::stack<pri::deque<lex>::iter> itPtr;
 
         // pri::stack<stmt<temp::meta>::block*> openedBlocks;
         // pri::stack<expr<temp::meta>*> openedInitializers;
                 
         std::ifstream f;std::filesystem::path curFilePath;
-        bool NewLine(){filePos+=pos;pos=0;if(std::getline(f,line)){return true}; return false;}
-        void Line(){for(NewLine();pos<line.length();pos++){lexsw();}};
+        bool NewLine(){linen++;filePos+=pos;pos=0;if(std::getline(f,line)){return true}; return false;}
+        bool Line(){
+            if(NewLine()){for(;pos<line.length();pos++){lexsw();}
+            return true;}
+            else{return false;}
+        };
         bool next(){
             pos++;
             if(pos<line.length()){lexsw();}
@@ -139,8 +156,17 @@ size_t Mag=0;
             pri::deque<lex>::iter itr = it;--itr;return itr;};
         lex& nextTOK(pri::deque<lex>::iter it){
             pri::deque<lex>::iter itr = it;++itr;return itr;};
-        void procTo(pri::deque<lex>::iter i){
-
+        
+        template <lex::ty tok>
+        void until(){
+            itPtr.push(itPtr.back());
+            pri::deque<lex>::iter ptr=itPtr.back();
+            ++ptr;
+            for(;(itPtrc->t==tok);++ptr){
+                if(!ptr){next();ptr=itPtr.back();}
+                else{itPtr.back()=ptr;}
+            };
+            
         };
 
 
@@ -153,17 +179,17 @@ size_t Mag=0;
         size_t BindingCur;
 
         template <typename LayoutTy>
-        void putLayout(){cast.layouts.back()};
-        template <>void putLayout<stmt<meta>::Binding>(){cast.layouts.back().t=stmt<q>::StmtLayout::ty::binding;};
-        template <>void putLayout<stmt<meta>::Location>(){cast.layouts.back().t=stmt<q>::StmtLayout::ty::binding;};
-        // template <>void putLayout<stmt<q>::Location>(){cast.layouts.back().t=stmt<q>::StmtLayout::ty::binding;};
+        void putLayout(){cast->layouts.back()};
+        template <>void putLayout<stmt<meta>::Binding>(){cast->layouts.back().t=stmt<q>::StmtLayout::ty::binding;};
+        template <>void putLayout<stmt<meta>::Location>(){cast->layouts.back().t=stmt<q>::StmtLayout::ty::binding;};
+        // template <>void putLayout<stmt<q>::Location>(){cast->layouts.back().t=stmt<q>::StmtLayout::ty::binding;};
         
 
 
-        void LayoutNew(){cast.layouts.push_back(stmt<q>::StmtLayout());}
+        void LayoutNew(){cast->layouts.push_back(stmt<q>::StmtLayout());}
 expr<meta> getExpr(){return getExprFrom(lexq.begin());}
 
-        void setVersion(uint s){cast.version=s;};
+        void setVersion(uint s){cast->version=s;};
         uint getNum(std::string s){
             uint i=0;
             for(char c : s) {
@@ -171,14 +197,7 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
             }
             return i;
         };
-        ast<meta> include(std::filesystem::path pth){parser p;return p.fromFile(pth);};
-        void includeRel(std::string l){
-            std::filesystem::path wd=cwd;
-
-        };
-        void includeAbs(std::string l){// TODO
-
-        };
+       
         template <lex::ty t,template <temp q> typename T>
         T<meta> getFromUntilStripped(pri::deque<lex> stripped);
 
@@ -194,66 +213,67 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
         
 
         template <lex::ty t>
-        deque<lex> strippedUntil(pri::deque<lex>::iter it){
-            deque<lex> stripped;pri::deque<lex>::iter ite=it;
-            for(;ite->t!=t;++ite){
+        pri::deque<lex> strippedUntil(){
+            pri::deque<lex> stripped;
+            for(;itPtr.back()->t!=t;++(itPtr.back())){
                 if constexpr (t != lex::ty::space){
                     if(ite->t==lex::ty::space){continue;}
                 }
                 if constexpr (t != lex::ty::nl){
                     if(ite->t==lex::ty::nl){continue;}
                 }
-                stripped.push_back(*ite);
+                stripped.push_back(*(itPtr.back()));
                 if(stripped.back().t==lex::ty::name){pri::deque<lex>::iter pr=prevTOK(stripped.tail());
                     if(pr->t==lex::ty::name){pr->t=lex::ty::typeName;}}
             };
             return stripped;
         };
         template <lex::ty t,lex::ty By>
-        deque<lex> strippedUntilBy(pri::deque<lex::iter it,pri::deque<lex::iter& res,bool* found){
+        pri::deque<lex> strippedUntilBy(pri::deque<lex>::iter& res,bool* found){
             *res=false;
-            deque<lex> stripped;pri::deque<lex>::iter ite=it;
-            for(;ite->t!=t;++ite){
+            deque<lex> stripped;
+            for(;itPtr.back()->t!=t;++(itPtr.back())){
                 if constexpr (t != lex::ty::space){
                     if(ite->t==lex::ty::space){continue;}
                 }
                 if constexpr (t != lex::ty::nl){
                     if(ite->t==lex::ty::nl){continue;}
                 }
-                stripped.push_back(*ite);
-                if (ite->t==By){res=stripped.tail();*found=true;}// TODO err<found_2assignments in statement>
+                stripped.push_back(*itPtr.back());
+                if (itPtr.back()->t==By){res=stripped.tail();*found=true;}// TODO err<found_2assignments in statement>
             };
             return stripped;
         };
         
         template <lex::ty t,template <temp q> typename T>
-        T<meta> getFromUntil(pri::deque<lex>::iter it){
+        T<meta> getFromUntil(){
             deque<lex> stripped = strippedUntil<t>(it);
             return getFromUntilStripped<t,T>(stripped);
         };
 
         template <lex::ty t,lex::ty by ,template <temp q> typename T>
-        T<meta> getFromUntilBy(pri::deque<lex>::iter it){
+        T<meta> getFromUntilBy(){
             pri::deque<lex>::iter itr;bool found;
-            deque<lex> stripped = strippedUntilBy<t,by>(it,itr,found);
-            return getFromUntilStrippedBy<t,by,T>
+            deque<lex> stripped = strippedUntilBy<t,by>(itr,found);
+            return getFromUntilStrippedBy<t,by,T>();
         };
-        expr<meta> getExprUntil_EOSTMT(pri::deque<lex>::iter it){
-            return getFromUntil<lex::ty::semicolon,stmt>(it);
+        expr<meta> getExprUntil_EOSTMT(){
+            return getFromUntil<lex::ty::semicolon,stmt>();
         };
-        expr<meta> getExprUntil_EOL(pri::deque<lex>::iter it){
-            return getFromUntil<lex::ty::nl,expr>(it);
+        expr<meta> getExprUntil_EOL(){
+            expr<meta> m= getFromUntil<lex::ty::nl,expr>();
+            erase()
         };
-        stmt<meta> getMetaUntil_EOSTMT(pri::deque<lex>::iter it){
+        stmt<meta> getMetaUntil_EOSTMT(){
             
         };
-        tu<meta> getTUUntil_EOTU(pri::deque<lex>::iter it){
+        tu<meta> getTUUntil_EOTU(){
 
         };
-        stmt<meta>::block getBlockUntil_EOL(pri::deque<lex>::iter it){
+        stmt<meta>::block getBlockUntil_EOL(){
             return getExprFrom<lex::ty::nl,block>(it);
         };
-        stmt<meta>::block getBlockUntil_EOBLOCK(pri::deque<lex>::iter it){
+        stmt<meta>::block getBlockUntil_EOBLOCK(){
             pri::list<stmt<meta>> stmts;
 
         };
@@ -306,77 +326,136 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
         expr<meta> Expr(pri::deque<lex> stripped){return kwsExpr<KW_LISTPRIM>(stripped);};
 
         template <typename KW,typename... KWs >
-        void untilKW(lex::ty del);
-        
-        template <typename KW >
-        void untilKW(lex::ty del){
-
-        };
-        
-        template <typename KW,typename... KWs >
-        void untilKW(char del){
-
-        };
-
-        template <typename KW,typename... KWs >
         void untilKW();
         template <typename KW>
-        void untilKW(){KW k;while(kwFound(k)==std::string::npos){getLine();}};
-
+        void untilKW(){KW k;while(kwFound(k)==std::string::npos){next();}};
 
         template <typename KW,typename... KWs>
         void untilKW(){
         KW k;
-        while(kwFound<kw,KWs>(k)()){getLine();}
-    
+        for(;kwFound<kw,KWs>(k)();next()){};    
     };
-        template <typename KW>
-        void untilKW(char del){KW k;while(kwFound(k)){getLine(del);}};
-
 
         static const size_t  =context_join<KW,KWs...>::s;
         template <typename KW>
-        void putKw(){
-            KW::
-        };  
-        template <typename KW,typename... KWs >
-        void untilKWs(){
-            pri::deque<lex>::iter it = lexq.tail();
+        void putKw(){KW::type;};
+          
+        
+        void erase(){itPtr.pop();
+            lexq.eraseFromEnd(itPtr.back());itPtr.pop();
+        };
 
-
-        };  
         template <typename MSTMT_TY>
         void getMacro(){expr<meta> e = kwsExpr();};
 
-        
-        template<>void getMacro<mStmtInclude>(){
-            pri::deque<lex>::iter itp = itPtr;
-            ++itp;
-            if(itp->t==lex::ty::ltangle){
-                itp.u.name
+        void include(std::filesystem::path pth){parser p;cast->include(p.fromFile(pth));};
+        void includeRel(std::filesystem::path l){
+            std::filesystem::path wd=cwd.back();
+            std::filesystem::path pth = wd;pth/=l;
+            if(std::filesystem::exists(pth)){
+                parser pn;cast->include(pn.fromFile(pth,*this));}
+            else {syserr.err<err::t::fileNotFound>(*this);}
+        };
+        void includeAbs(std::filesystem::path l){
+            for(std::filesystem::path p : dirs.arr ){
+                std::filesystem::path pth = p;pth/=l;
+                if(std::filesystem::exists(ps)){parser pn;cast->include(pn.fromFile(pth,*this));return;}
             };
+            syserr.err<err::t::fileNotFound>(*this);
+        };
+        template<>void getMacro<mStmtInclude>(){
+             itPtr.push(itPtr.back());
+            until<lex::ty::nl>();
+            ++(itPtr.back());
+            if(itPtr.back()->t==lex::ty::ltangle){
+                ++(itPtr.back());
+                std::filesystem::path p;
+                for(;itPtr.back()->t!=lex::ty::gtangle;++(itPtr.back())){
+                    if(lexTyOneOf<lex::ty::div,lex::ty::escape>(itPtr.back()->t)){
+                        continue;
+                    }
+                    if(itPtr.back()->t!=lex::ty::name){syserr.err<err::t::include_closing_angle_brackets>(*this);break;}
+                    p/=std::filesystem::path(itPtr.back()->u.name);
+                }
+                includeAbs(p);
+            };
+            else if(itPtr.back()->t==lex::ty::dq){
+                ++itPtr.back();
+                std::filesystem::path p;
+                for(;itPtr.back()->t!=lex::ty::dq;itPtr.back()){
+                    if(lexTyOneOf<lex::ty::div,lex::ty::escape>(itPtr.back()->t)){
+                        continue;
+                    }
+                    if(itPtr.back()->t!=lex::ty::name){syserr.err<err::t::include_closing_dq>(*this);break;}
+                    p/=std::filesystem::path(itPtr.back()->u.name);
+                }
+                includeRel(p);
+            }
+            else {err<>();}            
+            erase();
+        };
+        template<>void getMacro<mStmtIf>(){
+            // itPtr.push(itPtr.back())
+            expr<meta> ex = getExprUntil_EOL();
+            cast->tus.emplace_back(ex);
+            erase();
+            
+        };
+        template<>void getMacro<mStmtDefine>(){
+            itPtr.push(until<lex::ty::Name>());
+            macros.emplace(ptr->u.name,getExprUntil_EOL());
+            erase();
+        };
+        template<>void getMacro<mStmtElif>(){
+            itPtr.push(itPtr.back());
+            cast->tus.emplace_back(getExprUntil_EOL());
+            erase();
+        };
+        template <bool b>
+        bool cond(bool t){return b?t:!t;};
+        template <bool b>
+        void IfDf(){
+            itPtr.push(until<lex::ty::Name>());
+            if( cond<b>(macros.exists(ptr->u.name))){
+                erase();
+                cast->tus.emplace_back(expr<meta>(true));
+                untilKW<kw_Else,kw_elif,kw_elifdef,kw_elifndef,kw_endif>()
+            }
+            else{
+                erase();   
+                cast->tus.emplace_back(expr<meta>(false));
+                untilKW<kw_Else,kw_elif,kw_elifdef,kw_elifndef,kw_endif>()
             }
         };
-        template<>void getMacro<mStmtIf>(){};
-        template<>void getMacro<mStmtDefine>(){};
-        template<>void getMacro<mStmtElif>(){};
-        template<>void getMacro<mStmtElifdef>(){};
-        template<>void getMacro<mStmtIfdef>(){};
-        template<>void getMacro<mStmtIfndef>(){};
-        template<>void getMacro<mStmtElse>(){};
+        
+        template<>void getMacro<mStmtIfdef>(){IfDf<true>();};
+        template<>void getMacro<mStmtElifdef>(){IfDf<true>();  };
+        template<>void getMacro<mStmtIfndef>(){IfDf<false>()};
+        template<>void getMacro<mStmtElifndef>(){IfDf<false>()};
+
+        template<>void getMacro<mStmtElse>(){
+            erase();
+            cast->tus.emplace_back(cast->tus.back().condition.Not());
+        };
+        template<>void getMacro<mStmtEndIf>(){
+            cast->tus.emplace_back(true);
+        };
 
 
-        ast<meta> fromFile(std::filesystem::path pth){ curFilePath = pth;
+
+
+        ast* fromFile(std::filesystem::path pth){ curFilePath = pth;
+            emplace_ast(pth);cast=&(asts.back());
         cwd.push(pth.parent_path());
         f.open(pth);
         pos=0;
-        while(getLine()){Line();}
+        while(Line()){untilKW<KW_LIST>();}
         if(pth.extension()==std::filesystem::path("hstmsl")){
            wrcph(pth,cur); 
         }
         cwd.pop();
         };
-        ast<meta> fromFile(std::string pth){filePos =0; std::filesystem::path s(pth);return fromFile(s); }
+        ast fromFile(std::string pth){filePos =0; std::filesystem::path s(pth);return fromFile(s); }
 
     
 }

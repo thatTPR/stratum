@@ -212,11 +212,13 @@ using kw_elif =  kw<"#elif",macroStmt::mStmtElif,kwty::macro> ;
 
 using kw_elifdef =  kw<"#elifdef",macroStmt::mStmtElifdef,kwty::macro> ;
 #define KW_LISTKW KW_LISTKW, kw_elifdef 
+using kw_elifndef =  kw<"#elifndef",macroStmt::mStmtElifndef,kwty::macro> ;
+#define KW_LISTKW KW_LISTKW, kw_elifndef 
 
 using kw_endif =  kw<"#endif",macroStmt::mStmtEndIf,kwty::macro> ;
 #define KW_LISTKW KW_LISTKW, kw_endif 
 
-    using kw_ifndef =  kw<"#ifndef",macroStmt::mStmtIfndef,kwty::macro> ;
+using kw_ifndef =  kw<"#ifndef",macroStmt::mStmtIfndef,kwty::macro> ;
 #define KW_LISTKW KW_LISTKW, kw_ifndef 
 
 using kw_ifdef =  kw<"#ifdef",macroStmt::mStmtIfdef,kwty::macro> ;
