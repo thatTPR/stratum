@@ -159,21 +159,30 @@ Options:\
   //-x <language>     Treat subsequent input files as having type <language>.\
                     Valid languages are: glsl, hlsl.\
                     For files ending in .hlsl the default is hlsl.\
-                    Otherwise the default is glsl.";
+                    Otherwise the default is glsl.\
+    --template-eval-depth=<n> template eval depth \
+                    \
+                    ";
+
 
 // cliopts
 
 #include <string>
+template <Str S>
+struct hs {
+    static constexpr auto value = S;
+    static std::string name() { return std::string(value.data.data()); }
+};
 
-template <bool takesArgs>
+template <Str s,bool takesArgs>
 struct opt {
     static constexpr args = takesArgs;
-    const std::string n ; 
+    static std::string n(){return s.name();} ; 
     std::string val;
     bool check(std::string s){
-        size_t p = s.find(n);
-        if(s.find(n)!=std::string::npos){
-            val = s.substr(sizeof(n));
+        size_t p = s.find(n());
+        if(s.find(n())!=std::string::npos){
+            val = s.substr(n().length());
             return true;}
     };
      void proc(int argc,char* argv[],int& i);
@@ -181,18 +190,20 @@ struct opt {
 }
 #define OPTS_MACROS
 
-#define OPTS_N(name,nname,bflag) struct name : opt<bflag> {const std::string n = nname;} ;\
 #define OPTS_MACROS OPTS_MACROS , name
 
 
-OPTS_N(opt_CPH,"-CPH",false)
-void opt_CPH::proc(){stmsl::CPH=true;}
-OPTS_N(opt_CPHU,"-CPHU",false)
-void opt_CPHU::proc(){stmsl::CPHU=true;}
-OPTS_N(opt_c ,"-c",false)
-void opt_c::proc(){stmsl::preprocAndCompileOnly=true;}
-OPTS_N(opt_D ,"-D",false)
-void opt_D::proc(){
+struct opt_CPH : opt<"-CPH",false>{
+void proc(){stmsl::CPH=true;}
+};
+struct opt_CPHU : opt<"-CPHU",false>{
+void proc(){stmsl::CPHU=true;};
+};
+struct opt_c  : opt<"-c",false>{
+void proc(){stmsl::preprocAndCompileOnly=true;};
+};
+struct opt_D  : opt<"-D",false>{
+void proc(){
     size_t pos= this->val.find("=");
     if(pos!=std::string::npos){
         std::string n=val.substr(0,pos);
@@ -200,108 +211,160 @@ void opt_D::proc(){
         stmsl::macros.push(macro(n,v));
     }
     else {stmsl::macros.push(macro(val,std::string()));}    
-}
-OPTS_N(opt_E,"-E",false)
-void opt_E::proc(){stmsl::preprocOnly=true;}
-OPTS_N(opt_fauto_bind_uniforms,"-fauto-bind-uniforms",false)
-void opt_fauto_bind_uniforms::proc(){stmsl::fauto_bind_uniforms=true;}
-OPTS_N(opt_fauto_map_locations,"-fauto-map-locations",false)
-void opt_fauto_map_locations::proc(){stmsl::fauto_map_locations=true;}
-OPTS_N(opt_fauto_combined_image_sampler,"-fauto-combined-image-sampler",false)
-void opt_fauto_combined_image_sampler::proc(){stmsl::fauto_combined_image_sampler=true;}
-OPTS_N(opt_fentry_point,"-fentry-point",true) 
-void opt_fentry_point::proc(int argc,char* argv[],int& i){
-    stmsl::entry_pt = this->value;   
-}  
+};
+};
+struct opt_E : opt<"-E",false>{
+void proc(){stmsl::preprocOnly=true;};
+};
+struct opt_fauto_bind_uniforms : opt<"-fauto-bind-uniforms",false>{
+void proc(){stmsl::fauto_bind_uniforms=true;};
+};
+struct opt_fauto_map_locations : opt<"-fauto-map-locations",false>{
+void proc(){stmsl::fauto_map_locations=true;};
+};
+struct opt_fauto_combined_image_sampler : opt<"-fauto-combined-image-sampler",false>{
+void proc(){stmsl::fauto_combined_image_sampler=true;};
+};
+struct opt_fentry_point : opt<"-fentry-point",true>{
+void proc(int argc,char* argv[],int& i){
+    stmsl::entry_pt = std::string(argv[i]);   
+};  
+};
 
-OPTS_N(opt_fhlsl_16bit_types,  "-fhlsl-16bit-types",false)
-void opt_fhlsl_16bit_types::proc(){stmsl::opt_fhlsl_16bit_types=true;}
-OPTS_N(opt_fhlsl_functionality1,"-fhlsl_functionality1",false)
-void opt_fhlsl_functionality1::proc(){stmsl::opt_fhlsl_functionality1=true;}
-OPTS_N(opt_fhlsl_iomap,"-fhlsl-iomap",false)
-void opt_fhlsl_iomap::proc(){stmsl::fhlsl_iomap=true;}
-OPTS_N(opt_fhlsl_offsets,"-fhlsl-offsets",false)
-void opt_fhlsl_offsets::proc(){stmsl::fhlsl_offsets=true;}
-OPTS_N(opt_finvert_y,"-finvert-y",false)
-void opt_finvert_y::proc(){stmsl::finvert_y=true;}
-OPTS_N(opt_flimit,"-flimit",true) 
-void opt_flimit::proc(int argc,char* argv[],int& i){}//TODO
+struct opt_fhlsl_16bit_types : opt<  "-fhlsl-16bit-types",false>{
+void proc(){stmsl::opt_fhlsl_16bit_types=true;};
+};
+struct opt_fhlsl_functionality1 : opt<"-fhlsl_functionality1",false>{
+void proc(){stmsl::opt_fhlsl_functionality1=true;};
+};
+struct opt_fhlsl_iomap : opt<"-fhlsl-iomap",false>{
+void proc(){stmsl::fhlsl_iomap=true;};
+};
+struct opt_fhlsl_offsets : opt<"-fhlsl-offsets",false>{
+void proc(){stmsl::fhlsl_offsets=true;};
+};
+struct opt_finvert_y : opt<"-finvert-y",false>{
+void proc(){stmsl::finvert_y=true;};
+};
+struct opt_flimit : opt<"-flimit",true>{
+void proc(int argc,char* argv[],int& i){}//TODO
+};
 
 
 
 //   "-flimit-file"
-OPTS_N(opt_fnan_clamp,"-fnan-clamp",false)
-void opt_fnan_clamp::proc(){stmsl::fnan_clamp=true;}
-OPTS_N(opt_fpreserve_bindings,"-fpreserve-bindings",false)
-void opt_fpreserve_bindings::proc(){stmsl::fpreserve_bindings=true;}
+struct opt_fnan_clamp : opt<"-fnan-clamp",false>{
+void proc(){stmsl::fnan_clamp=true;};
+};
+struct opt_fpreserve_bindings : opt<"-fpreserve-bindings",false>{
+void proc(){stmsl::fpreserve_bindings=true;};
+};
 
-// TODO
-OPTS_N(opt_fresource_set_binding,"-fresource-set-binding",false)
-void opt_fresource_set_binding::proc(){stmsl::fresource_set_binding=true;}
-OPTS_N(opt_fcbuffer_binding_base,"-fcbuffer-binding-base",false)
-void opt_fcbuffer_binding_base::proc(){stmsl::fcbuffer_binding_base=true;}
-OPTS_N(opt_fimage_binding_base,"-fimage-binding-base",false)
-void opt_fimage_binding_base::proc(){stmsl::fimage_binding_base=true;}
-OPTS_N(opt_fsampler_binding_base,"-fsampler-binding-base",false)
-void opt_fsampler_binding_base::proc(){stmsl::fsampler_binding_base=true;}
-OPTS_N(opt_fssbo_binding_base,"-fssbo-binding-base",false)
-void opt_fssbo_binding_base::proc(){stmsl::fssbo_binding_base=true;}
-OPTS_N(opt_ftexture_binding_base,"-ftexture-binding-base",false)
-void opt_ftexture_binding_base::proc(){stmsl::ftexture_binding_base=true;}
-OPTS_N(opt_fuav_binding_base,"-fuav-binding-base",false)
+
+struct opt_fresource_set_binding : opt<"-fresource-set-binding",false>{
+void proc(){stmsl::fresource_set_binding=true;};
+};
+struct opt_fcbuffer_binding_base : opt<"-fcbuffer-binding-base",false>{
+void proc(){stmsl::fcbuffer_binding_base=true;};
+};
+struct opt_fimage_binding_base : opt<"-fimage-binding-base",false>{
+void proc(){stmsl::fimage_binding_base=true;};
+};
+struct opt_fsampler_binding_base : opt<"-fsampler-binding-base",false>{
+void proc(){stmsl::fsampler_binding_base=true;};
+};
+struct opt_fssbo_binding_base : opt<"-fssbo-binding-base",false>{
+void proc(){stmsl::fssbo_binding_base=true;};
+};
+struct opt_ftexture_binding_base : opt<"-ftexture-binding-base",false>{
+void proc(){stmsl::ftexture_binding_base=true;};
+};
+struct opt_fuav_binding_base : opt<"-fuav-binding-base",false>{};
+
 void opt_fuav_binding_base::proc(){stmsl::fuav_binding_base=true;}
-OPTS_N(opt_fubo_binding_base,"-fubo-binding-base",false)
-void opt_fubo_binding_base::proc(){stmsl::fubo_binding_base=true;}
+struct opt_fubo_binding_base : opt<"-fubo-binding-base",false>{
+void proc(){stmsl::fubo_binding_base=true;};
+};
   
-OPTS_N(opt_fshader_stage,"-fshader-stage",false)
-void opt_fshader_stage::proc(){stmsl::fshader_stage=this->val;}
-OPTS_N(opt_g,"-g",false)
-void opt_g::proc(){stmsl::debug=true;}
-OPTS_N(opt_h,"-h",false)
-void opt_h::proc(){std::cout<<help_strng;}
-OPTS_N(opt_help,"--help",false)
-void opt_help::proc(){std::cout<<help_strng;}
-OPTS_N(opt_I,"-I",false)
-void opt_I::proc(){stmsl::dirs.push(this->val);}
-OPTS_N(opt_mfmt,"-mfmt",false)
-void opt_mfmt::proc(){stmsl::mfmt=this->val;}
+struct opt_fshader_stage : opt<"-fshader-stage",false>{
+void proc(){stmsl::fshader_stage=this->val;};
+};
+struct opt_g : opt<"-g",false>{
+void proc(){stmsl::debug=true;};
+};
+struct opt_h : opt<"-h",false>{
+void proc(){std::cout<<help_strng;};
+};
+struct opt_help : opt<"--help",false>{
+void proc(){std::cout<<help_strng;};
+};
+struct opt_I : opt<"-I",false>{
+void proc(){stmsl::dirs.push(this->val);};
+};
+struct opt_mfmt : opt<"-mfmt",false>{
+void proc(){stmsl::mfmt=this->val;};
+};
 
-// OPTS_N(opt_MD,"-MD",true) 
+// struct opt_MD : opt<"-MD",true>{};
+#define OPTS_MACROS OPTS_MACROS,opt_MD
+ 
 // void opt_MD::proc(){generate_make_deps=true;}
-// OPTS_N(opt_MF,"-MD",true) 
-// void opt_MF::proc(){generate_make_deps=true;}
+// struct opt_MF : opt<"-MD",true>{};
+#define OPTS_MACROS OPTS_MACROS,opt_M
 
+#define OPTS_MACROS OPTS_MACROS,opt_MF
+// void opt_MF::proc(){generate_make_deps=true;};
+//};
 // "-MF"
 // "-MT"
-// OPTS_N(opt_M,"-M",true) 
+// struct opt_M : opt<"-M",true>{};
+ 
 // void opt_M::proc(){generate_make_deps=true;preprocOnly=true;}
-OPTS_N(opt_O,"-O",false)
-void opt_O::proc(){stmsl::optimize=true;}
-OPTS_N(opt_Os,"-O",false)
-void opt_Os::proc(){stmsl::optimizeSize=true;}
-OPTS_N(opt_O0,"-O0",false)
-void opt_O0::proc(){stmsl::optimizeSize=false;stmsl::optimize=false;}
-OPTS_N(opt_o,"-o",false)
-void opt_O0::proc(){i++;stmsl::outfile=argv[i];}
-OPTS_N(opt_std,"-std",false)
-void opt_std::proc(){stmsl::stdv=this->val;}
-OPTS_N(opt_S,"-S",false)
-void opt_S::proc(){stmsl::emitSPVasm=true;}
-OPTS_N(opt_show_limits,"--show-limits",false)
-void opt_show_limits::proc(){stmsl::lims.print();}
-OPTS_N(opt_target_env,"--target-env",false)
-void opt_target_env::proc(){stmsl::target_env=this->val;}
-OPTS_N(opt_target_spv,"--target-env",false)
-void opt_target_spv::proc(){stmsl::target_spv=this->val;}
-OPTS_N(opt_version,"--version",false)
-void opt_version::proc(){std::cout<<"version: 1.0";}
-OPTS_N(opt_w,"-w",false)
-void opt_w::proc(){stmsl::supressWarnings=true;}
+struct opt_O : opt<"-O",false>{
+void proc(){stmsl::optimize=true;};
+};
+struct opt_Os : opt<"-Os",false>{
+void proc(){stmsl::optimizeSize=true;};
+};
+struct opt_O0 : opt<"-O0",false>{
+void proc(){stmsl::optimizeSize=false;stmsl::optimize=false;};
+};
 
-OPTS_N(opt_Werror,"-Werror",false)
-void opt_Werror::proc(){stmsl::Werror=true;}
-OPTS_N(opt_W_fatal_errors,"-Wfatal-errors",false)
-void opt_Werror::proc(){stmsl::Wfatal_error=true;}
+// struct opt_o : opt<"-o",false>{};
+
+struct opt_std : opt<"-std",false>{
+void proc(){stmsl::stdv=this->val;}
+struct opt_S : opt<"-S",false>{
+void proc(){stmsl::emitSPVasm=true;};
+};
+struct opt_show_limits : opt<"--show-limits",false>{
+void proc(){stmsl::lims.print();};
+};
+struct opt_target_env : opt<"--target-env",false>{
+void proc(){stmsl::target_env=this->val;};
+};
+struct opt_target_spv : opt<"--target-env",false>{
+void proc(){stmsl::target_spv=this->val;};
+};
+struct opt_version : opt<"--version",false>{
+void proc(){std::cout<<"version: 1.0";};
+};
+
+struct opt_w : opt<"-w",false>{
+void proc(){stmsl::supressWarnings=true;};
+};
+
+struct opt_Werror : opt<"-Werror",false>{
+void proc(){stmsl::Werror=true;}
+}
+
+struct opt_W_fatal_errors : opt<"-Wfatal-errors",false>{void proc(){stmsl::Wfatal_error=true;}};
+struct :opt<"--template-eval-depth",true>{void proc(int argc,char* argv[],int& i){
+    templateEvalDepth=getnum(val);
+};};
+
+
+#define OPTS_MACROS OPTS_MACROS,opt_Werror,opt_W_fatal_errors,opt_CPH,opt_CPHU,opt_c ,opt_D ,opt_E,opt_fauto_bind_uniforms,opt_fauto_map_locations,opt_fauto_combined_image_sampler,opt_fentry_point,opt_fhlsl_16bit_types,opt_fhlsl_functionality1,opt_fhlsl_iomap,opt_fhlsl_offsets,opt_finvert_y,opt_flimit,opt_fnan_clamp,opt_fpreserve_bindings,opt_fresource_set_binding,opt_fcbuffer_binding_base,opt_fimage_binding_base,opt_fsampler_binding_base,opt_fssbo_binding_base,opt_ftexture_binding_base,opt_fuav_binding_base,opt_fubo_binding_base,opt_fshader_stage,opt_g,opt_h,opt_help,opt_I,opt_mfmt,opt_O,opt_Os,opt_O0,opt_o,opt_std,opt_S,opt_show_limits,opt_target_env,opt_target_spv,opt_version,opt_w
 
   template <typename opt>
   bool proc(int argc,char* argv[],int& i){opt h;

@@ -4,6 +4,7 @@
 #include <string>
 #include <charconv>
 #include <iostream>
+#include <ostream>
 #include <type_traits>
 #include <stratum/petri/list.hpp>
 #include <stratum/petri/tuple.hpp>
@@ -185,13 +186,48 @@ enum ANSI_ESC {
 std::string ansi(std::string s){return std::string(HEX_C_ESC)+std::string("[")+ s + (char)ANSI_ESC::SGR;    };
     #define FUNC_SGR(n)  std::string __##n(uint8_t n) {return ansi(std::to_string(n) +(char)ANSI_ESC::n);};
 
-std::string ansi(uint8_t s){return std::string(HEX_C_ESC)+std::string("[")+ std::to_string(s) + (char)ANSI_ESC::SGR;    };
+std::string ansi(uint8_t s){return std::string(HEX_C_ESC)+std::string("[")+ std::to_string(s) + (char)ANSI_ESC::SGR;};
+
+template <bool FG>
+struct color256 {static constexpr bool fg=FG;uint8_t n;
+  constexpr color256(uint8_t _n): n(_n){}
+};
+template <bool BG>
+struct colorRgb{static constexpr bool fg=FG;uint8_t r,g,b;
+  constexpr colorRgb(uint8_t _r,uint8_t _g,uint8_t _b) : r(_r) , g(_g) , b(_b) {}
+};
+
+
+color256<false> bg256(){uint8_t n} {color256<false>(n);}
+colorRgb<false> bgRgb(uint8_t r,uint8_t g,uint8_t b){colorRgb<false>(r,g,b);}
+color256<true> fg256(uint8_t n){color256<true>(n);} 
+colorRgb<true> fgRgb(uint8_t r,uint8_t g,uint8_t b){colorRgb<true>(r,g,b);}
+
+
+
+template <typename T>
+std::string putAnsi(T a);
+
+template <typename T>
+std::string addAnsi(T a){return std::string(";") +putAnsi(a);};
+template<> std::string putAnsi<uint8_t>(uint8_t a){return std::string(";")+std::string(a);}
+template<> std::string putAnsi<color256<true>>(color256 a){return putAnsi(FG_color)+addAnsi(a.n);};
+template<> std::string putAnsi<color256<false>>(color256 a){return putAnsi(FG_color)+addAnsi(a.n);};
+template<> std::string putAnsi<colorRgb<true>>(color256 a){return putAnsi(FG_color)+addAnsi(a.r)+addAnsi(a.g);addAnsi(a.b);};
+template<> std::string putAnsi<colorRgb<false>>(color256 a){return putAnsi(FG_color)+addAnsi(a.r)+addAnsi(a.g);addAnsi(a.b);};
+template <typename T,typename... Ts>
+std::string ansi(T ar,Ts... args){
+  std::string s=std::string(HEX_C_ESC)+std::string("[")+putAnsi(ar);
+  (s+=addAnsi(args))...;
+  return s;
+};
+
 
 
     XSGMAC(FUNC_SGR)
     //cursor_pos,
     //erase_in_disp,erase_in_line,
-    std::string ansi_cursor(std::string s){return std::string(HEX_C_ESC)+std::string("[") + s;}
+    std::string ansi_cursor(std::string s){return std::string(HEX_C_ESC)+std::string("[") + s ;}
     std::string ansi_cursor_up(uint8_t n){return              ansi_cursor(std::to_string(n)+std::to_string(_cursor_up));}
     std::string ansi_cursor_down(uint8_t n){return            ansi_cursor(std::to_string(n)+std::to_string(_cursor_down));}
     std::string ansi_cursor_forward(uint8_t n){return         ansi_cursor(std::to_string(n)+std::to_string(_cursor_forward));}
@@ -336,6 +372,7 @@ reserved
   case atTy::overlined :  { return SG_overlined_off;} 
   case atTy::ideogram :  { return SG_ideogram_off;} 
         }
+        return SG_reset;
       };
       static constexpr uint8_t onen(atTy en){
         switch (en) {
@@ -354,6 +391,7 @@ reserved
   case atTy::overlined : { return SG_overlined;} 
   case atTy::ideogram : { return SG_ideogram_underline;} 
         }; 
+        return SG_bold;
     }
 
     // template <atTy e, typename T,T val>

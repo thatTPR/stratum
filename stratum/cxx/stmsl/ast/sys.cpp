@@ -3,7 +3,13 @@
 #include <petri/list.hpp>
 #include <petri/stack.hpp>
 #include "parser.cpp"
-
+#include <petri/ansi.hpp>
+#include <petri/templates.hpp>
+size_t getnum(std::string num){
+    size_t i=0;
+    for(char c : num){i*=10;i+=(size_t)(c-'0');}
+    return i;
+};
 namespace stmsl
 {
 
@@ -162,22 +168,25 @@ struct target_SPIRV {
 bool supressWarnings=false;
 bool Werror = false;
 bool Wfatal_error = false;
+size_t templateEvalDepth=100;
 
-
+pri::stack<stmsl::parser*> parserStack;
 struct err{
     parser& p;
     enum t{
         fileNotFound,
         include_closing_angle_bracket,include_closing_dq,
-        
+        unexpected_kw,
+        func_signature,
         template_param_mismatch,template_param_list_incomplete,
-        
+        swizzle_notexist,swizzle_fortype,
 
+        notMember,
+        notMemberDependent,
+        isDependentType
+        noType  
     };
-    template <t ts>
-    std::string get(){
-
-    };
+    
     std::string goTo(stmsl::parser& p,lex l){
         size_t sp = p.f.tellg();
         // Go to lineStart
@@ -189,17 +198,67 @@ struct err{
     };
     template <t ts>
     void _err(stmsl::parser& prs);
-    template <>void _err<template_param_mismatch>(stmsl::parser& prs){};
-    template <>void _err<include_closing_angle_bracket>(stmsl::parser& prs){std::err<<"error on line "<<prs.linen<<"Expected closing \'>\' in include statement:\n"<<prs.line<<std::endl;};
-    template <>void _err<include_closing_dq>(stmsl::parser& prs){std::err<<"error on line "<<p.line<<"Expected closing \'\"\' in include statement:\n"<<p.line<<std::endl;};
-    template <>void _err<
-    
-    template <t ts>
-    void err(stmsl::parser& prs){
-        if(wfatal_error){}
-        _err<ts>(prs);
+    template <>void _err<func_signature>(stmsl::parser& prs){std::err<<"Func Signature not found for func:"<<prs.itPtr.back()->u.name;};
+    template <>void _err<template_param_mismatch>(stmsl::parser& prs){std::err<<};
+    template <>void _err<include_closing_angle_bracket>(stmsl::parser& prs){std::err<<"Expected closing \'>\' in include statement:\n";};
+    template <>void _err<include_closing_dq>           (stmsl::parser& prs){std::err<<"Expected closing \'\"\' in include statement:\n";};
+    template <>void _err<unexpected_kw>(stmsl::parser& p){std::err<<"Unexpected kw";}
+    template <lex::ty ts>
+    void printNotFound(stmsl::parser& p){
+        pri::deque<lex>::iter it=p.itPtr.back();
+        --it;
+        if(lt==ts){
+            for(;it->t!=lt;--it ){--it;};}
+        ++it;
+        for(;it!=p.itPtr.back()){std::err<<*it;}
     };
-
+    template <>void _err<notType>(stmsl::parser& p){std::err<<"Type not found";}
+    template <>void _err<notMember>(stmsl::parser& p){printNotFound<pri::lex::dot>(p);}
+    template <>void _err<notMemberDependent>(stmsl::parser& p){printNotFound<pri::lex::dcolon>(p);}
+    
+    template <t ts>struct warn {static constexpr bool value =false;};
+    // template <>struct warn<> {static constexpr bool value =false;};
+    template <t ts>struct templateInstantiation {static constexpr bool value=false; }
+    template <>struct templateInstantiation<t::template_param_mismatch> {static constexpr bool value=true; }
+    template <typename... Ts >
+    struct typesPassed{
+        static constexpr bool paramsMeta=pri::is_one_of<stmtsl::param_list<temp::meta> ,Ts>::value;
+        static constexpr bool argListInst=pri::is_one_of<stmtsl::arg_list<temp::meta> ,Ts>::value; 
+        static constexpr bool paramsMeta=pri::is_one_of<stmtsl::param_list<temp::inst> ,Ts>::value;
+        static constexpr bool argList=pri::is_one_of<stmtsl::arg_list<temp::meta> ,Ts>::value; 
+        static constexpr bool typeMeta = pri::is_one_of<stmsl::type<temp::meta>,Ts>::value;
+        static constexpr bool typeInst = pri::is_one_of<stmsl::type<temp::meta>,Ts>::value;
+        
+        static constexpr bool argList=argListInst | argListMeta;
+        static constexpr bool paramsList=paramsInst | paramsMeta;
+        // static constexpr bool
+    };
+    template <t ts,typename... Ts >
+    void getErr(stmsl::parser& p){// TODO 
+        std::err<<p.curFilePath<<p.linen<<":"<<p.col<<": ";
+        if constexpr(warn<ts>::value){pri::ansi(FG_YELLOW)<<" warning: \"";}
+        else {std::err<<pri::ansi(FG_RED)<<" error: \"";}
+        std::err<<pri::ansi(FG_WHITE);
+        _err<ts>(p);
+        pri::deque<lex>::iter it=p.itPtr.back();
+        for(;it and(it!=p.lexq.head()) and (it->t!=lex::ty::nl);){}
+        std::string linestr=std::string(p.linen)+std::string(": ");
+        std::err<<linestr;
+        std::stringstream strstr;
+        for(;it!=itPtr.back();++it){strstr<<*it;};
+        std::err<<strstr.str()<<pri::ansi(SG_underline,FG_RED);
+        std::err<<*it<<pri::ansi(SG_reset)<<"\"\n";
+        size_t len=linestr.length()+strstr.str().length();
+        std::string s;s.insert(len,' ');
+        std::err<<s<<pri::ansi(SG_RED)<<"^"<<pri::ansi(SG_reset);
+    };
+    template <t ts,typename... Ts>
+    void err(stmsl::parser& prs,Ts... args){
+        if(wfatal_error){}
+        getErr<ts>(prs,args...);
+    };
+    template <t ts>
+    void err(){_err<ts>(*(parserStack.back()));}
 };
 err syserr;
 
