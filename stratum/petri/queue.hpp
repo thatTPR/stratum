@@ -53,7 +53,7 @@ class _queue {
 template <typename T>
 using queue= _queue<T,qnode>;
 template <typename T>
-struct deque : _queue<T,dqnode>{
+struct deque : public _queue<T,dqnode>{
     using node=dqnode<T>;
         class iterator {
             public: 
@@ -125,6 +125,10 @@ struct deque : _queue<T,dqnode>{
         void eraseFromEnd(iter& it){
             while(tail()!=it){pop_back();}
             pop_back();
+        };
+        decltype(*this) operator+=(deque<T>& d){
+            for(T it:d){this->push_back(it);}
+            return *this;
         };
         void erase(){while(!empty()){pop();}}
         template <typename... Ts>

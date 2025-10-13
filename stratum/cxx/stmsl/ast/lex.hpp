@@ -4,12 +4,14 @@
 namespace stmsl {
     struct posit {
             size_t ln=0;
-            size_t col=0;size_t filePos=0;
+            size_t col=0;size_t filePos=0;size_t ecol=0;
             decltype(*this) operator++(){col++;}
             decltype(*this) operator++(int){filePos+=col;col=0;}
             bool operator<(size_t& i){return col<i;}
-
+            bool operator<=(size_t& i){return col<=i;}
+            operator size_t(){return col;};
             posit() = default;
+            posit(posit& p) {*this=p;ecol=col;}
         };
     struct lex {
             enum ty {Name,NumFlt,NumUint,
@@ -32,7 +34,7 @@ namespace stmsl {
                 bor='|',
                 bxor='^',
                 mul='*',
-                div='/',
+                div='/',comm,blockcomm
                 ltangle='<',
                 gtangle='>',
                 comma=',',
@@ -42,10 +44,11 @@ namespace stmsl {
                 space=' ',
                 cond='?',
                 nl='\n',
+                eq='=',peq,meq,andeq,oreq,Noteq,muleq,diveq
                 pack,
+                
                 str="#",tokpaste,
                 pp,mm,oand,oor,
-
                 err
             };
             ty t;
@@ -54,13 +57,15 @@ namespace stmsl {
                 std::string name;
                 // type<meta>* ty;
             }u;
-        posit pos;
+            posit pos;
+            size_t size(){return (pos.ecol-pos.col);}
             void setUnum(char c){u.unum=(c-'0');}
-            void addUnum(char c){u.unum*=10;u.unum+=(c-'0');}
-            void addflt(char c){u.unum*=10;u.unum+=(c-'0');}
+            void addUnum(char c){u.unum*=10;u.unum+=(c-'0');pos.ecol++;}
+            void addflt(char c){u.unum*=10;u.unum+=(c-'0');pos.ecol++;}
             void setFlt(size_t p){float f=u.unum;for(;p!=0;p--){f/=10;};
                 u.flt=f;
             };
+            void addName(char c){u.name+=c;pos.ecol++;}
             bool isType(ty ts){return t=ts;}
             template <ty... ts>
             bool Variant(ts... first){return first==t || ...;};
@@ -87,29 +92,6 @@ namespace stmsl {
                 using tylexq=pri::deque<lex>;
 
 };
-template <typename StreamT>
-StreamT& strmLex(StreamT& os,  lex& v) {    
-    switch(v.t){
-case lex::ty::NumFlt :              {return os<<v.u.flt;}
-case lex::ty::NumUint :             {return os<<v.u.unum;}
-case lex::ty::Name :                {return os<<v.u.name}
-case lex::ty::kw :                  {return os<<v.u.name;}
-case lex::ty::typeName :            {return os<<v.u.name;}
-case lex::ty::typeNameConstructor : {return os<<v.u.name;}
-case lex::ty::member :              {return os<<v.u.name;}
-case lex::ty::swizzle :             {return os<<v.u.name;}
-case lex::ty::tokpaste :            {return os<<"##";}
-case lex::ty::pp :                  {return os<<"++";}
-case lex::ty::mm :                  {return os<<"--";}
-case lex::ty::oand :                {return os<<"&&";}
-case lex::ty::oor :                 {return os<<"||";}
-default : {return os<<std::string(v.t);}
-}
-}
 
-std::stringstream& operator<<(std::stringstream& str,lex& v){
-    return strmLex<std::stringstream>(str,v);
-};
-std::ostream& operator<<(std::ostream& os,lex& v){return strmLex<std::ostream>(os,v);}
 
 #endif

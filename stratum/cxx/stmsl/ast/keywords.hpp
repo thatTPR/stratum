@@ -36,73 +36,25 @@ struct contxt_kw{
     static constexpr size_t pc ;
     // static constexpr pcntxt pcs[] = {} ;
 };
-/*
+
 template <>struct contxt_kw<kwty::macro>{
-    static constexpr size_t s = 1 ;
-    static constexpr pcntxt pcs[] = {turoot} ;
-};
+    static constexpr size_t s =turoot ;};
 
-template <>struct contxt_kw<kwty::name_attrib>{
-    static constexpr size_t s = 2 ;
-    static constexpr pcntxt pcs[] = {global,funcblock} ;
-};
+template <>struct contxt_kw<kwty::name_attrib>{static constexpr size_t s =global|funcblock|stmtDecl|macroExpr ;};
 template <>struct contxt_kw<kwty::stmt>{
-    static constexpr size_t s = 2 ;
-    static constexpr pcntxt pcs[] = {global,funcblock} ;
-};
-template <>struct contxt_kw<kwty::prim>{
-    static constexpr pcntxt pcs[] = {global,funcblock} ;
-};
-template <>struct contxt_kw<kwty::layout_at>{
-    static constexpr size_t s = 1 ;
-    static constexpr pcntxt pcs[] = {layoutArgs} ;
-};
-template <>struct contxt_kw<kwty::layout_qual>{
-    static constexpr size_t s = 2 ;
-    static constexpr pcntxt pcs[] = {layoutDef,funcargqual} ;
-};
-template <>struct contxt_kw<kwty::builtinFunc>{
-    static constexpr size_t s = 2 ;
-    static constexpr pcntxt pcs[] = {global,funcblock} ;
-};
-template <>struct contxt_kw<kwty::builtinVar>{
-    static constexpr size_t s = 2 ;
-    static constexpr pcntxt pcs[] = {global,funcblock} ;
-};
-
-template <>struct contxt_kw<kwty::funcStmt>{
-    static constexpr size_t s = 2 ;
-    static constexpr pcntxt pcs[] = {funcblock} ;
-};
-*/
-template <>struct contxt_kw<kwty::macro>{
-    static constexpr size_t s =turoot ;
-};
-
-template <>struct contxt_kw<kwty::name_attrib>{
-    static constexpr size_t s =global|funcblock|stmtDecl|macroExpr ;
-};
-template <>struct contxt_kw<kwty::stmt>{
-    static constexpr size_t s =global|funcblock|macroExpr ;
-};
+    static constexpr size_t s =global|funcblock|macroExpr ;};
 template <>struct contxt_kw<kwty::prim>{
     static constexpr size_t s =global|funcblock|macroExpr ;};
 template <>struct contxt_kw<kwty::layout_at>{
-    static constexpr size_t s = layoutArgs|macroExpr ;
-};
+    static constexpr size_t s = layoutArgs|macroExpr ;};
 template <>struct contxt_kw<kwty::layout_qual>{
-    static constexpr size_t s =layoutDef|funcargqual|macroExpr ;
-};
+    static constexpr size_t s =layoutDef|funcargqual|macroExpr ;};
 template <>struct contxt_kw<kwty::builtinFunc>{
-    static constexpr size_t s = global|funcblock|macroExpr ;
-};
+    static constexpr size_t s = global|funcblock|macroExpr ;};
 template <>struct contxt_kw<kwty::builtinVar>{
-    static constexpr size_t s = global|funcblock|stexpr|macroExpr ;
-};
-
+    static constexpr size_t s = global|funcblock|stexpr|macroExpr ;};
 template <>struct contxt_kw<kwty::funcStmt>{
-    static constexpr size_t s = funcblock|stexpr ;
-};
+    static constexpr size_t s = funcblock|stexpr ;};
 
 template <kwty k>
 struct context_tuple {
@@ -122,25 +74,15 @@ struct context_tuple {
 };
 
 
-template <size_t N>
-struct Str {
-    std::array<char, N> data;
-
-    constexpr Str(const char (&s)[N]) {
-        std::copy_n(s, N, data.begin());
-    }
-
-    std::string get() const { return std::string(data.data()); }
-};
 
 // Now Str is literal → usable as NTTP
-template <Str S>
+template <pri::Str S>
 struct hs {
     static constexpr auto value = S;
     static std::string name() { return std::string(value.data.data()); }
 };
 
-template <Str s,typename KW,kwty kTY>
+template <pri::Str s,typename KW,kwty kTY>
 struct kw : hs<s>,context_tuple<kTY> {
     using type = KW;
     static constexpr kwty KT= kTY;
@@ -163,6 +105,7 @@ struct kw : hs<s>,context_tuple<kTY> {
     template <>void _proc<kwty::layout_at>(parser& p){p.putLayout<KW>();};
     template <>void _proc<kwty::layout_qual>(p.putLayoutQual<KW>());
     template <>void _proc<kwty::funcStmt>(parser& p){p.Stmt();}
+
     // template <>void _proc<kwty::accessSpec>(parser& p){p.accessSpec<access::>}
     // template <>void _proc<kwty::
     // template <>void _proc<kwty::builtinFunc>();
@@ -191,7 +134,7 @@ struct context_join {
 #define KW_LIST KW_LIST, name
 
 
-using kw_version =  kw<"version",macroStmt::mStmtVersion,kwty::macro> ;
+using kw_version =  kw<"#version",macroStmt::mStmtVersion,kwty::macro> ;
 // void kw_version::proc(parser& p){    p.setVersion(p.getNum(p.untilEOL()));}
 #define KW_LISTKW kw_version,
 
@@ -226,15 +169,24 @@ using kw_ifdef =  kw<"#ifdef",macroStmt::mStmtIfdef,kwty::macro> ;
 using kw_Layout =  kw<"layout",stmt<meta>::StmtLayout,kwty::layout_Stmt> ;
 #define KW_LISTKW KW_LISTKW, kw_Layout 
 
-using kw_Location =  kw<"location",stmt<meta>::Location,kwty::layout_at> ;
-#define KW_LISTLYT KW_LISTLYT kw_Location 
+template <Str s,stmt<temp::meta>::StmtLayout::ty TY>
+struct kw_lyt : kw<s,stmt<meta>::StmtLayout,kwty::layout_at> {
+    static constexpr stmt<temp::meta>::StmtLayout::ty typeLyt=TY;
+} ; 
 
-using kw_Binding =  kw<"binding",stmt<meta>::Binding,kwty::layout_at> ;
-#define KW_LISTLYT KW_LISTLYT, kw_Binding 
+using kw_Location =  kw_lyt<"location",stmt<temp::meta>::StmtLayout::ty::location> ;
+using kw_Binding =  kw_lyt<"binding",stmt<temp::meta>::StmtLayout::ty::binding> ;
+
+#define KW_LISTLYT KW_LISTLYT kw_Location, kw_Binding 
 
 using kw_uniform =  kw<"uniform",stmt<meta>::StmtLayout,kwty::layout_qual> ;
 #define KW_LISTLYT KW_LISTLYT, kw_uniform 
-using kw_Buffer =  kw<"buffer",kwty::layout_qual> ;
+struct kw_Buffer :  kw<"buffer",kwty::layout_qual>{
+    void proc(parser& p){
+        p.curAcc.push(accSpec::Public);
+        p.getStmt<stmt<temp::meta>::StmtDefType>();
+    };
+} ;
 #define KW_LISTLYT KW_LISTLYT,kw_Buffer
 
 
@@ -260,7 +212,7 @@ using kw_Continue =  kw<"continue",stmt<temp::meta>::StmtContinue,kwty::stmtStmt
 
 
 template <Str s, typename T>
-struct kw_prim  : kw<s,T,kwty::prim> {
+struct kw_prim  : public kw<s,T,kwty::prim> {
     void proc(parser& p){
         if constexpr (pcs == pcntxt::stexpr){pushConstructor<T>(d);}
         else pushDecl<T>(d);
@@ -277,7 +229,7 @@ using kw_Bool =  kw_prim<"bool",type<meta>::BoolTy> ;
 #define KW_LISTPRIM KW_LISTPRIM,kw_Image2D,kw_Image3D,kw_Sampler,kw_Void,kw_Float,kw_Int,kw_Uint,kw_Bool
 
 template <Str s,typename T>
-struct kw_vec : kw<s,T,kwty::prim> {    size_t d;
+struct kw_vec : public kw<s,T,kwty::prim> {    size_t d;
     bool check(parser& p,std::string s){
         if(s.substr(0,this->name().length()) != this->name()){return false;}
         else if(!isdigit(s[this->name().length()])){return false;}
@@ -292,7 +244,7 @@ struct kw_vec : kw<s,T,kwty::prim> {    size_t d;
 };
 
 template <Str s,typename T>
-struct kw_mat : kw<s,T,kwty::prim> {
+struct kw_mat : public kw<s,T,kwty::prim> {
     size_t dx,dy;
     bool check(parser& p,std::string s){
         if(s != this->name().substr(0,s.length())){return false;}
@@ -320,25 +272,25 @@ using kw_Bvec =kw_Bvec<"bvec",primbVec,kwty::prim> ;
 using kw_Bmat =kw_Bmat<"bmat",primbMat,kwty::prim> ;
 #define KW_LISTPRIM KW_LISTPRIM, kw_vec,kw_mat, kw_Ivec, kw_Imat, kw_Uvec, kw_Umat, kw_Bvec, kw_Bmat
 enum accSpec{Public,Private,Protected};
-struct kw_Struct : kw<"struct",type<temp::meta> ,kwty::Struct>{
+struct kw_Struct : public kw<"struct",type<temp::meta> ,kwty::Struct>{
     void proc(parser& p){
         p.accessPush<accSpec::Public>();
         p.getStruct();
     };
 };
-struct kw_Class : kw<"class",type<temp::meta>,kwty::Struct>{
+struct kw_Class : public kw<"class",type<temp::meta>,kwty::Struct>{
     void proc(parser& p){
         p.accessPush<accSpec::Private>();
         p.getStruct();
     };
 };
-struct kw_Virtual : kw<"virtual",type<temp::meta>,kwty::qualifier>{
+struct kw_Virtual : public kw<"virtual",type<temp::meta>,kwty::qualifier>{
     void proc(parser& p){
 
     };
 
 };
-struct kw_Final : kw<"final",type<temp::meta>,kwty::qualifier>{
+struct kw_Final : public kw<"final",type<temp::meta>,kwty::qualifier>{
     void proc(parser& p){
         if(!p.isContextMethodDeclAfterArgList()){
             syserr.err<err::t::unexpected_kw>()
@@ -358,17 +310,21 @@ using kw_Constexpr =  kw<"constexpr",void,kwty::qualifier> ;
 using kw_Static =  kw<"static",void,kwty::qualifier> ;
 #define KW_LISTKW KW_LISTKW,kw_Enum,kw_Template,kw_Typename,kw_Constexpr,kw_Static 
 template <Str s,accSpec asT>
-struct kw_as : kw<s,void,kwty::accessSpec> {
+struct kw_as : public kw<s,void,kwty::accessSpec> {
     void proc(parser& p){
         p.until<lex::ty::colon>();
         p.erase();
         p.access<asT>();
     };
 };
-using kw_Public = kw_as<"public",accSpec::Public>
-using kw_Private = kw_as<"private",accSpec::Private>
-using kw_Protected = kw_as<"protected",accSpec::Protected>
+using kw_Public = kw_as<"public",accSpec::Public>;
+using kw_Private = kw_as<"private",accSpec::Private>;
+using kw_Protected = kw_as<"protected",accSpec::Protected>;
 #define KW_ACCS kw_Public , kw_Private , kw_Protected 
+struct kw_Namespace : public  kw<"namespace",stmt<temp::meta>::StmtNS,kwty::stmt>{
+    void proc(parser& p){
+        p.Fromuntil<lex::ty::lbrace>();}
+};
 using kw_If =  kw<"if",stmt<temp::meta>::StmtIf,kwty::funcStmt> ;
 using kw_Else =  kw<"else",stmt<temp::meta>::StmtElse,kwty::funcStmt> ;
 using kw_Switch =  kw<"switch",stmt<meta>::StmtSwitch,kwty::funcStmt> ;
@@ -377,7 +333,7 @@ using kw_Default = kw<"default",stmt<temp::meta>::StmtCase,kwty::funcStmt>;
 using kw_While =  kw<"while",stmt<temp::meta>::StmtWhile,kwty::loopStmt> ;
 using kw_For =  kw<"for",stmt<temp::meta>::StmtFor,kwty::loopStmt> ;
 #define KW_LISTKW KW_LISTKW, kw_If  , kw_Else  , kw_Switch, kw_Case, kw_Default,  kw_While, kw_For 
-struct kw_Do :  kw<"do",kwty::funcStmt> {
+struct kw_Do : public  kw<"do",kwty::funcStmt> {
      void proc(parser& p){
         p.until<lex::ty::lbrace>();
         p.getBlock<>();

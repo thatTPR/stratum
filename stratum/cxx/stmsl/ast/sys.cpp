@@ -1,5 +1,6 @@
 #ifndef STMSL_SYS_CPP
 #define STMSL_SYS_CPP
+#include <stdlib.h> 
 #include <petri/list.hpp>
 #include <petri/stack.hpp>
 #include "parser.cpp"
@@ -181,27 +182,110 @@ struct err{
         template_param_mismatch,template_param_list_incomplete,
         swizzle_notexist,swizzle_fortype,
 
+        unexpectedToken,
         notMember,
         notMemberDependent,
         isDependentType
-        noType  
+        noType,
+        type_mismatch,
+
     };
-    
+    enum w{
+        return_in_non_void,
+        
+    };
+    std::string getLex(lex& s){
+        switch(s.t){
+case lex::ty::Name: {return std::string("Name")+std::string(s.u.name);}
+case lex::ty::NumFlt: {return std::string("Float Literal")+std::to_string(s.u.flt);}
+case lex::ty::NumUint: {return std::string("Int literal")+std::to_string(s.u.unum);}
+case lex::ty::kw: {return std::string("keyword")+std::string(s.u.name);}
+case lex::ty::typeName: {return std::string("typeName")+std::string(s.u.name);}
+case lex::ty::typeNameConstructor: {return std::string("typeNameConstructor")+std::string(s.u.name);}
+case lex::ty::member: {return std::string("member")+std::string(s.u.name);}
+case lex::ty::swizzle: {return std::string("swizzle")+std::string(s.u.name);}
+case lex::ty::escape:  { return std::string(lex::ty::escape);}
+case lex::ty::Not:  { return std::string(lex::ty::Not);}
+case lex::ty::lparen:  { return std::string(lex::ty::lparen);}
+case lex::ty::rparen:  { return std::string(lex::ty::rparen);}
+case lex::ty::lbrace:  { return std::string(lex::ty::lbrace);}
+case lex::ty::rbrace:  { return std::string(lex::ty::rbrace);}
+case lex::ty::lbrack:  { return std::string(lex::ty::lbrack);}
+case lex::ty::rbrack:  { return std::string(lex::ty::rbrack);}
+case lex::ty::dq:  { return std::string(lex::ty::dq); }
+case lex::ty::sq:  { return std::string(lex::ty::sq); }
+case lex::ty::dot:  { return std::string(lex::ty::dot); }
+case lex::ty::plus:  { return std::string(lex::ty::plus); }
+case lex::ty::minus:  { return std::string(lex::ty::minus); }
+case lex::ty::band:  { return std::string(lex::ty::band); }
+case lex::ty::bor:  { return std::string(lex::ty::bor); }
+case lex::ty::bxor:  { return std::string(lex::ty::bxor); }
+case lex::ty::mul:  { return std::string(lex::ty::mul); }
+case lex::ty::div:  { return std::string(lex::ty::div); }
+case lex::ty::ltangle:{return std::string('<');}
+case lex::ty::gtangle:{return std::string('>');}
+case lex::ty::comma:{return std::string('n');}
+case lex::ty::semicolon:{return std::string(';');}
+case lex::ty::colon:{return std::string(':');}
+case lex::ty::space:{return std::string(' ');}
+case lex::ty::cond:{return std::string('?');}
+case lex::ty::nl:{return std::string('\n');}
+case lex::ty::str:{return std::string(lex::ty::str);}
+case lex::ty::dcolon:{return std::string("::");}
+case lex::ty::pack:{return std::string("...");}
+case lex::ty::tokpaste {return std::string();}
+case lex::ty::pp {return std::string("++");}
+case lex::ty::mm {return std::string("--");}
+case lex::ty::oand {return std::string("&&");}
+case lex::ty::oor {return std::string("||");}
+        };
+    } ;
     std::string goTo(stmsl::parser& p,lex l){
         size_t sp = p.f.tellg();
-        // Go to lineStart
-        p.f.seekg(l.filePos-l.col);
+        p.f.seekg(l.pos.filePos-l.pos.col);
         std::string line;
         std::getline(f,line);
         p.f.seekg(sp);
         return line;
     };
+    template <typename... Ts >
+    struct typesPassed{
+        static constexpr bool paramsMeta=pri::is_one_of<param_list<temp::meta> ,Ts...>::value;
+        static constexpr bool argListInst=pri::is_one_of<arg_list<temp::meta> ,Ts...>::value; 
+        static constexpr bool paramsMeta=pri::is_one_of<param_list<temp::inst> ,Ts...>::value;
+        static constexpr bool argList=pri::is_one_of<arg_list<temp::meta> ,Ts...>::value; 
+        static constexpr bool typeMeta = pri::is_one_of<type<temp::meta>,Ts...>::value;
+        static constexpr bool typeInst = pri::is_one_of<type<temp::inst>,Ts...>::value;
+        
+        static constexpr bool lexeme = pri::is_one_of<lex,Ts...>::value;
+        static constexpr bool argList=argListInst || argListMeta;
+        static constexpr bool paramsList=paramsInst || paramsMeta;
+        static constexpr bool type = typeMeta || typeInst;
+        // static constexpr bool
+    };
+
+    template <t ts,typename... Ts>struct warn {static constexpr bool value =false;};
+    template <t ts,typename... Ts>struct errt {static constexpr bool value =true;};
+    // template <>struct warn<> {static constexpr bool value =false;};
+    template <t ts>struct templateInstantiation {static constexpr bool value=false; }
+    template <>struct templateInstantiation<t::template_param_mismatch> {static constexpr bool value=true; }
+    
+    template <typename... Ts>
+    void args_err(Ts... args){
+        constexpr typesPassed<Ts...> tpb;
+        if(tpb.lexeme){}
+        if(tpb.argList){}
+        if(tpb.paramsList){}
+        if(tpb.type){}
+    } ;
+
     template <t ts>
-    void _err(stmsl::parser& prs);
-    template <>void _err<func_signature>(stmsl::parser& prs){std::err<<"Func Signature not found for func:"<<prs.itPtr.back()->u.name;};
+    void _err(stmsl::parser& prs){};
+    template <>void _err<fileNotFound>(stmsl::parser& prs){std::err<<"File Not Found\n";};
+    template <>void _err<func_signature>(stmsl::parser& prs){std::err<<"Func Signature not found for func"<<pri::ansi(FG_BLUE)<<prs.itPtr.back()->u.name<<pri::ansi(FG_WHITE)<<"\n";};
     template <>void _err<template_param_mismatch>(stmsl::parser& prs){std::err<<};
-    template <>void _err<include_closing_angle_bracket>(stmsl::parser& prs){std::err<<"Expected closing \'>\' in include statement:\n";};
-    template <>void _err<include_closing_dq>           (stmsl::parser& prs){std::err<<"Expected closing \'\"\' in include statement:\n";};
+    template <>void _err<include_closing_angle_bracket>(stmsl::parser& prs){std::err<<"Expected closing \'>\' in include statement\n";};
+    template <>void _err<include_closing_dq>           (stmsl::parser& prs){std::err<<"Expected closing \'\"\' in include statement\n";};
     template <>void _err<unexpected_kw>(stmsl::parser& p){std::err<<"Unexpected kw";}
     template <lex::ty ts>
     void printNotFound(stmsl::parser& p){
@@ -216,49 +300,45 @@ struct err{
     template <>void _err<notMember>(stmsl::parser& p){printNotFound<pri::lex::dot>(p);}
     template <>void _err<notMemberDependent>(stmsl::parser& p){printNotFound<pri::lex::dcolon>(p);}
     
-    template <t ts>struct warn {static constexpr bool value =false;};
-    // template <>struct warn<> {static constexpr bool value =false;};
-    template <t ts>struct templateInstantiation {static constexpr bool value=false; }
-    template <>struct templateInstantiation<t::template_param_mismatch> {static constexpr bool value=true; }
-    template <typename... Ts >
-    struct typesPassed{
-        static constexpr bool paramsMeta=pri::is_one_of<stmtsl::param_list<temp::meta> ,Ts>::value;
-        static constexpr bool argListInst=pri::is_one_of<stmtsl::arg_list<temp::meta> ,Ts>::value; 
-        static constexpr bool paramsMeta=pri::is_one_of<stmtsl::param_list<temp::inst> ,Ts>::value;
-        static constexpr bool argList=pri::is_one_of<stmtsl::arg_list<temp::meta> ,Ts>::value; 
-        static constexpr bool typeMeta = pri::is_one_of<stmsl::type<temp::meta>,Ts>::value;
-        static constexpr bool typeInst = pri::is_one_of<stmsl::type<temp::meta>,Ts>::value;
-        
-        static constexpr bool argList=argListInst | argListMeta;
-        static constexpr bool paramsList=paramsInst | paramsMeta;
-        // static constexpr bool
-    };
+    
+    
+    
     template <t ts,typename... Ts >
-    void getErr(stmsl::parser& p){// TODO 
+    void getErr(stmsl::parser& p,Ts... args){
         std::err<<p.curFilePath<<p.linen<<":"<<p.col<<": ";
         if constexpr(warn<ts>::value){pri::ansi(FG_YELLOW)<<" warning: \"";}
         else {std::err<<pri::ansi(FG_RED)<<" error: \"";}
         std::err<<pri::ansi(FG_WHITE);
         _err<ts>(p);
         pri::deque<lex>::iter it=p.itPtr.back();
-        for(;it and(it!=p.lexq.head()) and (it->t!=lex::ty::nl);){}
-        std::string linestr=std::string(p.linen)+std::string(": ");
-        std::err<<linestr;
-        std::stringstream strstr;
-        for(;it!=itPtr.back();++it){strstr<<*it;};
-        std::err<<strstr.str()<<pri::ansi(SG_underline,FG_RED);
-        std::err<<*it<<pri::ansi(SG_reset)<<"\"\n";
-        size_t len=linestr.length()+strstr.str().length();
-        std::string s;s.insert(len,' ');
-        std::err<<s<<pri::ansi(SG_RED)<<"^"<<pri::ansi(SG_reset);
+        pri::deque<lex>::iter prev = p.itPtr.prev();
+        std::string line = goTo(p,*it);
+        std::string from, until, loc, end;
+        if(prev->pos.ln==it->pos.ln){
+            start=line.substr(0,prev->pos.col-1);
+            until=line.substr(prev->pos.col,it->pos.col);
+            size_t s=it->size;
+            loc=line.substr(it->pos.col,s);
+            end=line.substr(it->pos.col+s);
+        }
+        else {
+            start=line.substr(0,it->pos.col-1);
+            size_t s=it->size;
+            loc=line.substr(it->pos.col,s);
+            end=line.substr(it->pos.col+s);
+        }
+        std::string linestr=std::string(it->pos.ln)+std::string(": ");
+        std::err<<start<<pri::ansi(FG_BLUE)<<until<<pri::ansi(FG_RED)<<loc<<pri::ansi(FG_WHITE)<<end;
+        std::string pstart;point.insert(' ',start.length());
+        std::string puntil;until.insert('~',until.length());
+        std::string ploc=std::string("^");ploc.insert('^',ploc.length()-1);
+        std::err<<pstart<<pri::ansi(FG_BLUE)<<puntil<<pri::ansi(FG_RED)<<ploc<<pri::ansi(FG_WHITE)<<pend;
     };
     template <t ts,typename... Ts>
     void err(stmsl::parser& prs,Ts... args){
-        if(wfatal_error){}
         getErr<ts>(prs,args...);
+        if(wfatal_error and errt<ts,Ts...>::value){exit(1);}
     };
-    template <t ts>
-    void err(){_err<ts>(*(parserStack.back()));}
 };
 err syserr;
 

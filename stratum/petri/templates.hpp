@@ -9,6 +9,19 @@ constexpr size_t sizeOf(){return sizeof(T);}
 
 #include <cstring>
 namespace pri {
+
+    
+template <size_t N>
+struct Str {
+    std::array<char, N> data;
+
+    constexpr Str(const char (&s)[N]) {
+        std::copy_n(s, N, data.begin());
+    }
+
+    std::string get()  { return std::string(data.data()); }
+};
+
     template <typename T>
     void memcpy(T* dest,T* src,size_t s){std::memcpy(dest,src,s*sizeof(T));}
 
@@ -103,7 +116,11 @@ struct EnumTs{
 
 };
  
-
+template <typename Arg,template <typename> typename func,typename tp,typename... tps>
+        bool BoolFunc(Arg& arg){
+            if(func<tp>(arg)){return true;}
+            else{return BoolFunc<Arg,func,tps...>(arg);}
+        };
 
     // template <typename... S>
     // using cases_type = pri::tuple<S...> ; 

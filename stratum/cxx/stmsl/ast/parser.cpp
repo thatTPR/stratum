@@ -149,17 +149,58 @@ macrosl macros;
         
         using tylexq=pri::deque<lex>;
         pri::deque<lex> lexq;
-size_t Mag=0;
+// size_t Mag=0;
+        pri::stack<pri::deque<lex>::iter> itPtr;
+        pri::stack<lex::ty> opens;
+        template <lex::ty t>struct openedt{static constexpr lex::ty l;}
+        template <>struct openedt<lex::ty::rbrace>{static constexpr lex::ty l=lex::ty::lbrace;}
+        template <>struct openedt<lex::ty::rbrack>{static constexpr lex::ty l=lex::ty::lbrack;}
+        template <>struct openedt<lex::ty::rparen>{static constexpr lex::ty l=lex::ty::lparen;}
+        template <>struct openedt<lex::ty::rangle>{static constexpr lex::ty l=lex::ty::langle;}
+        template <lex::ty t>
+        void open(){
+            opens.push(t);
+            // switch constexpr (t){
+            //     case lex::ty::lparen : {opens.push(t)};
+            //     case lex::ty::lbrace : {opens.push(t)};
+            //     case lex::ty::lbrack : {opens.push(t)};
+            //     default 
+            // };
+        };
+        template <lex::ty t>
+        void close(){if(opens.top()==openedt<t>::l){opens.pop();}else{syserr.err<unexpectedToken>(*this);}};
+
+        pri::deque<lex>::iter& lexptrback(){return itPtr.back();}
+        lex& lexitback(){return *(lexptrback());}
 
          template <lex::ty tokT>void up_cntxt();
          template <>void up_cntxt<lex::ty::NumUint>(){};
          template <bool Eval,typename... TS >
          void lexEmplace(TS... args){
-            if constexpr(Eval){lexq.emplace_back(args...);}
-            else {lexq.back()=lex(args...);}
+            if constexpr(Eval){lexq.emplace_back(args...);lexptrback()=lexq.tail();}
+            else {lexq.emplace_back(args...);lex(args...);}
          };
          template <bool Eval>
-        void lexsw(){
+         void lexMod(lex::ty t,size_t s=1){
+            if constexpr(Eval){lexq.back().t=t;lexq.back().pos.ecol+=s;}         }
+
+        bool NewLine(){pos++;if(std::getline(f,line)){return true}; return false;}
+
+        bool untilEOL(){return NewLine();};
+        bool untilRBLcom(){
+            while(NewLine()){
+                for(;pos<line.length();++pos){
+                    if(line[pos]=='/' and (line[pos-1]=='*')){return true;}
+                };
+            }
+            return false;
+        };
+        void comPop(){
+            if(lexitback()==lexq.back()){--lexptrback();}
+            lexq.pop_back();
+        };
+        template <bool Eval>
+        bool lexsw(){
   if(isdigit(line[pos])){
                         switch(lexq.back().t){
                             case lex::ty::NumUint : {lexq.back().addUnum(line[pos]);continue;}
@@ -170,6 +211,18 @@ size_t Mag=0;
              
 
                 switch(line[pos]){
+                    case lex::ty::eq : {
+                        switch(lexq.back().t){
+                            case lex::ty::Not : {lexMod<Eval>(lex::ty::Noteq);break;}
+                            case lex::ty::plus : {lexMod<Eval>(lex::ty::peq);break;}
+                            case lex::ty::minus : {lexMod<Eval>(lex::ty::meq);break;}
+                            case lex::ty::band : {lexMod<Eval>(lex::ty::andeq)break;}
+                            case lex::ty::bor : {lexMod<Eval>(lex::ty::oreq);break;}
+                            case lex::ty::mul : {lexMod<Eval>(lex::ty::muleq);break;}
+                            case lex::ty::div : {lexMod<Eval>(lex::ty::diveq);break;}
+                            default : { lexEmplace<Eval>(pos,lex::ty::eq);}
+                        };
+                    }
                     case lex::ty::escape :{++pos;continue;}
                     case lex::ty::dq : {lexEmplace<Eval>(pos,lex::ty::dq);continue;}
                     case lex::ty::sq : {lexEmplace<Eval>(pos,lex::ty::sq);continue;}
@@ -182,14 +235,14 @@ size_t Mag=0;
                     case lex::ty::ltangle :{lexEmplace<Eval>(pos,lex::ty::ltangle);continue;}
                     case lex::ty::dot :{
                         if(lexq.back().t==lex::ty::dot and(line[pos+1]==lex::ty::dot)){
-                            ++pos;lex.back().t=lex::ty::pack;}
+                            ++pos;lexMod<Eval>(lex::ty::pack,2);}
                         else {lexEmplace<Eval>(pos,lex::ty::dot);}
                         continue;
                         }
                     case lex::ty::comma :{lexEmplace<Eval>(pos,lex::ty::comma);continue;}
                     case lex::ty::semicolon :{lexEmplace<Eval>(pos,lex::ty::semicolon);continue;}
                     case lex::ty::colon :{
-                        if(lexq.back().t==lex::ty::colon){lexq.back().t=lex::ty::dcolon;}
+                        if(lexq.back().t==lex::ty::colon){lexMod<Eval>(lex::ty::dcolon);}
                         else {lexEmplace<Eval>(pos,lex::ty::colon);continue;}
                     }
                     case lex::ty::space :{
@@ -202,57 +255,53 @@ size_t Mag=0;
                     case lex::ty::band : {if(line[pos+1]==lex::ty::band){lexEmplace<Eval>(pos,lex::ty::oand);}else{lexEmplace<Eval>(pos,lex::ty::band);};continue;}
                     case lex::ty::bor :{if(line[pos+1]==lex::ty::bor){lexEmplace<Eval>(pos,lex::ty::oor);}else{lexEmplace<Eval>(pos,lex::ty::bor);};continue;}
                     case lex::ty::bxor : {lexEmplace<Eval>(pos,lex::ty::bxor);continue;}
-                    case lex::ty::mul : {lexEmplace<Eval>(pos,lex::ty::mul);continue;}
-                    case lex::ty::div : {lexEmplace<Eval>(pos,lex::ty::div);continue;}
+                    case lex::ty::mul : {
+                        switch(lexq.back().t){
+                            case lex::ty::div : {comPop();return untilRBLcom();}
+                            default : {lexEmplace<Eval>(pos,lex::ty::mul);break;}
+                        };
+                        continue;
+                        }
+                    case lex::ty::div : {
+                    if(lexq.back().t== lex::ty::div){comPop();return untilEOL();}
+                        lexEmplace<Eval>(pos,lex::ty::div);break;
+                    };
+                    continue;}
                     case lex::ty::cond : {lexEmplace<Eval>(pos,lex::ty::cond);continue;}
                                     
                 };
-                if(lexq.back().t==lex::ty::Name){lexq.back().u.name+=line[pos];}
+                if(lexq.back().t==lex::ty::Name){lexq.back().addname(line[pos]);}
                 else{
-                    if(lexq.back().t==lex::ty::dot){lexEmplace<Eval>(pos,line[pos]);lexq.back().t=lex::ty::member;};)}
+                    if(lexq.back().t==lex::ty::dot){lexEmplace<Eval>(pos,line[pos]);lexq.back().t=lex::ty::member;};}
                     else{lexEmplace<Eval>(pos,line[pos]);}
-                };
+                return true;
+        };
        
-        pri::stack<pri::deque<lex>::iter> itPtr;
 
         // pri::stack<stmt<temp::meta>::block*> openedBlocks;
         // pri::stack<expr<temp::meta>*> openedInitializers;
                 
         std::ifstream f;std::filesystem::path curFilePath;
-        bool NewLine(){pos++;if(std::getline(f,line)){return true}; return false;}
-        bool Line(){
-            if(NewLine()){for(;pos<line.length();pos++){lexsw<true>();}
+        inline bool Line(){
+            if(NewLine()){for(;pos<line.length();pos++){if(!lexsw<true>()){return false;};}
             return true;}
             else{return false;}
         };
         template <bool Eval>
-        bool next(){
+        inline bool next(){
             ++pos;
             if(pos<line.length()){lexsw<Eval>();}
             else {if(!NewLine()){return false;};lexsw<Eval>();}
             return true;
         };
-        size_t linecur,linecurnext;
 
-
-        lex& prevTOK(pri::deque<lex>::iter it){
-            pri::deque<lex>::iter itr = it;--itr;return itr;};
-        lex& nextTOK(pri::deque<lex>::iter it){
-            pri::deque<lex>::iter itr = it;++itr;return itr;};
-        
-        template <bool Eval,lex::ty tok>
-        void until(){
-            itPtr.push(itPtr.back());
-            pri::deque<lex>::iter ptr=itPtr.back();
-            ++ptr;
-            for(;(itPtrc->t!=tok);++ptr){
-                if(!ptr){next<Eval>();ptr=itPtr.back();}
-                else{itPtr.back()=ptr;}
+        void nextTOK(){
+            pri::deque<lex>::iter it =lexptrback();
+            for(++it;;++it){
+                if(!it){it=lexptrback();next<true>();}
             };
-            
         };
-
-
+        
         pri::list<qual> qualifiers;
         template <typename attrib >
         void putQualifier(){qualifiers.push(attrib::qualty);};
@@ -265,6 +314,39 @@ size_t Mag=0;
         void putLayout(){cast->layouts.back()};
         template <>void putLayout<stmt<meta>::Binding>(){cast->layouts.back().t=stmt<q>::StmtLayout::ty::binding;};
         template <>void putLayout<stmt<meta>::Location>(){cast->layouts.back().t=stmt<q>::StmtLayout::ty::binding;};
+     
+        
+        template <bool Eval,lex::ty tok,lex::ty... Expects>
+        void until(){
+            // itPtr.push(lexptrback());
+            pri::deque<lex>::iter ptr=lexptrback();
+            ++ptr;
+            for(;(itPtrc->t!=tok);++ptr){
+                if(!ptr){next<Eval>();ptr=lexptrback();}
+                else{lexptrback()=ptr;
+                    if(ptr->t==tok){return;};
+                    if constexpr (sizeof...(Expects)>0){
+                        if(!isOneOf<Expects...>(ptr->t)){
+                            syserr.err<err::t::unexpectedToken,lex>(*this,*ptr );
+                        };
+                    }
+                }
+            };
+        };
+        
+        template <lex::ty Tok,lex::ty... Toks>
+        bool _isOneOf(lex::ty t){
+            if(t==Tok){return true;}
+            if constexpr (sizeof...(Toks)==0){return false;}
+            return isOneOf<Toks...>(t);
+        };
+        template <lex::ty... Toks>
+        bool isOneOf(lex::ty t){
+            if(sizeof...(Toks)==0){return true;}
+            else return _isOneOf<Toks...>(t);
+        };
+        
+     
         // template <>void putLayout<stmt<q>::Location>(){cast->layouts.back().t=stmt<q>::StmtLayout::ty::binding;};
         
 
@@ -273,101 +355,10 @@ size_t Mag=0;
 expr<meta> getExpr(){return getExprFrom(lexq.begin());}
 
         void setVersion(uint s){cast->version=s;};
-        uint getNum(std::string s){
-            uint i=0;
-            for(char c : s) {
-                if(isdigit(c)){i*=10;i+=(c-'0');}
-            }
-            return i;
-        };
+        
        
-        template <lex::ty t,template <temp q> typename T>
-        T<meta> getFromUntilStripped(pri::deque<lex> stripped);
 
-        template <lex::ty t>
-        expr<meta> getFromUntilStripped<t,expr>(pri::deque<lex> stripped){
 
-        };
-        
-        template <lex::ty t>
-        stmt<meta>::block getFromUntilStripped<t,stmt<meta>::block>(pri::deque<lex> stripped){
-            
-        };
-        
-
-        template <lex::ty t>
-        pri::deque<lex> strippedUntil(){
-            pri::deque<lex> stripped;
-            for(;itPtr.back()->t!=t;++(itPtr.back())){
-                if constexpr (t != lex::ty::space){
-                    if(ite->t==lex::ty::space){continue;}
-                }
-                if constexpr (t != lex::ty::nl){
-                    if(ite->t==lex::ty::nl){continue;}
-                }
-                stripped.push_back(*(itPtr.back()));
-                if(stripped.back().t==lex::ty::name){pri::deque<lex>::iter pr=prevTOK(stripped.tail());
-                    if(pr->t==lex::ty::name){pr->t=lex::ty::typeName;}}
-            };
-            return stripped;
-        };
-        template <lex::ty fromTok,lex::ty toTok>
-        pri::deque<lex> strippedFromUntil(pri::deque<lex>::iter& res,bool* found){
-            *res=false;
-            deque<lex> stripped;
-            for(;itPtr.back()->t!=toTok;++(itPtr.back())){
-                if constexpr (fromTok != lex::ty::space){
-                    if(ite->t==lex::ty::space){continue;}
-                }
-                if constexpr (fromTok != lex::ty::nl){
-                    if(ite->t==lex::ty::nl){continue;}
-                }
-                stripped.push_back(*itPtr.back());
-                if (itPtr.back()->t==fromTok){res=stripped.tail();*found=true;}
-            };
-            return stripped;
-        };
-        
-        template <lex::ty t,template <temp q> typename T>
-        T<meta> getFromUntil(){
-            pri::deque<lex> stripped = strippedUntil<t>();
-            return getFromUntilStripped<t,T>(stripped);
-
-            erase();
-        };
-        template <lex::ty t>
-        stmt<meta> getFromUntil<t,stmt>(){
-        pri::deque<lex> stripped =strippedUntil<t>();
-        stmt<meta> res;
-        };
-
-        template <lex::ty tokFrom,lex::ty tokUntil ,template <temp q> typename T>
-        T<meta> getFromUntil(){
-            itPtr.push_back(itPtr.back());
-
-            deque<lex> stripped = strippedFromUntil<t,by>(itr,found);
-            return getFromUntilStripped<t,by,T>();
-        };
-        template <lex::ty tok>
-        expr<meta> getExprUntil(){return getFromUntil<tok,expr>();};
-        expr<meta> getExprUntil_EOSTMT(){return getExprUntil<lex::ty::semicolon>();};
-        expr<meta> getExprUntil_EOL(){return getExprUntil<lex::ty::nl>();};
-        template <lex::ty tok>
-        stmt<meta> getStmtUntil(){return getFromUntil<tok,stmt>();};
-        stmt<meta> getStmtUntil_EOSTMT(){return getStmtUntil<lex::ty::semicolon>();};
-        
-        tu<meta> getTUUntil_EOTU(){
-
-        };
-        stmt<meta>::block getBlockUntil_EOL(){
-            return getExprFrom<lex::ty::nl,block>(it);
-        };
-        stmt<meta>::block getBlockUntil_EOBLOCK(){
-            pri::list<stmt<meta>> stmts;
-
-        };
-        
-        expr<meta> resExpr;stmt<meta> resStmt;
         template <lex::ty T>
         bool lexTyOneOf(lex& l){
             return (l.t==T);
@@ -377,6 +368,110 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
             if(lexTyOneOf<T>(l)){return true;}
             return lexTyOneOf<Ts...>(l);
         };
+        template <lex::ty to,lex::ty... exp>
+        bool Continue(lex& i){
+                if constexpr (to != lex::ty::space){
+                    if(i.t==lex::ty::space){return true;}};
+                if constexpr (to != lex::ty::nl){
+                    if(i.t==lex::ty::nl){return true;}};
+                return false;
+        };
+        using lexres=pri::deque<pri::deque<lex>::iter>;
+        void evalName(){
+            pri::deque<std::string > nsName;
+            pri::deque<lex>::iter start=itPtr.prev();
+            for(;start!=lexptrback();++start){
+                if(start->t==lex::ty::dcolon){continue;}
+                nsName.push_back(start->u.name);
+            };
+            cast->findName(nsName);
+        };
+        
+        template <lex::ty to>
+        void until(){
+            pri::deque<lex>::iter ptr=lexptrback();
+            for(;lexptrback()->t!=to;++(lexptrback())){
+                if(lexptrback()){lexptrback()=ptr;next();continue;}
+                ptr=lexptrback();
+            };
+        };
+        template <lex::ty t,lex::ty... ts>
+        void untilDif(){while(isOneOf<t,ts...>(lexptrback()->t)){nextTOK();}};
+        template <lex::ty to,lex::ty... Expecteds>
+        lexres untilExp(){
+            lexres unexp;
+            pri::deque<lex>::iter ptr=lexptrback();
+            for(;lexptrback()->t!=to;++(lexptrback())){
+                if(lexptrback()){lexptrback()=ptr;next();continue;}
+                ptr=lexptrback();
+                if(Continue(lexitback())){continue;}
+                    if(!lexTyOneOf<Expecteds...>(lexitback().t)){unexp.push_back(lexptrback());}
+            };
+            return unexp;
+        };
+        template <lex::ty fromTok,lex::ty toTok,lex::ty... Expecteds>
+        lexres  fromUntilExp(){
+            lexres r=untilExp<fromTok>();
+            r+=untilExp<toTok,Expecteds...>();
+            return r;
+        };
+        template <lex::ty fromTok,lex::ty toTok>
+        void fromUntil(){
+            until<fromTok>();
+            until<toTok,Expecteds...>();
+        };
+        template <lex::ty fromTok,typename T>
+        T getLexedTo();
+        template <lex::ty fromTok,lex::ty toTok,typename T>
+        T getLexedFromTo();
+        template <lex::ty fromTok,lex::ty toTok,typename T,lex::ty... exp>
+        T getFromUntil(){
+            fromUntil<fromTok,toTok,exp...>();
+            return getLexed<fromTok,toTok,T>();
+        };
+        template <lex::ty to,typename T,lex::ty... exp>
+        T getFromUntil(){
+            fromUntil<fromTok,toTok,exp...>();
+            return getLexed<fromTok,toTok,T>();
+        };
+
+        template <lex::ty terminator , lex::ty... expecteds>
+        struct TypePrRule {
+            static constexpr lex::ty term=terminator;
+
+        };
+        template <typename... VarTs>
+        void lex(){
+
+        };
+        
+        template <lex::ty fromTok,lex::ty toTok,template <temp q> typename T>
+        T<temp::meta> _getFromUntil(){return getFromUntil<fromTok,toTok,T<temp::meta>();};
+
+
+        template <lex::ty t, typename T>
+        T getUntil(){
+            lexres r=until<t,T>();
+
+            return ;
+        };
+
+        template <lex::ty t,template <temp q> typename T>
+        T<temp::meta> _getUntil(){return getUntil<t,T<temp::meta>();        };
+        
+        template <lex::ty tokFrom,lex::ty tokUntil , typename T>
+        T getFromUntil(){
+            itPtr.push_back(lexptrback());
+            deque<lex> stripped = strippedFromUntil<t,by>(itr,found);
+            return getFromUntilStripped<t,by,T>();
+
+        };     
+        template <lex::ty tokFrom,lex::ty tokUntil ,template <temp q> typename T>
+        T<temp::meta> _getFromUntil(){return getFromUntil<tokFrom,tokUntil,T<temp::meta>>()};
+        
+       
+        expr<meta> resExpr;stmt<meta> resStmt;
+        
         
         template <typename KW,typename... KWs>
         expr<meta> kwsExpr(pri::deque<lex> stripped){
@@ -413,7 +508,7 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
 
         template <lex::ty tok>
         stmt<temp::meta>::block getBlockUntil(){
-            for(;itPtr.back().t!=tok;++(itPtr.back())){
+            for(;lexptrback().t!=tok;++(lexptrback())){
                 getStmtUntil_EOSTMT()
             };
         };
@@ -453,22 +548,207 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
         } ;
 
         template <bool Eval,typename KW,typename... KWs>
-        void untilKW(){for(;!kwFound<KW,KWs>();next<Eval>){
-            for(;itPtr.back()->t!=lex::ty::Name;next<Eval>()){};};};
-        };};
+        void untilKW(){for(;!kwFound<KW,KWs...>();next<Eval>){
+            for(;lexptrback()->t!=lex::ty::Name;next<Eval>()){};};};
+        };
         
         template <bool Eval,typename KW,typename... KWs>
-        void _untilKW(){for(;!_kwFound<KW,KWs>();next<Eval>){
-            for(;itPtr.back()->t!=lex::ty::Name;next<Eval>()){};};};
+        void _untilKW(){for(;!_kwFound<KW,KWs...>();next<Eval>){
+            for(;lexptrback()->t!=lex::ty::Name;next<Eval>()){};};};
         
         static const size_t  =context_join<KW,KWs...>::s;
         template <typename KW>
         void putKw(){KW::type;};
-          
-        
-        void erase(){itPtr.pop();
-            lexq.eraseFromEnd(itPtr.back());itPtr.pop();
+        template <typename KW>
+        void putKWt(){
+
         };
+        
+        // Handling Structs
+        template <typename T> T get();
+        template<> std::string get<std::string>(){
+            untilDif<lex::ty::space,lex::ty::nl>();
+            if(lexptrback().t==lex::ty::name){
+                return lexptrback().u.name;
+            }
+            else {syserr.err<err::t::unexpectedToken>(*this);return std::string();}
+        };
+        template <> param<temp::inst> get<param<temp::inst>(){
+            param<temp::meta> p;
+            for(;!isOneOf<lex::ty::comma,lex::ty::rangle>(lexitback().t);nextTOK()){
+                if(lexitback().t==lex::ty::Name){
+                    if(kw_Class::check(*this,lexitback().u.name)){p.t=param::ty::Typename;continue;}
+                    if(kw_Typename::check(*this,lexitback().u.name)){p.t=param::ty::Typename;continue;}
+                    if(kw_Template::check(*this,lexitback().u.name)){p.t=param::ty::Template;
+                        untilExp<lex::ty::langle,lex::ty::space>();
+                        for(;!isOneOf<lex::ty::comma,lex::ty::rangle>();nextTOK()){
+                            p.d=get<param<temp::inst>>());
+                        };
+                        untilKWs<kw_Class,kw_Typename>();continue;}
+                    p.name=lexitback().u.name;break;
+                };
+            };
+        };
+        template <> param<temp::meta> get<param<temp::meta>(){
+            param<temp::meta> p;bool tyNamed=false;
+            for(;!isOneOf<lex::ty::comma,lex::ty::rangle>(lexitback().t);nextTOK()){
+                if(lexitback().t==lex::ty::dcolon){if(nsName.empty()){syserr::err<unexpectedToken>(*this);};continue;}
+                if(lexitback().t==lex::ty::space){if(!nsName.empty()){tyName=true;}}
+                if(lexitback().t==lex::ty::Name){
+                    if(kw_Class::check(*this,lexitback().u.name)){tyNamed=true;p.t=param::ty::Typename;continue;}
+                    if(kw_Typename::check(*this,lexitback().u.name)){tyNamed=true;p.t=param::ty::Typename;continue;}
+                    if(kw_Template::check(*this,lexitback().u.name)){tyNamed=true;p.t=param::ty::Template;
+                        untilExp<lex::ty::langle,lex::ty::space>();
+                        for(;!isOneOf<lex::ty::comma,lex::ty::rangle>();nextTOK()){
+                            pri::get<pri::list<param<temp::meta>>>(p.d).push_back(get<param<temp::meta>>());
+                        };
+                        untilKWs<kw_Class,kw_Typename>();continue;}
+                    p.name=lexitback().u.name;break;
+                };
+            };
+            erase();
+            return p;
+        };
+        
+        template <> stmt<temp::inst>::param_list get<stmt<temp::inst>::param_list>(){
+            stmt<temp::inst>::param_list plist;
+            lexres r= untilExp<lex::ty::langle,lex::ty::space,lex::ty::nl>();
+            if(!r.empty()){syserr.err<err::t::unexpectedToken>(*this,r);}
+                open<lex::ty::langle>();
+                itPtr.push_back(itPtr.back());
+                lexres rs = untilExp<lex::ty::comma,lex::ty::space,lex::
+        };
+
+        template <> type<temp::inst> get<type<temp::inst>>(){
+            nstype nsNames;
+            if(lexitback().t!=lex::ty::name){syserr.err<err::t::unexpectedToken>(*this);}
+            nsNames.
+            for(;)
+            type<temp::inst> ty;
+            
+            for(;;)
+        };
+        template <> stmt<temp::meta>::param_list get<stmt<temp::meta>::param_list>(){
+            
+            stmt<temp::meta>::param_list plist;
+            lexres r= untilExp<lex::ty::langle,lex::ty::space,lex::ty::nl>();
+            if(!r.empty()){syserr.err<err::t::unexpectedToken>(*this,r);}
+                open<lex::ty::langle>();
+                pri::deque<lex>::iter it=itPtr.back();
+                itPtr.push_back(itPtr.back());
+                lexres rs = untilExp<lex::ty::comma,lex::ty::space,lex::nl,lex::ty::Name,lex::ty::eq,lex::ty::dcolon,lex::ty::langle,lex::ty::rangle>();
+                if(!rs.empty()){syserr.err<err::t::unexpectedToken>(*this,rs);}
+                
+        };
+
+        template <typename STMTty>
+        void getStmt();
+        
+        template <>void getStmt<stmt<temp::meta>::block>(){
+            itPtr.push_back(lexptrback());
+            opened<lex::ty::lbrace>()
+        };  
+        template <>void getStmt<stmt<meta>::StmtNS>(){
+            ;
+            itPtr.push_back(lexptrback());
+            until<lex::ty::lbrace>();
+            pri::deque<lex>::iter it= itPtr.prev();itPtr.pop();
+            for(++it;lexptrback()!=it;++it){
+                if(it->t==lex::ty::Name){cast->emplace_back<stmt<meta>::StmtNS>(it->u.name;);}
+            };
+            untilClosedWith<lex::ty::rbrace>();
+        };
+        template <>void getStmt<stmt<meta>::StmtDeclType>(){};
+        template <>void getStmt<stmt<meta>::StmtDefType>(){
+            itPtr.push_back(lexptrback());
+            untilExp<lex::ty::lbrace,lex::ty::space,lex::ty::colon,lex::ty::name>();
+        };
+        template <>void getStmt<typename stmt<meta>::StmtExpr>(){};
+        template <>void getStmt<stmt<meta>::StmtAssign>(){};
+        template <>void getStmt<stmt<meta>::StmtWhile>(){};
+        template <>void getStmt<stmt<meta>::StmtFor>(){};
+        template <>void getStmt<stmt<meta>::StmtForRange>(){};
+        template <>void getStmt<stmt<meta>::StmtDo>(){};
+        template <>void getStmt<stmt<meta>::StmtCase>(){};
+        template <>void getStmt<stmt<meta>::StmtSwitch>(){};
+        template <>void getStmt<stmt<meta>::StmtDefault(){}
+        template <>void getStmt<stmt<meta>::StmtIf>(){};
+        template <>void getStmt<stmt<meta>::StmtElse>(){};
+        template <>void getStmt<stmt<meta>::StmtElseIf>(){};
+        template <>void getStmt<stmt<meta>::StmtReturn>(){};
+        template <>void getStmt<stmt<meta>::StmtFuncDecl>(){}
+        template <>void getStmt<stmt<meta>::StmtFuncDef>(){}
+        template <>void getStmt<stmt<meta>::StmtVarDecl>(){}
+        template <>void getStmt<stmt<meta>::StmtUsing>(){};
+        template <>void getStmt<stmt<meta>::StmtTypeDef>(){
+            itPtr.push_back(lexptrback());
+            nextTOK();
+            untilDif<lex::ty::space>();
+            type<temp::inst> tyn=get<type<temp::inst>>();std::string n=get<std::string>();
+            cast->emplace_back<stmt<meta>::StmtTypeDef>(tyn,n);
+            erase();
+        };
+
+        
+        template <stmt<meta>::StmtLayout::stand st, Str s >struct lyt_std{
+            stmt<meta>::StmtLayout::stand t =st;
+            static constexpr auto value = s;
+            std::string name(){return std::string(value.data.data());}
+
+        };
+        using std430 = lyt_std<stmt<meta>::StmtLayout::stand::std430,"std430">;
+        using std140 = lyt_std<stmt<meta>::StmtLayout::stand::std430,"std140">;
+
+        template <typename STD,typename... STDs>
+        bool getStd(stmt<temp::meta>::StmtLayout& s){
+            if(getStd(s)){return true;}
+            return getStd<STDs...>(s);
+        };
+        template <typename STD>
+        bool getStd(stmt<temp::meta>::StmtLayout& s){
+            if(lexptrback()->u.name==STD::name()){s.st=STD::t;return true;};
+            return false;
+        };
+        
+        // using getLytAt = BoolFunc<stmt<temp::meta>::StmtLayout,getLytAt,lyt_at,lyt_ats...>;
+        template <typename lyt_at,typename... lyt_ats>
+        bool getLytAt(stmt<temp::meta>::StmtLayout& s){
+            if(getLytAt<lyt_at>(s)){return true;};
+            return getLytAt<,lyt_ats...>(s);
+        };
+        template <typename lyt_at>
+        bool getLytAt(stmt<temp::meta>::StmtLayout& s){
+            if(lexptrback()->u.name==lyt_at::name()){
+                s.t=lyt_at::lytTy;
+                lexres unexp=untilExp<lex::ty::eq,lex::ty::space>();
+                unexp+=untilExp<lex::ty::NumUint,lex::ty::space>();
+                if(!unexp.empty()){syserr.err<err::t::unexpectedToken>(*this,unexp);};
+                s.loc=lexptrback().u.unum;
+                return true;
+            };
+            return false;
+        };
+        
+        template <>void getStmt<stmt<meta>::StmtLayout>(){
+            cast->emplace_back<stmt<temp::meta>::StmtLayout>();
+            stmt<temp::meta>::StmtLayout& lyt=cast->get<stmt<temp::meta>::StmtLayout>();
+            itPtr.push_back(lexptrback());
+            until<lex::ty::semicolon>();
+            pri::deqeue<lex>::iter it=lexptrback();lexptrback()=itPtr.prev();
+            lexres unexp = untilExp<lex::ty::lparen,lex::ty::space>();
+            for(;lexptrback()->t==lex::ty::rparen;++lexptrback()){
+                lexres unexp=untilExp<lex::ty::eq,lex::ty::space>();
+                if( lexptrback()->t==lex::ty::Name) {
+                    if(getStd<std430,std140>(lyt)){continue;}
+                    if(getLytAt<kw_Location,kw_Binding>(lyt)){continue;};
+                };
+                if(!isOneOf<lex::ty::comma,lex::ty::space,lex::ty::Name>(lexptrback()->t)){
+                    syserr.err<unexpectedToken>(*this);
+                };
+            };
+            untilKW<kw_Buffer,kw_Uniform,kw_in,kw_out,kw_Flat>();
+        };
+
 
         template <typename MSTMT_TY>
         void getMacro();
@@ -479,40 +759,40 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
             std::filesystem::path pth = wd;pth/=l;
             if(std::filesystem::exists(pth)){
                 parser pn;cast->include(pn.fromFile(pth,*this));}
-            else {syserr.err<err::t::fileNotFound>(*this);}
+            else {syserr.err<err::t::fileNotFound>(*this,pth);}
         };
         void includeAbs(std::filesystem::path l){
             for(std::filesystem::path p : dirs.arr ){
                 std::filesystem::path pth = p;pth/=l;
                 if(std::filesystem::exists(ps)){parser pn;cast->include(pn.fromFile(pth,*this));return;}
             };
-            syserr.err<err::t::fileNotFound>(*this);
+            syserr.err<err::t::fileNotFound>(*this,pth);
         };
         template<>void getMacro<mStmtInclude>(){
-             itPtr.push(itPtr.back());
+             itPtr.push(lexptrback());
             until<lex::ty::nl>();
-            ++(itPtr.back());
-            if(itPtr.back()->t==lex::ty::ltangle){
-                ++(itPtr.back());
+            ++(lexptrback());
+            if(lexptrback()->t==lex::ty::ltangle){
+                ++(lexptrback());
                 std::filesystem::path p;
-                for(;itPtr.back()->t!=lex::ty::gtangle;++(itPtr.back())){
-                    if(lexTyOneOf<lex::ty::div,lex::ty::escape>(itPtr.back()->t)){
+                for(;lexptrback()->t!=lex::ty::gtangle;++(lexptrback())){
+                    if(lexTyOneOf<lex::ty::div,lex::ty::escape>(lexptrback()->t)){
                         continue;
                     }
-                    if(itPtr.back()->t!=lex::ty::name){syserr.err<err::t::include_closing_angle_brackets>(*this);break;}
-                    p/=std::filesystem::path(itPtr.back()->u.name);
+                    if(lexptrback()->t!=lex::ty::name){syserr.err<err::t::include_closing_angle_brackets>(*this);break;}
+                    p/=std::filesystem::path(lexptrback()->u.name);
                 }
                 includeAbs(p);
             };
-            else if(itPtr.back()->t==lex::ty::dq){
-                ++itPtr.back();
+            else if(lexptrback()->t==lex::ty::dq){
+                ++lexptrback();
                 std::filesystem::path p;
-                for(;itPtr.back()->t!=lex::ty::dq;itPtr.back()){
-                    if(lexTyOneOf<lex::ty::div,lex::ty::escape>(itPtr.back()->t)){
+                for(;lexptrback()->t!=lex::ty::dq;lexptrback()){
+                    if(lexTyOneOf<lex::ty::div,lex::ty::escape>(lexptrback()->t)){
                         continue;
                     }
-                    if(itPtr.back()->t!=lex::ty::name){syserr.err<err::t::include_closing_dq>(*this);break;}
-                    p/=std::filesystem::path(itPtr.back()->u.name);
+                    if(lexptrback()->t!=lex::ty::name){syserr.err<err::t::include_closing_dq>(*this);break;}
+                    p/=std::filesystem::path(lexptrback()->u.name);
                 }
                 includeRel(p);
             }
@@ -520,7 +800,7 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
             erase();
         };
         template<>void getMacro<mStmtIf>(){
-            // itPtr.push(itPtr.back())
+            // itPtr.push(lexptrback())
             cast->condition= getExprUntil_EOL();
             // cast->tus.emplace_back(ex);
             erase();
@@ -528,7 +808,7 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
         };
         template<>void getMacro<mStmtDefine>(){
             until<lex::ty::Name>();
-            macros.emplace(itPtr.back()->u.name,strippedUntil<lex::ty::nl>());
+            macros.emplace(lexptrback()->u.name,strippedUntil<lex::ty::nl>());
             erase();
         };
         template<>void getMacro<mStmtElif>(){getMacro<mStmtIf>();};
@@ -536,17 +816,11 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
         bool cond(bool t){return b?t:!t;};
         template <bool b>
         void IfDf(){
-            itPtr.push(until<lex::ty::Name>());
+            itPtr.push_back(lexptrback());until<lex::ty::Name>();
+            erase();
             if( cond<b>(macros.exists(ptr->u.name))){
-                erase();
-                // cast->tus.emplace_back(expr<meta>(true));
-                untilKW<true,kw_Else,kw_elif,kw_elifdef,kw_elifndef,kw_endif>()
-            }
-            else{
-                erase();   
-                // cast->tus.emplace_back(expr<meta>(false));
-                untilKW<false,kw_Else,kw_elif,kw_elifdef,kw_elifndef,kw_endif>()
-            }
+                untilKW<true,kw_Else,kw_elif,kw_elifdef,kw_elifndef,kw_endif>();}
+            else{untilKW<false,kw_Else,kw_elif,kw_elifdef,kw_elifndef,kw_endif>();}
         };
         
         template<>void getMacro<mStmtIfdef>(){IfDf<true>();};
@@ -556,14 +830,12 @@ expr<meta> getExpr(){return getExprFrom(lexq.begin());}
 
         template<>void getMacro<mStmtElse>(){
             erase();
-            cast->condition(!(cast->condition));
+            cast->condition= !(cast->condition);
             if(cast->condition){
                 untilKW<true,kw_Else,kw_elif,kw_elifdef,kw_elifndef,kw_endif>();
             }else {untilKW<false,kw_Else,kw_elif,kw_elifdef,kw_elifndef,kw_endif>();}
         };
         template<>void getMacro<mStmtEndIf>(){erase();};
-
-
 
 
         ast* fromFile(std::filesystem::path pth){ curFilePath = pth;parserStack.push(this);

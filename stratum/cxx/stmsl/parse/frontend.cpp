@@ -7,6 +7,8 @@
     #include <unistd.h>
     #define GetCurrentDir getcwd
 #endif
+#include <string>
+
 std::filesystem::path get_CWD(){ char _cwd[PATH_MAX];
     std::filesystem::path pth;
     if (GetCurrentDir(_cwd, sizeof(_cwd)) != nullptr) {
@@ -166,15 +168,14 @@ Options:\
 
 
 // cliopts
-
-#include <string>
-template <Str S>
+#include <petri/templates.hpp>
+template <pri::Str S>
 struct hs {
     static constexpr auto value = S;
     static std::string name() { return std::string(value.data.data()); }
 };
 
-template <Str s,bool takesArgs>
+template <pri::Str s,bool takesArgs>
 struct opt {
     static constexpr args = takesArgs;
     static std::string n(){return s.name();} ; 
