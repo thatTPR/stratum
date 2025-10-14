@@ -189,24 +189,19 @@ struct kw_Buffer :  kw<"buffer",kwty::layout_qual>{
 } ;
 #define KW_LISTLYT KW_LISTLYT,kw_Buffer
 
-
-using kw_Const =  kw_mat<"const",atConst,kwty::qualifier> ;
+#define KW_LYTQ
+using kw_Const =  kw_mat<"const",QConst,kwty::qualifier> ;
 #define KW_LISTKW KW_LISTKW, kw_Const
-using kw_Flat =  kw_mat<"flat",atFlat,kwty::qualifier> ;
-#define KW_LISTKW KW_LISTKW, kw_Flat 
-using kw_in =  kw<"in",atIn,kwty::qualifier> ;
-#define KW_LISTKW KW_LISTKW, kw_in 
-using kw_out =  kw<"out",atOut,kwty::qualifier> ;
-#define KW_LISTKW KW_LISTKW, kw_out 
-using kw_inout =  kw<"inout",atInout,kwty::qualifier> ;
-#define KW_LISTKW KW_LISTKW, kw_inout 
-
+using kw_Flat =  kw_mat<"flat",QFlat,kwty::qualifier> ;
+using kw_in =  kw<"in",QIn,kwty::qualifier> ;
+using kw_out =  kw<"out",QOut,kwty::qualifier> ;
+using kw_inout =  kw<"inout",QInout,kwty::qualifier> ;
+#define KW_LYTQ  kw_Flat , kw_in , kw_out , kw_inout 
+#define KW_LISTKW KW_LISTKW, KWLYTQ
 using kw_Return =  kw<"return",stmt<temp::meta>::StmtReturn,kwty::funcStmt> ;
-#define KW_LISTKW KW_LISTKW, kw_Return 
 using kw_Break =  kw<"break",stmt<temp::meta>::StmtBreak,kwty::stmtStmt> ;
-#define KW_LISTKW KW_LISTKW, kw_Break 
 using kw_Continue =  kw<"continue",stmt<temp::meta>::StmtContinue,kwty::stmtStmt> ;
-#define KW_LISTKW KW_LISTKW, kw_Break 
+#define KW_LISTKW KW_LISTKW, kw_Return , kw_Break , kw_Continue 
 
 
 
@@ -275,22 +270,24 @@ enum accSpec{Public,Private,Protected};
 struct kw_Struct : public kw<"struct",type<temp::meta> ,kwty::Struct>{
     void proc(parser& p){
         p.accessPush<accSpec::Public>();
-        p.getStruct();
+        p.getStmt<stmt<temp::meta>::StmtDeclType>();
     };
 };
 struct kw_Class : public kw<"class",type<temp::meta>,kwty::Struct>{
     void proc(parser& p){
         p.accessPush<accSpec::Private>();
-        p.getStruct();
+        p.getStmt<stmt<temp::meta>::StmtDeclType>();
     };
 };
-struct kw_Virtual : public kw<"virtual",type<temp::meta>,kwty::qualifier>{
+struct kw_Virtual : public kw<"virtual",QVirtual,kwty::qualifier>{
     void proc(parser& p){
 
     };
 
 };
-struct kw_Final : public kw<"final",type<temp::meta>,kwty::qualifier>{
+using kw_This : public kw<"this",type<temp::meta>,kwty::qualifier>; 
+
+struct kw_Final : public kw<"final",QFinal,kwty::qualifier>{
     void proc(parser& p){
         if(!p.isContextMethodDeclAfterArgList()){
             syserr.err<err::t::unexpected_kw>()
@@ -304,10 +301,13 @@ using kw_This= kw<"this",type<temp::meta>,kwty::Struct ;
 
 
 using kw_Enum = kw<"enum",Enum , kwty::Enum>;
-using kw_Template =  kw<"template",void,kwty::Tempstmt> ;
+struct kw_Template :public  kw<"template",void,kwty::Tempstmt>{
+    void proc(parser& p){p.getTemplate();};
+} ;
 using kw_Typename =  kw<"typename",void,kwty::stmt> ;
-using kw_Constexpr =  kw<"constexpr",void,kwty::qualifier> ;
-using kw_Static =  kw<"static",void,kwty::qualifier> ;
+using kw_Constexpr =  kw<"constexpr",QConstExpr,kwty::qualifier> ;
+using kw_Static =  kw<"static",QStatic,kwty::qualifier> ;
+using kw_Friend = kw<"friend",QFriend,kwty::qualifier>;
 #define KW_LISTKW KW_LISTKW,kw_Enum,kw_Template,kw_Typename,kw_Constexpr,kw_Static 
 template <Str s,accSpec asT>
 struct kw_as : public kw<s,void,kwty::accessSpec> {

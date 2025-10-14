@@ -171,7 +171,6 @@ bool Werror = false;
 bool Wfatal_error = false;
 size_t templateEvalDepth=100;
 
-pri::stack<stmsl::parser*> parserStack;
 struct err{
     parser& p;
     enum t{
@@ -181,8 +180,10 @@ struct err{
         func_signature,
         template_param_mismatch,template_param_list_incomplete,
         swizzle_notexist,swizzle_fortype,
-
-        unexpectedToken,
+        qualifierNotAllowedForStmt,
+        expectedOpeningBrace,
+        unexpectedToken,templateInInstantiation,
+        namespaceNotAllowedInCurrentScope,
         notMember,
         notMemberDependent,
         isDependentType
@@ -281,6 +282,7 @@ case lex::ty::oor {return std::string("||");}
 
     template <t ts>
     void _err(stmsl::parser& prs){};
+    template <>void _err<fileNotFound>(stmsl::parser& prs){std::err<<"Template Not Allowed in template instantiation\n";};
     template <>void _err<fileNotFound>(stmsl::parser& prs){std::err<<"File Not Found\n";};
     template <>void _err<func_signature>(stmsl::parser& prs){std::err<<"Func Signature not found for func"<<pri::ansi(FG_BLUE)<<prs.itPtr.back()->u.name<<pri::ansi(FG_WHITE)<<"\n";};
     template <>void _err<template_param_mismatch>(stmsl::parser& prs){std::err<<};

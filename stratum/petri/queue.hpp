@@ -137,6 +137,10 @@ struct deque : public _queue<T,dqnode>{
         template <typename... Ts>
         void emplace_front(Ts... d){first->prev=new node<T>(d...);first=first->prev;}
 
+        void concat(deque<T>&& d){this->last->next=d.first;
+            d.first->prec=this->last;
+        };
+
     } ;
 };
 #endif
