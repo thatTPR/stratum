@@ -114,19 +114,7 @@ template <typename T>
         };
         using iter = iterator<T> ;
         using const_iter = iterator<const T> ;
-        template <typename Ty>
-        class reverse_iterator : public iterator<Ty> {
-            
-            void operator++(reverse_iterator<Ty>& rhs){this->Ptr=this->Ptr->prev;};
-            void operator--(reverse_iterator<Ty>& rhs){this->Ptr=this->Ptr->next;};
-            size_t operator-(reverse_iterator<Ty>& rhs){
-                size_t i = 0 ; 
-                for(;*this!=rhs;--(*this)){i++;};return i;
-            };
-        };
-        using rev = reverse_iterator<T>;
-        using const_rev = reverse_iterator<const T> ;
-
+        
         T& back(){return  *(last->data);};
         T& front(){return *(first->data);};
         
@@ -140,19 +128,14 @@ template <typename T>
 
         T& value(node* n){return n->data;};
 
-        const_iter ciend() const  {return const_rev(first)--;};
-        const_iter cibegin() const  {return const_rev(last); };
-        const_iter crend() const  {return const_rev(last)--;};
-        const_iter crbegin() const  {return const_rev(first); };
-        const_iter cend() const {return const_iter(last)++ ;};
-        const_iter cbegin() const {return const_iter(first);};
         
-        iter rend() {return rev(last)--;};
-        iter rbegin() { return rev(first);}
-        iter iend() {return rev(first)--;};
-        iter ibegin() { return rev(last);}
+        iter rend() {return rev(first)--;};
+        iter rbegin() { return rev(last);}
         iter end(){ return iter(last)++ ;};
         iter begin(){ return iter(first);};
+        iter tail(){ return iter(last) ;};
+        iter head(){ return iter(first)--;};
+        
         bool empty() const {return (last->next == first);};
         
         
@@ -379,4 +362,5 @@ template <typename T>
 
             // list::iterator::operator bool() const {return this->Ptr != last;};
 };
-    #endif
+#include "reverse_iterator.hpp"
+#endif

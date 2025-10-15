@@ -23,7 +23,7 @@ enum pcntxt {
 enum kwty {
     macro,
     qualifier,
-    stmt,tempstmt,prim,layout_at,layout_qual,layout_Stmt
+    stmt,tempstmt,prim,swizzlePrim,layout_at,layout_qual,layout_Stmt
     builtinFunc,builtinVar,
     accessSpec,
     funcStmt,
@@ -111,7 +111,7 @@ struct kw : hs<s>,context_tuple<kTY> {
     // template <>void _proc<kwty::builtinFunc>();
     // template <>void _proc<kwty::builtinVar>();
     template <>void _proc<kwty::loopStmt>(parser& p){p.putLoop<type>();};  
-    void proc(parser& p){_proc<kTY>(p);};
+    static void proc(parser& p){_proc<kTY>(p);};
     // void lex(parser& p);
 };
 
@@ -190,9 +190,9 @@ struct kw_Buffer :  kw<"buffer",kwty::layout_qual>{
 #define KW_LISTLYT KW_LISTLYT,kw_Buffer
 
 #define KW_LYTQ
-using kw_Const =  kw_mat<"const",QConst,kwty::qualifier> ;
+using kw_Const =  kw<"const",QConst,kwty::qualifier> ;
 #define KW_LISTKW KW_LISTKW, kw_Const
-using kw_Flat =  kw_mat<"flat",QFlat,kwty::qualifier> ;
+using kw_Flat =  kw<"flat",QFlat,kwty::qualifier> ;
 using kw_in =  kw<"in",QIn,kwty::qualifier> ;
 using kw_out =  kw<"out",QOut,kwty::qualifier> ;
 using kw_inout =  kw<"inout",QInout,kwty::qualifier> ;
@@ -209,7 +209,7 @@ using kw_Continue =  kw<"continue",stmt<temp::meta>::StmtContinue,kwty::stmtStmt
 template <Str s, typename T>
 struct kw_prim  : public kw<s,T,kwty::prim> {
     void proc(parser& p){
-        if constexpr (pcs == pcntxt::stexpr){pushConstructor<T>(d);}
+        if constexpr (pcs == pcntxt::stexpr){p.pushConstructor<T>(d);}
         else pushDecl<T>(d);
     };
 };
@@ -224,7 +224,7 @@ using kw_Bool =  kw_prim<"bool",type<meta>::BoolTy> ;
 #define KW_LISTPRIM KW_LISTPRIM,kw_Image2D,kw_Image3D,kw_Sampler,kw_Void,kw_Float,kw_Int,kw_Uint,kw_Bool
 
 template <Str s,typename T>
-struct kw_vec : public kw<s,T,kwty::prim> {    size_t d;
+struct kw_vec : public kw<s,T,kwty::swizzlePrim> {    size_t d;
     bool check(parser& p,std::string s){
         if(s.substr(0,this->name().length()) != this->name()){return false;}
         else if(!isdigit(s[this->name().length()])){return false;}
@@ -239,7 +239,7 @@ struct kw_vec : public kw<s,T,kwty::prim> {    size_t d;
 };
 
 template <Str s,typename T>
-struct kw_mat : public kw<s,T,kwty::prim> {
+struct kw_mat : public kw<s,T,kwty::swizzlePrim> {
     size_t dx,dy;
     bool check(parser& p,std::string s){
         if(s != this->name().substr(0,s.length())){return false;}
@@ -280,21 +280,15 @@ struct kw_Class : public kw<"class",type<temp::meta>,kwty::Struct>{
     };
 };
 struct kw_Virtual : public kw<"virtual",QVirtual,kwty::qualifier>{
-    void proc(parser& p){
-
-    };
-
+    void proc(parser& p){p.cast->pushQual<qual::qVirtual>()};
 };
+
 using kw_This : public kw<"this",type<temp::meta>,kwty::qualifier>; 
 
 struct kw_Final : public kw<"final",QFinal,kwty::qualifier>{
-    void proc(parser& p){
-        if(!p.isContextMethodDeclAfterArgList()){
-            syserr.err<err::t::unexpected_kw>()
-        }
-    };
+    void proc(parser& p){p.cast->pushQual<qual::qFinal>()};
 };
-
+#
 
 using kw_This= kw<"this",type<temp::meta>,kwty::Struct ;
 #define KW_LISTKW KW_LISTKW, kw_Struct,kw_Class ,kw_This,kw_Virtual,kw_Final
@@ -308,7 +302,9 @@ using kw_Typename =  kw<"typename",void,kwty::stmt> ;
 using kw_Constexpr =  kw<"constexpr",QConstExpr,kwty::qualifier> ;
 using kw_Static =  kw<"static",QStatic,kwty::qualifier> ;
 using kw_Friend = kw<"friend",QFriend,kwty::qualifier>;
-#define KW_LISTKW KW_LISTKW,kw_Enum,kw_Template,kw_Typename,kw_Constexpr,kw_Static 
+using kw_Operator = kw<"operator",stmt<temp::meta>::StmtOperatorDecl,kwty::stmt>;
+
+#define KW_LISTKW KW_LISTKW,kw_Enum,kw_Template,kw_Typename,kw_Constexpr,kw_Static ,kw_Friend,kw_Operator
 template <Str s,accSpec asT>
 struct kw_as : public kw<s,void,kwty::accessSpec> {
     void proc(parser& p){

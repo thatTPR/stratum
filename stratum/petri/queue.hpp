@@ -1,6 +1,6 @@
 #ifndef QUEUE_HPP
 #define QUEUE_HPP
-
+#include <initializer_list>
 namespace pri {
 
 
@@ -49,6 +49,9 @@ class _queue {
         for(;it;it=it->next){s++;}
         return s;
     };
+
+    _queue(std::initializer_list<T>&& list){for(const T& it : list){push_back(it);}};
+    _queue(_queue<T>& q){*this=q;};
 };
 template <typename T>
 using queue= _queue<T,qnode>;
@@ -117,6 +120,8 @@ struct deque : public _queue<T,dqnode>{
         iter begin(){ return iter(first);};
         iter tail(){return iter(last);}
         iter head(){return --begin();}
+        iter rend(){return head();}
+        iter rbegin(){return tail();}
         void pop_front(){pop();}
         void pop_back(){node<T>* cur=last;last=last->prev;delete cur;}
         void push_front(T& d){first->prev=new node<T>(d);first=first->prev;}
@@ -143,4 +148,5 @@ struct deque : public _queue<T,dqnode>{
 
     } ;
 };
+#include "reverse_iterator.hpp"
 #endif

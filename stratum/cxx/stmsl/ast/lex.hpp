@@ -32,11 +32,11 @@ namespace stmsl {
                 minus='-',
                 band='&',
                 bor='|',
-                bxor='^',
+                bxor='^',xoreq,
                 mul='*',
                 div='/',comm,blockcomm
-                ltangle='<',
-                gtangle='>',
+                ltangle='<',lteq,
+                gtangle='>',gteq,
                 comma=',',
                 semicolon=';',
                 colon=':',
@@ -88,6 +88,7 @@ namespace stmsl {
             lex(posit _pos,uint n) : pos(_pos)  u.unum(n){t=NumUint;};
             lex(posit _pos,int n) : pos(_pos)  u.inum(n){t=NumInt;};
             lex(posit _pos,float n) : pos(_pos)  u.flt(n){t=NumFlt;};
+            
         };
                 using tylexq=pri::deque<lex>;
 
