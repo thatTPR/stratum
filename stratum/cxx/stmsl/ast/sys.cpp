@@ -4,6 +4,7 @@
 #include <petri/list.hpp>
 #include <petri/stack.hpp>
 #include "parser.cpp"
+#include "ast.hpp"
 #include <petri/ansi.hpp>
 #include <petri/templates.hpp>
 size_t getnum(std::string num){
@@ -13,8 +14,66 @@ size_t getnum(std::string num){
 };
 namespace stmsl
 {
+    class Warning : public std::exception {
+        public:
+        std::string msg;
+        explicit Warning() {};
+        explicit Warning(const std::string& message ) : msg(message){};
+        const char* what() const noexcept override {return msg.c_str();}
+    };
+    class Error : public Warning;
 
+ template <typename Ty>
+    class MemberNotFound : public Error {
+        using type = ty;
+    };
+    template <typename KW>
+    class UnexpectedKw : public std::exception {
+        using KEYWORD=KW;
+    };
+    class UnexpectedToken{
+        lex l;
+        public:
+        lex& what(){return l;}
+         UnexpectedToken(lex& _l) : l(_l){}
+    };
     
+    template <lex::ty t>
+    struct WarningToken : public std::exception {static constexpr lex::ty tok = t;}
+    template <lex::ty t>
+    struct ErrorToken : public WarningToken<t>;
+    template <lex::ty t>
+    struct ErrorNoToken : public ErrorToken<t>;
+
+
+    struct NameNotFound : public std::exception {
+        std::string msg;
+        explicit NameNotFound() {};
+        explicit NameNotFound(const std::string& message) : msg(message) {}
+        const char* what() const noexcept override{std::string str("");return msg.c_str();}
+    };
+    struct TypeError : public Error ;
+
+    struct ValueError : public Error;
+
+    class SwizzleError : public std::exception {
+    std::string msg;
+public:
+    explicit SwizzleError(const std::string& message) : msg(message) {}
+
+    // override what() to return description
+    const char* what() const noexcept override {return msg.c_str();}
+};
+    template <typename T>
+    struct ValErr {
+        T val;    std::string msg;
+public:
+    explicit ValErr(T& it) : val(it) {}
+
+    // override what() to return description
+    const T& what() const noexcept override {return val;}
+    };
+    using ParamMismatch = ValErr<param_list<temp::inst>>;
 
 bool CPH=false;bool CPHU=false;
 bool preprocAndCompileOnly= false;
@@ -190,7 +249,9 @@ struct err{
         isDependentType
         noType,
         type_mismatch,
-
+        memberMethodNotPreviouslyDeclared,
+        memberConstructorNotPreviouslDeclared,
+        memberNotPreviouslyDeclared,
     };
     enum w{
         return_in_non_void,
@@ -337,7 +398,7 @@ case lex::ty::oor {return std::string("||");}
         std::string ploc=std::string("^");ploc.insert('^',ploc.length()-1);
         std::err<<pstart<<pri::ansi(FG_BLUE)<<puntil<<pri::ansi(FG_RED)<<ploc<<pri::ansi(FG_WHITE)<<pend;
     };
-    template <t ts,typename... Ts>
+    template <typename... Ts>
     void err(stmsl::parser& prs,Ts... args){
         getErr<ts>(prs,args...);
         if(wfatal_error and errt<ts,Ts...>::value){exit(1);}

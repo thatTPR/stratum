@@ -1,5 +1,9 @@
-\*ENUMERANTS*\}
-enum . Source Language{
+
+namespace spv {
+
+
+
+enum SourceLanguage{
 Unknown=0,
 ESSL=1,
 GLSL=2,
@@ -38,7 +42,7 @@ enum AddressingModel{
     Logical=0,
     Physical32=1,
     Physical64=2,
-    PhysicalStorageBuffer64 (PhysicalStorageBuffer64EXT)=5348
+    PhysicalStorageBuffer64 /*(PhysicalStorageBuffer64EXT)*/=5348
 }
 enum MemoryModel{
     Simple=0,
@@ -1880,4 +1884,6 @@ OpTaskSequenceCreateINTEL=6163,//=8,
 OpTaskSequenceAsyncINTEL=6164,//=2+var
 OpTaskSequenceGetINTEL=6165,//=4,
 OpTaskSequenceReleaseINTEL=6166//=2
+}
+
 }

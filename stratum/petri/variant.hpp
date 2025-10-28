@@ -143,6 +143,33 @@ auto& get(variantvalue<Ts...>& vt){
 
 
 
+template <typename T,typename... Ts>
+struct Pack_Enum {
+    template <size_t h>
+    struct get{using type =typename  std::conditional<h==0,T,Pack_Enum<Ts...>::get<h-1>::type>::type;}
+    template <typename g,size_t ssin> 
+    struct geten{static constexpr size_t result= std::is_same<g,T>::value?ssin:Pack_Enum<Ts...>::geten<g,ssin+1>::result ;}
+};
+
+template <typename T>
+struct Pack_Enum {
+    template <size_t h>
+    struct get{using type =typename  std::conditional<h==0,T,void>::type;}
+    template <typename g,size_t ssin> 
+    struct geten{static constexpr size_t result= std::is_same<g,T>::value?ssin:NULL ;}
+};
+
+template <typename T,typename... Ts>
+struct option {
+    variant<T,Ts...> var;
+    using _enumty = Pack_Enum<T,Ts...> ;
+    template <typename TT,template <typename> typename FuncTy,typename... As> // requires hasOperator()
+    void apply(){FuncTy<pri::get<TT>(var)>(As... args);}
+
+    template <size_t h,template <typename> typename FuncTy,typename... As> // requires hasOperator()
+    void applyEn(){FuncTy<pri::get<TT>(var)>(As... args);}
+
+};
 
 }
 #endif

@@ -15,10 +15,9 @@ namespace stmsl {
         };
     struct lex {
             enum ty {Name,NumFlt,NumUint,
-                kw,typeName,typeNameConstructor,
-                member,swizzle,
                 escape='\\',
                 Not='!',
+                bnot='~',
                 lparen='(',
                 rparen=')',
                 lbrace='{',
@@ -30,26 +29,29 @@ namespace stmsl {
                 dot='.',
                 plus='+',
                 minus='-',
+                mod='&',modeq,
                 band='&',
                 bor='|',
                 bxor='^',xoreq,
                 mul='*',
                 div='/',comm,blockcomm
-                ltangle='<',lteq,
+                ltangle='<',lteq,arrow,
                 gtangle='>',gteq,
+                three,
                 comma=',',
                 semicolon=';',
                 colon=':',
-                dcolon,
+                dcolon,ptrmember,
+                arrowptr,dotptr,dcolptr
                 space=' ',
                 cond='?',
                 nl='\n',
                 eq='=',peq,meq,andeq,oreq,Noteq,muleq,diveq
                 pack,
+                pp,mm,oand,oor
                 
                 str="#",tokpaste,
-                pp,mm,oand,oor,
-                err
+                none
             };
             ty t;
             union {
