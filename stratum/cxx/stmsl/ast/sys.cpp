@@ -74,6 +74,7 @@ public:
     const T& what() const noexcept override {return val;}
     };
     using ParamMismatch = ValErr<param_list<temp::inst>>;
+    using MemberAccess = ValErr<resty>;
 
 bool CPH=false;bool CPHU=false;
 bool preprocAndCompileOnly= false;

@@ -461,7 +461,6 @@ macrosl macros;
         template <lex::ty t, typename T>
         T getUntil(){
             lexres r=until<t,T>();
-
             return ;
         };
 
@@ -477,6 +476,7 @@ macrosl macros;
         };     
         template <lex::ty tokFrom,lex::ty tokUntil ,template <temp q> typename T>
         T<temp::meta> _getFromUntil(){return getFromUntil<tokFrom,tokUntil,T<temp::meta>>()};
+        void Stmt();
         
        
         
@@ -489,24 +489,6 @@ macrosl macros;
                 getStmtUntil_EOSTMT()
             };
         };
-        bool LOOP_DO=false;
-        template <typename T>
-        T getLoopStmt();
-        template <> stmt<temp::meta>::StmtFor getLoopStmt<stmt<temp::meta>::StmtFor>(){
-            until<lex::ty::lparen>();
-            getBlockUntil<stmt::ty::rparen>();
-        };
-
-        template <typename T>
-        void putLoop(){
-            if(LOOP_DO){
-                pri::get<T>(pri::get<stmt<meta>::StmtDo>(cast->tus.back().curBlock()).loop) = getLoopStmt<T>();
-                LOOP_DO = false;
-            }
-            else {cast->tus.back().stmts.push_back(getLoopStmt<T>());}
-        };
-
-        
 
         template <typename KW,typename... KWs>
         bool kwFound(){
@@ -1157,33 +1139,32 @@ macrosl macros;
         }
         bool handle(lex::ty& acc , result* r,resty<temp::meta>* res){
             param_list<temp::inst> plist;
-            if(cast->find(lexitback().u.name,&res,&r)){};
-
-            if(lex::ty::ltangle==lexitback().t){plist=get<temp::inst,param_list>();
-                *r=result::rValue;
-                switch(*r){
-                case result::rType :{pri::get<value<temp::meta>>(*res)=pri::get<type<temp::meta>>(*res).get(plist);}
-                case result::rMethod :{pri::get<value<temp::meta>>(*res)=pri::get<stmt<temp::meta>::StmtFuncDecl>(*res).get(plist);}
-                case result::rFunc :{pri::get<value<temp::meta>>(*res)=pri::get<type<temp::meta>>(*res).get(plist);}
-                default :{syserr.err(*this,ParamMismatch(plist));result::rErr;}
-                }
+            if(!cast->find(lexitback().u.name,&res,&r)){};
+            else {nextTOK()}
+            if(!correct(r,res)){throw MemberAccess(*res);}
+            *r=result::rValue;
+            switch(*r){
+                case result::rType :{pri::get<value<temp::meta>>(*res)=pri::get<type<temp::meta>>(*res).get(plist);break;}
+                case result::rMethod :{pri::get<value<temp::meta>>(*res)=pri::get<stmt<temp::meta>::StmtFuncDecl>(*res).get(plist);break;}
+                case result::rFunc :{pri::get<value<temp::meta>>(*res)=pri::get<type<temp::meta>>(*res).get(plist);break;}
+                default :{*r=result::rErr;throw ParamMismatch(plist);}
             }
-            if(OneOfLex<LEX_ACC>(lexitback().t)){
-                switch(lexitback().t){
-                    case 
-                }
-                lastAcc=lexitback().t;
-            }
+            
         };
         template <bool Strct,bool Func>
         void NameStmt(){
             auto r= result::rErr;
             resty<temp::meta> res;
             lex::ty lastAcc=lex::ty::none;
-            for(;OneOfLex<lex::ty::semicolon>(lexitback().t);){
-                handle(lastAcc,&r,&res);}
-                else break;
+            for(;!OneOfLex<lex::ty::semicolon>(lexitback().t);nextTOK()){
+                if(OneOfLex<LEX_ACC>()){lastAcc=lexitback().t;continue;}
+                if(lexitback().t==lex::ty::Name){
+                    try{if(handle(lastAcc,&r,&res)){continue;}else break;}
+                    catch(const ParamMismatch& e){syserr.err(*this,e);}
+                    catch(const MemberAccess& e){syserr.err(*this,e);}
+                }
             };
+            
             if(lexitback().t==lex::ty::lparen){
 
             };
@@ -1298,6 +1279,22 @@ macrosl macros;
         };
         template<>void _getMacro<mStmtEndIf>(){erase();};
         template <typename T> getMacro(){_getMacro<T>();}
+
+        struct mtype {
+            pri::variant<stmt<temp::meta>::StmtFuncDecl,stmt<temp::meta>::StmtOperatorDecl,stmt<temp::meta>::StmtTypeDecl> var;
+            enum class ty{Func,Oper,rType} ;ty t;
+        };
+        mtype getMtype(){
+            
+        };
+        void GetFriend(){nextTOK();
+            until<lex::ty::Name,lex::ty::space>();bool bPack=false;bool blist=true;
+            for(;!OneOfLex<lex::ty::semicolon>(lexitback().t);nextTOK()){
+                if(lexitback().t==lex::ty::pack){bPack=true;}
+                if(lexitback().t==lex::ty::comma){blist=true;}
+            };
+
+        };
         template <bool Strct,bool Func>
         bool StmtPush(){
             for(;OneOfLex<lex::ty::space,lex::ty::nl>(lexitback().t);nextTOK()){}
@@ -1309,13 +1306,17 @@ macrosl macros;
                     nextTOK();unil<lex::ty::ltangle,lex::ty::space,lex::ty::nl>();
                     plist = get<temp::meta,param_list>();until<lex::ty::Name,lex::ty::rtangle,lex::ty::space,lex::ty::nl>();
                 }
+                if constexpr (Strct){
+                    if(kw_Operator::check(lexitback().u.name)){GetOperator<Strct>();}
+                    else if(kw_Friend::check(lexitback().u.name)){GetFriend();}
+                    else if(kwFound<KW_ACCS>()){return;};
+                }
                 if constexpr (!Func) {
                     if(kw_Enum::check(lexitback().u.name)){Enum(bTemp,plist);return;}
                     else if(kw_Struct::check(lexitback().u.name) ){Strct<true>(bTemp,plist);return;}
                     else if(kw_class::check(lexitback().u.name)){Strct<false>(bTemp,plist);return;}
                     else if(kw_Union::check(lexitback().u.name)){Union(bTemp,plist);return;}
                     else if(kw_Using::check(lexitback().u.name)){Using(bTemp,plist);return;}
-                    else if constexpr(Strct){if(kwFound<KW_ACCS>()){return;}else{NameStmt<Strct,func>();}}
                     else {NameStmt<Strct,Func>();}
                 }
                 else {
@@ -1330,17 +1331,19 @@ macrosl macros;
             
         };
         void Stmt(){
-
+            while(OneOfLex<lex::ty::space,lex::ty::nl>(lexitback().t)){nextTOK();}
+            if(!kwFound<KW_LISTM>()){
             if(cast->nsblck){if(cast->fblck){StmtPush<false,true>();}else{StmtPush<false,false>();}
-            else{if(cast->fblck){StmtPush<true,true>();}else{StmtPush<true,false>();}
+            else{if(cast->fblck){StmtPush<true,true>();}else{StmtPush<true,false>();}};
+            while(OneOfLex<lex::ty::space,lex::ty::nl>(lexitback().t)){nextTOK();}
         };
-       
+
         ast* fromFile(std::filesystem::path pth){ curFilePath.push_back(pth);
             cast=new ast();
         cwd.push(pth.parent_path());
         f.open(pth);
         pos.push_back(posit());
-        while(Line()){Stmt();}
+        while(Line()){pStmt();}
         if(pth.extension()==std::filesystem::path("hstmsl")){wrcph(pth,cur); }
         cwd.pop();
         parserStack.pop();

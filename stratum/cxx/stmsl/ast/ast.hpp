@@ -212,257 +212,7 @@ struct Enum : public pri::deque<enmember> {
     };
     operator bool (){return isDependent;}
 } ;
-   
-template <temp q>
-struct type {
-    static constexpr temp tempState = q;
-    bool Template ;
-    bool dependentType;//Set if type is dependent of superType
-    enum ty {//constructor=0,expr=1,
-        vec=0,
-        func=2,Buffer=3,strct=4,arr=5,
-        Image2D=6,Image3D=7,Sampler=8,
-        Param,Ns,Alias,enum,
-        // Vec=24,Mat=25,Ivec=26,Imat=27,Uvec=28,Umat=29,Bvec=30,Bmat=31
-    }
-    enum prim {Void=9,Float=10,Int=11,Uint=12,Bool=13}
 
-    template <prim PrimT>struct primType {using type =void;}
-    template <>struct primType<prim::Float> {using type =float;};
-    template <>struct primType<prim::Int> {using type =int;};
-    template <>struct primType<prim::Uint> {using type =uint;};
-    template <>struct primType<prim::Bool> {using type =bool;};
-
-        
-
-    op::tyop arr[] ;
-    std::string name ; 
-    param_list<q> prms;
-    std::enable_if<q==temp::meta,bool>::type tempTy;
-    std::enable_if<q==temp::meta,pri::deque<type<temp::inst>>::type insts;
-    ty t;
-    // prim pt;
-    // accSpec acc=accSpec::public;
-    struct spec {
-        type<q> q;
-        param_list<temp::meta> plist;
-        param_list<temp::inst> specl;
-        bool operator==(param_list<temp::inst>& pl);
-        bool operator<=(param_list<temp::inst>& pl);
-        bool isCloser(spec& ot,param_list<temp::inst>& pl){
-            size_t sot=0;
-            for(param<temp::inst> it : ot.specl){
-                for(param<temp::meta> ite : ot.plist){
-                    if(specl)
-                };
-            };
-
-        };
-    };
-    bool isTemplate=false;
-    bool isUnion=false;
-    // enum TYPE {compound,pod,member}
-    // TYPE varType;
-
-    struct inher {
-        accSpec acc;type<q>* t;
-    };
-            
-        pri::deque<inher> inherits;
-        pri::deque<spec> specs;
-        pri::deque<stmt<q>> frndsClasss;// DeclType
-        pri::deque<stmt<q>> frndsFunctions; // DeclFunction
-    
-        pri::deque<stmt<q>> using;// Usings stmts
-        pri::deque<stmt<q>> tdefs;// Usings TypeDef
-        pri::deque<Enum> Enums; pri::deque<Enum> EnumClss;
-        
-        pri::deque<stmt<q>> variables;// Has type variableDecl
-        pri::deque<stmt<q>> methods;// Has type FuncDecl
-        pri::deque<stmt<q>> operators;// Has type StmtOperatorDecl
-        
-        pri::deque<stmt<q>> constructors;//Has Type FuncDecl 
-        pri::dequq<stmt<q>> destructors;//Has Type FuncDecl
-
-        pri::variant<type<q>,Compound> data;
-
-    size_t alignment=1;size_t size;
-    void calcAlignment(){alignment=1;
-        for(type<q> it : ts  ){it.calcAlignment();if(it.alignment>alignment){alignment=it.alignment;}}};
-    void calcSize(){size=0;
-        for(type<q> it : ts  ){it.calcAlignment();size+=it.size;}};};
-
-
-    template <temp Qr,temp Qs>
-    type<Qr> get(parameter_list<Qs>& plist){
-        for(spec& it : this->specs){
-            if(it==plist){return it;}
-        };
-        for(spec& it : this->specs){
-            if(it<=plist){return it;}
-        };
-    };
-
-    template <bool Name>
-    bool approxEq(type<q>& s){
-        if(t != s.t){return false;}
-        if(t>=24){if(dims!=s.dims){return false;}}
-        if constexpr(Name){
-            if(s.name != name){return false;}
-        };
-        return true;
-    };
-    bool tyEq(type<q>& s){
-            if(ts.size()!= s.ts.size()){return false;}
-        pri::list<type<q>>::iter tit = ts.begin();
-        pri::list<type<q>>::iter sit = s.ts.begin();
-        while(tit!=ts.end() and sit != s.ts.end() ){
-            if(*tit != *sit){return false;}
-            ++tit;++sit;
-        };
-        return true;
-    };    
-    bool operator<=(type<q>& s){return approxEq<true>(s)}
-    bool operator<(type<q>& s){
-        if(!approxEq<true>(s)){return false;}
-        return ts.size()<s.ts.size();
-    };
-    bool operator>=(type<q>& s){return approxEq<false>(s)}
-    bool operator>(type<q>& s){
-        if(!approxEq<false>(s)){return false;}
-        return ts.size()<s.ts.size();
-    };
-    bool operator==(type<q>& s){
-        if(!approxEq<true>(s)){return false;}
-        return tyEq(s);
-    };
-    bool operator!=(type<q>& s){
-        if(!approxEq<false>(s)){return false;}
-        return tyEq(s);        
-    };
-    void calc_alignment(){size_t biggest=1;
-        for(const type it : ts){
-            if(it.alignment>biggest){biggest=it.alignment;}
-        }
-        alignment =biggest;
-    };
-
-    bool valid_param(param_list<temp::inst>& plist){
-        param_list<q>::iter titer= prms.begin(); 
-        for(const auto& it : plist){
-            if(it.t!=titer->t){return false;}
-            ++titer;
-        };
-        for(;titer;++titer){
-            if(!titer->value_default){return false;}
-        }
-        return true;
-    };
-    template <temp Qt,temp Qp>
-    type<Qt> get(param_list<Qp>& plist){
-        
-        if(Qp==temp::meta){
-            if(Qp==temp::meta)
-            type<Qt> h ;h.prms=plist;
-        }
-        else {
-            if(!this->valid_param(plist)){throw std::logic_error("Param List Invalid");}
-            if(Qt==temp::inst){ // Replace Params
-                size_t =0;
-                for(param<Qp>& it : plist){
-                    
-                };
-            }
-            else {
-
-            }
-        };
-    };
-   
-    
-    type(std::string str, prim _tp) : name(str) , pt(_tp)  {}
-    type(std::string str, ty _tp) : name(str) , t(tp)  {}
-
-
-    type(type<q> __ty,pri::deque<size_t> _dims){*this=__ty;dims=_dims;}
-
-    type(std::string _name,prim _ty,param_list<q> _prms) :t(_t) {prms=_prms;tempTy=true;pt=_ty;};
-    type(std::string _name,ty _ty,param_list<q> _prms) :t(_t) {prms=_prms;tempTy=true;t=_ty;};  
-
-    template <temp Qt,temp Qp>
-    type(std::string _name,type<Qt> _t,param_list<Qp> _prms) :t(_t) {*this=_t.get(_prms);name=_name;};
-
-
-size_t dim;pri::deque<size_t> dims;
-
-    bool hasSwizzle(){if(t==ty::vec or(t==ty::mat)){return true;}else return false;}
-    struct swizzle {
-    enum c {
-        x= 0,y= 1,z= 2,w= 3,
-        r= 0,g= 1,b= 2,a= 3,
-        u= 0,v= 1,
-        s= 0,t= 1,p= 2,q= 3,
-    };
-    //xyzw,rgba,
-    static const size_t swiz_err=100;
-    size_t swizz(char c) {
-        switch(c){
-case 'x' :{return 0;};
-case 'y' :{return 1;};
-case 'z' :{return 2;};
-case 'w' :{return 3;};
-case 'r' :{return 0;};
-case 'g' :{return 1;};
-case 'b' :{return 2;};
-case 'a' :{return 3;};
-case 'u' :{return 0;};
-case 'v' :{return 1;};
-case 's' :{return 0;};
-case 't' :{return 1;};
-case 'p' :{return 2;};
-case 'q' :{return 3;};
-        }
-        return swiz_err;
-    };
-  
-    std::vector<size_t> swizz(std::string sw){
-        if(sw.size()>dim){throw SwizzleError("Swizzle ")};
-        std::vector<size_t> res;
-        for(char c : sw){res.push_back(swizz(c));}
-        return res;
-    };
-    size_t size;
-    std::vector<size_t > swi;
-    bool operator==(type<inst>& f){
-        if(s.size()<=f.dim)
-    };
-     
-    swizzleTy(std::string s,type<inst>& i){
-        for(char c : s){
-            size_t h = siwzz(c);
-            if(h!=swiz_err){
-                if(h<=i.dim){swi.push_back(h);}
-                else{syserr.err<err::t::swizzle_fortype>()}
-            }
-            else{syserr.err<err::t::swizzle_notexist>()}
-        };
-    };
-
-};
-    template <size_t s, size_t... Ss>
-    void pushSize(size_t s,size_t... Ss){
-        dims.push_back(s);
-        if(sizeof...(Ss)>0){pushSize(Ss);}
-    }
-
-    type(std::string str,size_t size) : t(ty::vec) name(str)  {dim=size;}
-    template <size_t... Ss> 
-    type(std::string str,type<temp::meta>& arrtemp,type<temp::inst>* ty,size_t ss,size_t... Ss) :t(ty::vec) dim(arrtemp=dim)  {*this=*ty;pushSize(ss,Ss...);}
-    type(std::string str,size_t ss) : dim(ss) t(ty::vec) {name=str;dim=ss;}
-};
-
-template <temp Q>
-std::string getName(type<Q>& tp){return tp.name;}
 
 enum AttribT {
     LayoutOnly,LayoutExcl,Every,
@@ -528,6 +278,8 @@ default: {return y;}
     ty t;
     
     type<q>* tp;
+    int ref;
+    bool isPtr(){return ref>0;} 
     struct funcCall {
         param_list<q> prms;
         pri::deque<expr<q>> args;
@@ -569,9 +321,7 @@ default: {return y;}
 template <temp q>
 struct expr {
     struct node {
-        enum ConstVal {
-            ConstExpr,Const,no,value,unknown
-        };
+        enum ConstVal {ConstExpr,Const,no,value,unknown};
         ConstVal cval=ConstVal::unknown;
         bool isConstExpr(){return cval==ConstVal::ConstExpr;}
         bool isConst(){return cval==ConstVal::Const;}
@@ -580,7 +330,8 @@ struct expr {
         opty  opT;
         value<q> val;        
         node* lhs=nullptr;node* rhs=nullptr;
-
+        void clear(){delete lhs;delete rhs;lhs=nullptr;rhs=nullptr;}
+        operator delete(){clear();delete this;};
         bool cexpr(){
             if(cval==ConstExpr ){return true;}
             bool lC=false;bool rC=false;
@@ -848,6 +599,7 @@ struct StmtThrow;
         tyty tp;std::string name;int ref;
         bool memberPtr;value<q> vl;
         bool Default;expr<q> DefaultValue;
+        bool isPtr(){return ref>0;}
         StmtVarDecl() = default;
         StmtVarDecl(type<q>& _tp){*this=StmtVarDecl();}
     };
@@ -1096,8 +848,12 @@ struct StmtThrow;
     
         
     accSpec acc=accSpec::Public;
-    pri::variant<block,StmtNS,StmtDeclType,StmtDefType,StmtExpr,StmtWhile,StmtFor,StmtDo,StmtForRange,StmtSwitch,StmtCase,StmtDefault,
-    StmtIf,StmtElse,StmtElseIf,StmtReturn,StmtFuncDecl,StmtFuncDef,StmtVarDecl,StmtUsing,StmtTypeDef,StmtTry,StmtCatch,StmtThrow,StmtEnum,StmtLayout> var;
+    using allvar =pri::variant<block,StmtLayout,StmtNS,StmtFuncDecl,StmtFuncDef,StmtVarDecl,StmtUsing,StmtTypeDef,StmtEnum,StmtDeclType,StmtDefType,StmtExpr,StmtWhile,StmtFor,StmtDo,StmtForRange,StmtSwitch,StmtCase,StmtDefault,
+    StmtIf,StmtElse,StmtElseIf,StmtReturn,StmtTry,StmtCatch,StmtThrow>;
+    allvar var;
+    using funcvar = pri::variant<StmtExpr,StmtWhile,StmtFor,StmtDo,StmtForRange,StmtSwitch,StmtCase,StmtDefault,StmtIf,StmtElse,StmtElseIf,StmtReturn,StmtTry,StmtCatch,StmtThrow>;
+    using nsvar =  pri::variant<StmtLayout,StmtNS,StmtFuncDecl,StmtFuncDef,StmtVarDecl,StmtUsing,StmtTypeDef,StmtEnum,StmtDeclType,StmtDefType,StmtExpr,StmtWhile,StmtFor,StmtDo,StmtForRange,StmtSwitch,StmtCase,StmtDefault,
+    StmtIf,StmtElse,StmtElseIf>;
     template <stmtty ty,stmtty... tys>
     bool isOneOf(stmtty st){if(st==ty){return true;}else {return isOneOf<tys...>(st);}};
     template <stmtty ty>
@@ -1211,6 +967,263 @@ template <typename StmtT> set(){t=getTy<StntT>();};
     };
     stmt() = default ;
 };
+
+
+template <temp q>
+struct type {
+    static constexpr temp tempState = q;
+    bool Template ;
+    bool dependentType;//Set if type is dependent of superType
+    enum ty {//constructor=0,expr=1,
+        vec=0,
+        func=2,Buffer=3,strct=4,arr=5,
+        Image2D=6,Image3D=7,Sampler=8,
+        Param,Ns,Alias,enum,
+        // Vec=24,Mat=25,Ivec=26,Imat=27,Uvec=28,Umat=29,Bvec=30,Bmat=31
+    }
+    enum prim {Void=9,Float=10,Int=11,Uint=12,Bool=13}
+
+    template <prim PrimT>struct primType {using type =void;}
+    template <>struct primType<prim::Float> {using type =float;};
+    template <>struct primType<prim::Int> {using type =int;};
+    template <>struct primType<prim::Uint> {using type =uint;};
+    template <>struct primType<prim::Bool> {using type =bool;};
+
+        
+
+    op::tyop arr[] ;
+    std::string name ; 
+    param_list<q> prms;
+    std::enable_if<q==temp::meta,bool>::type tempTy;
+    std::enable_if<q==temp::meta,pri::deque<type<temp::inst>>::type insts;
+    ty t;
+    // prim pt;
+    // accSpec acc=accSpec::public;
+    struct spec {
+        type<q> q;
+        param_list<temp::meta> plist;
+        param_list<temp::inst> specl;
+        bool operator==(param_list<temp::inst>& pl);
+        bool operator<=(param_list<temp::inst>& pl);
+        bool isCloser(spec& ot,param_list<temp::inst>& pl){
+            size_t sot=0;
+            for(param<temp::inst> it : ot.specl){
+                for(param<temp::meta> ite : ot.plist){
+                    if(specl)
+                };
+            };
+
+        };
+    };
+    bool isTemplate=false;
+    bool isUnion=false;
+    // enum TYPE {compound,pod,member}
+    // TYPE varType;
+    bool compound;
+    struct inher {
+        accSpec acc;type<q>* t;
+    };
+            
+        pri::deque<inher> inherits;
+        pri::deque<spec> specs;
+        pri::deque<stmt<q>::StmtTypeDecl> frndsClasss;// DeclType
+        pri::deque<stmt<q>::StmtFuncDecl> frndsFunctions; // DeclFunction
+        pri::deque<stmt<q>::StmtOperatorDecl> frndsFunctions; // DeclFunction
+    
+        pri::deque<stmt<q>::StmtUsing> using;// Usings stmts
+        pri::deque<stmt<q>> tdefs;// Usings TypeDef
+        pri::deque<Enum> Enums; pri::deque<Enum> EnumClss;
+        
+        pri::deque<stmt<q>> variables;// Has type variableDecl
+        pri::deque<stmt<q>> methods;// Has type FuncDecl
+        pri::deque<stmt<q>> operators;// Has type StmtOperatorDecl
+        
+        pri::deque<stmt<q>> constructors;//Has Type FuncDecl 
+        pri::dequq<stmt<q>> destructors;//Has Type FuncDecl
+
+        pri::variant<type<q>,Compound> data;
+
+    size_t alignment=1;size_t size;
+    void calcAlignment(){alignment=1;
+        for(type<q> it : ts  ){it.calcAlignment();if(it.alignment>alignment){alignment=it.alignment;}}};
+    void calcSize(){size=0;
+        for(type<q> it : ts  ){it.calcAlignment();size+=it.size;}};};
+
+
+    template <temp Qr,temp Qs>
+    type<Qr> get(parameter_list<Qs>& plist){
+        for(spec& it : this->specs){
+            if(it==plist){return it;}
+        };
+        for(spec& it : this->specs){
+            if(it<=plist){return it;}
+        };
+    };
+
+    template <bool Name>
+    bool approxEq(type<q>& s){
+        if(t != s.t){return false;}
+        if(t>=24){if(dims!=s.dims){return false;}}
+        if constexpr(Name){
+            if(s.name != name){return false;}
+        };
+        return true;
+    };
+    bool tyEq(type<q>& s){
+            if(ts.size()!= s.ts.size()){return false;}
+        pri::list<type<q>>::iter tit = ts.begin();
+        pri::list<type<q>>::iter sit = s.ts.begin();
+        while(tit!=ts.end() and sit != s.ts.end() ){
+            if(*tit != *sit){return false;}
+            ++tit;++sit;
+        };
+        return true;
+    };    
+    bool operator<=(type<q>& s){return approxEq<true>(s)}
+    bool operator<(type<q>& s){
+        if(!approxEq<true>(s)){return false;}
+        return ts.size()<s.ts.size();
+    };
+    bool operator>=(type<q>& s){return approxEq<false>(s)}
+    bool operator>(type<q>& s){
+        if(!approxEq<false>(s)){return false;}
+        return ts.size()<s.ts.size();
+    };
+    bool operator==(type<q>& s){
+        if(!approxEq<true>(s)){return false;}
+        return tyEq(s);
+    };
+    bool operator!=(type<q>& s){
+        if(!approxEq<false>(s)){return false;}
+        return tyEq(s);        
+    };
+    void calc_alignment(){size_t biggest=1;
+        for(const type it : ts){
+            if(it.alignment>biggest){biggest=it.alignment;}
+        }
+        alignment =biggest;
+    };
+
+    bool valid_param(param_list<temp::inst>& plist){
+        param_list<q>::iter titer= prms.begin(); 
+        for(const auto& it : plist){
+            if(it.t!=titer->t){return false;}
+            ++titer;
+        };
+        for(;titer;++titer){
+            if(!titer->value_default){return false;}
+        }
+        return true;
+    };
+    template <temp Qt,temp Qp>
+    type<Qt> get(param_list<Qp>& plist){
+        
+        if(Qp==temp::meta){
+            if(Qp==temp::meta)
+            type<Qt> h ;h.prms=plist;
+        }
+        else {
+            if(!this->valid_param(plist)){throw std::logic_error("Param List Invalid");}
+            if(Qt==temp::inst){ // Replace Params
+                size_t =0;
+                for(param<Qp>& it : plist){
+                    
+                };
+            }
+            else {
+
+            }
+        };
+    };
+   
+    
+    type(std::string str, prim _tp) : name(str) , pt(_tp)  {}
+    type(std::string str, ty _tp) : name(str) , t(tp)  {}
+
+
+    type(type<q> __ty,pri::deque<size_t> _dims){*this=__ty;dims=_dims;}
+
+    type(std::string _name,prim _ty,param_list<q> _prms) :t(_t) {prms=_prms;tempTy=true;pt=_ty;};
+    type(std::string _name,ty _ty,param_list<q> _prms) :t(_t) {prms=_prms;tempTy=true;t=_ty;};  
+
+    template <temp Qt,temp Qp>
+    type(std::string _name,type<Qt> _t,param_list<Qp> _prms) :t(_t) {*this=_t.get(_prms);name=_name;};
+
+
+size_t dim;pri::deque<size_t> dims;
+
+    bool hasSwizzle(){if(t==ty::vec or(t==ty::mat)){return true;}else return false;}
+    bool isCompound(){return compound;}
+    
+    struct swizzle {
+    enum c {
+        x= 0,y= 1,z= 2,w= 3,
+        r= 0,g= 1,b= 2,a= 3,
+        u= 0,v= 1,
+        s= 0,t= 1,p= 2,q= 3,
+    };
+    //xyzw,rgba,
+    static const size_t swiz_err=100;
+    size_t swizz(char c) {
+        switch(c){
+case 'x' :{return 0;};
+case 'y' :{return 1;};
+case 'z' :{return 2;};
+case 'w' :{return 3;};
+case 'r' :{return 0;};
+case 'g' :{return 1;};
+case 'b' :{return 2;};
+case 'a' :{return 3;};
+case 'u' :{return 0;};
+case 'v' :{return 1;};
+case 's' :{return 0;};
+case 't' :{return 1;};
+case 'p' :{return 2;};
+case 'q' :{return 3;};
+        }
+        return swiz_err;
+    };
+  
+    std::vector<size_t> swizz(std::string sw){
+        if(sw.size()>dim){throw SwizzleError("Swizzle ")};
+        std::vector<size_t> res;
+        for(char c : sw){res.push_back(swizz(c));}
+        return res;
+    };
+    size_t size;
+    std::vector<size_t > swi;
+    bool operator==(type<inst>& f){
+        if(s.size()<=f.dim)
+    };
+     
+    swizzleTy(std::string s,type<inst>& i){
+        for(char c : s){
+            size_t h = siwzz(c);
+            if(h!=swiz_err){
+                if(h<=i.dim){swi.push_back(h);}
+                else{syserr.err<err::t::swizzle_fortype>()}
+            }
+            else{syserr.err<err::t::swizzle_notexist>()}
+        };
+    };
+
+};
+    template <size_t s, size_t... Ss>
+    void pushSize(size_t s,size_t... Ss){
+        dims.push_back(s);
+        if(sizeof...(Ss)>0){pushSize(Ss);}
+    }
+
+    type(std::string str,size_t size) : t(ty::vec) name(str)  {dim=size;}
+    template <size_t... Ss> 
+    type(std::string str,type<temp::meta>& arrtemp,type<temp::inst>* ty,size_t ss,size_t... Ss) :t(ty::vec) dim(arrtemp=dim)  {*this=*ty;pushSize(ss,Ss...);}
+    type(std::string str,size_t ss) : dim(ss) t(ty::vec) {name=str;dim=ss;}
+};
+
+template <temp Q>
+std::string getName(type<Q>& tp){return tp.name;}
+
+
 stmt<temp::inst>::tyty getTy(stmt<temp::meta>::tyty& r){
 
 };
@@ -1285,9 +1298,8 @@ struct mStmtVersion;
     template <temp q>
     bool isPtr(result* r,resty* res){
         switch(*r){
-            case result::rValue : {return pri::get<value<q>>(*res).tp->isPtr();}
-            case result::rVar : {return pri::get<stmt<q>::StmtVarDecl*>(*res)->tp->isPtr()}
-            case result::rType : {return pri::get<type<q>*>(*res)->isPtr();}
+            case result::rValue : {return pri::get<value<q>>(*res).isPtr();}
+            case result::rVar : {return pri::get<stmt<q>::StmtVarDecl*>(*res)->isPtr()}
             default :{return false;}
         }
     };
