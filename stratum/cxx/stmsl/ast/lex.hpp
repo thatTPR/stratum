@@ -14,7 +14,7 @@ namespace stmsl {
             posit(posit& p) {*this=p;ecol=col;}
         };
     struct lex {
-            enum ty {Name,NumFlt,NumUint,
+            enum ty {Name,NumFlt,NumUint,lithex,litbin,
                 escape='\\',
                 Not='!',
                 bnot='~',
@@ -23,7 +23,7 @@ namespace stmsl {
                 lbrace='{',
                 rbrace='}',
                 lbrack='[',
-                rbrack=']',
+                rbrack=']',ldi,rdi,
                 dq='\"',
                 sq='\'',
                 dot='.',
@@ -46,7 +46,7 @@ namespace stmsl {
                 space=' ',
                 cond='?',
                 nl='\n',
-                eq='=',peq,meq,andeq,oreq,Noteq,muleq,diveq
+                eq='=',peq,meq,andeq,oreq,Noteq,muleq,diveq,eqeq,
                 pack,
                 pp,mm,oand,oor
                 
@@ -56,7 +56,7 @@ namespace stmsl {
             ty t;
             union {
                 float flt;int unum;
-                std::string name;
+                std::string name;char chr;
                 // type<meta>* ty;
             }u;
             posit pos;
@@ -93,7 +93,32 @@ namespace stmsl {
             
         };
                 using tylexq=pri::deque<lex>;
+            template <lex::ty cur,lex::ty l,lex::ty... ls>
+            struct mgraph {
+                static constexpr size_t size = sizeof...(ls)+1; 
+                static constexpr lex::ty c= cur; 
+                static constexpr lex::ty arr[] = {l,ls...};
+            };  
+            template <lex::ty l,typename MGt,size_t s=0>
+            struct lex_pt {static constexpr bool value = MGt::arr[s]==l;};
+            template <typename MGt,typename... MGts>
+            struct max_graphs {static constexpr bool maxs = MGts::size>max_graphs<MGts...>::maxs?MGt::size:max_graphs<MGts...>::maxs;}
+            template <typename MGt>
+            struct max_graphs {static constexpr bool maxs = MGts::size;}
 
+
+            template <typename MGt,typename... MGts>
+            struct mgs{ 
+                static constexpr size_t maxs = max_graphs<MGt,MGts...>::maxs;                
+                using tup = pri::tuple<MGt,MGts...> ;
+                template <typename... Ts>
+                mgs<Ts...> operator[](lex::ty l){lex::ty h}
+
+                constexpr mgs(){
+
+                };
+            };
+            // TODO see if multi_graphs can be templated;
 };
 
 

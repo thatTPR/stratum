@@ -10,6 +10,12 @@ constexpr size_t sizeOf(){return sizeof(T);}
 #include <cstring>
 namespace pri {
 
+        template <typename T,T a,lex::ty... Ts>
+        bool OneOf(T l){
+            if(l==a){return true;}
+            if constexpr (sizeof...(Ts)>0){return OneOf<Ts...>(l);}
+            return false;
+        };
     
 template <size_t N>
 struct Str {

@@ -7,6 +7,7 @@
 #include "sys.cpp"
 #include "lex.hpp"
 #include "intrinsics.hpp"
+#include <functional>
 namespace stmsl{
 
 #include <string>
@@ -14,7 +15,7 @@ enum struct temp {meta,inst};
 
 struct op {
     enum struct ty {
-        opNew,opDelete,
+        opNew,opDelete,opNoExcept,
         opbnot=lex::ty::bnot,
         oparrow=lex::ty::arrow,
         opdot=lex::ty::dot,oppack=lex::ty::pack,
@@ -92,10 +93,10 @@ struct param {
     ty t;//in param<inst> a value of Typename signfies the qualification of dependent type 
     type<q>* arg;
     value<q> val;// For ty::Type
+    param_list<q> pl;
     bool value_def;std::enable_if<q==temp::meta,param<temp::inst>>::type valdef; 
-    using tyMeta=pri::variant<Enum,type<q>,value<q>> ;
-    using tyInst=pri::variant<value<q>,expr<q>,type<q>>;
-    std::conditional<q==temp::meta,tyMeta,tyInst>::type varg;
+    using tyInst=pri::variant<value<temp::meta>,value<temp::inst>,expr<temp::meta>,type<temp::meta>,type<temp::inst>>;bool Expr;
+    tyInst varg;
     std::string name;
     std::string str(){
         switch(t){
@@ -133,6 +134,7 @@ param(int ref) {*this=param(_Float);construct_type(&_Float,ref);}
 param(float ref) {*this=param(_Int);construct_type(&_Int,ref);}
 param(bool ref) {*this=param(_Bool);construct_type(&_Bool,ref);}
 param() = default ;
+
 };
 
 
@@ -195,74 +197,60 @@ type<q> getName(std::string name,param_list<q>& plist){
         }   
     }
 };
+}
 
 template <temp q>
 struct expr;
 
-
+struct integralT {
+    enum ty {flt,Int,Double,Ch,Ty};ty t;
+    enum len{Short,Long,LongLong};
+    len l;sign s;
+    enum sign{Signed,Unsigned};
+    template <typename T>
+    using mSigned=signed T;
+    template <typename T>
+    using mUnSigned=unsigned T;
+    value<temp::meta> mt;
+    bool is(type<temp::meta>& ref){};
+    // integralT(type<temp::meta>)
+};
 struct enmember {
     std::string name;
-    expr<temp::meta> val_literal;  
+    expr<temp::meta> cexprval;  
+    enmember(std::string str) : name(str){}
 };
-struct Enum : public pri::deque<enmember> {
-    bool isDependent;
+struct EnumT : public pri::deque<enmember> {
+    bool enclass=false;attrib_list ats;
+    integralT intt; bool SpeqSeq=false;
     expr<temp::meta> findMember(std::string name){
         for(enmember& it : *this){if(it.name==name){return it.val_literal;}}
-        throw MemberNotFound<Enum>("Enum Member Not Found");
+        throw MemberNotFound<EnumT>("Enum Member Not Found");
     };
     operator bool (){return isDependent;}
 } ;
+#include "stmt.hpp"
 
-
-enum AttribT {
-    LayoutOnly,LayoutExcl,Every,
-    ClassMember,Func,Method
+struct attrib{
+    using argList = pri::deque<lex>;
+    std::string name;std::string nsacc;bool Ns=false;
+    argList args;
+    attrib(std::string str) : name(str){};
 };
-enum qual {qStatic,qConstExpr,qConst,qin,qinout,qout,qflat,qVirtual,qOverride,qExplicit,qFinal,qFriend,qNoexcept};
-template <AttribT atT>
-struct AttribS {static constexpr AttribT at = atT;}
-template <qual q>
-struct _Qual{static constexpr AttribType at;};
-
-template <>struct _Qual<qual::qStatic> : public AttribS<AttribT::ClassMember> {};
-template <>struct _Qual<qual::qConstExpr> : public AttribS<AttribT::Every> {};
-template <>struct _Qual<qual::qConst> : public AttribS<AttribT::LayoutExcl> {};
-template <>struct _Qual<qual::qin> : public AttribS<AttribT::Every> {};
-template <>struct _Qual<qual::qinout> : public AttribS<AttribT::Every> {};
-template <>struct _Qual<qual::qout> : public AttribS<AttribT::Every> {};
-template <>struct _Qual<qual::qflat> : public AttribS<AttribT::LayoutOnly> {};
-template <>struct _Qual<qual::qExplicit> : public AttribS<AttribT::ClassMember> {};
-template <>struct _Qual<qual::qVirtual> : public AttribS<AttribT::Method> {};
-template <>struct _Qual<qual::qOverride> : public AttribS<AttribT::Method> {};
-template <>struct _Qual<qual::qFinal> : public AttribS<AttribT::Method> {};
-template <>struct _Qual<qual::qFriend> : public AttribS<AttribT::ClassMember> {};
-template <>struct _Qual<qual::qNoexcept> : public AttribS<AttribT::Func> {};
-
-template <qual q>
-struct Qual {static constexpr qual quality = q; static constexpr AttribT at = _Qual<q>::at; }
-
-using QStatic = Qual<qual::qStatic>
-using QConstExpr = Qual<qual::qConstExpr>
-using QConst = Qual<qual::qConst>
-using QIn  =Qual<qual::qin>
-using QInout =Qual<qual::qinout>
-using QOut =Qual<qual::qout>
-using QFlat =Qual<qual::qflat>
-using QVirtual =Qual<qual::qVirtual>
-using QOverride =Qual<qual::qOverride>
-using QExplicit =Qual<qual::qExplict>
-using QFinal =Qual<qual::qFinal>
-using QFriend = Qual<qual::qFriend>
-using QNoexcept = QUal<qual::qNoecept>
+struct attrib_list : public pri::deque<attrib>{
+    std::string nsUse;bool useNs;
+};
+template <temp q>
+struct lambda ;
 template <temp q>
 struct value {
-    enum ty {
+    enum ty {anyvalue,
         prvalue=0b100 // operator expressions
         xvalue=0b01,member,ptrmember,swizzle,arr // member.access,swizzle,arr[]
         lvalue=0b10,varRef,thisRef,funcCall,literal, // variable name , function call,literal
         rvalue, // prvalue or xvalue
         glvalue=0b11,// xvalue or lvalue
-        typeValue,
+        typeValue,lambdav
     };    
     ty generalTy(ty y){
         switch(){
@@ -275,7 +263,7 @@ case ty::literal : {return ty::lvalue;}
 default: {return y;}
         }
     };
-    ty t;
+    ty t=ty::anyvalue;
     
     type<q>* tp;
     int ref;
@@ -283,9 +271,9 @@ default: {return y;}
     struct funcCall {
         param_list<q> prms;
         pri::deque<expr<q>> args;
-        stmt<q>* funcDecl;
+        stmt<q>::StmtFuncDecl* funcDecl;
     };
-    using variable =stmt<q>;// Decl
+    using variable =stmt<q>::StmtVarDecl*;
     struct literal {
         pri::variant<float,uint,int> lit;enum ty{FltLit,UintLit,IntLit};ty t;
         literal(float num):t(ty::FltLit) {pri::get<float>(lit)=num;} 
@@ -294,27 +282,44 @@ default: {return y;}
     };
     struct accMember {
         bool temp;param_list<q> plist;
-        std::string name;type<q>* it;bool resolved;
+        std::string name;type<q>* it;
         accMember(std::string str){name=str;}
+        accMember(type<q>* _a){it=_a;}
     };
     template <temp Q>
-    using memberAcc = pri::deque<value<Q>::accMember> ;
+    using accMember_list = pri::deque<value<Q>::accMember> ;
     
-    struct ptrMember {type<q>* tp;std::string name;}
-
+    using ptrMember =std::string ;
     
-    pri::variant<ptrMember,variable,funcCall,literal,memberAcc<q>> val;
+    #ifdef CXX_C
+    using ty = pri::variant<bool,int,uint,float,std::string,char>;
+    #elif
+    using ty = pri::variant<bool,int,uint,float,std::string,char>;
+    #endif
+    pri::variant<ptrMember,variable,funcCall,literal,accMember_list<q>,lambda<q>> val;
 
-    type<q>* getTp(){}//TODO
-    operator bool(){
+
+    bool operator=(value<q>& vl){
 
     };
+    operator bool(){};
+    operator int(){};
     template <ty tp>void set(){t=tp;};
-
+    param<temp::inst> get_prm(){
+        param<temp::inst> res;res.
+    }
     template <typename T>
     value(T& v,ty p){pri::get<T>(val)=v;}
     value(type<q>& _tp){tp=&_tp;}
     value(type<q>& _tp,ty _t){tp=&_tp;t=_t;}
+    template <typename T>
+    value(T v){t=literal;
+        if constexpr (std::is_same<T,float>::value){tp=&_Float;}
+        if constexpr (std::is_same<T,uint>::value){tp=&_UInt;}
+        if constexpr (std::is_same<T,bool>::value){tp=&_Bool;}
+        if constexpr (std::is_same<T,char>::value){tp=&Float;}
+        if constexpr (std::is_same<T,std::string>::value){tp=&Float;}
+    }
 };
 
 
@@ -425,7 +430,9 @@ struct expr {
     };
     node tree;
     node* ptr;
-    value<q> val(){return tree.val;}
+    template <typename T>
+    expr(T val){tree.val=value<q>(val);}
+    value<q>& val(){return tree.val;}
     void Alt(){tree.lhs=new node(tree);&ptr=tree.rhs;}
     void Start(){Alt();};
     void Close(){Alt();};
@@ -451,6 +458,8 @@ struct expr {
         n.lhs new node(tree);
         n.rhs
     };
+    template <typename >
+    void pushLiteral(T val){emplace_expr(val);}
     type<q> getType(){return tree.val.getType()};
     operator type<q>(){return getType();}
     expr<q> Not(){
@@ -499,475 +508,34 @@ struct expr {
     expr(float flt) : type(ty::literal) {};
     expr(int s) : type(ty::litreal) {};
 };
-
 template <temp q>
-struct stmt {
-    using param_list=param_list<q>;
-    enum stmtty {
-        Block,NS,
-        DeclOperator,DefOperator
-        DeclType,DefType,
-        //DeclUnion,DefUnion,
-        Expr,
-        Do,
-        While,For,ForRange,
-        Switch,Case,Default,
-        If,Else,ElseIf,
-        Return,Continue,
-        FuncDecl,FuncDef,
-        VarDecl,
-        Using,TypeDef,
-        Layout,SEnum,
-        Try,Catch,Throw
-        
-    };
-    stmtty t;
-using  block = blck<q>;
-struct StmtNS;
-struct OperatorDecl;
-struct OperatorDef;
-struct StmtDeclType;
-struct StmtDefType ;
-#ifdef CXX_C
-struct StmtDeclUnion ;
-struct StmtDefUnion;
-#endif
+struct lambda {
 
-using StmtExpr = expr<q>;
-struct StmtWhile;
-struct StmtFor;
-struct StmtDo;
-struct StmtForRange;
-struct StmtSwitch;
-struct StmtCase;
-struct StmtDefault;
-struct StmtIf;
-struct StmtElse;
-struct StmtElseIf;
-using StmtReturn = StmtExpr;
-struct StmtFuncDecl;
-struct StmtFuncDef ;
-struct StmtVarDecl;
-struct StmtUsing;
-struct StmtTypeDef;
-struct StmtLayout;
-using  StmtEnum = Enum ;
-struct StmtTry;
-struct StmtCatch ;
-struct StmtThrow;
-    struct StmtNS {
-        std::string name;
-
-        pri::deque<StmtNS> usingNS;
-        pri::deque<StmtNS> nss; 
-
-        // std::enable_if<q==temp::inst,type<q> >::type types;// TODO make correct
-        pri::deque<StmtVarDecl> vars;
-        pri::deque<StmtFuncDecl> funcs;
-        pri::deque<StmtTypeDecl> types;
-     // pri::deque<StmtUnionDecl> unions; 
-        pri::deque<StmtUsing> usings;
-        pri::deque<StmtTypeDef> tdefs;
-        block body;
-        
-        StmtNS& includeNS(std::string name){
-            for(const StmtNS& it : nss){
-                if(it.name==name){return it;};
-            };
-            nss.push_back(StmtNS());
-            return nss.back();
-        };
-        type<q> findName(std::string s){
-            for(stmt<q>& it:body){
-                if(it.t==stmtty::DefType){
-                    StmtDefType& ref=pri::get<StmtDefType>(it.var);
-                    if(s==ref.name){return ref.t;}
-                };
-            };
-        };
-        StmtFuncDecl& findFunc(std::string s,pri::deque<value<q>> args){
-            for(StmtFuncDecl& f : funcs){}
-        };
-        
-        operator std::string(){return this->name;}
-        
-    };
-    using tyty = typename std::conditional<temp::meta==q,value<q> , type<temp::inst>*>::type;
-    
-    struct StmtVarDecl {
-        bool Const=false;;bool Static=false;bool Constexpr=false;bool in=false;bool out=false;
-        tyty tp;std::string name;int ref;
-        bool memberPtr;value<q> vl;
-        bool Default;expr<q> DefaultValue;
-        bool isPtr(){return ref>0;}
-        StmtVarDecl() = default;
-        StmtVarDecl(type<q>& _tp){*this=StmtVarDecl();}
-    };
-    
-    struct arg_list : public pri::deque<StmtVarDecl>{bool pack;};
-
-    struct Spec {
-        param_list<temp::meta> plist;
-        param_list<temp::inst> specplist;
-    };
-    template <typename SpecT>
-    struct specTree {
-            template <temp Q>
-            struct specN {
-                SpecT t;
-                param<Q> prm;
-                specN<temp::meta>* Metas;
-                pri::deque<specN<temp::inst>> Insts;
-                SpecT& get(){return t;}
-                bool operator==(param<temp::inst>& p){return prm==p;}
-                ~specN(){delete Metas;Insts.clear();}
-            };
-        specN<temp::meta> tree;
-        param_list<prms> plist;
-    struct ptrSpec{
-        private:
-        bool Meta;
-        pri::variant<specN<temp::meta>*,specN<temp::inst>*> ptr; 
-        public:
-        
-        template <temp Qt>
-        using retty=typename std::conditional<Qt==temp::meta,specN<temp::meta>,pri::deque<specN,temp::inst>>::type; 
-        SpecT& getSpec(){
-            if(Meta){return pri::get<specN<temp::meta>*>(ptr)->t;}
-            return pri::get<specN<temp::inst>*>(ptr)->t;
-        };
-        template <temp Qt>
-        retty<Qt>& get(){
-                    if(Meta){return &pri::get<specN<Qt>*>(ptr)->Metas;}
-                      else {return pri::get<specN<Qt>*>(ptr)->Insts};}
-        template <temp Qt>
-        void update(specN<Qt>* p){if(Qt==temp::meta){Meta=true;>}else{Meta=false;}
-            pri::get<specN<Qt>*>(ptr)=p;
-            }
-        }
-    
-        void insert(SpecT& ref){// TODO pack support
-            ptrSpec cur;cur.update(&tree); 
-            bool pM =false;
-            auto proc = [&](){
-                if(cur.Meta){pri::get<specN<temp::meta>*>(cur.ptr)=pri::get<specN<temp::meta>*>(cur.ptr)->Metas;}
-                else {pri::get<specN<temp::meta>*>(cur.ptr)=pri::get<specN<temp::inst>*>(cur.ptr)->Metas;}
-            };
-            for(param<temp::inst>& p : ref.specplist){
-                pM=false;
-                for(param<temp::meta>& r: ref.plist){if(r==p){proc();pM=true;break;};}
-                if(!pM){
-                    for(specN<temp::inst>& r : cur.get<temp::inst>() ){
-                        if(ref==r){cur.update(&cur.get<temp::inst>());break;}
-                    };
-                };
-            };
-            cur.getSpec()=ref;
-        };
-        void push(param_list<temp::meta>& ptemp,param_list<temp::inst>&& plist)
-        void get( param_list<temp::inst>&& plist){
-            for(param<temp::inst>& it : plist) {
-
-            };
-        };
-        SpecT& getFirst(){return t;};
-        delete specTree();
-        specTree() = default; 
-        specTree(param_list& plt) {plist=plt;};
-    };
-    template <typename T>
-    struct SpecTreeIncl {
-        bool Template;
-        specTree<T> specs;
-        T& get(param_list<temp::inst> plist={}){
-            if(!Template){return specs.getFirst();}
-
-        }  ;
-    };
-
-    struct StmtOperatorDef  {
-        arg_list<temp::inst> args;
-        block body;
-    };
-    struct StmtOperatorDecl : public SpecTreeIncl<StmtOperatorDef> {
-        bool typeConv;
-        pri::variant<type<q>,op::ty > op;
-        using tType =typename std::conditional<temp::meta==q,pri::deque<StmtOperatorDef>,StmtOperatorDef>::type ;
-        arg_list<temp::inst> args;
-        tType defs;
-        tyty rett; 
-    };
-
-
-    struct StmtDefType { 
-        type<q> t;
-        void addType(type<q>& argt){t.variables.push_back(argt);};
-        type<q>& findName(std::string s){
-            for(type<q>& it : t.dependnents){if(it.name==s){return it;}};
-            for(type<q>& it : t.variables){if(it.name==s){return it;}};
-            for(type<q>& it : t.methods){if(it.name==s){return it;}};
-            for(type<q>& it : t.constructors){if(it.name==s){return it;}};
-            throw  NameNotFound();
-        };
-        type<temp::meta> get(){
-            if constexpr (q==temp::meta){
-            if(obj->t.tempTy){
-                if(ps.size()!=obj->t.prms.size()){syserr.err<err::t::template_param_list_incomplete>()}
-                auto t = ps.begin();
-                auto temp = obj->t.prms.begin();
-                for(;t!=ps.end() and (temp!=obj->t.prms.begin())){
-                    if(t->ty!=temp->ty){
-                        syserr.err<err::t::template_param_mismatch>();
-                        
-                        return;}
-                    
-                    ++t;++temp;
-                };
-            }
-            else return (*this);
-        }
-        else {return *this;}
-        }
-    };
-        
-    struct StmtDeclType :public SpecTreeIncl<StmtDefType> {
-        std::string name;
-        specTree<StmtDefType> specs;
-    };
-        struct StmtWhile{StmtExpr condition;block body;}
-        struct StmtFor {StmtExpr init; StmtExpr condition;StmtExpr incr;
-            block body;
-    };
-    struct StmtForRange {
-        StmtVarDecl vardecl;
-        StmtExpr ref;
-        block body; 
-
-    };
-    struct StmtDo {
-        pri::variant<StmttFor,StmtWhile,StmtForRange> loop;      
-    };
-    struct StmtCase {expr<q> ConstExpr;block body;};
-    
-    struct StmtSwitch {
-        bool ConstExpr=false;
-        bool assign;value<temp::inst> vl;
-        expr<q> condition; 
-        block body;
+    stmt<q>::arg_list args;
+    struct  capture {
+        bool byRef;
+        value<q> vl;
+        capture(bool br,value<q>& value) : byRef(br), vl(value);
     } ;
-    struct StmtIf { 
-        bool ConstExpr;
-        StmtExpr condition;
-        block body;
-        StmtIf(expr<q> e) : condition(e) {}
-    };
-    struct StmtElse {
-        pri::variant<StmtIf*,StmtElseIf*> IfS;bool elIf;
-        block body;
-
-        StmtElse(StmtIf& If) : elIf(false) {pri::get<StmtIf*>(Ifs)=&If;}
-        StmtElse(StmtElseIf& If) : elIf(true) {pri::get<StmtElseIf*>(Ifs)=&If;}
-    };
-    struct StmtElseIf : public StmtElse   {
-        bool ConstExpr;
-        bool assign;expr<q> condition;
-        StmtElseIf(StmtIf& If) : elIf(false) {pri::get<StmtIf*>(Ifs)=&If;}
-        StmtElseIf(StmtElseIf& If) : elIf(true) {pri::get<StmtElseIf*>(Ifs)=&If;}
-    };
-
-    struct StmtFuncDecl : public SpecTreeIncl<StmtFuncDef> {
-        bool ConstExpr=false;bool Virtual=false;bool Final=false;bool Static=false;
-        bool Friend=false;
-        std::string name
-        param_list<q> prms;
-        type<q>* ret;
-        arg_list args;
-        operator StmtFuncDef(){
-            StmtFuncDef d;d.prms=prms;d.ret = ret;d.args=args;
-            return d;
-        };
-        bool operator==(pri::deque<type<q>*> argts){
-            if(args.size()!=args.size()){return false;}
-            auto it = args.begin();
-            for(type<q>*&  ite : argts){
-                if(*ite!=it->tp){return false;}
-                ++it;
+    struct captureList : public pri::deque<value<q>>{bool byCopy=false;
+        void push(bool byr,value<q>& vl){
+            for(const auto it : *this){
+                if(it.vl==vl){throw CaptureRepeated();}
             };
-            return true;
-        };
-        varDecl<q> searchArg(sdt::string n){
-            for(varDecl<q> it : args){
-                if(it.name)
-            }
-        };
-    };
-    struct StmtFuncDef{
-        arg_list args;block body;
-    };
-    struct StmtUsing {
-        bool Typename;bool Namespace;
-        param_list prms;
-        std::string name ;
-        tyty expr;
-        type<q> get(){};
-    };
-
-    struct StmtTypeDef {
-        tyty tp;
-        std::string name ;
-        type<q> get(){};        
-        StmtTypeDef(type<temp::inst> ty,std::string n) : t(ty),name(n) {}
-    };
-    // template <>
-    // struct StmtLayoutTy
-    struct StmtLayout {
-        enum stand {std430,std140};
-        enum ty {location,binding};
-        enum tyT { buffer,var,uniform};
-        stand st;
-        ty t;
-        tyT vart;
-        size_t loc;bool in=false;bool out=false;
-        bool uniform;bool flat;
-        pri::variant<StmtVarDecl,StmtTypeDef> data;bool in=false,bool out=false;
-        StmtLayout() = default;
-    };
-    struct StmtTry{
-        block<q> body;
-        pri::deque<StmtCatch> catches;
-    };
-    struct StmtCatch {
-    SttmVarDecl var;
-    block<q> body;
-    };
-    struct  StmtThrow {
-        expr<q> val;
-        StmtThrow(expr<q>&& _val)  {val=_val;}
-    };
-
-    
-        
-    accSpec acc=accSpec::Public;
-    using allvar =pri::variant<block,StmtLayout,StmtNS,StmtFuncDecl,StmtFuncDef,StmtVarDecl,StmtUsing,StmtTypeDef,StmtEnum,StmtDeclType,StmtDefType,StmtExpr,StmtWhile,StmtFor,StmtDo,StmtForRange,StmtSwitch,StmtCase,StmtDefault,
-    StmtIf,StmtElse,StmtElseIf,StmtReturn,StmtTry,StmtCatch,StmtThrow>;
-    allvar var;
-    using funcvar = pri::variant<StmtExpr,StmtWhile,StmtFor,StmtDo,StmtForRange,StmtSwitch,StmtCase,StmtDefault,StmtIf,StmtElse,StmtElseIf,StmtReturn,StmtTry,StmtCatch,StmtThrow>;
-    using nsvar =  pri::variant<StmtLayout,StmtNS,StmtFuncDecl,StmtFuncDef,StmtVarDecl,StmtUsing,StmtTypeDef,StmtEnum,StmtDeclType,StmtDefType,StmtExpr,StmtWhile,StmtFor,StmtDo,StmtForRange,StmtSwitch,StmtCase,StmtDefault,
-    StmtIf,StmtElse,StmtElseIf>;
-    template <stmtty ty,stmtty... tys>
-    bool isOneOf(stmtty st){if(st==ty){return true;}else {return isOneOf<tys...>(st);}};
-    template <stmtty ty>
-    bool isOneOf(stmtty st){if(st==ty){return true;}else {return false;}};
-    
-    template <qual ql>
-    bool eval();
-    template <> bool eval<qual::qStatic>(){if(!isOneOf<VarDecl>(t)){return false;}else{Static=true;;return true;}};
-    template <> bool eval<qual::qConstExpr>(){if(!isOneOf<stmtty::VarDecl,stmtty::If,smtty::ElseIf,stmtty::Switch>(t);){return false;}else{ConstExpr=true;;return true;}};
-    template <> bool eval<qual::qConst>(){Const=true;;return true;};
-    template <> bool eval<qual::qin>(){if(!isOneOf<stmtty::VarDecl,stmtty::Layout>(t)){return false;}else{in=true;return true;}};
-    template <> bool eval<qual::qinout>(){if(!isOneOf<stmtty::VarDecl,stmtty::Layout>(t)){return false;}else{in=true;out=true;return true;}};
-    template <> bool eval<qual::qout>(){if(!isOneOf<stmtty::VarDecl,stmtty::Layout>(t)){return false;}else{out=true;return true;}};
-    template <> bool eval<qual::qflat>(){if(!isOneOf<stmtty::Layout>(t)){return false;}else{in=true;return true;}};
-    template <> bool eval<qual::qFriend>(){if(!isOneOf<stmtty::FuncDef,stmtty::TypeDecl>(t)){return false;}else{return true;}};
-    template <> bool eval<qual::qExplicit>(){if(!isOneOf<stmtty::FuncDef>(t)){return false;}else{return true;}};
-    template <> bool eval<qual::qVirtual>(){if(!isOneOf<stmtty::FuncDef>(t)){return false;}else{return true;}};
-    template <> bool eval<qual::qFinal>(){if(!isOneOf<stmtty::FuncDef,OperatorDecl>()){return false;}else{;return true;}};
-    template <> bool eval<qual::qNoexcept>(){if(!isOneOf<stmtty::FuncDecl,OperatorDecl>()){return false;}else{return true;}}
-    bool push_qual(qual ql){
-        switch(ql){
-case qual::qStatic :{return eval<qual::qStatic>();}
-case qual::qConstExpr :{return eval<qual::qConstExpr>();}
-case qual::qConst :{return eval<qual::qConst>();}
-case qual::qin :{return eval<qualq::in>();}
-case qual::qinout :{return eval<qual::qinout>();}
-case qual::qout :{return eval<qual::qout>();}
-case qual::qflat :{return eval<qual::qflat>();}
-case qual::qExplicit:{return eval<qual::qExplicit>();}
-case qual::qFriend :{return eval<qual::qFriend>();} 
-case qual::qVirtual :{return eval<qual::qVirtual>();} 
-case qual::qFinal :{return eval<qual::qFinal>();} 
+            emplace_back(byr,vl);
         }
-        return false;
     };
-    
-    template <stmtty Ty>
-    struct getTy {using ty = typename ty ;}
-template<>struct getTy<stmtty::Block>{using ty=block;}
-template<>struct getTy<stmtty::NS>{using ty=StmtNS;}
-template<>struct getTy<stmtty::DeclType>{using ty=StmtDeclType;}
-template<>struct getTy<stmtty::DefType>{using ty=StmtDefType;}
-template<>struct getTy<stmtty::DefTypeSpec>{using ty=StmtDefTypeSpec;}
-template<>struct getTy<stmtty::Expr>{using ty=StmtExpr;}
-template<>struct getTy<stmtty::Assign>{using ty=StmtAssign;}
-template<>struct getTy<stmtty::Do>{using ty=StmtDo;}
-template<>struct getTy<stmtty::While>{using ty=StmtWhile;}
-template<>struct getTy<stmtty::For>{using ty=StmtFor;}
-template<>struct getTy<stmtty::ForRange>{using ty=StmtForRange;}
-template<>struct getTy<stmtty::Switch>{using ty=StmtSwitch;}
-template<>struct getTy<stmtty::Case>{using ty=StmtCase;}
-template<>struct getTy<stmtty::Default>{using ty=StmtDefault;}
-template<>struct getTy<stmtty::If>{using ty=StmtIf;}
-template<>struct getTy<stmtty::Else>{using ty=StmtElse;}
-template<>struct getTy<stmtty::ElseIf>{using ty=StmtElseIf;}
-template<>struct getTy<stmtty::Return>{using ty=StmtReturn;}
-template<>struct getTy<stmtty::FuncDecl>{using ty=StmtFuncDecl;}
-template<>struct getTy<stmtty::FuncDef>{using ty=StmtFuncDef;}
-template<>struct getTy<stmtty::FuncDefSpec>{using ty=StmtFuncDefSpec;}
-template<>struct getTy<stmtty::VarDecl>{using ty=StmtVarDecl;}
-template<>struct getTy<stmtty::Using>{using ty=StmtUsing;}
-template<>struct getTy<stmtty::TypeDef>{using ty=StmtTypeDef;}
-template<>struct getTy<stmtty::Layout>{using ty=StmtLayout;}
-
-        
-    template <stmtty Ty>
-    getTy<Ty>::ty get(){return pri::get<getTy<Ty>::ty>(var);};
-  
-    // struct fileRange  {
-    //     size_t filePos;
-    //     size_t linestart,lineend;
-    //     std::filesystem::path pathFile;
-    //     fileRange(size_t s,size_t e,std::filesystem::path pth) : linestart(s) , lineend(e) pathFile(path) {}  
-    // };
-    // std::enable_if<q==temp::meta,fileRange>::type range;
-    std::enable_if<q==temp::meta,parList>::type paramters;
-
-    template <typename StmtT>stmtty getTy();
-template<> void getTy<block>(){return stmtty::Block;}
-template<> void getTy<StmtNS>(){return stmtty::NS;}
-template<> void getTy<StmtDeclType>(){return stmtty::DeclType;}
-template<> void getTy<StmtDefType>(){return stmtty::DefType;}
-template<> void getTy<StmtDefTypeSpec>(){return stmtty::DefTypeSpec;}
-template<> void getTy<StmtExpr>(){return stmtty::Expr;}
-template<> void getTy<StmtAssign>(){return stmtty::Assign;}
-template<> void getTy<StmtWhile>(){return stmtty::While;}
-template<> void getTy<StmtFor>(){return stmtty::For;}
-template<> void getTy<StmtForRange>(){return stmtty::ForRange;}
-template<> void getTy<StmtDo>(){return stmtty::Do;}
-template<> void getTy<StmtSwitch>(){return stmtty::Switch;}
-template<> void getTy<StmtCase>(){return stmtty::Case;}
-template<> void getTy<StmtDefault>(){return stmtty::Default;}
-template<> void getTy<StmtIf>(){return stmtty::If;}
-template<> void getTy<StmtElse>(){return stmtty::Else;}
-template<> void getTy<StmtElseIf>(){return stmtty::ElseIf;}
-template<> void getTy<StmtReturn>(){return stmtty::Return;}
-template<> void getTy<StmtFuncDecl>(){return stmtty::FuncDecl;}
-template<> void getTy<StmtFuncDef>(){return stmtty::FuncDef;}
-template<> void getTy<StmtFuncDefSpec>(){return stmtty::FuncDefSpec;}
-template<> void getTy<StmtVarDecl>(){return stmtty::VarDecl;}
-template<> void getTy<StmtUsing>(){return stmtty::Using;}
-template<> void getTy<StmtTypeDef>(){return stmtty::TypeDef;}
-template<> void getTy<StmtLayout>(){return stmtty::Layout;}
-
-template <typename StmtT> set(){t=getTy<StntT>();};
-
-    template <typename StmtT>
-    stmt(StmtT&& s) : acc(accSpec::public){
-        pri::get<StmtT>(var)=s;
-        set<StmtT>();
-    };
-    stmt() = default ;
+    bool Template=false;
+    attrib_list front_ats;
+    attrib_list back_ats;
+    bool Noexcept=false;
+    param_list<q> plist;
+    using argList = stmt<q>::arg_list;
+    using tyty= std::conditional<temp::meta==q,value<q>,type<q>>::type
+    tyty rettp;bool trailing=false;
+    attrib_list attribs;
+    stmt<q>::block body;
 };
-
 
 template <temp q>
 struct type {
@@ -1021,27 +589,31 @@ struct type {
     // TYPE varType;
     bool compound;
     struct inher {
-        accSpec acc;type<q>* t;
+        accSpec acc;
+        using tyty  = typename std::conditional<temp::meta==q,value<q>,type<q>*>::type;
+        tyty t;
+        inher(accSpec spc) : acc(spc);
+        inher(tyty r) : t(r){} 
     };
-            
+        using inher_list=pri::deque<inher>;      
         pri::deque<inher> inherits;
-        pri::deque<spec> specs;
-        pri::deque<stmt<q>::StmtTypeDecl> frndsClasss;// DeclType
-        pri::deque<stmt<q>::StmtFuncDecl> frndsFunctions; // DeclFunction
-        pri::deque<stmt<q>::StmtOperatorDecl> frndsFunctions; // DeclFunction
+        stmt<q>::specTree<type<q>> specs;
+        pri::deque<stmt<q>::StmtTypeDecl*> frndsClasss;// DeclType
+        pri::deque<stmt<q>::StmtFuncDecl*> frndsFunctions; // DeclFunction
+        pri::deque<stmt<q>::StmtOperatorDecl*> frndsOperators; // DeclFunction
     
-        pri::deque<stmt<q>::StmtUsing> using;// Usings stmts
-        pri::deque<stmt<q>> tdefs;// Usings TypeDef
-        pri::deque<Enum> Enums; pri::deque<Enum> EnumClss;
+        pri::deque<stmt<q>::StmtUsing> usings;// Usings stmts
+        pri::deque<stmt<q>::StmtTypeDecl> tdefs;// Usings TypeDef
+        pri::deque<stmt<q>::Enum> Enums; 
         
-        pri::deque<stmt<q>> variables;// Has type variableDecl
-        pri::deque<stmt<q>> methods;// Has type FuncDecl
-        pri::deque<stmt<q>> operators;// Has type StmtOperatorDecl
+        pri::deque<stmt<q>::StmtVarDecl> variables;
+        pri::deque<stmt<q>::StmtFuncDecl> methods;// Has type FuncDecl
+        pri::deque<stmt<q>::StmtOperatorDecl> operators;// Has type StmtOperatorDecl
         
-        pri::deque<stmt<q>> constructors;//Has Type FuncDecl 
-        pri::dequq<stmt<q>> destructors;//Has Type FuncDecl
+        pri::deque<stmt<q>::StmtFuncDecl> constructors;//Has Type FuncDecl 
+        pri::dequq<stmt<q>::StmtFuncDecl> destructors;//Has Type FuncDecl
 
-        pri::variant<type<q>,Compound> data;
+        pri::variant<type<q>> data;
 
     size_t alignment=1;size_t size;
     void calcAlignment(){alignment=1;
@@ -1201,9 +773,9 @@ case 'q' :{return 3;};
             size_t h = siwzz(c);
             if(h!=swiz_err){
                 if(h<=i.dim){swi.push_back(h);}
-                else{syserr.err<err::t::swizzle_fortype>()}
+                else{err::e<err::t::swizzle_fortype>()}
             }
-            else{syserr.err<err::t::swizzle_notexist>()}
+            else{err::e<err::t::swizzle_notexist>()}
         };
     };
 
@@ -1313,6 +885,11 @@ struct mStmtVersion;
         }
 
     };
+
+    template <temp q>
+    bool isMember(result* r,resty* res){return *r==result::rMethod ||*r==result::rVar;};
+    template <temp q>
+    bool isMemberPtr(result* r,resty* res){return isPtr(r,res) && isMember(r,res);};
     template <temp q>
     bool isPtrCompound(result* r,resty* res){return isPtr<q>(r,res) && isCompound<q>(r,res)};
     template <temp q>
@@ -1336,27 +913,28 @@ struct ast   {
     pri::list<type<q>> Types;
     pri::list<stmt<q>::StmtFuncDecl> Funcs;
     
-    struct bl {enum ty{other,Template,ns};
-        stmt<q>::block* bl;
-        param_list<q>* pl;
-        ty t;
-        bl(stmt<q>::block* _bl) t(ty::other),bl(_bl);
-        bl(stmt<q>::block* _bl,param_list<q>* _pl ) t(ty::Template),bl(_bl),pl(_pl);
-    };
-
     bool nsblck=true;bool fblck;bool swBlock;bool IfChain;
-    pri::deque<bl> curBl;
+    pri::deque<stmt<q>::block*> curBl;
     pri::deque<stmt<q>::StmtNS*> nss;
-    pri::deque<stmt<q>::StmtDefType*> strcts;
+    pri::deque<stmt<q>::StmtDeclType*> strcts;
     pri::deque<param_list<q>*> curtemp;
     pri::stack<stmt<q>::StmtTry*> tries;
-    stmt<q>::block& curBlock(){return *(curBl.back()->bl);};
-    param_list<q>& curParams(){return *(curBl.back()->pl);};
+    stmt<q>::FuncDef* fdef;
+    stmt<q>::block& curBlock(){return *(curBl.back());};
+    param_list<q>& curParams(){return *(curtemp.back());};
 
-    
-    
+    stmt<q>::TypeDef& getTypeDef(){if(nsblck){nss.back().tdefs.back()}else{strcts.back()->tdefs.back()};}
+    stmt<q>::TypeDef& getUsing(){if(nsblck){nss.back().usings.back()}else{strcts.back()->usings.back()};}
+    stmt<q>* getStmt(){return curBl.back().back();}
+    stmt<q>::VarDecl* getRef(std::string name){
+        for(stmt<q>::VarDecl& it :  fdef->args){
+            if(it.name==name){return it;}
+        };
+        for(stmt<q>::VarDecl& it :  fdef->args){
+            if(it.name==name){return it;}
+        };
 
-
+    };
 
     bool pushNS(std::string name){
         if(curBl.t!=ns){return false;}
@@ -1373,19 +951,39 @@ struct ast   {
         curBl.pop();
     };
 
-    template <typename StmtTy>void _pushStmt(StmtTy&& st ){return;};// Review
-    template <>void _pushStmt<stmt<q>::StmtUsing>(stmt<q>::StmtUsing&& st ){if(nsblck){nss.back().usings.push_back(st)};};
-    template <>void _pushStmt<stmt<q>::StmtDefType>(stmt<q>::StmtDefType&& st ){if(nsblck){nss.back().tdefs.push_back(st);}else{strcts.back().tdefs.push_back(st);} ;};
-    template <>void _pushStmt<stmt<q>::StmtFuncDef>(stmt<q>::StmtFuncDef&& st ){if(nsblck){nss.back().funcs.push_back(st);}else{strcts.back().methods.push_back(st);};
-    template <>void _pushStmt<stmt<q>::StmtIf>(stmt<q>::StmtIf&& st )            {pushbl(pri::get<stmt<q>::StmtIf>(curBl().back().var).body);};
-    template <>void _pushStmt<stmt<q>::StmtElse>(stmt<q>::StmtElse&& st )        {pushbl(pri::get<stmt<q>::StmtElse>(curBl().back().var).body);};
-    template <>void _pushStmt<stmt<q>::StmtElseIf>(stmt<q>::StmtElseIf&& st )    {pushbl(pri::get<stmt<q>::StmtElseIf>(curBl().back().var).body);};
-    template <>void _pushStmt<stmt<q>::StmtSwitch>(stmt<q>::StmtSwitch&& st )    {pushbl(pri::get<stmt<q>::StmtSwitch>(curBl().back().var).body);};
-    template <>void _pushStmt<stmt<q>::StmtCase>(stmt<q>::StmtCase&& st )        {pushbl(pri::get<stmt<q>::StmtCase>(curBl().back().var).body);};
-    template <>void _pushStmt<stmt<q>::StmtFor>(stmt<q>::StmtFor&& st )          {pushbl(pri::get<stmt<q>::StmtFor>(curBl().back().var).body);};
-    template <>void _pushStmt<stmt<q>::StmtWhile>(stmt<q>::StmtWhile&& st )      {pushbl(pri::get<stmt<q>::StmtWhile>(curBl().back().var).body);};
-    template <>void _pushStmt<stmt<q>::StmtForRange>(stmt<q>::StmtForRange&& st ){pushbl(pri::get<stmt<q>::StmtForRange>(curBl().back().var).body);};
-    template <>void _pushStmt<stmt<q>::StmtDo>(stmt<q>::StmtDo&& st )            {pushbl(pri::get<stmt<q>::StmtDo>(curBl().back().var).body);};
+    template <typename StmtTy>void pushAttrs(){}
+
+    template <typename StmtTy> StmtTy* _pushStmt(StmtTy&& st ){curBlock().back()->push_back(stmt<q>(st));return &pri::get<StmtTy>(curBl().back().var;);};// Review
+
+    template <>stmt<q>::Case* _pushStmt<stmt<q>::Case>(stmt<q>::Case&& st ){curBl.back()->push_back(stmt<q>(st));return &pri::get<stmt<q>::block>(curBlock.back());};
+    template <>stmt<q>::Default* _pushStmt<stmt<q>::Default>(stmt<q>::Default&& st ){curBl.back()->push_back(stmt<q>(st));return &pri::get<stmt<q>::block>(curBlock.back());};
+
+
+    template <>stmt<q>::block* _pushStmt<stmt<q>::block>(stmt<q>::block&& st ){curBl.back()->push_back(stmt<q>(st));return &pri::get<stmt<q>::block>(curBlock.back());};
+    template <>stmt<q>::Using* _pushStmt<stmt<q>::Using>(stmt<q>::Using&& st ){if(nsblck){nss.back().usings.push_back(st);return &nss.back().usings.back();}else{strcts.back().usings.push_back(st);return &strcts.back().usings.back();};};
+    template <>stmt<q>::DefType* _pushStmt<stmt<q>::DefType>(stmt<q>::DefType&& st ){if(nsblck){nss.back().tdefs.push_back(st);return &(nss.back().tdefs.back());}else{strcts.back().tdefs.push_back(st);return &(strcts.back().tdefs.back());} ;};
+    template <>stmt<q>::FuncDef* _pushStmt<stmt<q>::FuncDecl>(stmt<q>::FuncDef&& st ){
+        if(nsblck){nss.back().funcs.push_back(st);return &(nss.back().funcs.back());}
+        else{strcts.back().methods.push_back(st);return &(strcts.back().methods.back());};
+    }
+    template <>stmt<q>::FuncDef* _pushStmt<stmt<q>::OperatorDecl>(stmt<q>::OperatorDecl&& st ){
+        if(nsblck){nss.back().funcs.push_back(st);return &(nss.back().funcs.back());}
+        else{strcts.back().methods.push_back(st);return &(strcts.back().operators.back());};
+    }    
+    
+
+    // template <>stmt<q>::Expr* _pushStmt<stmt<q>::Expr>(stmt<q>::Expr&& st )           {pushbl(pri::get<stmt<q>::Expr>(curBl().back().var).body);return pri::get<stmt<q>::Expr>(curBl().back().var;) ;};
+    // template <>stmt<q>::If* _pushStmt<stmt<q>::If>(stmt<q>::If&& st )                 {pushbl(pri::get<stmt<q>::If>(curBl().back().var).body);return pri::get<stmt<q>::If>(curBl().back().var;) ;};
+    // template <>stmt<q>::Else* _pushStmt<stmt<q>::Else>(stmt<q>::Else&& st )           {pushbl(pri::get<stmt<q>::Else>(curBl().back().var).body);return pri::get<stmt<q>::Else>(curBl().back().var;) ;};
+    // template <>stmt<q>::ElseIf* _pushStmt<stmt<q>::ElseIf>(stmt<q>::ElseIf&& st )     {pushbl(pri::get<stmt<q>::ElseIf>(curBl().back().var).body);return pri::get<stmt<q>::ElseIf>(curBl().back().var;) ;};
+    // template <>stmt<q>::Switch* _pushStmt<stmt<q>::Switch>(stmt<q>::Switch&& st )     {pushbl(pri::get<stmt<q>::Switch>(curBl().back().var).body);return pri::get<stmt<q>::Switch>(curBl().back().var;) ;};
+    // template <>stmt<q>::Case* _pushStmt<stmt<q>::Case>(stmt<q>::Case&& st )           {pushbl(pri::get<stmt<q>::Case>(curBl().back().var).body);return pri::get<stmt<q>::Case>(curBl().back().var;) ;};
+    // template <>stmt<q>::For* _pushStmt<stmt<q>::For>(stmt<q>::For&& st )              {pushbl(pri::get<stmt<q>::For>(curBl().back().var).body);return pri::get<stmt<q>::For>(curBl().back().var;) ;};
+    // template <>stmt<q>::While* _pushStmt<stmt<q>::While>(stmt<q>::While&& st )        {pushbl(pri::get<stmt<q>::While>(curBl().back().var).body);return pri::get<stmt<q>::While>(curBl().back().var;) ;};
+    // template <>stmt<q>::ForRange* _pushStmt<stmt<q>::ForRange>(stmt<q>::ForRange&& st){pushbl(pri::get<stmt<q>::ForRange>(curBl().back().var).body);return pri::get<stmt<q>::ForRange>(curBl().back().var;) ;};
+    // template <>stmt<q>::Do* _pushStmt<stmt<q>::Do>(stmt<q>::Do&& st )                 {pushbl(pri::get<stmt<q>::Do>(curBl().back().var).body);return pri::get<stmt<q>::Do>(curBl().back().var;) ;};
+    // template <>stmt<q>::Return* _pushStmt<stmt<q>::Expr>(stmt<q>::Expr&& st )           {pushbl(pri::get<stmt<q>::Return>(curBl().back().var).body);return pri::get<stmt<q>::Return>(curBl().back().var;) ;};
+
 
     struct  {
         stmt<q>::StmtVarDecl* vd;
@@ -1394,13 +992,9 @@ struct ast   {
 stmt<q>::StmtVarDecl& getVarDecl(){return *(ptr.vd);};
 stmt<q>::StmtDefType& getDefType(){return *(ptr.dt);};
     stmt<q>& lastStmt(){return curBlock().back();}
-    template <typename T>
-    T last(){
-        if(curBlNS){return }
-    }
 
     template <typename StmtTy>
-    void pushStmt(StmtTy&& st ){_pushStmt<StmtTy>(st);};
+    StmtTy* pushStmt(StmtTy&& st ){return _pushStmt<StmtTy>(st);};
     template <> pushStmt(stmt<q>::StmtLayout&& ly){laoyuts.push_back(l);}
     template <qual Q,qual... Qs>
     bool pushQual(){curBlock().back().push_qual(Q);pushQual<Qs...>()};
@@ -1427,8 +1021,8 @@ stmt<q>::StmtDefType& getDefType(){return *(ptr.dt);};
         };
     };
     
-    resty findNameFromNs(stmt<q>::StmtNS* ns,std::string name, result* rt){*rt=result::rErr;
-        resty res;
+    resty<q> findNameFromNs(stmt<q>::StmtNS* ns,std::string name, result* rt){*rt=result::rErr;
+        resty<q> res;
         for(stmt<q>::StmtNS& it : ns->nss){
             if(it.name ==name){*rt=result::rNs;pri::get<stmt<q>::StmtNS*>(res)=&it;return res;}
         };
@@ -1448,17 +1042,24 @@ stmt<q>::StmtDefType& getDefType(){return *(ptr.dt);};
             };        
         throw NameNotFound("FromNs");
     };
-    stmt<q>::StmtFuncDecl findVariable(type<q>* typ,std::string name ,result* rt){        *rt= result::rErr;
-        for(stmt<q>& it : tp->variables){
-            if(it.t==stmt<q>::stmtty::VarDecl){
-                if(pri::get<stmt<q>::StmtVarDecl>(it).name==name){*rt= result::rVar;pri::get<stmt<q>::StmtVarDecl>(res)= pri::get<stmt<q>::StmtVarDecl>(it);return res;}
-            }
+    
+    stmt<q>::VarDecl& findVariable(type<q>* typ,std::string name ,result* rt){        *rt= result::rErr;
+        for(stmt<q>::VarDecl& it : tp->variables){
+            if(it.name==name){return res;}
+        };
+        throw NameNotFound("FromVariable");
+    };
+    stmt<q>::VarDecl& findVariable(stmt<q>::StmtNS* ns,std::string name ,result* rt){        *rt= result::rErr;
+        for(stmt<q>& it : ns->body){
+            if(it.t==stmt<q>::eVarDecl){ if(pri::get<stmt<q>::VarDecl>(it).name==name){return pri::get<stmt<q>::VarDecl>(it);}}
         };
         throw NameNotFound("FromVariable");
     };
 
-    resty findNameFromTp(type<q>* tp,std::string name,result* rt){
-        resty res;
+
+  
+    resty<q> findNameFromTp(type<q>* tp,std::string name,result* rt){
+        resty<q> res;
         for(stmt<q>& it : tp->dependents) {
             if(it.t==stmt<q>::stmtty::TypeDef){
                 *rt= result::rType;
@@ -1489,25 +1090,63 @@ stmt<q>::StmtDefType& getDefType(){return *(ptr.dt);};
         throw MemberNotFound<type<q>>("Error");
     };
     stmt<q>::StmtFuncDecl* findMethod(type<q>* tp,std::string name,pri::deque<type<q>*> args){
-        for(stmt<q>& it : typ->methods) {
-            if(it.t==stmt<q>::stmtty::FuncDecl){
-                stmt<q>::StmtFuncDecl& ref = pri::get<stmt<q>::StmtFuncDecl>(it);
-                if((ref.name=name) and (ref == args) ) {return &ref};
-            }
+        for(stmt<q>FuncDecl& it : typ->methods) {
+                if((it.name=name) and (it == args) ) {return &it};
         };
         throw MemberNotFound<type<q>>("NSFunction");
     };
     stmt<q>::StmtFuncDecl* findFunction(stmt<q>::StmtNS* ns,std::string name,pri::deque<type<q>*> args){
-        for(stmt<q>& it : ns->block) {
-            if(it.t==stmt<q>::stmtty::FuncDecl){
-                stmt<q>::StmtFuncDecl& ref = pri::get<stmt<q>::StmtFuncDecl>(it);
-                if((ref.name=name) and (ref == args) ) {return &ref};
-            }
+        for(stmt<q>::FuncDecl& it : ns->funcs) {
+                if((it.name=name) and (it == args) ) {return &it};}
         };
         throw MemberNotFound<stmt<q>::StmtNS>("NSFunction");
     };
-    resty findName(std::string name,result* r){
-        resty res;
+    stmt<q>::TypeDecl* findTp(std::string name){//TODO
+        if(!nsblck){
+            for(stmt<q>::TypeDecl* ns : pri::reverse(strcts)){
+                if(ns->name==name){return ns;}
+                for(stmt<q>::TypeDef& it : ns->tdefs ){
+                    if(it.name==name){return &it.get();}
+                };
+                for(stmt<q>::Using& it : ns->usings ){
+                    if(it.name==name){return &it.get();}
+                }
+                for(stmt<q>::TypeDecl& it : ns->types ){
+                if(it.name==name){return &it;}
+            };
+            };
+        }
+            for(stmt<q>::NS* ns : pri::reverse(nss)){
+                for(stmt<q>::TypeDecl& it : ns->tdefs ){
+                    if(it.name==name){return &it.get();}
+                };
+                for(stmt<q>::Using& it : ns->usings ){
+                    if(it.name==name){return &it.get();}
+                }
+                for(stmt<q>::TypeDecl& it : ns->types ){
+                if(it.name==name){return &it;}
+            };
+        };
+            throw TypeNotFound();
+    };
+    stmt<q>::TypeDecl* findTpDecl(std::string name){
+        if(!nsblck){
+            for(stmt<q>::TypeDecl* ns : pri::reverse(strcts)){
+                if(ns->name==name){return ns;}
+                for(stmt<q>::TypeDecl* it : ns->types ){
+                    if(it.name==name){return it.get();}
+                };
+            };
+            };
+            for(stmt<q>::NS* ns : pri::reverse(nss)){
+                for(stmt<q>::TypeDecl& it : ns->types ){
+                if(it.name==name){return &it;}
+            };
+        };
+            throw TypeNotFound();
+    };
+    resty<q> findName(std::string name,result* r){
+        resty<q> res;
         for(param_list<q>* it : pri::reverse(curtemp)){
             bool found=true;param<q> rs;
             try { rs=it->findByName(name);}
@@ -1528,11 +1167,10 @@ stmt<q>::StmtDefType& getDefType(){return *(ptr.dt);};
                     try {res=findNameFromNs(it,name,r);}}catch(const MemberNotFound& exc){found=false};
                     if(found){return res; }
                 }
-            
         
-        throw NameNotFound<resty>("Global");
+        throw NameNotFound<resty<q>>("Global");
     };
-    bool find(std::string name,resty* res, result* r){
+    bool find(std::string name,resty<q>* res, result* r){
         switch(*r){
             case result::rType : {try{*res=findNameFromTp(pri::get<type<q>>(*res),name,r);}
                 catch(const MemberNotFound& e){return false;};return true;};
@@ -1540,14 +1178,14 @@ stmt<q>::StmtDefType& getDefType(){return *(ptr.dt);};
                             catch(const MemberNotFound& e){return false;};return true;};
             case result::rEnum : {
                 try {*res=pri::get<Enum>(n).findMember(name);}
-                catch(const MemberNotFound<Enum>& exc){ return false;syserr.err(*this,exc);}
+                catch(const MemberNotFound<Enum>& exc){ return false;err::e(*this,exc);}
                 return true;};
             case result::rErr :{try{*res=findName(name,r)}catch(const NameNotFound& e){return false};return true;}
                 default : {return false;};
                 // case result::rVar : {};
         }
     };
-    bool find(std::string name,resty* res,result* r,lex::ty acc){
+    bool find(std::string name,resty<q>* res,result* r,lex::ty acc){
 
     };
     bool include(ast&& s){

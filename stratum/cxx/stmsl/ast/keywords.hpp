@@ -144,25 +144,25 @@ using kw_elifndef =  kw<"#elifndef",macroStmt::mStmtElifndef,kwty::macro> ;
 using kw_endif =  kw<"#endif",macroStmt::mStmtEndIf,kwty::macro> ;
 using kw_ifndef =  kw<"#ifndef",macroStmt::mStmtIfndef,kwty::macro> ;
 using kw_ifdef =  kw<"#ifdef",macroStmt::mStmtIfdef,kwty::macro> ;
-using kw_Layout =  kw<"layout",stmt<meta>::StmtLayout,kwty::layout_Stmt> ;
+using kw_Layout =  kw<"layout",stmt<meta>::Layout,kwty::layout_Stmt> ;
 #define KW_LISTM kw_version, kw_Incl, , kw_Define , kw_if , kw_elif , kw_elif , kw_elifdef , kw_elifndef , kw_endif , kw_ifndef , kw_ifdef , kw_Layout 
 #define KW_LIST KW_LISTM
-template <pri::Str s,stmt<temp::meta>::StmtLayout::ty TY>
-struct kw_lyt : kw<s,stmt<meta>::StmtLayout,kwty::layout_at> {
-    static constexpr stmt<temp::meta>::StmtLayout::ty typeLyt=TY;
+template <pri::Str s,stmt<temp::meta>::Layout::ty TY>
+struct kw_lyt : kw<s,stmt<meta>::Layout,kwty::layout_at> {
+    static constexpr stmt<temp::meta>::Layout::ty typeLyt=TY;
 } ; 
 
-using kw_Location =  kw_lyt<"location",stmt<temp::meta>::StmtLayout::ty::location> ;
-using kw_Binding =  kw_lyt<"binding",stmt<temp::meta>::StmtLayout::ty::binding> ;
+using kw_Location =  kw_lyt<"location",stmt<temp::meta>::Layout::ty::location> ;
+using kw_Binding =  kw_lyt<"binding",stmt<temp::meta>::Layout::ty::binding> ;
 
 #define KW_LISTLYT KW_LISTLYT kw_Location, kw_Binding 
 
-using kw_uniform =  kw<"uniform",stmt<meta>::StmtLayout,kwty::layout_qual> ;
+using kw_uniform =  kw<"uniform",stmt<meta>::Layout,kwty::layout_qual> ;
 #define KW_LISTLYT KW_LISTLYT, kw_uniform 
 struct kw_Buffer :  kw<"buffer",kwty::layout_qual>{
     void proc(parser& p){
         p.curAcc.push(accSpec::Public);
-        p.getStmt<stmt<temp::meta>::StmtDefType>();
+        p.getStmt<stmt<temp::meta>::DefType>();
     };
 } ;
 #define KW_LISTLYT KW_LISTLYT,kw_Buffer
@@ -184,27 +184,35 @@ enum accSpec{Public,Private,Protected};
 struct kw_Struct : public kw<"struct",type<temp::meta> ,kwty::Struct>{
     void proc(parser& p){
         p.accessPush<accSpec::Public>();
-        p.getStmt<stmt<temp::meta>::StmtDeclType>();
+        p.getStmt<stmt<temp::meta>::DeclType>();
     };
 };
 
 struct kw_Class : public kw<"class",type<temp::meta>,kwty::Struct>{
     void proc(parser& p){
         p.accessPush<accSpec::Private>();
-        p.getStmt<stmt<temp::meta>::StmtDeclType>();
+        p.getStmt<stmt<temp::meta>::DeclType>();
     };
 };
 struct kw_Union : public kw<"union",type<temp::meta>,kwty::Struct>{
-    void proc(parser& p){p.getStmt<stmt<temp::meta>::StmtDeclUnion>();};
+    void proc(parser& p){p.getStmt<stmt<temp::meta>::DeclUnion>();};
 }
 
 using kw_Enum = kw<"enum",Enum , kwty::stmt>;
 #define KW_TYPEKW kw_Enum, kw_Struct,kw_Class ,
-
+#ifdef CXX_C
 using kw_New = kw<"new",value<temp::meta>,kwty::prim>
 using kw_Delete = kw<"delete",value<temp::meta>,kwty::prim>
 using kw_Nullptr = kw<"nullptr",value<temp::meta>,kwty::prim>;
 using kw_Null = kw<"NULL",value<temp::meta>,kwty::prim>;
+using kw_long = kw<"long",value<temp::meta>,kwty::prim>;
+using kw_short = kw<"short",value<temp::meta>,kwty::prim>;
+using kw_unsigned = kw<"unsigned",integralT,kwty::prim>;
+using kw_signed = kw<"signed",integralT,kwty::prim>;
+using kw_sizeof = kw<"sizeof",void,kwty::prim>
+#define KW_PRIM kw_New,kw_Delete,kw_Nullptr,kw_Null,kw_New,kw_long,kw_short,kw_unsigned,kw_signed,kw_sizeof
+#endif
+using kw_Auto = kw<"auto",value<temp::meta>::kwty::prim>;
 
 using kw_This =kw<"this",type<temp::meta>,kwty::qualifier>; 
 template <Str s,typename QQt>
@@ -217,9 +225,8 @@ using kw_Explicit =  kw_Qual<"explicit",QExplicit,kwty::qualifier> ;
 using kw_Final =  kw_Qual<"final",QFinal,kwty::qualifier>;
 using kw_Noexcept = kw_Qual<"noexcept",QNoexcept,kwty::qualifier>;
 
-#define KW_PRIM kw_New,kw_Delete,kw_Nullptr,kw_Null
 #define KW_QUAL  kw_Virtual,kw_Override,kw_Explicit,kw_Final,kw_Noexcept
-#define KW_LISTKW KW_LISTKW,kw_This, KW_QUAL ,
+#define KW_LISTKW KW_LISTKW,kw_Auto,kw_This, KW_QUAL 
 #ifdef CXX_C 
 #define KW_LISTKW KW_LISTKW, KW_Union ,KW_PRIM
 #endif
@@ -231,8 +238,8 @@ using kw_Typename =  kw<"typename",void,kwty::stmt> ;
 using kw_Constexpr =  kw<"constexpr",QConstExpr,kwty::qualifier> ;
 using kw_Static =  kw<"static",QStatic,kwty::qualifier> ;
 using kw_Friend = kw<"friend",QFriend,kwty::qualifier>;
-using kw_Operator = kw<"operator",stmt<temp::meta>::StmtOperatorDecl,kwty::stmt>;
-using kw_Decltype = kw<"decltype",stmt<temp::meta>::StmtFuncDecl,kwrt::stmt>;
+using kw_Operator = kw<"operator",stmt<temp::meta>::OperatorDecl,kwty::stmt>;
+using kw_Decltype = kw<"decltype",stmt<temp::meta>::FuncDecl,kwrt::stmt>;
 #define KW_LISTKW KW_LISTKW,kw_Template,kw_Typename,kw_Constexpr,kw_Static ,kw_Friend,kw_Operator,kw_Decltype
 template <pri::Str s,accSpec asT>
 struct kw_as : public kw<s,void,kwty::accessSpec> {
@@ -245,21 +252,24 @@ struct kw_as : public kw<s,void,kwty::accessSpec> {
 using kw_Public = kw_as<"public",accSpec::Public>;
 using kw_Private = kw_as<"private",accSpec::Private>;
 using kw_Protected = kw_as<"protected",accSpec::Protected>;
+using kw_Using = kw<"using",stmt<temp::meta>::Using,kwty::stmt>;
+using kw_Inline = kw<"inline",stmt<temp::meta>::Using,kwty::qualifier>;
+
 #define KW_ACCS kw_Public , kw_Private , kw_Protected 
-struct kw_Namespace : public  kw<"namespace",stmt<temp::meta>::StmtNS,kwty::stmt>{
+struct kw_Namespace : public  kw<"namespace",stmt<temp::meta>::NS,kwty::stmt>{
     void proc(parser& p){
         p.Fromuntil<lex::ty::lbrace>();}
 };
-using kw_If =  kw<"if",stmt<temp::meta>::StmtIf,kwty::funcStmt> ;
-using kw_Else =  kw<"else",stmt<temp::meta>::StmtElse,kwty::funcStmt> ;
-using kw_Switch =  kw<"switch",stmt<meta>::StmtSwitch,kwty::funcStmt> ;
-using kw_Case =  kw<"case",stmt<temp::meta>::StmtCase,kwty::funcStmt> ;
-using kw_Default = kw<"default",stmt<temp::meta>::StmtCase,kwty::funcStmt>;
-using kw_While =  kw<"while",stmt<temp::meta>::StmtWhile,kwty::loopStmt> ;
-using kw_For =  kw<"for",stmt<temp::meta>::StmtFor,kwty::loopStmt> ;
-using kw_Try = kw<"try",stmt<temp::meta>::StmtTry,kwty::funcStmt>;
-using kw_Catch = kw<"catch",stmt<temp::meta>::StmtCatch,kwty::funcStmt>;
-using kw_Throw = kw<"throw",stmt<temp::meta>::StmtThrow,kwty::funcStmt>;
+using kw_If =  kw<"if",stmt<temp::meta>::If,kwty::funcStmt> ;
+using kw_Else =  kw<"else",stmt<temp::meta>::Else,kwty::funcStmt> ;
+using kw_Switch =  kw<"switch",stmt<meta>::Switch,kwty::funcStmt> ;
+using kw_Case =  kw<"case",stmt<temp::meta>::Case,kwty::funcStmt> ;
+using kw_Default = kw<"default",stmt<temp::meta>::Case,kwty::funcStmt>;
+using kw_While =  kw<"while",stmt<temp::meta>::While,kwty::loopStmt> ;
+using kw_For =  kw<"for",stmt<temp::meta>::For,kwty::loopStmt> ;
+using kw_Try = kw<"try",stmt<temp::meta>::Try,kwty::funcStmt>;
+using kw_Catch = kw<"catch",stmt<temp::meta>::Catch,kwty::funcStmt>;
+using kw_Throw = kw<"throw",stmt<temp::meta>::Throw,kwty::funcStmt>;
 struct kw_Do : public  kw<"do",void,kwty::funcStmt> {
 void proc(parser& p){
         p.until<lex::ty::lbrace>();p.getBlock<>();
@@ -267,13 +277,13 @@ void proc(parser& p){
     };
 };
 
-using kw_Return =  kw<"return",stmt<temp::meta>::StmtReturn,kwty::funcStmt> ;
-using kw_Break =  kw<"break",stmt<temp::meta>::StmtBreak,kwty::stmtStmt> ;
-using kw_Continue =  kw<"continue",stmt<temp::meta>::StmtContinue,kwty::stmtStmt> ;
+using kw_Return =  kw<"return",stmt<temp::meta>::Return,kwty::funcStmt> ;
+using kw_Break =  kw<"break",stmt<temp::meta>::Break,kwty::stmtStmt> ;
+using kw_Continue =  kw<"continue",stmt<temp::meta>::Continue,kwty::stmtStmt> ;
 
-#define KW_LISTSTMT kw_If  , kw_Else  , kw_Switch, kw_Case, kw_Default,  kw_While, kw_For,kw_Do ,kw_Try ,kw_Catch ,kw_Throw, kw_Return , kw_Break , kw_Continue 
-
-#define KW_LISTKW KW_LISTKW,KW_LISTSTMT
+#define KW_LISTSTMT kw_If  , kw_Else  , kw_Switch,  kw_While, kw_For,kw_Do ,kw_Try ,kw_Catch ,kw_Throw, kw_Return , kw_Break , kw_Continue 
+#define KW_SWSTMT  kw_Case, kw_Default
+#define KW_LISTKW KW_LISTKW,KW_LISTSTMT , KW_SWSTMT
 #ifdef CXX_20
 using kw_export = public kw<"export",void,kwty::stmt>;
 using kw_import = public kw<"import",void ,kwty::stmt>;
