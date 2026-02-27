@@ -5,6 +5,7 @@
 #include <pair>
 #include <stratum/acqres/fontft.hpp>
 #include <uchar.h>
+#include <string>
 #include "mod_util.hpp"
 #include "mod_model.hpp"
 #include "mod_paint.hpp"
@@ -131,7 +132,7 @@ struct glyfEdit {
         yMin = f.yMin;
         xMax = f.xMax;
         yMax = f.yMax;set(f);
-    }
+    };
 };
 
 
@@ -182,8 +183,7 @@ struct fontPrim {
         bool color;
         bool kerning;
         bool curve;
-
-    }
+    };
     options opts ;
     std::basic_string<charT> text;
     struct ftPrim {
@@ -231,7 +231,7 @@ struct fontPrim {
             sizeCon++;
             if(f.onCurve[s] ){OnCurveN++;
                 onCurveVec.push_back(s);
-                g[s] =glm::vec2(f.contours[s].x,f.contours[s].y);
+                g[s] =glm::vec2(f.contours[s].x,f.contours[s].y);}
             if(f.endPts[endPtInd]==s){
                 OnCurveMax=OnCurveN>onCurveMax? OnCurveN>onCurveMax ;numOnCurves+=OnCurveN;OnCurveN =0;
                 endPtsVec.push_back(s);
@@ -250,8 +250,7 @@ struct fontPrim {
         r.OnCurve = onCurveVec.data();
         r.endPts = new uint[endPtsVec.size()];
         r.OnCurve = endPtsVec.data();
-
-    } ;
+    };
     void FragProc(ttf::glyfft& f,ftPrim& r){
         return;
     } ;
@@ -267,11 +266,10 @@ struct fontPrim {
         ftprims.push_back(s);
     };
     
-    
     glm::ivec2 size;
-    
     ttf::font* f;
 
+    std::basic_string<charT> text;
     // template <typename charTy>
     // void getf(){
     //     // using ty = font::vectype<charTy>::type ;
@@ -291,11 +289,9 @@ struct fontPrim {
     } ;
 
 
-    void insert(size_t pos,std::string text){
-        text.insert(text,pos);
-    };
-    void multiInsert(std::vector<size_t> poss,std::string text){
-        for(size_t p : poss){insert(p,text);};
+    void insert(size_t pos, std::basic_string<charT> _text){text.insert(_text,pos);};
+    void multiInsert(std::vector<size_t> poss,    std::basic_string<charT> _text){
+        for(size_t p : poss){insert(p,_text);};
     };
 
     decltype(*this) operator[](charT c){

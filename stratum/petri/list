@@ -1,0 +1,518 @@
+#ifndef LIST_HPP
+#define LIST_HPP
+#include <stdexcept>
+#include <initializer_list>
+#include <type_traits>
+#include <utility>
+#include <algorithm>
+#if __cplusplus >= 202602L
+#define CEXPR26 constexpr
+#else 
+#define CEXPR26 
+#endif
+
+namespace pri {
+
+
+template <typename T,class Allocator = std::allocator<T>>
+    class list {
+
+        
+using value_type=	T;
+using allocator_type=	Allocator;
+using size_type=	 std::size_t;//Unsigned integer type (usually std::size_t);
+using difference_type=	 std::ptrdiff_t;//Signed integer type (usually std::ptrdiff_t);
+using reference = value_type&;
+using const_reference =	const value_type&;
+
+#if __cplusplus < 201103L
+using pointer= Allocator::pointer;//(until C++11)
+using const_pointer =Allocator::const_pointer;
+#else
+using pointer = std::allocator_traits<Allocator>::pointer
+using const_pointer =std::allocator_traits<Allocator>::const_pointer
+#endif
+
+Allocator all=std::allocator<T>();
+
+
+
+    template <typename Ty, class _Allocator=Allocator >
+    class iter {
+        public: 
+        Ty* Ptr;
+        iter<Ty>* prev=nullptr;
+        iter<Ty>* next=nullptr; 
+        iter(Ty& f ){Ptr->Ptr = &f;}
+        iter(node* f) {Ptr = f; };
+        iter(node f){Ptr = &f; };
+        
+        _Allocator& all ;
+
+        iter<Ty>& next(){return *next;};
+        iter<Ty>& prev(){return *prev;};
+        Ty* operator->(){return Ptr ;};
+        Ty& operator*(){return *Ptr;};
+        bool operator==(iterator& rhs){return Ptr == rhs.Ptr ;};
+        // bool operator==(iterator rhs){return Ptr == rhs.Ptr;};
+        // bool operator!=(iterator& rhs){return Ptr != rhs.Ptr ;};
+        bool operator!=(iterator& rhs){return Ptr != rhs.Ptr ;};
+        // bool operator!=(iterator<Ty> rhs){return Ptr != rhs.Ptr ;};
+        void operator++(){this=next;};
+        void operator--(){this=prev;};
+        iter<Ty>& operator++(int){this=next;return *this;};
+        iter<Ty>& operator--(int){this=prev;return *this;};
+        operator delete(){delete Ptr;}
+        size_t operator-(iterator& rhs ){
+            size_t i = 0 ;
+            iterator<Ty>* t = this ;
+            for(;*t!= rhs and (*t);--(*t) ){i++;};
+            return i ;
+        };
+        iter<Ty> operator-(int s){
+            int h = s ; 
+            for(int h=s ; h ; h--){--(*this);}
+            return *this;   
+        };
+        iter<Ty> operator+(int s){
+            for(int h=s ; h ; h--){++(*this);} 
+            return *this;  
+        };
+        operator bool() {return(Ptr!=nullptr);};
+        bool operator!{return !bool(*this);}
+        operator delete(){delete Ptr;};
+        iter(iterator* l, iterator* r = nullptr){
+            prev=l;next=r;
+        };
+        Allocator& all ; 
+        iter(iterator* l, T& d, iterator* r = nullptr){prev=l;next=r;all.construct(Ptr,d);};
+        
+        iter( iterator* pr,const T& d, iterator* r = nullptr){prev=pr;next=r;all.construct(Ptr,d);};
+        template <typename U>
+        iter(iterator* _prev, U&& value,iterator* _next=nullptr){
+             prev=_prev;next=_next;all.construct(Ptr,std::forware<U>(value));
+         };
+         iter() = default;
+         iter(iterator& f)  {*this=f;};
+
+         tempalate <class... Args>
+         iter (_Allocator& alloc , Args... arg  )  {*this=iter(arg...);all = alloc; }
+    };
+
+using iterator= iter<T>;	  //LegacyBidirectionalIterator and ConstexprIterator(since C++26) to value_type
+using const_iterator= iter<const T>;	  //LegacyBidirectionalIterator and ConstexprIterator(since C++26) to const value_type
+using reverse_iterator=	std::reverse_iterator<iterator>;
+using const_reverse_iterator=	std::reverse_iterator<const_iterator>;
+        public:
+     
+        iterator first = iterator();
+        iterator last = iterator() ;
+        list() =default ;
+        using iter = iterator<T> ;
+        using const_iter = iterator<const T> ;
+        
+        T& back(){return  *(last->Ptr);};
+        T& front(){return *(first->Ptr);};
+        
+
+
+        iterator& iter_at(int s){
+            iterator cur = first;
+            for(int j = 0 ; j < s ; j++){cur=first.next;            }
+            return cur;
+        };
+
+        T& value(iterator n){return n->Ptr;};
+
+        iterator begin(){ return iterator(first);};
+        reverse_iterator rbegin() { return reverse_iterator(last);}
+        const_iterator begin(){ return const_iterator(first);};
+        const_reverse_iterator crbegin(){ return const_reverse_iterator(first);};
+        
+        iterator end(){ return iterator(last)++ ;};
+        reverse_iterator rend() {return ++reverse_iterator(first);};
+        const_reverse_iterator crend(){ return ++const_reverse_iterator(first) ;};
+        const_iterator end(){ return const_iterator(last)++ ;};
+
+
+
+        size_type max_size()const{return std::numeric_limits<difference_type>::max();}
+
+
+
+        bool empty()  {return ((last==nullptr) and (nullptr==first));};
+        
+        
+        // iterator::operator bool() const {return this->Ptr != last;};
+        size_type sizes=0; 
+         inline size_t SIZE() const {
+            size_t i=0;
+            for(const T& it : *this){i++;};
+            return i;
+        };
+
+
+        size_t size() const {
+            if(empty()){return 0;};
+            return SIZE();
+        };
+
+        inline iter iter_at(int s){
+            int a = s;
+             for(iter it= begin() ; it!=end() ; ++it){
+                a-- ;if(!a){;return it;};
+            };
+        };
+
+CEXPR26   iterator insert( const_iterator pos, const T& value ){pos.prev->next= new iterator(all,pos.prev,value,pos.prev->next);pos.prev=pos.prev->next;sizes++;};
+#if __cplusplus >=201103L
+CEXPR26 iterator insert( const_iterator pos, T&& value ){pos.prev->next= new iterator(all,pos.prev,value,pos.prev->next);pos.prev=pos.prev->next;};
+#endif
+CEXPR26 iterator insert( const_iterator pos,size_type count, const T& value ){sizes++;
+                    for(iterator p = pos ; if(count){iterator res = insert(pos,value);
+                        for(size_type c = count-1 ; c;--c){insert(pos,value);};return res ;}
+                        else{return pos;}; )
+                 };
+template< class InputIt >
+CEXPR26 iterator insert( const_iterator pos, InputIt first, InputIt last ){sizes++;
+    InputIt i = first;
+    iterator res = insert(pos,*i);
+    for(++i;;++i){insert(*i,pos);if(i==last){break;}};
+    return res;
+};
+CEXPR26 iterator insert( const_iterator pos, std::initializer_list<T> ilist ){sizes++;
+    auto it = ilist.begin();
+    iterator res = insert(pos,*it);
+    for(++it ; it; ++it){insert(pos,it);}
+};
+#if __cplusplus >=202302L
+template< class /*container-compatible-range<T>*/ R >
+CEXPR26 iterator insert_range( const_iterator pos, R&& rg ){
+    auto it = rg.begin();
+    iterator res = insert(pos,it);sizes++;
+    for(++it;it!=rg.end();++it){insert(pos,*it);sizes++;}
+};
+#endif
+        CEXPR26 void push_back(const T& data){sizes++;
+            if(!empty()){last.next=new iterator(all,last, std::move(data));}
+            else {last= iterator(last,std::move(data));first=last;}
+        };
+    #if __cplusplus >=201103L
+
+            void push_back(T&& data){sizes++;
+                if(!empty()){last.next=new iterator(all,&last, std::forward<T>(data),nullptr);}
+                else {last= iterator(&last,std::forward<T>(data),nullptr);first=last;}
+            }; // };
+            CEXPR26 void push_front(const T& data){sizes++;                
+        if(!empty()){first.prev=new iterator(all,nullptr, std::move(data),&first);}
+        else {first= iterator(nullptr,std::move(data),&first);last=first;}
+    };
+        void push_front(T&& data) {sizes++;
+            if(!empty()){first.prev=new iterator(all,nullptr,std::forward<T>(data),&first);}
+            else { last= iterator(nullptr,std::forward<T>(data),&first);first=last;}
+        };
+        template <class... Args>
+        CEXPR26 iterator emplace (const_iterator pos,Args&&... args ){sizes++;
+            return insert(pos,T(args...));
+        };
+#endif
+
+#if  __cplusplus <201703L
+  template <typename... Args>
+        void emplace_back(Args&&... args){push_back(T(args...));sizes++;};
+                template <typename... Args>
+        void emplace_front(Args&&... args){push_front(T(args...));sizes++;};
+
+#else 
+        template <typename... Args>
+        reference emplace_back(Args&&... args){sizes++;push_back(T(args...));return back();};
+
+        template <typename... Args>
+        reference emplace_front(Args&&... args){sizes++;push_front(T(args...));return front();};
+#endif
+
+#if __cplusplus >=202303L
+template< /*container-compatible-range<T>*/ R >
+CEXPR26 void append_range( R&& rg ){for(auto it : rg){sizes++;push_back(it);}};
+CEXPR26 void prepend_range( R&& rg ){for(auto it=rg.rbegin() ; it!=;++it  ){sizes++;push_front(*it);}};
+#endif
+      
+
+        void init(){first.Ptr=nullptr;last.Ptr=nullptr;}
+        inline void pop(){
+            if(first == last){
+                delete first.Ptr;
+                init();
+            }
+            else 
+            {
+                last = last->prev;
+                delete last->next;
+                return;
+            }
+        };
+        void pop_back(){pop() ;};
+        void pop_front(){first=first.next;delete first.prev;}
+
+
+
+
+#if __cplusplus< 201103L
+#define CEXPR11  
+#else 
+#define CEXPR11 constexpr 
+#endif 
+template <typename iterT>
+CEXPR11 inline iterator _erase( iterT pos ){pos.prev->next;pos.next;pos.next->prev=pos.prev; delete pos.Ptr;};
+CEXPR11 inline iterator _erase( iterT first, iterT last ){
+    first.prev->next=last.next ;     last.next->prev=first.prev ; 
+    for(iterT i  =first;true ;++i){delete i.Ptr;
+        if(i==last){break;}
+    };
+    
+};
+#if __cplusplus< 201103L
+iterator erase( iterator pos ){_erase(pos);};
+iterator erase( iterator first, iterator last ){_erase(first,last);};
+#else 
+CEXPR26 iterator erase( const_iterator pos ){_erase(pos);};
+CEXPR26 iterator erase( const_iterator first, const_iterator last ){_erase(first,last);};
+#endif 
+        void pop(iter& at){
+            delete at;
+        };
+        void pop(int at){
+            pop(iter_at(at));
+        };
+CEXPR26 void resize( size_type count ){
+    if(count>size()){for(size_type c =count-size();c;--c){emplace_back();}}
+    if(count<size()){for(size_type c = size()-count);c;--c}{pop_back();}
+};
+CEXPR26 void resize( size_type count, const value_type& value ){
+    if(count>size()){for(size_type c =count-size();c;--c){push_back(value);}}
+    if(count<size()){for(size_type c = size()-count);c;--c}{pop_back();}  
+};
+#if __cplusplus < 201703L
+#define NOEXC_SWAP 
+#else 
+#define NOEXC_SWAP noexcept(std::allocator_traits<Allocator>::is_always_equal::value)
+#endif
+CEXPR26 void swap( list<T,Allocator>& other ) NOEXC_SWAP {iterator* f = first; first=other.first;other.first=f;f=last;last=other.last;other.last=f;  };
+
+        CEXPR26 void clear() noexcept {if(!empty()){erase(begin(),end());};init();};
+
+        constexpr void concat(decltype(*this) it ){for( auto& i :  it){push_bacK(i);}};
+
+        template <class Compare = std::less<T>>
+        void insert_merge(T& val,Compare comp=std::less<T>()){
+            auto it = begin();
+            for(;!Compare(val,*it);++it){}
+            insert(it,val);
+        };
+CEXPR26 void merge( list<T,Allocator>& other ){
+    if(other == *this){return }
+    auto it = other.begin();
+    for(;it!=other.end();++it){insert_merge(*it);other.erase(it);};
+};
+template< class Compare >
+CEXPR26 void merge( list<T,Allocator>& other, Compare comp ){
+        if(other == *this){return }
+    auto it = other.begin();
+    for(;it!=other.end();++it){insert_merge(*it,comp);other.erase(it);};
+};
+#if __cplusplus >=201103L
+CEXPR26 void merge( list<T,Allocator>&& other ){
+        if(other == *this){return }
+    auto it = other.begin();
+    for(;it!=other.end();++it){insert_merge(*it);other.erase(it);};
+
+};
+template< class Compare >
+CEXPR26 void merge( list<T,Allocator>&& other, Compare comp ){
+    if(other == *this){return }
+    auto it = other.begin();
+    for(;it!=other.end();++it){insert_merge(*it,comp);other.erase(it);};
+};
+#endif 
+
+CEXPR26 void splice( const_iterator pos, list<T,Allocator>& other ){for(auto it = other.begin();it!=other.end();++it){insert(pos,*it);other.erase(it);}};
+#if __cplusplus >=201103L
+CEXPR26 void splice( const_iterator pos, list<T,Allocator>&& other ){for(auto it = other.begin();it!=other.end();++it){insert(pos,*it);other.erase(it);}};
+CEXPR26 void splice( const_iterator pos, list<T,Allocator>&& other, const_iterator it ){insert(pos,*it);erase(it);};
+CEXPR26 void splice( const_iterator pos, list<T,Allocator>&& other,
+             const_iterator first, const_iterator last ){for(auto it = first;it!=last.next;++it){insert(pos,*it);other.erase(it);}};
+#endif
+             CEXPR26 void splice( const_iterator pos, list<T,Allocator>& other, const_iterator it ){insert(pos,*it);other.erase(it);};
+CEXPR26 void splice( const_iterator pos, list<T,Allocator>& other,
+             const_iterator first, const_iterator last ){for(auto it = first;it!=last.next;++it){insert(pos,*it);other.erase(it);}};
+
+
+#if __cplusplus <202002L
+void remove( const T& value ){ for(auto it = begin();it!=end();++it){if(*it==value){erase(it);}}};
+template< class UnaryPred >
+void remove_if( UnaryPred p ){ for(auto it = begin();it!=end();++it){if(p(*it)){erase(it);}};return st  };;
+
+#else
+CEXPR26 size_type remove( const T& value ){size_type st=0; for(auto it = begin();it!=end();++it){if(*it==value){st++;erase(it);}};return st  };
+template< class UnaryPred >
+CEXPR26 size_type remove_if( UnaryPred p ){size_type st=0; for(auto it = begin();it!=end();++it){if(p(*it)){st++;erase(it);}};return st  };;
+#endif
+
+
+#if __cplusplus >= 201103L
+#define NOEXC11
+#else 
+#define NOEXC11 noexcept
+#endif
+
+ CEXPR26 void reverse() NOEXC11 {
+    iterator f = first;first=last;last=f;iterator ff;
+    for(ff = last ; ff!=head();){++ff;ff.prev->next =ff.prev->prev;ff.prev->prev = &ff; }
+    f = ff.next;ff.next=ff.last;ff.last=f;
+ };
+CEXPR26 size_type unique(){size_type st=0;
+    for(iterator it = begin();it!=end();++it){
+        for(iterator i= it ; it!=end();){++it;if(*i == *it){erase(i);st++;}}
+        it=i;
+    }
+    return st;
+};
+#endif
+#if __cplusplus < 202003L:
+
+template< class BinaryPred >
+void unique( BinaryPred p ){
+    for(iterator it = begin();it!=end();++it){
+        for(iterator i= it ; it!=end();){++it;if( p(*i, *it)){erase(i);}}
+        it=i;
+    }
+};
+
+
+void unique(){ unique( [](T lhs,T rhs) -> bool {return lhs==rhs;} ) ;  }
+
+#else 
+template< class BinaryPred >
+CEXPR26  size_type unique( BinaryPred p ){    size_type st=0;
+    for(iterator it = begin();it!=end();++it){
+        for(iterator i= it ; it!=end();){++it;if( p(*i, *it)){erase(i);st++;}}
+        it=i;
+    }
+    return st;
+};
+size_type unique(){ return  unique( [](T lhs,T rhs) -> bool {return lhs==rhs;} ) ;  }
+
+#endif 
+
+void swap(iterator& a , iterator& b){T* t= a.Ptr;a.Ptr=b.Ptr;b.Ptr=t;};
+
+// template <class Compare>
+// CEXPR26 void _sort(Compare comp, iterator first , iterator last ){
+//     size_t dis = distance(first,last) ; if(dis<2){return;}
+//     iterator pivot = i + dis/2;
+//     for(iterator i = first; ;++i){if(comp( pivot,i)){swap(i,pivot);pivot= i;};if(i==last){break;}}
+//     _sort(comp,first,pivot ) ; _sort(comp,pivot,last);
+// };
+
+template< class Compare >
+CEXPR26 void sort( Compare comp ){std::sort(begin(),tail(),comp);};
+
+CEXPR26 void sort(){sort( [&]<class A, class B>(const A& lhs,const B& rhs)->bool{return lhs<rhs} );};
+
+constexpr decltype(*this) operator+(decltype(*this) it ){this->concat(it);return *this;};
+constexpr decltpye(*this) operator+=(decltype(*this) it){this->concat(it);}
+
+
+#if __cplusplus >=201103L
+CEXPR26 list() : list(Allocator()) {}
+#else
+explicit list( const Allocator& alloc = Allocator() ): all(alloc){};
+#endif 
+
+#if __cplusplus >=201103L
+CEXPR26  explicit list( const Allocator& alloc ) :all(alloc){};
+#endif 
+CEXPR26 explicit list( size_type count,
+               const Allocator& alloc = Allocator() ): all(alloc){for(size_type ss = count;ss;--ss){push_back(T());}; };
+#else
+explicit list( size_type count, const T& value = T(),
+               const Allocator& alloc = Allocator() ) : all(alloc) {for(size_type ss = count;ss;--ss){push_back(value);};};
+
+#endif 
+#if __cplusplus >=201103L
+CEXPR26 list( size_type count, const T& value,const Allocator& alloc = Allocator() ) : all(alloc){for(size_type ss = count;ss;--ss){push_back(value);};};
+
+      template< class InputIt >
+list( InputIt first, InputIt last,
+      const Allocator& alloc = Allocator() ) : all(alloc) {for(InputIt f = first; f != last ;++f){push_back(*f) ;};push_back(*last); };
+#endif 
+#if __cplusplus >= 202302L
+      template< class /*container-compatible-range<T>*/ R >
+CEXPR26 list( std::from_range_t , R&& rg,
+      const Allocator& alloc = Allocator() ) : all(alloc){for(auto it : rg){push_back(it);}};
+
+#endif 
+#if __cplusplus >= 201103L
+CEXPR26 list( const list<T,Allocator>& other ) { for(auto it: other){all=other.all; push_back(it);}};
+CEXPR26 list( list<T,Allocator>&& other );
+#if __cplusplus < 202302L
+CEXPR26 list( const list<T,Allocator>& other, const Allocator& alloc ) all(alloc) {swap(other);};
+#endif 
+#endif 
+#if __cplusplus >= 202302L
+
+CEXPR26 list( const list<T,Allocator>& other,
+      const std::type_identity_t<Allocator>& alloc ) : all(alloc){for(const auto it : other){push_back(it);};};
+
+#elif __cplusplus >= 201103L 
+list( list<T,Allocator>&& other, const Allocator& alloc ) : all(alloc){for(const auto it : other){push_back(it);} };
+#endif 
+
+#if __cplusplus >= 202302L
+CEXPR26 list( list<T,Allocator>&& other, const std::type_identity_t<Allocator>& alloc ) : all(alloc){for(const auto it : other){push_back(it);}};
+#endif
+
+#if __cplus >= 201103L
+CEXPR26 list( std::initializer_list<T> init,
+      const Allocator& alloc = Allocator() ) : all(alloc) { for(const auto i : init ){push_back(i);};};
+#endif 
+};
+template< class T, class Alloc >
+CEXPR26 bool operator==( const std::list<T, Alloc>& lhs,
+                 const std::list<T, Alloc>& rhs ){return std::distance(lhs.begin(), lhs.end())
+               == std::distance(rhs.begin(), rhs.end())
+           && std::equal(lhs.begin(), lhs.end(), rhs.begin());};
+#if __cplusplus < 202003L
+                 template< class T, class Alloc >
+CEXPR26 bool operator!=( const std::list<T, Alloc>& lhs,
+                 const std::list<T, Alloc>& rhs ){return !(lhs==rhs);};
+template< class T, class Alloc >
+bool operator< ( const std::list<T, Alloc>& lhs,
+                 const std::list<T, Alloc>& rhs ){return  std::lexicographical_compare(lhs.begin(), lhs.end(),
+                                    rhs.begin(), rhs.end());};
+template< class T, class Alloc >
+bool operator<=( const std::list<T, Alloc>& lhs,
+                 const std::list<T, Alloc>& rhs ){return !(rhs<lhs)};
+template< class T, class Alloc >
+bool operator> ( const std::list<T, Alloc>& lhs,
+                 const std::list<T, Alloc>& rhs ){return !(lhs<=rhs);};
+template< class T, class Alloc >
+bool operator>=( const std::list<T, Alloc>& lhs,
+                 const std::list<T, Alloc>& rhs ){return !(lhs<rhs);};
+
+#else 
+                 template< class T, class Alloc >
+/* see below */
+CEXPR26    operator<=>( const std::list<T, Alloc>& lhs,
+                 const std::list<T, Alloc>& rhs ){return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(),
+                                              rhs.begin(), rhs.end(),std::compare_three_way ) ;};
+
+
+    namespace pmr {
+    template< class T >
+    using list = std::list<T, std::pmr::polymorphic_allocator<T>>;
+    }
+
+};
+#include "reverse_iterator.hpp"
+#endif

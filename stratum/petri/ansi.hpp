@@ -178,8 +178,26 @@ enum ANSI_ESC {
 #define SG_ideogram_stress 64  //	ideogram stress marking	hardly ever supported
 #define SG_ideogram_off 65  //	ideogram attributes off	reset the effects of all of 60-64
 
+
 // 90–97, //	Set bright foreground color	aixterm (not in standard)
 // 100–107, //	Set bright background color	aixterm (not in standard)
+template <typename charT,typename T>
+bool one_of(charT ch ,T a,T... as){  return ch == (charT)a || 
+  ( (ch==(...)) || as);
+};
+template <typename charT,typename T>
+bool bt(charT ch ,T a, T b){ch>= a and ch<=b;};
+template <typename charT>
+bool is_ansi_code(charT ch){
+  return (ch>=0 and (ch<=75) ) || one_of(ch,83,84,115,117,102 );
+};
+template <typename charT>
+bool is_ansi_code(charT ch,size_t p){
+    if(p==4 and one_of(ch,38,48)){return true;};
+    else if(p==2 and one_of(ch,39,49,_cursor_pos,_erase_in_disp,_erase_in_line)){return true;};
+    else if(p==1 and one_of(ch,39,49) and bt(ch,30,38) || or bt(ch,40,48) or bt(ch,65,7) or bt(ch _scroll_up,_scroll_down,_cursor_save,_cursor_restore)){return true;};
+};
+
 
 #define XSGMAC(x) x(cursor_up) x(cursor_down) x(cursor_forward) x(cursor_back) x(cursor_next_line) x(cursor_prev_line) x(cursor_horizontal_abs) x(scroll_up) x(scroll_down) x(cursor_save) x(cursor_restore) x(cursor_save_dec) x(cursor_restore_dec) x(cursor_horizontal_abso)
 
@@ -210,7 +228,10 @@ std::string putAnsi(T a);
 
 template <typename T>
 std::string addAnsi(T a){return std::string(";") +putAnsi(a);};
+template<> std::string putAnsi<std::string>(uint8_t a){return std::string(";")+std::string(a);}
+template<> std::string putAnsi<char>(char a){return std::string(a);}
 template<> std::string putAnsi<uint8_t>(uint8_t a){return std::string(";")+std::string(a);}
+template<> std::string putAnsi<short>(short a){return std::string(";")+std::string(a);}
 template<> std::string putAnsi<color256<true>>(color256 a){return putAnsi(FG_color)+addAnsi(a.n);};
 template<> std::string putAnsi<color256<false>>(color256 a){return putAnsi(FG_color)+addAnsi(a.n);};
 template<> std::string putAnsi<colorRgb<true>>(color256 a){return putAnsi(FG_color)+addAnsi(a.r)+addAnsi(a.g);addAnsi(a.b);};
@@ -236,24 +257,23 @@ std::string ansi(T ar,Ts... args){
     std::string ansi_cursor_prev_line(uint8_t n){return       ansi_cursor(std::to_string(n)+std::to_string(_cursor_prev_line));}
     std::string ansi_cursor_horizontal_abs(uint8_t n){return  ansi_cursor(std::to_string(n)+std::to_string(_cursor_horizontal_abs));}
     std::string ansi_erase_in_line(uint8_t n){return          ansi_cursor(std::to_string(n)+std::to_string(_erase_in_line));}
+    // std::string ansi_cursor_pos(uint8_t l, uint8_t c){ansi_cursor(std::to_string(l)+";"std::to_string(c))+std::to_string((uint8_t)_cursor_pos); }
     std::string ansi_scroll_up(uint8_t n){return              ansi_cursor(std::to_string(n)+std::to_string(_scroll_up));}
     std::string ansi_scroll_down(uint8_t n){return            ansi_cursor(std::to_string(n)+std::to_string(_scroll_down));}
     std::string ansi_cursor_save(){return                     ansi_cursor(std::to_string(_cursor_save));}
     std::string ansi_cursor_restore(){return                  ansi_cursor(std::to_string(_cursor_restore));}
     std::string ansi_cursor_horizontal_abso(uint8_t n){return ansi_cursor(std::to_string(n)+std::to_string(_cursor_horizontal_abso));}
 
+  temolate <typename intT>
+   std::string ansi_cursor_pos(intT n,intT m){return ansi(n,m, (char)ANSI_ESC::cursor_pos) ;};
 
-   std::string ansi_cursor_pos(uint8_t n,uint8_t m){
-        return ansi( std::to_string(n) + ";"+ std::to_string(m) + (char)ANSI_ESC::cursor_pos) ;
-    };
-
-   std::string ansi_erase_in_display(uint8_t n){
+   std::string ansi_erase_in_display(short n){
         if(n>3){
             throw("Error n cannot be bigger than 3 for erase in display");
         };
     return ansi(  std::to_string(n)+";" + (char)ANSI_ESC::erase_in_disp );
     };
-     std::string __erase_in_line(uint8_t n){
+     std::string __erase_in_line(short n){
         if(n>3){
             throw("Error n cannot be bigger than 2 for erase in display");
         };
@@ -276,10 +296,9 @@ std::string fg(pri::tuple<uint8_t,uint8_t,uint8_t> r){
 return fg(pri::get<0>(r),pri::get<1>(r),pri::get<2>(r));
 };
 
-std::string fg(uint8_t n){
-return  ansi(std::to_string(FG_color)+";" + "5"+ ";"+ std::to_string(n)) ;
-};
-
+std::string fg(uint8_t n){return  ansi(std::to_string(FG_color)+";" + "5"+ ";"+ std::to_string(n)) ;};
+std::string fgoff(){return ansi(std::to_string(FG_off));}
+std::string bgoff(){return ansi(std::to_string(BG_off));}
 std::string sgreset(){return ansi(std::string());}
 
 class ansio;
@@ -334,26 +353,20 @@ reserved
       typename std::conditional<pri::eqs_one_of<atTy,v,atTy::fg_uint,atTy::bg_uint>::value == true,uint8_t,
       typename std::conditional<pri::eqs_one_of<atTy,v,atTy::fg_rgb,atTy::bg_rgb>::value == true,rgbTy,bool>::type>::type>::type;
     };
-
-
-
-    bool _bold ; 
-    bool _faint ; 
-    bool _italic ; 
-    bool _underline ;
-    uint8_t _blink = SG_blink_off ;
-    bool _reverse ; 
-    bool _conceal ; 
-    bool _crossed ;
-    uint8_t _font = SG_primary ; // Default - options 10 - SG::font_9
-    bool _fraktur ; 
-    bool _framed ; 
-    bool _encircled ; 
-    bool _overlined ; 
-    uint8_t _ideogram;
-
-
-
+  bool _bold ; 
+  bool _faint ; 
+  bool _italic ; 
+  bool _underline ;
+  uint8_t _blink = SG_blink_off ;
+  bool _reverse; 
+  bool _conceal; 
+  bool _crossed;
+  uint8_t _font = SG_primary; // Default - options 10 - SG::font_9
+  bool _fraktur; 
+  bool _framed; 
+  bool _encircled; 
+  bool _overlined; 
+  uint8_t _ideogram;
 
       static constexpr uint8_t offen(atTy en){
         switch (en) {

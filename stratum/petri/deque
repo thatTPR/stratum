@@ -1,0 +1,481 @@
+#ifndef QUEUE_HPP
+#define QUEUE_HPP
+#include <initializer_list>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <algorithm>
+#include <deque>
+namespace pri {
+#if __cplusplus >= 202602L
+#define CEXPR26 constexpr
+#else 
+#define CEXPR26 
+#endif
+
+
+#if __cplusplus >= 201103L
+#define NOEXCEPT11(expr) noexcept(expr)
+#else 
+#define NOEXCEPT11
+#endif
+
+
+#if __cplusplus >= 201703L
+#define NOEXCEPT17(expr) noexcept(expr)
+#else 
+#define NOEXCEPT17(expr) 
+#endif
+
+
+
+
+template <typename Ty>
+    struct qiter {
+        using 
+            Ty* Ptr;
+            qiter<Ty>* next=nullptr; 
+            qiter<Ty>& next(){return *next;};
+            void operator++(){this=next;};
+            qiter<Ty>& operator++(int){this=next;return *this;};
+            qiter<Ty> operator+(int s){
+                for(int h=s ; h ; h--){++(*this);} 
+                return *this;  
+            };
+       Ty* operator->(){return Ptr ;};
+            Ty& operator*(){return *Ptr;};
+            bool operator==(qiter<Ty>& rhs){return Ptr == rhs.Ptr ;};
+            // bool operator==(qiter rhs){return Ptr == rhs.Ptr;};
+            // bool operator!=(qiter& rhs){return Ptr != rhs.Ptr ;};
+            bool operator!=(qiter<Ty>& rhs){return Ptr != rhs.Ptr ;};
+            // bool operator!=(qiter<Ty> rhs){return Ptr != rhs.Ptr ;};
+            operator bool() {return(Ptr!=nullptr);};
+            bool operator!{return !bool(*this);}
+            operator delete(){delete Ptr;};
+             template <typename... Ts>
+             qiter(qiter<Ty><Ty* prev,Ts... args){qiter<Ty>(prev,Ty(args...));}
+             qiter() = default;
+             qiter(qiter<Ty>& f)  {*this=f;};
+             qiter(qiter<Ty>* f)  {this=f;};
+             qiter(Ty data) {Ptr=new Ty(data);}
+    };
+
+
+    template <typename Ty>
+    struct dqiter : public qiter<Ty>{
+            dqiter<Ty>* prev=nullptr;
+        dqiter<Ty>& prev(){return *prev;};
+        void operator--(){this=prev;};
+        dqider<Ty>& operator--(int){this=prev;return *this;};
+        operator delete(){delete Ptr;}
+        size_t operator-(dqiter<Ty>& rhs ){
+                size_t i = 0 ;
+                dqiter<Ty>* t = this ;
+                for(;*t!= rhs and (*t);--(*t) ){i++;};
+                return i ;
+            };
+        dqiter<Ty> operator-(int s){
+                int h = s ; 
+                for(int h=s ; h ; h--){--(*this);}
+                return *this;   
+            };
+             dqiter(dqiter<Ty>* l, T& d, dqiter<Ty>* r = nullptr){
+                prev = l ;
+                next=  r;
+                Ptr = new T(data);
+            };
+      
+            dqiter( dqiter<Ty>* pr,const T& d, dqiter<Ty>* r = nullptr) {
+                prev = pr ; next = r;
+                Ptr = new T(data);
+            };
+            dqiter( dqiter<Ty>* pr, dqiter<Ty>* r ,const T& d) {
+                prev = pr ; next = r;
+                Ptr = new T(data);
+            };
+            
+            dqiter(dqiter<Ty>* _prev, Ty&& value,dqiter<Ty>* _next=nullptr)  
+            {
+                 prev=_prev;next=_next;Ptr=new dqiter<Ty>(value);
+            }
+            
+
+            template <typename... Ts>
+            dqiter(dqiter<Ty>* prev,dqiter<Ty>* next,Ts... args){dqiter<Ty>(prev,next,Ty(args...));}
+
+
+    };
+
+template <typename T,typename iter = dqiter<T> , class Allocator = std::allocator<T>>
+class _queue {
+using value_type = 	T;
+using allocator_type = 	Allocator;
+using size_type = 	std::size_t;
+using difference_type = std::ptrdiff_t;
+using reference = 	value_type& ;
+using const_reference =const value_type&;
+
+#if __cplusplus < 201103L
+using pointer = Allocator::pointer ;
+using const_pointer = Allocator::const_pointer;
+#else 
+std::allocator_traits<Allocator>::pointer
+std::allocator_traits<Allocator>::const_pointer
+#endif
+ 
+
+using iter = qiter<value_type> ;
+using iterator = 	Iter<T> ; 
+using const_iterator = const Iter<T> ; 
+using reverse_iterator = 	std::reverse_iterator<iterator>
+using const_reverse_iterator = 	std::reverse_iterator<const_iterator>
+
+    
+    iter<T>* first;
+    iter<T>* last;
+    void init(){first=new Iter<T>();last=new Iter<T>();}
+    bool empty() const {
+        if(first){return false;}
+        if(last){return false;}
+        return true;
+    };
+
+    reference back(){return *(last->Ptr);}
+    const_reference back() const {return *(last->Ptr);}
+
+    reference front(){return *(first->Ptr);}
+    const_reference front() const {return *(first->Ptr);}
+
+
+CEXPR26 void push_back( const T& value ){last->next = new iter<T>(last,value,nullptr);last=last->next;};
+#if __cplusplus >= 201103L
+CEXPR26 void push_back( T&& value ){last->next = new iter<T>(last,value,nullptr); last=last->next;};
+#endif
+
+
+    void pop(){
+        if(*first){
+            Iter<T>* cur =first;
+            ++(*first);
+            delete cur ;
+        }
+    };
+    void clear(){while(!empty()){pop();};}
+
+    
+    
+        const_iterator cend() const {return const_iter(last.next) ;};
+        const_iterator cbegin() const {return const_iter(first);};
+        iterator end(){ return iter(last)++ ;};
+        iterator begin(){ return iter(first);};
+        iterator tail(){return iter(last);}
+        const_iterator tail(){return iter(last);}
+
+        const_reverse_iterator crend() const {return ++const_reverse_iterator(last) ;};
+        const_reverse_iterator crbegin() const {return const_reverse_iterator(first);};
+        reverse_iterator rend(){ return reverse_iterator(last.next) ;};
+        reverse_iterator rbegin(){ return reverse_iterator(first);};
+        reverse_iterator rtail(){return reverse_iterator(last);}
+        const_reverse_iterator crtail(){return reverse_iterator(last);}
+        
+
+    template <typename... Ts>
+    iterator _emplace(const_iterator& pos, Ts&&... v){iterator posc=pos;--posc;posc=iterator<T>(pos.prev,pos,v...);  if(pos==cbegin()){first=pos.prev;}; if (pos==crtail()){last=pos.next};}
+    template <typename... Ts>
+    iterator emplace(const_iterator& pos, Ts&&... v){pos.prev=new iterator<T>(pos.prev,pos,v...);  if(cit==cbegin()){first=pos.prev;};if (pos==crtail()){last=pos.next}}
+
+    
+CEXPR26 void _impl_resize(size_type count,  const value_type& value = value_type()){
+    int dif = size()-count;
+    if(dif==0){return;}
+    if(dif<0){for(;dif!=0;++dif){ push_back(value);};}
+    if(dif>0){for(;dif!=0;--dif){ pop();};}
+};
+CEXPR26 void resize( size_type count ){impl_resize(count)};
+CEXPR26 void resize( size_type count, const value_type& value ){_impl_resize(count,value)};
+
+
+    _queue() = default;
+
+    CEXPR_26 size_type  size() NOEXCEPT11 const {return std::distance(begin(), end());    };
+
+
+
+    _queue(std::initializer_list<T>&& list){for(const T& it : list){push_back(it);}};
+
+
+
+
+#if __cplusplus >= 201103L
+queue() : queue(Container()) {}
+
+explicit queue( const Container& cont );
+#else
+explicit queue( const Container& cont = Container() );
+explicit queue( Container&& cont );
+#endif
+
+// queue( queue&& other );
+// (5)	(since C++11)
+// (implicitly declared)
+#if __cplusplus >= 202302L
+template< class InputIt >
+queue( InputIt first, InputIt last );
+#endif
+#if __cplusplus >=201103
+template< class Alloc >
+explicit queue( const Alloc& alloc );
+template< class Alloc >
+queue( const Container& cont, const Alloc& alloc );
+template< class Alloc >
+queue( Container&& cont, const Alloc& alloc );
+template< class Alloc >
+queue( const queue& other, const Alloc& alloc );
+template< class Alloc >
+queue( queue&& other, const Alloc& alloc );
+#endif
+#if __cplusplus >= 202302L
+template< class InputIt, class Alloc >
+queue( InputIt first, InputIt last, const Alloc& alloc );
+
+
+template< typename/*container-compatible-range<T>*/  R>
+queue( std::from_range_t, R&& rg );
+template< typename/*container-compatible-range<T>*/ R, class Alloc >
+queue( std::from_range_t, R&& rg, const Alloc& alloc );
+#endif
+};
+
+
+template <typename T,class Allocator=std::allocator<T>>
+struct deque : public _queue<T,dqiter<T>,Allocator>{
+    using node=dqnode<T>;
+    using iter = dqiter<T>;
+        iter head(){return --begin();}
+        void pop_front(){pop();}
+        void pop_back(){
+            if(last->prev){
+                iter* cur=last;last=last->prev;delete cur;}
+            else {
+                delete last;
+                init();}
+        }
+        void push_front(T& d){first->prev=new iter(d);first=first->prev;}
+        void eraseFromEnd(iter& it){
+            while(tail()!=it){pop_back();}
+            pop_back();
+        };
+        CEXPR_26 size_type max_size() NOEXCEPT11 const {return std::numeric_limits<difference_type>::max();}
+        CEPXR_26 void shrink_to_fit(){
+
+        };
+
+iterator _impl_insert( const_iterator pos,  T value){
+    iterator i ;
+    if( pos==end()){i=tail();}
+    else {i= pos.prev;}
+    iterator t = i;
+    i = iterator(value);
+    i.prev=t;
+    i.next=pos; 
+    return *t;
+};
+
+CEXPR26 iterator insert( const_iterator pos, const T& value ){return _impl_insert(pos,value);};
+#if __cplusplus >= 201103L 
+CEXPR26 iterator insert( const_iterator pos, T&& value ) {return _impl_insert(pos,value);};
+#endif 
+CEXPR26 iterator insert( const_iterator pos,size_type count, const T& value ){ iterator res =insert(pos,value) ; for(size_type s =1;s<count;s++){insert(pos,value);}; return res;};
+template< class InputIt >
+CEXPR26 iterator insert( const_iterator pos, InputIt first, InputIt last ){ InputIt f = first; InputIt res = insert(pos,*f);do{++f ; insert(pos,*f);} while(f==last);return res };
+#if __cplusplus >= 201103L 
+CEXPR26 iterator insert( const_iterator pos, std::initializer_list<T> ilist ){
+    std::initializer_list<T>::iterator i  = ilist.begin();auto res =insert(pos,*i); 
+    while(i!=ilist.end() ) {++i ; insert(pos,i);}return res;
+};
+#endif
+
+#if __cplusplus >= 202303L        
+ template<typename  /*container-compatible-range<T>*/ R >
+CEXPR26  iterator insert_range( const_iterator pos, R&& rg ){
+    
+    auto p=rg.rbegin() ;iterator pi = pos;
+    for(rg.rend()!= p;++rg){pi = insert(pi,*p);}
+    return pi;
+};
+
+template<typename /*container-compatible-range<T>*/ R >
+CEXPR26 void append_range( R&& rg ){insert_range(end(),rg);};
+
+template<typename /*container-compatible-range<T>*/ R >
+CEXPR26 void prepend_range( R&& rg ){insert_range( begin(),rg);};
+
+#endif 
+        void concat(deque<T>&& d){append_range(d.begin(),d.tail());};
+
+        decltype(*this) operator+=(deque<T>& d){
+            concat(d);return *this;
+        };
+
+    template <typename iterT>
+    iterator impl_erase( iterT pos ){
+    
+    if(pos.prev){pos.prev->next = pos.next;};
+    if(pos.next){pos.next->prev=pos.prev;};
+
+    if constexpr (std::is_same<iterT,iterator>::value){if(pos==begin()){first=pos.next}else if(pos==tail()){last=pos.prev;}}
+    else if constexpr (std::is_same<iterT,const_iterator>::value){if(pos==cbegin()){first=pos.next}else if(pos==ctail()){last=pos.prev;}}
+    else if constexpr (std::is_same<iterT,reverse_iterator>::value){if(pos==rbegin()){first=pos.next}else if(pos==rtail()){last=pos.prev;}}
+    else if constexpr (std::is_same<iterT,const_reverse_iterator>::value){if(pos==crbegin()){first=pos.next}else if(pos==crtail()){last=pos.prev;}}
+    delete pos.Ptr;return *(pos.next);
+};
+
+#if __cplusplus < 201103L
+iterator erase( iterator pos ){return impl_erase(pos);};
+#else 
+CEXPR26 iterator erase( const_iterator pos ){return impl_erase(pos);};
+#endif 
+template <typename iterT>
+iterator _impl_erase(iterT first,iterT last){
+    iterT f;for(f= first ;;++first){erase(f); if(f==last){break;}}
+    return *(f.next);
+}
+#if __cplusplus < 201103L
+iterator erase( iterator first, iterator last ){return _impl_erase(first,last);};
+#else
+CEXPR26 iterator erase( const_iterator first, const_iterator last ){return _impl_erase(first,last);};
+#endif
+
+
+        #if __cplusplus >=201103L
+        #if __cplusplus < 201703L 
+        template <typename... Ts>
+        void emplace_back(Ts... v){emplace(crtail(),v...);  }
+        template <typename... Ts>
+        void emplace_front(Ts... d){_emplace(cbegin(),d...);}
+        #else 
+        template <typename... Ts>
+        CEXPR26 reference emplace_back(Ts... v){emplace(crtail(),v...); return back(); }
+        template <typename... Ts>
+        CEXPR26 reference emplace_front(Ts... d){_emplace(cbegin(),d...);return front();}
+        #endif 
+    #endif
+
+
+CEXPR26 reference at( size_type pos ){return *(begin()+pos);  };
+CEXPR26 const_reference at( size_type pos ) const{return at(pos);};
+
+
+       CEPXR26 T& operator[](size_type s){return at(s);};  
+       CEPXR26 T& operator[](size_type s) const {return at(s);};  
+
+
+    CEXPR26 void swap(deque& other) NOEXCEPT17((std::allocator_traits<Allocator>::is_always_equal::value)) { deque i = *this;*this=other;other=i; }
+
+#if __cplusplus>=201103L
+CEXPR26 deque() : deque(Allocator()) {}
+#else
+explicit deque( const Allocator& alloc = Allocator() );
+CEXPR26 explicit deque( const Allocator& alloc );
+#endif
+
+#if __cplusplus>=201103L
+CEXPR26 explicit deque( size_type count,
+                const Allocator& alloc = Allocator() );
+CEXPR26 deque( size_type count, const T& value,
+       const Allocator& alloc = Allocator() );
+#else
+explicit deque( size_type count, const T& value = T(),
+                const Allocator& alloc = Allocator() );
+#endif
+
+template< class InputIt >
+CEXPR26 deque( InputIt first, InputIt last,
+       const Allocator& alloc = Allocator() );
+#if __cplusplus >= 202302L
+template< container-compatible-range<T> R >
+CEXPR26 deque( std::from_range_t, R&& rg,
+       const Allocator& alloc = Allocator() );
+       #endif
+       
+#if __cplusplus >= 201103L
+    
+CEXPR26 deque( const deque& other ); 
+CEXPR26 deque( deque&& other );
+#if __cplusplus < 202302L
+deque( const deque& other, const Allocator& alloc );
+#endif
+#endif
+#if __cplusplus < 202302L
+
+CEXPR26 deque( const deque& other,
+       const std::type_identity_t<Allocator>& alloc );
+#endif
+#if __cplusplus>=201103L && __cplusplus<202302L 
+deque( deque&& other, const Allocator& alloc );
+#endif 
+#if  __cplusplus>=202302L 
+
+CEXPR26 deque( deque&& other, const std::type_identity_t<Allocator>& alloc );
+
+#if __cplusplus>=201103L 
+CEXPR26 deque( std::initializer_list<T> init,
+       const Allocator& alloc = Allocator() ){
+        for(const T& i : init){push_back(i);}
+       };
+#endif
+CEXPR26 ~deque();
+
+} ;
+
+
+
+#if __cplusplus < 201703L
+#define NOEXC17 
+#else
+#define NOEXC17 noexcept(noexcept(lhs.swap(rhs)))
+#endif 
+template< class T, class Alloc >
+CEXPR26 void swap( std::deque<T, Alloc>& lhs,std::deque<T, Alloc>& rhs )NOEXC17 {lhs.swap(rhs);};
+    // TOODO
+  template< class T, class Alloc >
+CEXPR26 bool operator==( const std::deque<T, Alloc>& lhs,const std::deque<T, Alloc>& rhs ){
+                    return (lhs.size()==rhs.size()) and std::equal(lhs.begin(),lhs.end(),rhs.begin());};
+
+#if __cplusplus < 202002L
+template< class T, class Alloc >
+bool operator!=( const std::deque<T, Alloc>& lhs,
+                 const std::deque<T, Alloc>& rhs ){
+                    return (lhs.size)
+                 };
+template< class T, class Alloc >
+bool operator< ( const std::deque<T, Alloc>& lhs,
+                 const std::deque<T, Alloc>& rhs ){return !(lhs==rhs);};
+template< class T, class Alloc >
+bool operator<=( const std::deque<T, Alloc>& lhs,
+                 const std::deque<T, Alloc>& rhs ){return std::lexicographically_compare(lhs.begin(),lhs.end(),rhs.begin(),rhs.end())};
+template< class T, class Alloc >
+bool operator> ( const std::deque<T, Alloc>& lhs,
+                 const std::deque<T, Alloc>& rhs ){return !(rhs<lhs)};
+template< class T, class Alloc >
+bool operator>=( const std::deque<T, Alloc>& lhs,
+                 const std::deque<T, Alloc>& rhs ){return !(lhs<rhs)};
+#else
+template< class T, class Alloc >
+/* see below */
+auto operator<=>( const std::deque<T, Alloc>& lhs,
+                 const std::deque<T, Alloc>& rhs ){return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(),
+                                              rhs.begin(), rhs.end(),std::compare_three_way)};
+#endif
+
+template< class T, class Alloc >
+void swap( std::deque<T, Alloc>& lhs,std::deque<T, Alloc>& rhs ) NOEXC17 {lhs.swap(rhs);};
+
+namespace pmr {
+    template< class T >
+    using deque = std::deque<T, std::pmr::polymorphic_allocator<T>>;
+}
+
+};
+#include "reverse_iterator.hpp"
+#endif

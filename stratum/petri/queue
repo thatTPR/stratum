@@ -1,0 +1,162 @@
+#ifndef QUEUE_HPP
+#define QUEUE_HPP
+#include <initializer_list>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+
+namespace pri {
+
+
+  
+ 
+template <typename T,class Container= pri::deque<T>>
+class queue {
+    public:
+using container_type=	Container;
+using value_type=	Container::value_type;
+using size_type=	Container::size_type;
+using reference=	Container::reference;
+using const_reference=	Container::const_reference;
+
+    protected :
+    Container c ; 
+    public : 
+    void push( const value_type& value ){c.push_back(value);};
+#if __cplusplus >=201103L
+    void push( value_type&& value ){ c.push_back(std::move(value));};
+#endif 
+#if __cplusplus >=202303L
+template< typename /*container-compatible-range<value_type>*/ R >
+void push_range( R&& rg ){c.append_range(std::forward<R>(rg)) ;};
+#endif
+
+#if __cplusplus < 201702L
+teplate <class... Args>
+void emplace(Args&& args){c.emplace_back(std::forward<Args>(args)...);}
+#else 
+decltype(auto) emplace(Args&& args){c.emplace_back(std::forward<Args>(args)...);}
+#endif 
+void pop(){return c.pop_front();}
+void swap(queue& other) noexcept(noexcept(swap(c,other.c))) {swap(c,other.c);}
+
+#if __cplusplus <201103L    
+#define DEF_CONTV =Container()
+#else 
+#define DEF_CONTV 
+    queue () : queue(Container()) {}
+
+    explicit  queue(const Container& con DEF_CONTV) {for(const T& i : cont ){c.push_back(i);}};
+    explicit queue(Container&& cont){for(const T& i : cont ){c.push_back(i);} };
+
+template< class Alloc >
+explicit queue( const Alloc& alloc ){*this = queue<T,pri::deque<T,Alloc>();};
+template< class Alloc >
+queue( const Container& cont, const Alloc& alloc ){cont.Container(alloc);};
+template< class Alloc >
+queue( Container&& cont, const Alloc& alloc ){cont.Container(alloc)};
+template< class Alloc >
+queue( const queue& other, const Alloc& alloc ){};
+template< class Alloc >
+queue( queue&& other, const Alloc& alloc );
+#endif
+#if __cplusplus >= 202302L
+template <class InputIt>
+queue(InputIt first,InputIt last){IntputIt f =first;for(;;++f){ push_back(*f)  ;if(f==last){break;}} };
+
+template< class InputIt, class Alloc >
+queue( InputIt first, InputIt last, const Alloc& alloc ){};
+template< typename /*container-compatible-range<T>*/ R>
+queue( std::from_range_t, R&& rg );
+template<typename /* container-compatible-range<T>*/ R, class Alloc >
+queue( std::from_range_t, R&& rg, const Alloc& alloc );
+
+} ;
+
+
+    template< class T, class Container >
+    bool operator==( const std::queue<T, Container>& lhs,
+    const std::queue<T, Container>& rhs ){return lhs.size()==rhs.size() and std::equal(lhs.begin(),lhs.end(),rhs.begin();};
+    template< class T, class Container >
+    bool operator!=( const std::queue<T, Container>& lhs,
+    const std::queue<T, Container>& rhs ){return !(lhs==rhs)};
+    template< class T, class Container >
+    bool operator< ( const std::queue<T, Container>& lhs,
+    const std::queue<T, Container>& rhs ){return std::lexicographically_compare(lhs.begin(),lhs.end(),rhs.begin(),rhs.end());};
+    template< class T, class Container >
+    bool operator<=( const std::queue<T, Container>& lhs,
+    const std::queue<T, Container>& rhs ){return !(rhs<lhs) };
+    template< class T, class Container >
+    bool operator> ( const std::queue<T, Container>& lhs,
+    const std::queue<T, Container>& rhs ){return (rhs<lhs);};
+    template< class T, class Container >
+    bool operator>=( const std::queue<T, Container>& lhs,
+    const std::queue<T, Container>& rhs ){return !(lhs<rhs)};
+    #if __cplusplus >= 202002L
+    template< class T, std::three_way_comparable Container >
+    std::compare_three_way_result_t<Container>
+    operator<=>( const std::queue<T, Container>& lhs,
+    const std::queue<T, Container>& rhs ){return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(),
+                                              rhs.begin(), rhs.end(),std::compare_three_way);};
+    #endif
+#if __cplusplus < 201703L
+#define NOEXC17 
+#else
+#define NOEXC17 noexcept(noexcept(lhs.swap(rhs)))
+#endif 
+template< class T, class Container >
+void swap( std::queue<T, Conainer>& lhs,std::queue<T, Container>& rhs ) NOEXC17 {lhs.swap(rhs);};
+
+        template<
+    class T,
+    class Container = std::vector<T>,
+    class Compare = std::less<typename Container::value_type>>
+> class priority_queue{
+        public:
+        using container_type=	Container;
+        using value_compare=	Compare;
+        using value_type=	Container::value_type;
+        using size_type=	Container::size_type;
+        using reference=	Container::reference;
+        using const_reference=	Container::const_reference;
+
+        Continer c;
+
+        reference top(){return c.back();}
+        const_reference top() const {return c.back();}
+
+        CEXPR26 size_type size(){return c.size();}
+        CEXPR26 bool empty(){return c.empty();}
+
+        void push( const value_type& value ){for(Container::iterator it=c.begin() ; ;++it){if (Compare(value,*it) ){ ++it ; c.insert(value) ; return;}}};
+#if __cplusplus >=201103L
+        void push( value_type&& value ){for(Container::iterator it=c.begin() ; ;++it){if (Compare(std::forward<value_type>(value),*it) ){ ++it ; c.insert(value) ; return;}}};
+#endif 
+#if __cplusplus >= 202302L
+template<class /*container-compatible-range<value_type>*/  R >
+void push_range( R&& rg ){for(auto it : rg){push(it);};};
+#endif
+template <typename... Args>
+void emplace(Args... A){push(T(A...));}
+void pop(){c.pop_back();}
+
+#if __cplusplus >= 201703L
+#define NOEXC noexcept(std::is_nothrow_swappable_v<Container> &&std::is_nothrow_swappable_v<Compare>)
+#elif __cplusplus >= 201103L
+#define NOEXC noexcept(noexcept(swap(c, other.c)) && noexcept(swap(comp, other.comp)))
+#endif 
+void swap(priority_queue<T,Container,Compare>& other) NOEXC {swap(c,other.c);}
+
+}
+
+#if __cplusplus < 201703L
+#define NOEXC17 
+#else
+#define NOEXC17 noexcept(noexcept(lhs.swap(rhs)))
+#endif 
+template< class T, class Container,class Compare >
+void swap( std::priority_queue_queue<T, Conainer,Compare>& lhs,std::priority_queue<T, Container,Compare>& rhs ) NOEXC17 {lhs.swap(rhs);};
+
+}
+#include "reverse_iterator.hpp"
+#endif

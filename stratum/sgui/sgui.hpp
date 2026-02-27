@@ -1,46 +1,19 @@
-#pragma once
-#include <stratum/modules.hpp>
-#include <map>
+#include <sgui/sgui_widgets.hpp>
+#include <sgui/engine_widgets.hpp>
+#include <backend/impl.hpp>
 #include <vector>
-#include <glm/vec4.hpp>
-#include <cstddef>
-using namespace std; 
-
-#include <stratum/sgui/sgui_widgets.hpp>
-#include <stratum/sgui/engine_widgets.hpp>
-#include <stratum/backend/impl.hpp>
-// 
+#define NSC std::
 namespace sgui {
-    template <class... widgetTs>
-    class window : public container<widgetTs...>;
-    
-    #define SGUI_GAME_WINTS window<viewport> 
-    #define SGUI_STRATUM_WINTS window<editor,sidebar,viewport,canvas> 
 
-
-    template <class... windowTs>
-    using Wmanmir = container<widgetTs...>;
-    #ifndef SGUI_WINTS
-    #define SGUI_WINTS SGUI_GAME_WINTS
-    #endif
-    Wmanmir<SGUI_WINTS> wmanmir;
-    template <class... widgetTs>
-    class window : public container<widgetTs...> { // Uses SYS form backend to make docking
-        public:
-        containerw* parent;
-        uint8_t  window; // Index to window handle 
+    struct window : widget {
+        void init(glm::ivec2 size = {1024,1000}, glm::ivec2 pos ={10024,1000}){sys.createWin(size,pos);}
+        NSC vector<wsys*> ws;
+        template <class widgetT >
+        void add(widgetT& w){ws.push_back(&w._wsys);w._wsys.parent=_wsys;};
+        template <class widgetT >
+        void rem(widgetT& w){for(NSC vector<wsys*>::iterator it=ws.begin();it!=ws.end() ;++it){if(*it==&w._wsys){ws.erase(it);}}};
         
-        font f; // Global font for the 
-        
-        window(){parent=&wmanmir;}
+        void start();
     };
 
-    #ifndef CANVAS_LIMIT
-    #define CANVAS_LIMIT 10
-    #endif
-    canvas canvas_arr[CANVAS_LIMIT];
-    int c_cur=0;
-    canvas* canv;
-    int add_canvas(canvas* c){cavas_arr[c_cur+1] = c; c_cur++; w_cur = c;};
-    
 }

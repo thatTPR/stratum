@@ -44,18 +44,18 @@ T& get(tupleAddBack<empty,Head,Ts...>& t){
 };
 
 template <typename empty,typename Head, typename... Tail>
-size_t tuple_size(tupleAddBack<empty,Head,Tail...>& t){
+constexpr size_t tuple_size(tupleAddBack<empty,Head,Tail...>& t){
     tuple<Tail...> r;
-    return 1 + tuple_size<empty,Tail...>(r);
+    return std::is_same<Head,void>::value?0:1 + tuple_size<empty,Tail...>(r);
 }
 template <typname empty,typename Head>
-size_t tuple_size(tupleAddBack<empty,Head>& t){
+constexpr size_t tuple_size(tupleAddBack<empty,Head>& t){
     if constexpr (std::is_same<empty,tupleEmpty>::value){return 1;}
     else {return 1 + tuple_size(t.rest);}
 };
 
 template <typename empty,typename Head, typename Tail>
-size_t tuple_size(tuple<empty,Head,Tail>& t){return 2;};
+constexpr size_t tuple_size(tuple<empty,Head,Tail>& t){return  (std::is_same<Head,void>::value?0:1) +(std::is_same<Tail,void>::value?0:1);};
 
 template <typename tupt>
 constexpr size_t tuple_size(){    constexpr tupt g;return tuple_size(g);}
@@ -158,9 +158,18 @@ template <typename tup,typename tupB>
 struct utupConcats {
     using type = typename utupConcat<tup,tupB>::type ;
 };
+template <template <typename A> typename Te, typename... Ts >
+using tupcond = utupConcat<tuple<void> ,std::conditional<Te<Ts>::value,T,void>::type... >
 
 template <typename T , typename... Ts>
-using utuple =  typename std::conditional<pri::is_one_of<T,Ts...>::value,tupleAddBack<utuple<Ts...>,T> , utuple<Ts...>>::type;
+using utuple =  typename std::conditional<!pri::is_one_of<T,Ts...>::value,tupleAddBack<utuple<Ts...>,T> , utuple<Ts...>>::type;
+
+template <typename A, typename T,typename... Ts>
+constexpr bool has_type(utuple<T,Ts...>& ref){return pri::is_one_of<A,T,Ts...>::value;};
+
+
+
+
 
 template <typename T,typename Head,typename... Ts>
 constexpr size_t _get_size<>(){
@@ -191,7 +200,7 @@ return 1;
 
 
 template <template <typename T> typename Func ,typename Head,typename... Tail>
-void applyAll(tupleAddBack<tupleEmpty,Head,Tail...>& s){
+void applyAll(tupleAddBack<tupleEmpty,Head,Tail...>& s, Func f){
     func<Head>(s.first);
     applyAll<Func,Tail...>(s.rest);
 };
@@ -211,18 +220,21 @@ tupleAddBack<tupBack,Head,Tail...> concat_tuples(tupleAddBack<tupleEmpty,Head,Ta
     }
     return set;
 };
-}
 
 
-template <template <typename A>typename T, typname Head,typename... Tail>
+template <template <typename A>typename T, typename Head,typename... Tail>
 void for_each_tup(tuple<Head,Tail>& r){
     T<tuple<Head,Tail>::headt>(r.first);
     for_each_tup<T,Tail...>(r.rest);
 };
-template <template <typename A>typename T, typname Head>
+template <template <typename A>typename T, typename Head>
 void for_each_tup<T,Head>(tuple<Head>& r){
     T<tuple<Head,Tail>::headt>(r.first);
 };
+
+
+
+
 
 
 #endif

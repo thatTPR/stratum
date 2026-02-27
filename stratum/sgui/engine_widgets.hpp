@@ -1,11 +1,12 @@
 #include "sgui_widgets.hpp"
+#include 
 
-
-
-struct sceneWidget : widget{
-    
-    
+struct colorPalette : widget<RESIZE,input,click,dbclick> {
 
 };
+struct sceneWidget : widget<RESIZE,input,click,dbclick>{
 
-struct 
+};
+struct image
+
+ 

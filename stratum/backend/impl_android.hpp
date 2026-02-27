@@ -57,8 +57,8 @@ namespace impl_android{
          int32_t kc = keycodeAKeyEvent_getKeyCode(keyevent);
             int action = AKeyEvent_getAction(keyevent);
     switch (action) {
-        case AKEY_EVENT_ACTION_DOWN: {this->down_cb(kc);break;};
-        case AKEY_EVENT_ACTION_UP:{this->up_cb(kc);break};
+        case AKEY_EVENT_ACTION_DOWN: {this->_keydown.cb(kc);break;};
+        case AKEY_EVENT_ACTION_UP:{this->_keyup.cb(kc);break};
         case AKEY_EVENT_ACTION_MULTIPLE:{;}
         default:
          inline this->handleMeta(keyevent);     
@@ -75,18 +75,18 @@ namespace impl_android{
             uint32_t key = AKeyEvent_getKeyCode(ev);
             switch(act){
                 case AKEY_EVENT_ACTION_DOWN : {
-                    this->down_cb(key);
+                    this->_down.cb(key);
                 };
                 case AKEY_EVENT_ACTION_UP   : {
-                    this->up_cb(key);
+                    this->_up.cb(key);
                 };
             }
         };
         void handleMotion(AInputEvent* ev){
             uint32_t act = AmotionEvent_getAction(ev);
-            this->laxis_cb( cont_axis(AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_X,0),AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_Y,0)));
-            this->raxis_cb( cont_axis(AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_Z,0),AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_RZ,0)));
-            this->trig_cb( cont_axis(AmotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_LTRIGGER,0),AmotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_RTRIGGER,0)))
+            this->_laxis.cb( cont_axis(AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_X,0),AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_Y,0)));
+            this->_raxis.cb( cont_axis(AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_Z,0),AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_RZ,0)));
+            this->_trig.cb( cont_axis(AmotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_LTRIGGER,0),AmotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_RTRIGGER,0)))
         };
     };
     #ifdef STRATA_CAP_JOY
@@ -96,17 +96,17 @@ namespace impl_android{
             uint32_t key = AKeyEvent_getKeyCode(ev);
             switch(act){
                 case AKEY_EVENT_ACTION_DOWN : {
-                    this->down_cb(key);
+                    this->_down.cb(key);
                 };
                 case AKEY_EVENT_ACTION_UP   : {
-                    this->up_cb(key);
+                    this->_up.cb(key);
                 };
             }
         };
         void handlemotion(AInputEvent *ev){
-            this->axis_cb( joy_axis(AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_X,0),AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_Y,0)));
-            this->throt_cb(AMotionEvent_getAxisValue(ev,AMITION_EVNET_AXIS_Z,0));
-            this->rotate_cb(AMotionEvent_getAxisValue(ev,AMITION_EVNET_AXIS_RZ,0));
+            this->_axis.cb( joy_axis(AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_X,0),AMotionEvent_getAxisValue(ev,AMOTION_EVENT_AXIS_Y,0)));
+            this->_throt.cb(AMotionEvent_getAxisValue(ev,AMITION_EVNET_AXIS_Z,0));
+            this->_rotate.cb(AMotionEvent_getAxisValue(ev,AMITION_EVNET_AXIS_RZ,0));
         };
     };
     #endif
@@ -116,9 +116,9 @@ namespace impl_android{
         handle(AInputEvent *touchev){
             uint32_t act = AMotionEvent_getAction(touchev);
             switch(act){
-                case AMOTION_EVENT_ACTION_MOVE : {this->move_cb( touch_move( AMotionEvent_getX(touchev)  ,  AMotionEvent_getY(touchev)  ) ) ; return ;};
-                case AMOTION_EVENT_ACTION_DOWN : {this->down_cb( touch_tap( AMotionEvent_getX(touchev)  ,  AMotionEvent_getY(touchev)) ); return ;};
-                case AMOTION_EVENT_ACTION_UP   : {this->up_cb( touch_tap ( AMotionEvent_getX(touchev)  ,  AMotionEvent_getY(touchev)) ) ; return ;};
+                case AMOTION_EVENT_ACTION_MOVE : {this->_move.cb( touch_move( AMotionEvent_getX(touchev)  ,  AMotionEvent_getY(touchev)  ) ) ; return ;};
+                case AMOTION_EVENT_ACTION_DOWN : {this->_down.cb( touch_tap( AMotionEvent_getX(touchev)  ,  AMotionEvent_getY(touchev)) ); return ;};
+                case AMOTION_EVENT_ACTION_UP   : {this->_up.cb( touch_tap ( AMotionEvent_getX(touchev)  ,  AMotionEvent_getY(touchev)) ) ; return ;};
             };
             
 
@@ -352,46 +352,17 @@ void close(){delete this;};
     class SYS : impl::SYS {
 
         
-#ifdef STRATA_CAPABILITY_MOUSE 
-MOUSE      mouse;
-    void initMouse(){return};
-#endif    
-#ifdef STRATA_CAPABILITY_KEY
-KEY        key;
-    void initKey(){return;};
-#endif
-#ifdef STRATA_CAPABILITY_JOY 
-JOY        joy;
-    void initJoy(){return;};
-#endif
-#ifdef STRATA_CAPABILITY_CONT 
-CONT       cont;
-    void initCont(){return;};
-#endif
-#ifdef STRATA_CAPABILITY_TOUCH 
-TOUCH      touch;
-    void initTouch(){return;};
-#endif
+std::enable_if<CAPMOUSE,MOUSE>::type      mouse;
+std::enable_if<CAPKEY,KEY>::type        key;
+std::enable_if<CAPJOY,JOY>::type        joy;
+std::enable_if<CAPCONT,CONT>::type       cont;
+std::enable_if<CAPTOUCH,TOUCH>::type      touch;
+std::enable_if<CAPAUDIO,AUDIO>::type      audio;
+std::enable_if<CAPSENSOR,SENSOR>::type     sensor;
+std::enable_if<CAPCAM,CAM>::type cam;
+std::enable_if<CAPNET,NET>::type net;
+std::enable_if<CAPDISPLAY,DISPLAY>::type display;
 
-#ifdef STRATA_CAPABILITY_AUDIO 
-AUDIO      audio;
-    void initAudio(){return;};
-#endif
-#ifdef STRATA_CAPABILITY_SENSOR 
-SENSOR     sensor;
-    void initSensor(){return;};
-#endif
-#ifdef STRATA_CAP_CAM
-CAM cam;
-
-#endif
-#ifdef STRATA_CAP_NET
-NET net;
-#endif
-#ifdef STRATA_CAP_DISPLAY
-DISPLAY display;
-
-#endif 
         std::vector<ANativeWindow*> wins;
         AInputQueue* evq;
         ALooper* aloop;

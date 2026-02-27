@@ -1,0 +1,15 @@
+
+
+namespace pri {
+
+struct mem_alloc {
+    
+} galloc;
+
+    template <typename Alloc = mem_alloc>
+    struct ext_allocator {
+        Alloc& al ;
+        
+        ext_allocator(Alloc& allo = galloc) : al(allo){}
+    };
+};

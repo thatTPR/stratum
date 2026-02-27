@@ -2,6 +2,9 @@
 #define MOD_MODEL_HPP
 #include "mod_util.hpp"
 #include "mod_lod.hpp"
+#include "mod_font.hpp"
+#include <glm/glm.hpp>
+using uint = typename  unsigned int ;
 namespace mod{
 using point_list = std::vector<uint>; 
 using line_list = std::vector<uint>; 
@@ -177,10 +180,6 @@ enum TopologyPrimitive {
     PATCH_LIST = 10,
 }; 
 
-template <DIM d>
-using vertA = typename std::conditional<S==DIM::Tri,glm::vec4,glm::vec3>::type;
-template <DIM d>
-using vert = typename std::conditional<S==DIM::Tri,glm::vec3,glm::vec2>::type;
 
 template <DIM d,bool alpha>
 using vertex = typename std::conditional<alpha, vertA<d> , vert<d>>::type;  
@@ -197,23 +196,23 @@ struct topology_primitive_vec : std::vector<vertex<d,alpha>> {
 
 template <DIM d , quality::QUALITY q>
 struct    mesh  : dim_t<d> , quality::quality_t<q>{
-    using xyzwVert = vertA<d> ; 
-    using xyzVert = vert<d> ; 
+    using alvert = vertA<d> ; 
+    using vert = vert<d> ; 
 
     // 0 Indexed
-    std::vector<xyzwVert> vert; //..pointVertices
-    std::vector<xyzVert> tvert; // textures vertices;
-    std::vector<xyzVert> nvert; // normal vertices
-    std::vector<xyzVert> pvert; // Parameter vertices
+    std::vector<alvert> vert; //..pointVertices
+    std::vector<vert> tvert; // textures vertices;
+    std::vector<vert> nvert; // normal vertices
+    std::vector<vert> pvert; // Parameter vertices
 
 
-    std::vector<std::vector<xyzwVert>> lines;
+    std::vector<std::vector<alvert>> lines;
 
     typedef glm::mat3x3 facevert;// v n t
     
-    std::vector<std::vector<xyzwVert>> facevert;
-    std::vector<std::vector<xyzwVert>> facenvert;
-    std::vector<std::vector<xyzwVert>> facetvert;
+    std::vector<std::vector<alvert>> facevert;
+    std::vector<std::vector<alvert>> facenvert;
+    std::vector<std::vector<alvert>> facetvert;
     
     
     struct group {
@@ -247,8 +246,6 @@ struct vectorImage {
 
 template <DIM d>
 struct  mesh_prim   : dim_t<d>{
-    using xyzwVert = typename std::conditional<S==DIM::Tri,glm::vec4,glm::vec3>::type;
-    using xyzVert = typename std::conditional<S==DIM::Tri,glm::vec3,glm::vec2>::type;
 
 
     #define PRIMITIVE_ENUM POINT_LIST,LINE_LIST,LINE_STRIP,TRIANGLE_LIST,TRIANGLE_STRIP,TRIANGLE_FAN,LINE_LIST_WITH_ADJACENCY,LINE_STRIP_WITH_ADJACENCY,TRIANGLE_LIST_WITH_ADJACENCY,TRIANGLE_STRIP_WITH_ADJACENCY,PATCH_LIST
@@ -261,10 +258,10 @@ struct  mesh_prim   : dim_t<d>{
     template <typename vert,TopologyPrimitive... tp>
     using prims = pri::tuple<prim<vert,tp>...> ; 
     
-    prims<xyzVert,PRIMITIVE_ENUM> verts;
-    prims<xyzVert,PRIMITIVE_ENUM> params;
-    prims<xyzVert,PRIMITIVE_ENUM> normals;
-    prims<xyzVert,PRIMITIVE_ENUM> texture;
+    prims<vert,PRIMITIVE_ENUM> verts;
+    prims<vert,PRIMITIVE_ENUM> params;
+    prims<vert,PRIMITIVE_ENUM> normals;
+    prims<vert,PRIMITIVE_ENUM> texture;
     
 
     
@@ -288,23 +285,27 @@ dmemoryPool<mesh_prim> meshPrimPool;
 
 
 
-template <DIM d>
-struct   dynamicMesh : mesh<S>  , dim_t<d>{
-        using xyzwVert = std::conditional<S==DIM::Tri,glm::vec4,glm::vec3>;
-    using xyzVert = std::conditional<S==DIM::Tri,glm::vec3,glm::vec2>;    
+template <DIM d , quality Q>
+struct   dynamicMesh : mesh<d ,Q>  , dim_t<d>{
 
-struct bonePtGroup : vertGroup {
-    xyzwVert vert;
-    xyzVert pvert;
-    xyzVert tvert;
+    struct bonePtGroup : vertGroup {
+        alvert vert;
+        vert pvert;
+        vert tvert;
+        std::pair<uint32_t,uint32_t> faces;
+        std::pair<uint32_t,uint32_t> lines;
+        uint16_t boneUp;
+        std::vector<uint16_t> boneDown;
+        uint16_t boneDown;
+        void addPt(uint16_t pt){bonePtIndices.push_back(pt);}
+    };  
 
-    std::pair<uint32_t,uint32_t> faces;
-    std::pair<uint32_t,uint32_t> lines;
-    uint16_t boneUp;
-    std::vector<uint16_t> boneDown;
-    uint16_t boneDown;
-    void addPt(uint16_t pt){bonePtIndices.push_back(pt);}
-};
+    template < quality Qt>
+    operator dynamicMesh<d, Qt>() {
+        
+    } ;
+
+
 std::vector<bonePtgroup> vertGroups;
 };
 
@@ -348,8 +349,10 @@ using fluidSource = source<d,q,fluid> ;
 template <DIM d, quality::QUALITY q>>
 using smokeSource = source<d,q,fluid> ;
 
+
+
+template <typename stateT>
 struct animation {
-    list<std::vector<glm::vec3>> pts ;
 
 };
 
@@ -368,8 +371,7 @@ struct  model : mesh<S,Q>  , dim_t<d>{
         std::vector<mesh<S,Q>::group> groups ; 
     };
     std::vector<manifold > manifolds;
-
-    std::vector<animation> anim;
+    std::vector<animation<manifold>> anim;
 };
 dqmemoryPool<model> modelPool 
 

@@ -1,0 +1,498 @@
+#pragma once
+#include <functional>
+#include <memory>
+#include <stdexcept>
+#include <map>
+#include <utility>
+#include <vector>
+#include <execution>
+
+#if __cplusplus >= 202603L
+#define CEXPR26 constexpr
+#else
+#define CEXPR26
+#endif 
+
+
+namespace pri {
+
+
+
+template <class Vec>
+struct vec_iter {
+    using value_type        = typename Vec::value_type;
+    using difference_type   = typename Vec::difference_type;
+    using pointer           = typename Vec::pointer;
+    using reference         = typename Vec::reference;
+
+
+    pointer p;
+    bool operator==(vec_iter<Vec>& vi){return p==vi.p;}
+    reference operator*(){return *p;}
+    void incr(){++p;};
+    void decr(){--p;};
+    operator bool(){return p?true:false;}
+    iter operator++(){incr();return *this;};
+    iter operator++(int){incr();return *this;};
+    iter operator--(){decr();return *this;};
+    iter operator--(int){decr();return *this;};
+
+    iter(pointer _p) : p(_p){};
+    iter(reference _p) : p(&_p){};
+};
+
+template <class Vec>
+struct vec_const_iter {
+    using value_type        = typename Vec::value_type;
+    using difference_type   = typename Vec::difference_type;
+    using pointer           = typename Vec::const_pointer;
+    using reference         = typename Vec::const_reference;
+
+    pointer p;
+        bool operator==(iter<Vec>& vi){return p==vi.p;}
+
+    reference operator*(){return *p;}
+    void incr(){++p;};
+    void decr(){--p;};
+    operator bool(){return p?true:false;}
+    iter operator++(){incr();return *this;};
+    iter operator++(int){incr();return *this;};
+    iter operator--(){decr();return *this;};
+    iter operator--(int){decr();return *this;};
+
+    iter(pointer _p) : p(_p){};
+    iter(reference _p) : p(&_p){};
+};
+
+template<class T,class Allocator = std::allocator<T>> 
+class vector{
+public:
+using value_type=T;
+using allocator_type= 	Allocator;
+using size_type= 	std::size_t ; //Unsigned integer type (usually )
+using difference_type= 	std::ptrdiff_t ; //Signed integer type (usually )
+using reference= 	value_type&;
+using const_reference= 	const value_type&;
+#if __cplusplus <201103L
+using pointer= 	 Allocator::pointer; 
+using const_pointer =Allocator::const_pointer
+#else 
+using pointer = std::allocator_traits<Allocator>::pointer;
+using std::allocator_traits<Allocator>::const_pointer;
+#endif 
+
+
+#if __cplusplus <202003L
+using iterator = typename vec_iter<vector<T,Allocator>> ;//LegacyRandomAccessIterator and LegacyContiguousIterator to value_type
+using const_iterator = typename vec_const_iter<vector<T,Allocator>> ; //LegacyRandomAccessIterator and LegacyContiguousIterator to const value_type
+#else 
+using iterator = iter<value_type> ; //LegacyRandomAccessIterator, contiguous_iterator, and ConstexprIterator to value_type
+using const_iterator = iter <const value_type ; //LegacyRandomAccessIterator, contiguous_iterator, and ConstexprIterator to const value_type 
+#endif 
+using reverse_iterator= 	std::reverse_iterator<iterator>;
+using const_reverse_iterator= 	std::reverse_iterator<const_iterator>;
+
+pointer _first ;
+pointer _last ; 
+pointer _end
+
+
+
+Allocator al=Allocator();
+pointer data(){return d;}
+
+
+#if __cplusplus >= 201703L
+#define NOECX17 noexcept
+#else 
+#define NOECX17
+#endif 
+
+#if __cplusplus >= 201103L
+#define NOECX11 noexcept
+#else 
+#define NOECX11
+#endif 
+
+#if __cplusplus >= 202302L
+#define CEXPR23 constexpr
+#else 
+#define CEXPR23
+#endif 
+
+#if __cplusplus >= 202302L
+#define CEXPR20 constexpr
+#else 
+#define CEXPR20
+#endif 
+
+
+CEXPR20 reference front()  { return *_first;} 
+CEXPR20 const_reference front() const { return *_first;} 
+CEXPR20 reference back()  { return *_last;  } 
+CEXPR20 const_reference back() const { return *_last;  } 
+
+
+
+CEXPR20 iterator begin() NOEXC11 {return iterator(_first);};
+const_iterator begin() const NOEXC11 {return const_iterator(_first);};
+CEXPR20 const_iterator cbegin() const noexcept {return const_iterator(_first);};
+CEXPR20 reverse_iterator rbegin() NOEXC11 {return reverse_iterator(_first);};
+const_reverse_iterator crbegin() const NOEXC11 {return const_reverse_iterator(_first);};
+CEXPR20 const_reverse_iterator crbegin() const noexcept {return const_reverse_iterator(_first);};
+
+
+CEXPR20 iterator end() NOEXC11 {return ++iterator(_end);};
+const_iterator end() const NOEXC11 {return ++const_iterator(_end);};
+CEXPR20 const_iterator cend() const noexcept {return ++const_iterator(_end);};
+CEXPR20 reverse_iterator rend() NOEXC11 {return ++reverse_iterator(first);};
+const_reverse_iterator rend() const NOEXC11 {return ++const_reverse_iterator(first);};
+CEXPR20 const_reverse_iterator crend() const noexcept {return ++const_reverse_iterator(first);};
+
+
+CEXPR20 iterator tail() NOEXC11 {return iterator(_last);};
+const_iterator tail() const NOEXC11 {return const_iterator(_last);};
+CEXPR20 const_iterator ctail() const noexcept {return const_iterator(_last);};
+CEXPR20 reverse_iterator rtail() NOEXC11 {return reverse_iterator(_last);};
+const_reverse_iterator rtail() const NOEXC11 {return const_reverse_iterator(_last);};
+CEXPR20 const_reverse_iterator crtail() const noexcept {return const_reverse_iterator(_last);};
+
+CEXPR20 bool empty() const NOEXC11 {return size==0;};
+CEXPR20 size_type size() const NOEXC11 {return _end - _first;};
+
+CEXPR20 size_type max_size() const NOEXC11 { return static_cast<size_type>(numeric_limits<difference_type>::max)() /*TO min allTraits::min*/ ; }
+
+
+    _ChangeArr(pointer vec,  size_type Size, size_type new_cap){
+        if(_first){
+            al.deallocate(_first,static_cast<size_type>(_end-_first));
+        }
+        _first = vec;
+        _last = _first+Size;
+        _end = _first+new_cap;
+        
+    };
+CEXPR20 void reserve( size_type new_cap ){
+    if (new_cap > max_size()){
+        throw std::length_error(std::to_string(new_cap));
+    }
+    else {
+        const auto _Size = static_cast<size_type>(_last - _first);
+
+        const pointer vec=  all.allocate(new_cap);
+        if constexpr (std::is_nothrow_move_constructible_v<T> || ! std::is_copy_constructible_v<T> ){
+            std::uninitialized_move(vec, first,last) ; 
+        }
+        else {std::uninitialized_copy(vec, first,last) ; }
+        al.deallocate(vec,new_cap);
+        _ChangeArr(vec,_Size,new_cap)
+    }
+
+};
+
+CEXPR20 void _Reallocate_exactly(const size_type Size){
+
+
+        const auto _Size = static_cast<size_type>(_Mylast - _Myfirst);
+
+        const pointer _Newvec = al.allocate(Size);
+
+        if constexpr (is_nothrow_move_constructible_v<_Ty> || !is_copy_constructible_v<_Ty>) {
+            std::uninitialized_move(_first,_last, _Newvec, al);
+        } else {std::uninitialized_copy(_first,_last, _Newvec, al);}
+
+        al.deallocate(_Newvec, Size);
+        _ChangeArr(_Newvec, _Size, Size);
+};
+
+
+CEXPR20 void _Reallocate_exactly(const size_type Size , pointer where, size_type count){
+
+
+        const auto _Size = static_cast<size_type>(_Mylast - _Myfirst);
+
+        const pointer _Newvec = al.allocate(Size);
+
+        if constexpr (is_nothrow_move_constructible_v<_Ty> || !is_copy_constructible_v<_Ty>) {
+            std::uninitialized_move(_first,where-1, _Newvec, al);
+            std::uninitialized_move(where,last, _Newvec+(where - first), al);
+
+        } else {std::uninitialized_copy(_first,where-1, _Newvec, al);
+            std::uninitialized_copy(where,last, _Newvec + (where - first), al);}
+
+        al.deallocate(_Newvec, Size);
+        _ChangeArr(_Newvec, _Size, Size);
+};
+
+CEXPR20 _tidy(){
+    if(_first){al.deallocate(_first, static_cast<size_type>(_end - _first));
+    _first = nullptr;
+    _last = nullptr;
+    _end = nullptr;
+    }
+}
+CEXPR20 void shrink_to_fit(){
+    size_type s; 
+    const pointer vec = all.allocate 
+    if(_last != _end) {
+        const pointer _Oldfirst = _My_data._Myfirst;
+            if (_first == _last) {
+                _tidy();
+            } else {
+                _Reallocate_exactly(static_cast<size_type>(_Oldlast - _Oldfirst));
+            }
+    }
+};
+
+
+CEXPR20 void clear() CEXPR20 {    _tidy();};
+    CEXPR20 size_type capacity() const NEOXC11{return static_cast<size_type>(_end - _first);};
+CEXPR20 reference at( size_type pos ) {return data[pos];};
+CEXPR20 const_reference at( size_type pos ) const {return data[pos];};
+
+CEXPR20 reference operator[]( size_type pos ){return at(pos);};
+CEXPR20 const_reference operator[]( size_type pos ) const{return at(pos);};
+
+
+
+
+
+CEXPR20 void move_back(pointer where , pointer oldlast){
+    size_type ts =oldlast-where;where = _last;
+    for(;ts;--ts){--where;}
+} ;
+
+
+
+CEXPR20 iterator insert( const_iterator pos, const T& value ){
+    pointer oldlast = _last;pointer where = pos.p;
+    size_type new_cap = size()+1;
+        _Reallocate_exactly(new_cap) ;
+        move_back(where,oldlast);
+        *where = value;
+        return iterator(where); 
+};
+CEXPE20 iterator insert( const_iterator pos, T&& value ){
+        pointer oldlast = _last;pointer where = pos.p;
+    size_type new_cap = size()+1;
+        _Reallocate_exactly(new_cap) ;
+        move_back(where,oldlast);
+        *where = value;
+        return iterator(where); 
+};
+#if __cplusplus >=202003L
+CEXPR20 iterator insert( const_iterator pos,
+                 size_type count, const T& value ){
+                        pointer oldlast = _last;pointer where = pos.p;
+    size_type new_cap = size()+count;
+        _Reallocate_exactly(new_cap, where , count) ;
+        move_back(where,oldlast);
+        *where = value;
+        for(size_type c = count ; c ; --c){*where=value;++where;}
+        return iterator(where); 
+
+                 };
+#if __cplusplus >= 202003L
+template< class InputIt >
+CEXPR20 iterator insert( const_iterator pos, InputIt first, InputIt last ){
+    size_type dist  = std::distance(first,last) ;
+
+    pointer where = pos.p;
+    size_type new_cap = size() + dist+1;
+    _Reallocate_exactly(new_cap,where,count);
+
+    *where = value;pointer p = where;
+    for(size_type c = count ; c ; --c){*where=value;++where;}
+    return iterator(p); 
+};
+CEXPR20 iterator insert( const_iterator pos, std::initializer_list<T> ilist ){
+
+    pointer where = pos.p;
+    size_type new_cap = size() + ilist.size();;
+    _Reallocate_exactly(new_cap,where,count);
+
+    *where = value;auto it = ilist.begin();pointer p = where;
+    for(size_type c = count ; c ; --c){*where=*it;++it;++where;}
+    return iterator(p); 
+};
+#endif 
+#endif 
+
+CEXPR20 void push_back( const T& value ) {
+    insert(cend(),value);
+};
+#if __cplusplus >=202003L
+CEXPR20 void push_back( T&& value ){insert(cend(),std::forward<T>(value));};
+#endif
+
+#if __cplusplus < 202003L
+template< class... Args >
+void emplace_back( Args&&... args ){push_back(T(std::forward<Args>(args)...));};
+#else 
+template< class... Args >
+CEXPR20 reference emplace_back( Args&&... args ){push_back(T(std::forward<Args>(args)...)); return back();};
+#endif
+#if __cplusplus >= 202003L
+template< class /*container-compatible-range<T>*/ R >
+constexpr void append_range( R&& rg ){insert(end(),rg.begin(),rg.end());};
+#endif 
+
+CEXPR20 pop_back(){_Reallocate_exactly(size() -1);};
+
+
+
+#if __cplusplus <= 201703L
+#if __cplusplus >= 201103L
+vector() : vector(Allocator()) {}
+#endif 
+#else 
+CEXPR26 vector() noexcept(noexcept(Allocator())) : vector(Allocator()) {}
+#endif 
+explicit vector( const Allocator& alloc = Allocator() ) : al(alloc){};
+#endif 
+#if __cplusplus >= 201103L
+CEXPR26 explicit vector( const Allocator& alloc ) NOEXC17 : al(alloc) ;
+#endif 
+
+CEXPR20 vector& operator=( const vector& other ){*this = other;};
+#if __cplusplus >= 201103L
+
+#if __cplusplus< 201703L
+#define NOEXCEQ17 noexcept((std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value|| std::allocator_traits<Allocator>::is_always_equal::value))
+#else 
+#define NOEXCEQ17 
+#endif 
+vector& operator=( vector&& other ) NOEXCEQ17 {*this = other};
+
+CEXPR20 vector& operator=( vector&& other ) {*this = other;}
+CEXPR20 vector& operator=( std::initializer_list<value_type> ilist ){insert(begin(),ilist);};
+#endif 
+
+
+ #if __cplusplus <= 201703L
+ #define NOEXCSW17 noexcept (std::allocator_traits<Allocator>::propagate_on_container_swap::value\
+|| std::allocator_traits<Allocator>::is_always_equal::value)
+#else 
+#define NOEXCSW17
+#endif 
+CEXPR20 void swap( vector& other ) NOEXCSW17 { vector t = other ;other =*this;*this =t;
+
+
+
+explicit vector( size_type count,
+                 const Allocator& alloc = Allocator() ) : al(alloc);
+
+
+explicit vector( size_type count, const T& value = T(),
+                 const Allocator& alloc = Allocator() ) : al(alloc) {if(count){push_back(value);} ;insert(begin(),count-1,value);};
+                 
+                 
+#else 
+CEXPR23 vector( size_type count, const T& value,
+        const Allocator& alloc = Allocator() ) : al(alloc) { if(count){push_back(value);} ;insert(begin(),count-1,value);};
+#endif 
+template< class InputIt >
+CEXPR23 vector( InputIt first, InputIt last,
+        const Allocator& alloc = Allocator() ) : al(alloc) {for(InputIt f = first ; f != last; ++f){push_back(*f);};};
+#endif 
+#if __cplusplus >= 202303L
+ template<class /* container-compatible-range<T>*/ R >
+constexpr vector( std::from_range_t, R&& rg,
+                  const Allocator& alloc = Allocator() ): al(alloc) {for(auto r = rg.begin(); r!=rg.end();++r){push_back(r);}};
+#endif 
+
+
+
+CEPR23 vector( const vector<T,Allocator>& other ){for(auto r = other.begin();r!=other.end();++r){push_back(*r);};};
+
+#if __cplusplus >= 201103L
+CEXPR23 vector( vector&& other ) NOEXC17{for(auto r = other.begin();r!=other.end();++r){push_back(*r);};};;
+#if __cplusplus< 202003L
+CEXPR23 vector( const vector& other, const Allocator& alloc ) : al(alloc) {for(auto r = other.begin();r!=other.end();++r){push_back(*r);};};
+#endif 
+#endif 
+#if __cplusplus >= 202302L
+
+constexpr vector( const vector& other,const std::type_identity_t<Allocator>& alloc ) : al(alloc) {for(auto r = other.begin();r!=other.end();++r){push_back(*r);};};;
+#endif 
+
+#if __cplusplus >= 201103L
+#if __cplusplus < 202303L
+
+vector( vector&& other, const Allocator& alloc ) : al(alloc) {for(auto r = other.begin();r!=other.end();++r){push_back(*r);};};
+#else  
+constexpr vector( vector&& other,const std::type_identity_t<Allocator>& alloc ) : al(alloc) {for(auto r = other.begin();r!=other.end();++r){push_back(*r);};};;
+vector( std::initializer_list<T> init,const Allocator& alloc = Allocator() ) : al(alloc) {for(auto r = init.begin();r!=init.end();++r){push_back(*r);};};};
+#endif 
+#endif
+};
+
+template< class T, class Alloc >
+CEXPR20 bool operator==( const std::vector<T, Alloc>& lhs,
+                 const std::vector<T, Alloc>& rhs ){
+                    return 
+#if __cplusplus < 201402L
+std::distance(lhs.begin(), lhs.end())== std::distance(rhs.begin(), rhs.end())
+           && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+#else 
+            std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+#endif
+};
+#if __cplusplus < 202003L
+template< class T, class Alloc >
+bool operator!=( const std::vector<T, Alloc>& lhs,
+                 const std::vector<T, Alloc>& rhs ){return !(lhs==rhs);};
+template< class T, class Alloc >
+bool operator< ( const std::vector<T, Alloc>& lhs,
+                 const std::vector<T, Alloc>& rhs ){return std::lexicographical_compare(lhs.begin(), lhs.end(),
+                                    rhs.begin(), rhs.end());};
+template< class T, class Alloc >
+bool operator<=( const std::vector<T, Alloc>& lhs,
+                 const std::vector<T, Alloc>& rhs ){return !(rhs<lhs);};
+template< class T, class Alloc >
+bool operator> ( const std::vector<T, Alloc>& lhs,
+                 const std::vector<T, Alloc>& rhs ){return (rhs<lhs)};
+template< class T, class Alloc >
+bool operator>=( const std::vector<T, Alloc>& lhs,
+                 const std::vector<T, Alloc>& rhs ){return !(lhs<rhs);};
+#endif 
+template< class T, class Alloc >
+constexpr auto
+    operator<=>( const std::vector<T, Alloc>& lhs,
+                 const std::vector<T, Alloc>& rhs ){return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(),
+                                              rhs.begin(), rhs.end(),std::three_way_compare()) ;};
+#if __cplusplus < 201703L
+#define SWEXC17 
+#else 
+#define SWEXC17  noexcept(noexcept(lhs.swap(rhs)))
+#endif 
+template< class T, class Alloc >
+CEXPR20 void swap( std::vector<T, Alloc>& lhs,
+           std::vector<T, Alloc>& rhs )SWEXC17{
+             lhs.swap(rhs);}
+
+#if __cplusplus >= 202003L
+#if __cplusplus < 202602L
+template< class T, class Alloc, class U >
+constexpr typename std::vector<T, Alloc>::size_type
+    erase( std::vector<T, Alloc>& c, const U& value ){for(auto i =c.begin(); c!=i.end();++i){if(*i==value){c.erase(i) ;}}};
+#else 
+template< class T, class Alloc, class U = T >
+constexpr typename std::vector<T, Alloc>::size_type
+    erase( std::vector<T, Alloc>& c, const U& value ){for(auto i =c.begin(); c!=i.end();++i){if(*i==value){c.erase(i) ;}}};
+#endif 
+template< class T, class Alloc, class Pred >
+constexpr typename std::vector<T, Alloc>::size_type
+    erase_if( std::vector<T, Alloc>& c, Pred pred ){for(auto i =c.begin(); c!=i.end();++i){if(pred(*i)){c.erase(i);}}};
+#endif 
+
+
+
+
+    namespace pmr {
+template< class T >using vector = typename std::vector<T, std::pmr::polymorphic_allocator<T>>;
+    };
+
+
+};
+#include "reverse_iterator.hpp"

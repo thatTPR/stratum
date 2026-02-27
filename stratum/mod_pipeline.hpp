@@ -1,34 +1,15 @@
 #ifndef MOD_PIPELINE_HPP
 #define MOD_PIPELINE_HPP
 #include "mod_util.hpp"
+#include <allocator>
+#include <vector>
+#include <petri/tuple>
 namespace mod
 {
-    
-enum shader_type {
-/// Alltys
+/// Alltys    
+enum shader_type {all,gr,vert,frag,geom,tesc,tese,comp,task,mesh,rgen,rint,rahit,rchit,rmiss,rcall};
 
-
-all,
-gr,
-vert,
-frag,
-geom,
-tesc,
-tese,
-comp,
-task,
-mesh,
-rgen,
-rint,
-rahit,
-rchit,
-rmiss,
-rcall,
-};
-
-enum shareMode {
-    EXCLUSIVE,CONCURRENT
-};
+enum shareMode {EXCLUSIVE,CONCURRENT};
 
 enum BufferUsage {
     // USAGE_TRANSFER_SRC_BIT
@@ -81,89 +62,10 @@ struct bindingData {
     buf* buffer;
     bindings(buf& _buffer) : buffer(&_buffer) {}
 };
-template <typename T,BindingType bt>
-struct binding{
+template <typename T,BindingType bt , class Allocator=std::allocator<T>>
+struct binding : std::vector<T,Allocator>{
     constexpr BindingType Bty = bt;
 
-
-    using ty = T;
-    std::vector<T> data ;
-    pri::list<T>* listPool;
-
-    struct iterator {
-        using viter=  std::vector<T>::iterator ;
-        using liter=  pri::list<T>::iter ; 
-
-        viter veciter;
-        liter listiter; 
-        T& operator*(){return *veciter;}
-        T& operator->(){return veciter.operator->();}
-        decltype(*this) operator++(){++veciter;++listiter;return *this;}
-        decltype(*this) operator--(){--veciter;--listiter;return *this;}
-        decltype(*this) operator++(int){veciter++;listiter++;return *this;}
-        decltype(*this) operator--(int){veciter--;listiter--;return *this;}
-        decltype(*this) operator+=(size_t i){for(size_t s=0;s<i;s++){operator++()} ;return *this ;}
-        decltype(*this) operator-=(size_t i){for(size_t s=0;s<i;s++){operator--()} ;return *this ;}
-        iterator(viter& r,liter& v) : veciter(r),listiter(v) {}
-    };
-
-    struct riterator : iterator {
-        decltype(*this) operator--(){++veciter;++listiter;return *this;}
-        decltype(*this) operator++(){--veciter;--listiter;return *this;}
-        decltype(*this) operator--(int){veciter++;listiter++;return *this;}
-        decltype(*this) operator++(int){veciter--;listiter--;return *this;}
-        using iterator::iterator(viter& r,liter& v) ;
-    }
-
-
-    iterator begin(){return iterator(data.begin(),listPool->begin()) ; };
-    iterator end(){return iterator(data.end(),listPool->end())};
-    riterator rbegin(){return riterator(data.begin(),listPool->begin()) ; };
-    riterator rend(){return riterator(data.end(),listPool->end())};
-    riterator ibegin(){return riterator(data.begin()+data.size()-1,listPool->ibegin()) ; };
-    riterator iend(){return riterator(data.begin(),listPool->iend()) ;};
-
-
-    T& front(){return data.front();}
-    T& back(){return data.back();}
-
-
-    size_t size(){return data.size();}
-    void insert(iterator& it,T& d){
-        data.insert(it.veciter,d);
-        listPool->insert(it.listiter,d);
-    };
-    void push_back(T&& d){
-        listPool->push_back(d); data.push_back(d);
-    };
-    void erase(iterator& it  ){
-        listPool->erase(it.listiter);
-        data.erase(it.veciter);
-    };
-
-    void pub(pri::list<T*>* n){listPool=n;}
-    void get(pri::list<T*>* pts){data.clear();
-        for(T* it : *listPool){data.push_back(*it);}
-    };
-    void get(std::vector<T>& pts){
-        data= pts;
-    };
-    void update()
-        if(data.size()==0){
-            get(listPool);
-        }
-        else {
-            for(typy& it : updates){
-                switch(pri::get<0>(it) ){
-                    case updatesEn::pushB : {data.push_back(*pri::get<1>(it));}
-                    case updatesEn::erase : {data.erase(data.begin()+pri::get<2>(it));}
-                    case updatesEn::insert : {data.insert(data.begin()+pri::get<2>(it),*pri::get<1>(it));}
-                }
-            };
-        }
-    }
-
-    binding(pri::list<T*>* d) : listPool(d);
 };
 
 
@@ -188,11 +90,10 @@ using vectDescriptorPool = descriptorPool<std::vector,bindingT,bindingTs...>;
 template<  typename bindingT,typename... bindingTs>
 using listDescriptorPool = descriptorPool<pri::list,bindingT,bindingTs...>;
 
-
-
-
 template <shader_type shadTy, typename bindingT,typename... bindingTs>
 struct shaderModule {
+    // static cosntexpr bool PODmodule = false;
+
     static constexpr shader_type sty = shadTy ;
     using ty = buf;
     using vectPoolTy = vectDescriptorPool<bindingT,bindingTs...>;
@@ -216,6 +117,9 @@ struct shaderModule {
     c = reinterpret_cast<const uint32_t*>(buffer.data());
     }
     
+
+    template <typename T>
+
     template <typename T>
     void appFunc(T& ref){
         ref.update();
@@ -233,8 +137,6 @@ struct shaderModule {
 template <typename shaderModule,typename... shaderModules>
 struct pipelineModule {
     pri::tuple<shaderModule,shaderModules...> shadmods;
-
-    get
 
 };
 
@@ -304,37 +206,85 @@ template <DIM d,QUALITY::quality q,BindingType bt=BindingType::STORAGE_TEXEL_BUF
 using mesh_vert_shadmod = shaderModule<shader_type::vert,mesh<d,q>,bt> ;
 
 
-
-struct viewPort {
-    float x,y,width,height;float minDepth=0.0,maxDepth=1.0;
-    viewPort() = default; 
-    
-};
-
 template <typename shaderModule, typename... shaderModules >
 struct pipelinePool {
+    static concstexpr bool dataPoolT = shaderModule ;
     using tupty = pri::tuple<shaderModule,shaderModules...>;
+    using tupty
     tupty tup;
 
-    void updateAll(){
-
-    };
-
-    void initialize(){
-        for
-    };  
-}
 
 
-template <class... shaderMod >
-struct lineCon {
-    pri::tuple<shaderMod...> shadMods; // Each of these shaderModules conribute to a pipeline stage and they are 
 
-    template <size_t s>
-    void update_inst(){pri::get<s>(shadMods).update();}
+    void updateAll(){};
 
+    void initialize(){};  
 };
 
+
+
+template <Claas>
+
+template <typeanem T ,template <typename A>class Group >
+struct reference {
+    T* data;
+    Group<T>* p;
+
+    reference(Group<T>& _p , T* d) : data(d) , p(&_p) {};
+};
+
+
+
+
+
+
+template <class shaderMod,class... shaderMod >
+struct lineCon {
+    // pri::tuple<shaderMod...> ; // Each of these shaderModules conribute to a pipeline stage and they are 
+    
+    template <shader_type st,class shadMod>
+    struct isSt{using type =typename std::conditional<shadMod::sty==st,shadMod,void>::type ; }
+
+
+    template <shader_type st>
+    struct tuptyst  {
+        pri::utuple<isSt<st,shadMod>::type,isSt<st,shaderMods>::type...>::type >> tupd;
+
+        struct iterator {constexpr size_t s=0;    
+            constexpr iterator& operator++(){s++;return *this;}
+            constexpr iterator& operator--(){s++;return *this;}
+            constexpr iterator(size_t _s) : s(_s){}
+        }
+        auto& begin(){return pri::get<0>(tupd);};
+        auto& end(){return pri::get<tuple_size(tupd)>(*this);};
+
+        void contribute(){
+
+        };
+    };
+
+    tuptyst<shader_type::all> allSM;
+    tuptyst<shader_type::gr> grSM; 
+    tuptyst<shader_type::vert> vertSM; 
+    tuptyst<shader_type::frag> fragSM; 
+    tuptyst<shader_type::geom> geomSM; 
+    tuptyst<shader_type::tesc> tescSM; 
+    tuptyst<shader_type::tese> teseSM; 
+    tuptyst<shader_type::comp> compSM; 
+    tuptyst<shader_type::task> taskSM; 
+    tuptyst<shader_type::mesh> meshSM; 
+    tuptyst<shader_type::rgen> rgenSM; 
+    tuptyst<shader_type::rint> rintSM; 
+    tuptyst<shader_type::rahit> rahitSM; 
+    tuptyst<shader_type::rchit> rchitSM; 
+    tuptyst<shader_type::rmiss> rmissSM; 
+    tuptyst<shader_type::rcall> rcallSM; 
+
+    void contribute(){
+        
+    };
+
+};
 
     /*
          Can apply styles modifing shading modes ( textures and tesselation rules)
@@ -342,27 +292,11 @@ struct lineCon {
     Does not modify animations
     */    
 
-
-
 class PipeLineAdapter {
     public:
-    list<shaderModule> shadersMods ;
+  
     
-
-
-    void readShaderModule(std::string path,shaderModule& shmod){
-        shmod.readCode(path);
-        shaderMods.push_back(shmod);
-    };
-    // WindowObjects
     
-    // Active memoryPool Objects;
-
-    void issueCommand
-    
-};
-template <typename PipeTy>
-class Pipeline {
-
 };
 }
+#endif

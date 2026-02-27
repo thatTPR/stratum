@@ -42,7 +42,6 @@
 #define KC_comma ','
 #define KC_dot '.'
 #define KC_slashback '/'
-#define KC_sq '''
 #define KC_underscore '_'
 #define KC_plust '+'
 #define KC_obrace '{'

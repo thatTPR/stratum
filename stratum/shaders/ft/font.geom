@@ -16,12 +16,12 @@ layout(std430, set=0,binding=1) buffer ps{
     uint size ;
     vec2 pspts[];    
 };
-layout(std430, set=0,binding=2) buffer endPts{
+layout(std430, set=0,binding=2) buffer pts{
     uint p[];//[numCon]
-};
-layout(std430, set=0,binding=3) buffer onCurve{
-    uint onc[];//[numOnCurves]
-};
+}endPts;
+layout(std430, set=0,binding=3) buffer ptss{
+    uint p[];//[numOnCurves]
+}onCurve;
 // layout(std430,set=0,binding=4) buffer ps{vec2 pts[];} ;
 bool OnCP[MAX_PRIM];
 struct glyf {
@@ -31,12 +31,18 @@ struct glyf {
     int   xMax;
     int   yMax;
 };
-flat out bool gsFill;
+layout(location=0 ) flat out bool gsFill;
+
+
+
 
 layout(triangle_strip, max_vertices = 100) out;
 
 
 layout (location=1)out glyf glyfInfo; 
+
+const uint tess = 3;
+
 
 
 float slope(vec2 left,vec2 center,vec2 right){
@@ -174,38 +180,37 @@ void arcTess(vec2 pta,vec2 ptb,vec2 ptOnc, uint tessc,vec2 pts[TESSC_MAX]){
     }
 }
 void arcTess(vec2 pta,vec2 ptb,vec2 ptOnc, uint t,inout vec2 pts[TESSC_MAX],uint ind){
-    uint tessNum = tessc-2;
+    uint tessNum = t-2;
     vec3 centRad = getCenter(pta,ptb,ptOnc);
     float r =centRad.z;
     vec2 center=  vec2(centRad.x,centRad.y);
     for(uint i=0;i<=tessNum;i++){ uint te = i/(tessNum);
         pts[ind+i]= 
-        
-        ptOnCircleBeg(pta,ptb,te,center);
+        ptOnCircle(pta,ptb,te,center,r);
     }
 }
 
 vec3 getCenter(vec2 centLast,vec2 ptLast,vec2 pt1,vec2 pt2){
     vec2 l = line(centLast,ptLast);
     vec2 l1 = line(pt1,pt2);
-    vec2 mid = (p2+p1)/2;
-    vec2 perpp = perpedicular(l1,mid); 
+    vec2 mid = (pt2+pt1)/2;
+    vec2 perpp = perpendicular(l1,mid); 
     vec2 center = intersect(perpp,l);
-    return vec3(center,rad); 
+    return vec3(center,distance(pt1,center)); 
 }
-
-vec2 arctesselate(uint s,vec2 ptsonc[s],uint t,inout vec2 pts[TESSC_MAX]){
-    uint tessNum = tessc-2;uint inds=0;
+#define PTSONC_MAX 1000
+void arctesselate(uint s,vec2 ptsonc[PTSONC_MAX],uint t,inout vec2 pts[TESSC_MAX]){
+uint tessNum = t-2;uint inds=0;
 vec2 pta;vec2 ptb;
 vec2 ptOnc;vec3 centRad;float r;
 vec2 oa;vec2 oonc;
-
-    for(uint i=0;i<s-2;i++){
+vec2 center;
+    for(uint i=0;i<min(s-2 , PTSONC_MAX);i++){
          pta=ptsonc[i];ptb=ptsonc[i+2];ptOnc=ptsonc[i+1];
          if(i==0){centRad = getCenter(pta,ptb,ptOnc);}
          else {centRad =  getCenter(ptsonc[i],vec2(centRad.x,centRad.y),ptOnc);}
          r =centRad.z;
-        center=centRad.xy;
+         center=centRad.xy;
          oa = pta-center;
          oonc = ptOnc - center;
         pts[inds] = pta;
@@ -221,7 +226,7 @@ vec2 oa;vec2 oonc;
         for(uint j=1;j<tessNum;j++){inds++;float te = j/tessNum;
             vec2 tb = ob*(1-te);
             vec2 to = oonc*te;
-            pts[inds] = (ta+tb)/2 + center;
+            pts[inds] = (to+tb)/2 + center;
             inds++;
         }
     inds++;pts[inds] = ptb;
@@ -232,36 +237,33 @@ uint binomial(uint n,uint k){
     uint st=1;
     for(uint i=k+1;i<=n;i++){
         res*=i;
-        if(st<=n-k){if(i%st == 0){res/=st;st++}}
+        if(st<=n-k){if(i%st == 0){res/=st;st++;}}
     }
     for(uint i=st;st<=n-k;i++){res/=i;}
+    return res;
 }
 
-void computeTrue(uint s,inout vec2 pts[s]){
+void computeTrue(uint s,inout vec2 pts[TESSC_MAX]){
         vec2 cur = pts[0];
         vec2 prev = cur;
-        for(uint i=1;i<s;i++){
+        for(uint i=1;i<min(s,TESSC_MAX);i++){
         vec2 mid = (prev + pts[i+1])/2;
             cur = pts[i];
             pts[i] = (cur - mid)*2 + cur;
             prev = cur;
         }
 }
-// uint stess=  s*tess;
-// n = stess
+
 void tesselate(uint s,inout vec2 ptsonc[TESSC_MAX],uint stess,inout vec2 pts[TESSC_MAX]){
 
     computeTrue(s,ptsonc);
-    vec2 hpt = (ptprev + ptnext)/2;
-    vec2 p1 = (ptc - hpt)*2 + hpt ;
-
     //formula  : B(t) = sum(i,n){ bin(n,i)* (1-t)^(n-i)t^i*Pi }
 
-    uint tessnum = stess+2;
+    uint tessnum = stess+2;uint si = min(s,TESSC_MAX) ;
   for(uint i = 1;i<=tessnum-1;i++){float t = i/tessnum ;
         vec2 r;
-        for(uint j =0;j<s;j++){
-            r+=binomial(n,j)* pow((1-t),(n-i))*pow(t,j)*ptsonc[j];
+        for(uint j =0;j<si;j++){
+            r+=binomial(si,j)* pow((1-t),(si-i))*pow(t,j)*ptsonc[j];
         }
         pts[i-1] =r;
     }
@@ -269,33 +271,34 @@ void tesselate(uint s,inout vec2 ptsonc[TESSC_MAX],uint stess,inout vec2 pts[TES
 void tesselate(uint ind,inout uint size ,inout vec2 pts[MAX_CONT]){
     uint curind=0;
     uint start = ind>0?endPts.p[ind-1] : 0;
-    uint end = endPts.pt[ind];
+    uint end = endPts.p[ind];
     uint j=0;
-    bool wrap=0 ;vec2 lastPt =pts[end] ;
-    if(OnCP[start]==true){wrap=1;}
+    bool wrap= false  ;vec2 lastPt =pts[end] ;
+    if(OnCP[start]==true){wrap=true;}
 
     for(uint i=start;i<end;i++){
         uint startInd=i;    
-        for(OnCP[i] && i<end;i++ ){j++}
+        for(;OnCP[i] && (i<end);i++ ){j++;}
         if(i!=startInd){
             uint s=i-startInd + 1;
-            uint ptsonc[s];ptsonc[0]=lastPt;
+            vec2 ptsonc[PTSONC_MAX];ptsonc[0]=pspts[end];
             for(uint j=1;j<s;j++){
                 ptsonc[j] = pspts[startInd+j];}
-            uint tesst = (s+1)*tess ;vec2 ptst[tesst];
+            uint tesst = (s+1)*tess ;vec2 ptst[TESSC_MAX];
             arctesselate(s,ptsonc,tesst,ptst);
-            for(uint j=0;j<tesst;j++){pts[curInd]=ptst[j];curInd++;}
+            for(uint j=0;j<tesst;j++){pts[curind]=ptst[j];curind++;}
         }
-        else {pts[curInd]=lastPt;curInd++}
-        lastPt = p.Pts[i];
+        else {pts[curind]=lastPt;curind++;}
+        lastPt = pts[i];
     }
-    size=curInd;
+    size=curind;
 }
 uint getSize(uint ind){uint size=0;
     uint start = ind>0?endPts.p[ind-1] : 0;
     uint si = endPts.p[ind] - start+1;uint j=0;
-    for(uint i=0;i<si;i++){if(ONcP[start+i]){for(;OnCP[start+i];i++){j++;} continue;} else {size++;}}
-    size+=(1+j)*tess; return size;
+    for(uint i=0;i<si;i++){if(OnCP[start+i]){for(;OnCP[start+i];i++){j++;} continue;} else {size++;}}
+    size+=(1+j)*tess; 
+    return size;
 }
 
 #define MAX_DIR 1000
@@ -303,29 +306,31 @@ uint close( vec2 p, uint s,inout vec2 c2[MAX_DIR],uvec2 lim){
     uint m = lim.x;   
     for(uint j=lim.x;j<=lim.y;j++){
         vec2 pp = c2[j];
-        if(distance(pp,p)<distance(p,c2[m]) ){m= j;}}
+        if(distance(pp,p)<distance(p,c2[m]) ){m=j;}};
     return m;
 }
-uint close( uint s,inout vec2 c2[MAX_DIR],inout uint si ,inout uint t[MAX_DIR],uint s0 ,uvec2 lim1){
+void close( uint s,inout vec2 c2[MAX_DIR],inout uint si ,inout uint t[MAX_DIR],uint s0 ,uvec2 lim1){
     for(uint j=s0;j<si+s0;j++){
         vec2 pp = c2[j];
-        t[j-s0] = close(pp,s,c2,s1,e1); 
+        t[j-s0] = close(pp,s,c2,lim1); 
     }
 }
-uvec2 close( uint s,inout vec2 c2[MAX_DIR], uint uvec2 lim0,uvec2 lim1){
-    uvec2 pm;
-    for(uint j=lim.x;j<=lim.y;j++){
+
+uvec2 close( uint s,inout vec2 c2[MAX_DIR], uvec2 lim0,uvec2 lim1){
+    uvec2 pm=uvec2(lim0.x,lim0.y);
+    for(uint j=lim0.x;j<=lim1.y;j++){
         vec2 pp = c2[j];
         uint c = close(pp,s,c2,lim1);
-        if(distance(pp,c2[c]) < distance(pm[c2.y],pm[c2.x] )) { pm = {j , c}} 
+        if(distance(pp,c2[c]) < 
+        distance(c2[pm.y],c2[pm.x] ) ){ pm = uvec2(j , c);} 
     }
     return pm;
 }
 uint close(uint s,inout vec2 ps[MAX_DIR],uint p,uvec2 lim){
 uint cls=  lim.x; float d= distance(ps[p],ps[lim.x]);
-
-    for(uint i=lim.x+1;i<=lim.y;i++){
-        float ds = distance(ps[i],ps[p])
+    uint i;
+    for( i=lim.x+1;i<=lim.y;i++){
+        float ds = distance(ps[i],ps[p]);
         if(ds < d){d=ds;cls=i;}
     }
     return i;
@@ -335,41 +340,41 @@ uint cls=  lim.x; float d= distance(ps[p],ps[lim.x]);
 uvec2 closest(uint si , vec2 c1[MAX_DIR], uint s,inout vec2 c2[MAX_DIR],uvec2 lim){
     uvec2 clMin ;
     for(uint i=0;i<si;i++){
-        uvec2 cl= {c1[i],c2[lim.x]}
+        // uvec2 cl= {c1[i],c2[lim.x]}
         vec2 p = c1[i];
         uint t = close(p,s,c2,lim);
-        if(distance(p,c2[lim.x+t]) < distance(c1[clMin.x] , s2[lim.x+clMin.y]) ){clMin={i,t}}
+        if(distance(p,c2[lim.x+t]) < distance(c1[clMin.x] , c2[lim.x+clMin.y]) ){clMin=uvec2(i,t);}
     }
     return clMin;
 }
 bool selfIntersect(uint si, inout vec2 c[MAX_DIR], uint pt, vec2 p){
-    vec2 p = c[pt];
+    vec2 pp = c[pt];
     for(uint i=pt+2; i<si ;i++){
-        vec2 p1= c[i]; vec2 p2 = c[i-1];if(intersectSegSeg({p1,p2},{p,p})){return 1;}
+        vec2 p1= c[i]; vec2 p2 = c[i-1];if(intersectSegSeg(mat2x2(p1,p2),mat2x2(p,pp)) == true){return true;}
     }
     for(uint i=pt-2; i>=0 ;i--){
-        vec2 p1= c[i]; vec2 p2 = c[i-1];if(intersectSegSeg({p1,p2},{p,p})){return 1;}
+        vec2 p1= c[i]; vec2 p2 = c[i-1];if(intersectSegSeg(mat2x2(p1,p2),mat2x2(p,pp)) == true){return true;}
     }
-return 0;
+return false;
 }
 bool selfInter(uint si,inout vec2 c[MAX_DIR],uint p1,uint p2,uvec2 lim){
     uint j=lim.x;
     vec2 mid = (c[p1] + c[p2]) /2;
     uint count = 0;
-    vec2 midC = (lim.x+ lim.x+1)/2; 
-    mat2x2 seg = {mid,midC}
-    for(uint i=lim.x+1;i<=lim.y;i++){if(intersectSegSeg({c[j],c[i]},{c[p1],c[p2]})){return 1;}
+    vec2 midC = (c[lim.x]+ c[lim.x+1])/2; 
+    mat2x2 seg = {mid,midC} ;
+    for(uint i=lim.x+1;i<=lim.y;i++){if(intersectSegSeg(mat2x2(c[j],c[i]),mat2x2(c[p1],c[p2])) == true){return true;}
         j=i;
-        mat2x2 segc = {c[i],c[i-1]}
+        mat2x2 segc = {c[i],c[i-1]} ;
         if(intersectSeg(seg,segc)) {count++;}
     }
-    return 0;
+    return false;
 }
 bool selfInter(uint si,inout vec2 c[MAX_DIR],uint p1,vec2 p2,uvec2 lim){
     uint j=lim.x;
-    for(uint i=lim.x+1;i<=lim.y;i++){if(intersectSegSeg({c[j],c[i]},{c[p1],p2})){return 1;}
+    for(uint i=lim.x+1;i<=lim.y;i++){if(intersectSegSeg(mat2x2(c[j],c[i]),mat2x2(c[p1],p2)) == true){return true;}
         j=i;}
-    return 0;
+    return false;
 }
 bool angleGood(uint s,inout vec2 pts[MAX_DIR],uint pa,uint pb,uint cur_a,uint cur){
     return !intersectSeg(mat2x2(pts[pa],pts[pb]),mat2x2(pts[cur_a],pts[cur])) ;}
@@ -381,31 +386,31 @@ bool angleGood(uint s,inout vec2 pts[MAX_DIR],uint pa,uint pb,uint cur_a,vec2 p)
 void vemit(vec2 p){gl_Position = vec4(p,1,1);EmitVertex();}
 
 void incr(inout uint i ,uvec2 lim,int incr ){
-    if(incr>0){if(i==l.y){i=l.x;return;}}
-    if(incr<0){if(i==l.x){i=l.y;return;}}
+    if(incr>0){if(i==lim.y){i=lim.x;return;}}
+    if(incr<0){if(i==lim.x){i=lim.y;return;}}
     i+=incr;
 }
 
 void incri(inout uint i ,uvec2 lim,uvec2 bound,int incr ){
     if(incr == -1){if(i==bound.x){i=bound.y;return;}
     if(i==lim.x){i=lim.y;return;}}
-    if(incr == 1){if(i==bound.y){i=bound.x}return;
-    if(i==lim.y){i=lim.x;return}}
+    if(incr == 1){if(i==bound.y){i=bound.x;return;}
+    if(i==lim.y){i=lim.x;return;}}
     i+=incr;
 }
 ivec2 Mindif(uvec2 lim,uint i1,uint i2){
-    uint i=i1;int incr=1;
+    uint i=i1;int inc=1;
     int d=0;
-    for(;i!=i1;incr(i,lim,incr);d+=incr){}
-    int dm=0 ;i=i1;incr=-1;
-    for(;i!=i1;incr(i,lim,incr);d+=incr){}
-    return abs(d)<abs(dm)?{d,1}:{dm,-1}
+    for(;i!=i1;incr(i,lim,inc),d+=inc){}
+    int dm=0 ;i=i1;inc=-1;
+    for(;i!=i1;incr(i,lim,inc),d+=inc){}
+    return abs(d)<abs(dm)?ivec2(d,1):ivec2(dm,-1) ;
 }
 
 void tip(uint s,inout vec2 pts[MAX_CONT] ,uvec2 ps ,bool ins){
     vemit(pts[ps.x]);vemit(pts[ps.y]);
     uvec2 lim = {0,s-1};
-    uint indy = lim.y;uint prev=lim.x;bool start=1;uint i=lim.x;incr(i,l,1)
+    uint indy = lim.y;uint prev=lim.x;bool start=1;uint i=lim.x;incr(i,lim,1);
     float xa;float xb ;
     uint prev_ap = lim.x;uint prev_bp = lim.y;
     while(i<=indy){
@@ -414,10 +419,10 @@ void tip(uint s,inout vec2 pts[MAX_CONT] ,uvec2 ps ,bool ins){
             else {start=1;
                 if(angleGood(s,pts,pts[prev_ap],pts[i],pts[prev_bp],pts[indy]) && !selfInter(s,pts,prev_ap,indy,lim)){
                     vemit(pts[indy]);prev_bp=indy;start=1; incr(indy,l,-1);}
-                else {uint ind = indy-1 ;for(;selfInter(s,pts,prev_ap,ind,lim);incr(ind,l,-1)){}
+                else {uint ind = indy-1 ;for(;selfInter(s,pts,prev_ap,ind,lim);incr(ind,lim,-1)){}
                     vemit(pts[ind]);
-                    EndPrimitive();tip(s,pts,uvec2(ind,indy),l);
-                    prev=last;last=ind;                
+                    EndPrimitive();tip(s,pts,uvec2(ind,indy),lim,ins);
+                    prev=ind;                
                     vemit(pts[ind]);
                 }}
     }
@@ -444,7 +449,7 @@ bool isInside(uint s,inout vec2 pts[MAX_CONT],vec2 p){
     }
     
     return (count%2)==1;
-};
+}
 uvec2 PerpInter(uint s,inout vec2 pts[MAX_CONT],uint ind,inout vec2 p){
     vec2 prev=ind>0?pts[ind-1]:pts[s-1];
     vec2 next=ind<(s-1)?pts[ind+1]:pts[0];
@@ -457,7 +462,7 @@ uvec2 PerpInter(uint s,inout vec2 pts[MAX_CONT],uint ind,inout vec2 p){
             ps = intersect(line,seg);
             vec2 mid = (ps + pts[ind])/2;
             if(isInside(s,pts,mid)){
-                if(distance(pts[ind],ps)<distance(pts[ind],p)){p = ps;ret={i,i+1}}
+                if(distance(pts[ind],ps)<distance(pts[ind],p)){p = ps;ret=uvec2(i,i+1);}
             }
         }
     }
@@ -484,7 +489,7 @@ void Contour(uint s,inout vec2 pts[MAX_CONT],bool ins){tip(s,pts,uvec2(0,s-1),in
 void primOut(uint ind,uint inds[MAX_CONT] , uint size){
     uint smax=0;
     uint scont = getSize(ind);
-    vec2 cont[MAX_CONT]; tesselate(ind,scont,cont) ;Contour(scont,cont,0);
+    vec2 cont[MAX_CONT]; tesselate(ind,scont,cont) ;Contour(scont,cont,false);
     uint fullSize=0;
 
     uvec2 lims[MAX_CONT] ;for(uint i=0;i<size;i++){lims[i]=uvec2(fullSize+1,0);fullSize+=getSize(inds[i]);endPs[i].y=fullSize;} 
@@ -496,7 +501,7 @@ void primOut(uint ind,uint inds[MAX_CONT] , uint size){
         uint si = endPs[i] - start+1;
         vec2 pts[MAX_CONT];
         tesselate(inds[i],si,pts);
-        Contour(si,pts,1);
+        Contour(si,pts,true);
     }
 }
 
@@ -541,10 +546,10 @@ void main(){
     s=p.size;
     for(uint i=0;i<p.size;i++){OnCP[i]=0;}
     for(uint i=0;i<p.numOnCurves;i++){OnCP[onCurve.p[i]] = 1;}
-    uvec2 bound={0,endPts.p[0]}
+    uvec2 bound={0,endPts.p[0]};
     float rad = winding(bound);
     for(uint i=0;i<p.numCon;i++){
-        bound = {bound.y+1,endPts.p[i]}
+        bound = uvec2(bound.y+1,endPts.p[i]);
         float r = winding(bound);
         if(sign(r)!=sign(rad)){uint k=0;uint size = bound.y-bound.x+1;
             uint k=bound.y;

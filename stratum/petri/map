@@ -1,0 +1,304 @@
+#pragma once
+#include <functional>
+#include <memory>
+#include <stdexcept>
+#include <map>
+#include <utility>
+#include <set>
+#include "tree.hpp"
+
+namespace pri {
+
+
+template <class KeyC,typename K,typename T>
+struct KeyCompare {
+    bool operator()(std::pair<K,T>& lhs,std::pair<K,T>& rhs){return KeyC(lhs.first,rhs.first);}
+} 
+template <typename Key, typename T,class Compare=std::less<Key>, class Allocator=  std::allocator<std::pair<const Key,T> >
+class map : public pri::set<std::pair<Key,T>,KeyCompare<Compare,Key,T>,Allocator>> {
+    using inherset = pri::set<std::pair<Key,T>,KeyCompare<Compare,Key,T>,Allocator>>
+public:
+using key_type=	Key;
+using mapped_type=	T;
+using key_compare = Compare;
+
+
+struct ktype {
+    Key k ;
+    bool operator==(std::pair<Key,T>& l){return l.first==k;}
+    bool operator==(std::pair<Key,T>&& l){return l.first==k;}
+    constexpr bool operator==(std::pair<Key,T>&& l)const {return l.first==k;}
+    ktype(Key&& _k) : k(_k){};
+    template <class K>
+    ktype(K&& x) : k(x){};
+};
+
+
+
+
+
+T& at( const Key& key ){if(contains(ktype(key))){return find(ktype(key)).second}else {throw std::out_of_range();} };
+const T& at( const Key& key ) const{{if(contains(ktype(key))){return find(ktype(key)).second}else {throw std::out_of_range();} };};
+
+#if __cplusplus >= 202602L
+template< class K >
+T& at( const K& x ){if(contains(ktype(x))){return find(ktype(key)).second}else {throw std::out_of_range();} };
+template< class K >
+const T& at( const K& x ) const {if(contains(ktype(x))){return find(ktype(key)).second}else {throw std::out_of_range();} };
+#endif
+
+T& operator[]( const Key& key ){ try{return at(key)}catch (const std::out_of_range& e){return insert(value_type(key,T())).first->second;};};
+#if __cplusplus >= 201103L
+T& operator[]( Key&& key ){ try{return at(std::forward<Key>(key))}
+catch (const std::out_of_range& e){return insert(value_type(std::forward<Key>(key),T())).first->second;};
+ };
+#endif 
+#if __cplusplus >= 202602L
+template< class K >
+T& operator[]( K&& x ){try{return at<k>(std::forward<T>(x));}
+catch (const std::out_of_range& e){return insert(value_type(Key(std::forward<K>(x)),T())).first->second;};
+};
+#endif
+
+
+#if __cplusplus >= 201703L 
+template< class M >
+std::pair<iterator, bool> insert_or_assign( const Key& k, M&& obj ){
+    if(contains(ktype(k))){iterator it =  find(ktype(key)); it->second = T(std::forward<M>(obj)) ;return std::pair<iterator,bool>(it,true);}
+    else operator[](k) = obj ; return std::pair<iterator,bool>(find(key),false);
+
+};
+template< class M >
+std::pair<iterator, bool> insert_or_assign( Key&& k, M&& obj ){
+        if(contains(ktype(std::forward<Key>(k)))){iterator it =  find(ktype(key)); it->second = T(std::forward<M>(obj)) ;return std::pair<iterator,bool>(it,true);}
+    else operator[](k) = obj ; return std::pair<iterator,bool>(find(key),false);
+};
+template< class M >
+iterator insert_or_assign( const_iterator hint, const Key& k, M&& obj ){
+        if(contains(ktype(k))){iterator it =  find(ktype(key)); it->second = T(std::forward<M>(obj)) ;return std::pair<iterator,bool>(it,true);}
+    else operator[](k) = obj ; return std::pair<iterator,bool>(find(key),false);
+
+};
+template< class M >
+iterator insert_or_assign( const_iterator hint, Key&& k, M&& obj ){
+    if(contains(ktype(std::forward<Key>(k)))){iterator it =  find(ktype(key)); it->second = T(std::forward<M>(obj)) ;return std::pair<iterator,bool>(it,true);}
+    else operator[](k) = obj ; return std::pair<iterator,bool>(find(key),false);
+};
+#endif 
+#if __cplusplus >= 202602L
+template< class K, class M >
+std::pair<iterator, bool> insert_or_assign( K&& k, M&& obj ){
+      if(contains(ktype(std::forward<Key>(k)))){iterator it =  find(ktype(Key(key))); it->second = T(std::forward<M>(obj)) ;return std::pair<iterator,bool>(it,true);}
+    else operator[](Key(k)) = obj ; return std::pair<iterator,bool>(find(Key(key)),false);
+};
+template< class K, class M >
+iterator insert_or_assign( const_iterator hint, K&& k, M&& obj ){
+    if(contains(ktype(std::forward<Key>(k)))){iterator it =  find(ktype(Key(key))); it->second = T(std::forward<M>(obj)) ;return std::pair<iterator,bool>(it,true);}
+    else operator[](Key(k)) = obj ; return std::pair<iterator,bool>(find(Key(key)),false);
+};
+#endif 
+#if __cplusplus >= 201703L
+template< class... Args >
+std::pair<iterator, bool> try_emplace( const Key& k, Args&&... args ){if(contains(ktype(k))){return;}
+    emplace(std::piecewise_construct,k, T(args...));
+};
+template< class... Args >
+std::pair<iterator, bool> try_emplace( Key&& k, Args&&... args ){
+    if(contains(ktype(std::forward<Key>(k)))){return;}
+    emplace(std::piecewise_construct,std::forward<Key>(k), T(args...));
+};
+template< class... Args >
+iterator try_emplace( const_iterator hint, const Key& k, Args&&... args ){    if(contains(ktype(std::forward<Key>(k)))){return;}
+    emplace_hint(hint,std::piecewise_construct,k, T(args...));
+};
+template< class... Args >
+iterator try_emplace( const_iterator hint, Key&& k, Args&&... args ){    if(contains(ktype(std::forward<Key>(k)))){return;}
+    emplace(hint,std::piecewise_construct,std::forward<Key>(k), T(args...));
+};
+#endif 
+#if __cplusplus >= 202602L
+template< class K, class... Args >
+std::pair<iterator, bool> try_emplace( K&& k, Args&&... args ){
+    if(contains(ktype<K>(std::forward<Key>(k)))){return;}
+    emplace_hint(hint,std::piecewise_construct,Key(std::forward<K>(k)), T(args...));
+};
+template< class K, class... Args >
+iterator try_emplace( const_iterator hint, K&& k, Args&&... args ){
+    if(contains(ktype<K>(std::forward<Key>(k)))){return;}
+    emplace_hint(hint,std::piecewise_construct,Key(std::forward<K>(k)), T(args...));
+};
+#endif 
+
+CEXPR26 size_type erase( const Key& key ){ erase(find(ktype(key)))  };
+#if __cplusplus >= 202302L
+template< class K >
+CEXPR26 size_type erase( K&& x ){erase(find(ktype(key)));};
+
+#if __cplusplus >= 201702L
+node_type extract( const Key& k ){return extract(ktype(k));};
+#endif
+#if __cplusplus >= 202302L
+template< class K >
+node_type extract( K&& x ){return extract(ktype(std::forward<K>(x)));};
+#endif 
+
+
+iterator lower_bound( const Key& key ){for(auto it = begin(); it!=end();++it){if(!(it->first<key)){return it;}}};
+const_iterator lower_bound( const Key& key ) const{for(auto it = cbegin(); it!=end();++it){if(!(it->first<key)){return it;}}};
+iterator upper_bound( const Key& key ){for(auto it = begin(); it!=end();++it){if((it->first>key)){return it;}}};
+const_iterator upper_bound( const Key& key ) const{for(auto it = cbegin(); it!=end();++it){if((it->first>key)){return it;}}};
+#if __cplusplus >= 201402L
+template< class K >
+iterator lower_bound( const K& x ){for(auto it = begin(); it!=end();++it){if(!(it->first<x)){return it;}}};;
+template< class K >
+const_iterator lower_bound( const K& x ) const{for(auto it = cbegin(); it!=end();++it){if(!(it->first<x)){return it;}}};;
+template< class K >
+iterator upper_bound( const K& x ){for(auto it = begin(); it!=end();++it){if((it->first>x)){return it;}}};;
+template< class K >
+const_iterator upper_bound( const K& x ) const{for(auto it = cbegin(); it!=end();++it){if((it->first>x)){return it;}}};;
+#endif 
+
+CEXPR26 std::pair<iterator, iterator> equal_range( const Key& key ){return std::pair<iterator,iterator>(lower_bound(key),upper_bound(key));};
+CEXPR26 std::pair<const_iterator, const_iterator> equal_range( const Key& key ) const{return std::pair<const_iterator,const_iterator>(lower_bound(key),upper_bound(key));};
+#if __cplusplus >= 201402L
+template< class K >
+CEXPR26 std::pair<iterator, iterator> equal_range( const K& x ){return std::pair<iterator,iterator>(lower_bound(x),upper_bound(x));};;
+template< class K >
+CEXPR26 std::pair<const_iterator, const_iterator> equal_range( const K& x ) const{return std::pair<const_iterator,const_iterator>(lower_bound(x),upper_bound(x));};;
+#endif 
+
+
+CEXPR26 bool contains( const Key& key ) const{contains(ktype(key));};
+#if __cplusplus >= 202003L
+template< class K >
+CEXPR26 bool contains( const K& x ) const{return contains(ktype(x));};
+#endif
+
+
+iterator find( const Key& key ){return find(ktype(key));};
+const_iterator find( const Key& key ) const{return find(ktype(key));};
+#if __cplusplus >= 201402L
+template< class K >
+iterator find( const K& x ){return find(ktype(x));};
+template< class K >
+const_iterator find( const K& x ) const{return find(ktype(x));};
+
+
+
+};  
+
+
+template <class Key,
+    class T,
+    class Compare = std::less<Key>,
+    class Allocator = std::allocator<std::pair<const Key, T>>
+class multimap : public map<Key,T,Compare,Allocator> , public multiset<std::pair<Key,T>,Compare,Allocator> {};
+
+
+
+template< class Key, class T, class Compare, class Alloc >
+inline bool _map_implid(const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs){
+    #if __cplusplus <201402L
+return std::distance(lhs.begin(), lhs.end())
+               == std::distance(rhs.begin(), rhs.end())
+           && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+#else
+return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+#endif
+ }
+template< class Key, class T, class Compare, class Alloc >
+MAPQ_CEXPR bool operator==( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return  _map_implid(lhs,rhs)};
+#if __cplusplus < 202002L
+template< class Key, class T, class Compare, class Alloc >
+bool operator!=( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return !this->operator==(lhs,rhs)};
+
+
+template< class Key, class T, class Compare, class Alloc >
+bool _map_implCmp( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs){return std::lexicographical_compare(lhs.begin(), lhs.end(),rhs.begin(), rhs.end());}
+template< class Key, class T, class Compare, class Alloc >
+bool operator< ( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return _map_implCmp(lhs,rhs);};
+template< class Key, class T, class Compare, class Alloc >
+bool operator<=( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return _map_implCmp(lhs,rhs) || operator==(lhs,rhs);};
+template< class Key, class T, class Compare, class Alloc >
+bool operator> ( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return !_map_implCmp(lhs,rhs) ;};
+template< class Key, class T, class Compare, class Alloc >
+bool operator>=( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return !_map_implCmp(lhs,rhs) or operator==(lhs,rhs);};
+#else
+using rettSpaceship = 
+template< class Key, class T, class Compare, class Alloc >
+MAPQ_CEXPR auto/* see below */
+    operator<=>( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(),
+                                              rhs.begin(), rhs.end();};
+
+template< class Key, class T, class Compare, class Alloc >
+bool operator< ( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return operator<=>(lhs,rhs)<0;};
+template< class Key, class T, class Compare, class Alloc >
+bool operator<=( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return operator<=>(lhs,rhs)<=0;};
+template< class Key, class T, class Compare, class Alloc >
+bool operator> ( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return operator<=>(lhs,rhs)>0 ;};
+template< class Key, class T, class Compare, class Alloc >
+bool operator>=( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return operator<=>(lhs,rhs)>=0;};
+
+                 template< class Key, class T, class Compare, class Alloc >
+bool operator!=( const std::map<Key, T, Compare, Alloc>& lhs,
+                 const std::map<Key, T, Compare, Alloc>& rhs ){return !this->operator==(lhs,rhs)};
+
+
+#endif 
+
+#if __cplusplus<201703L
+template< class Key, class T, class Compare, class Alloc >
+void swap( std::map<Key, T, Compare, Alloc>& lhs,
+           std::map<Key, T, Compare, Alloc>& rhs );
+#else
+template< class Key, class T, class Compare, class Alloc >
+MAPQ_CEXPR void swap( std::map<Key, T, Compare, Alloc>& lhs,
+           std::map<Key, T, Compare, Alloc>& rhs )
+    noexcept(/* see below */);
+
+#endif
+#if __cplusplus >= 202002L
+template< class Key, class T, class Compare, class Alloc,
+          class Pred >
+MAPQ_CEXPR std::map<Key, T, Compare, Alloc>::size_type erase_if( std::map<Key, T, Compare, Alloc>& c,Pred pred ){auto old_size = c.size();
+for (auto first = c.begin(), last = c.end(); first != last;)
+{
+    if (pred(*first))
+        first = c.erase(first);
+    else
+        ++first;
+}
+return old_size - c.size();};
+
+namespace pmr {
+    template<
+        class Key,
+        class T,
+        class Compare = std::less<Key>
+    > using map = pri::map<Key, T, Compare,
+                           std::pmr::polymorphic_allocator<std::pair<const Key, T>>>;
+
+template<
+        class Key,
+        class T,
+        class Compare = std::less<Key>
+    > using multimap = pri::multimap<Key, T, Compare,
+                           std::pmr::polymorphic_allocator<std::pair<const Key, T>>>;
+}
+
+
+
+};

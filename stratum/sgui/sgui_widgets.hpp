@@ -1,7 +1,14 @@
 #ifndef SGUI_WIDGETS_HPP
 #define SGUI_WIDGETS_HPP
 
-
+#pragma once
+#include <modules.hpp>
+#include <map>
+#include <vector>
+#include <mode_pipeline.hpp>
+#include <glm/glm.hpp>
+#include <cstddef>
+using namespace std; 
 #include <type_traits>
 #include <petri/list.hpp>
 #include <petri/templates.hpp>
@@ -22,6 +29,8 @@
 #endif
 using namespace std ; 
 
+#define NSC std::
+
 #define STRATA_GLM_NO_SWIZZLE
 
 #define SGUI_DECL static 
@@ -39,13 +48,13 @@ namespace sgui {
     enum align {
         no=           0b0000,
         left=         0b0001,
-        left_cen=     0b1101,
+        left_center=     0b1101,
         right=        0b0010,
-        right_cen=    0b1110,
+        right_center=    0b1110,
         top=          0b0100,
-        top_cen=      0b0111,
+        top_center=      0b0111,
         down=         0b1000,
-        down_cen=     0b1011,
+        down_center=     0b1011,
         cenh=         0b0011,
         cenv=         0b1100,
         cen=          0b1111
@@ -67,14 +76,13 @@ namespace sgui {
         WS    =0b1010,
         ALL   =0b1111
     };
-       
-       #define SALIGN_RIGHT  0b001  
-       #define SALIGN_LEFT   0b100 
-       #define SALIGN_UP     0b011 
-       #define SALIGN_DOWN   0b110
-       #define SALIGN_CENTER 0b111 
-       // Widget Primitives
-            
+    enum class Align {
+        _RIGHT=0b001,
+        _LEFT=0b100,
+        _UP=0b011,
+        _DOWN=0b110,
+        _CENTER=0b111,
+    }
     class sgui_attribute {
         public:
         enum atty {align,scroll,resize,color} ;
@@ -107,102 +115,103 @@ namespace sgui {
     sgui_attribute resize(sgui_attribute::atty::resize);
 #define WIDGET_EVENT()
 
+enum widgetAttribute {_scroll=0b00010000, draggable=0b00100000, docking=0b01000000,RESIZE=0b10000000,alignleft=0x0b1000 ,alignright=0b0100,alignup=0b0010,aligndown=0b0001};
 
+// #define events
 
-template <bool _scroll,bool draggable,bool docking, class... events>
-    class widget {
+struct wsys  {
+    uint16_t (*attr)() ;
+    glm::vec4& (*size)();
+    glm::vec4& (*maxsize)();
+    uint8_t (*align)();
+    void (*calc)(glm::vec4& parent_rest);
+    void (*draw)();
+    bool (*is_pt_of)(glm::ivec2 p);
+    wsys* parent;
+};
+
+template <typename cA,typename cB, typename widT>
+void move_child(cA from,cB to,widT& w);
+
+template <uint16_t watr, class... events>
+    class widget : events... {
         public:
-        constexpr bool scroll = _scroll;
-        constexpr bool drag = draggable;
-        constexpr bool dock = docking;
-        
-        using evtup = pri::tuple<events...>;
-        evtup unique_events;
-        uint8_t align;
-        uint8_t scroll;
-        uint8_t resize;
+        using inher_event_type = inherEvent<events...>;
+        uint16_t att ;
 
-        
-        glm::ivec4 size;
-        glm::ivec4 maxsize;
+        bool scrollable(){return _scroll & att;}  ;
+        bool draggable(){return _draggable & att;}  ;
+        bool dockable(){return _docking & att;}  ;
 
-        glm::ivec4& _size()final{return size;};
-        glm::ivec4& _maxsize()final{return maxsize;};
-        
-        
-        virtual void calc(glm::ivec4 parentLeft);
-        virtual void update();
-        virtual void event();
+        uint16_t attr(){return watr};
 
-        
-        void close(){delete this;};
+        glm::vec4 size; glm::vec4& _size(){return size; };
+        glm::vec4 maxsize; glm::vec4&  _maxsize(){return maxsize; };
+     
+                wsys _wsys;
+                glm::ivec4& _size()final{return size;};
+                glm::ivec4& _maxsize()final{return maxsize;};
+                
+                std::enable_if_t<pri::one_of<resize,events...> , void > resize(glm::vec2 r) {size.zw=r;};
+                
+                virtual void update(glm::vec4 update){};
+                virtual void draw();
+                
+                void event();
+                
+                void calc(glm::vec4 parent_rest){update(parent_rest);};
+                void close(){delete this;};
+                
+                
+                // template <class containerT>
+                // void setParent(containerTs* par){parent= par;setcurPar<containerT>();}
+                glm::dvec4 color ;
+          
+                std::string name ;
+          
+        bool is_pt_of(glm::ivec2 pt ){return 
+            (pt.x > size.x) and (pt.y<size.y) and (pt.x<size.z) and (pt.y>size.w)  ;}
 
-//TODO set when widget si active and pushed from backend
-        void idev_mouseMove(impl::mouse_move i);
-        void idev_mouseDown(impl::mouse_down i);
-        void idev_kbDown(impl::key_down i);
-        void idev_kbUp(impl::key_up i);
-        void idev_kbPress(impl::key_press i);
-        void idev_kbCombo(impl::key_combo i);
-
-
-
-            
-        template <class containerT>
-        void setcurPar(){
-            for(size_t s  = 0;s<std::variant_size(parent);s++){
-                if(std::is_same<*(std::get<s>(parent)) , containerT>::value){
-                    curPar = s; return;
-                }
-            }
-        }
-        // template <class containerT>
-        // void setParent(containerTs* par){parent= par;setcurPar<containerT>();}
-        glm::dvec4 color ;
-        uint8_t align;
-        uint8_t scroll;
-        uint8_t resize;
-
-        std::string name ;
-
+    
+          
+                void wsys_init(wsys* parent = nullptr){_wsys = {attr,_size,_maxsize,get_align,calc,draw,is_pt_of ,parent};}
 
 
         // uint pos; // position in canvas hierarchy
         uint childs_length=0;
 
+    template <typename evT ,typename T>
+    bool _cb(T& v) {
+        if constexpr (inherEvent<events...>::has_event<e>){        
+            assert(std::is_same<evT::dtype,T>::value,"Value for evT not correct") ;
+            evT::cb(v);return true;}
+            return false;
+    };
+    
+    template <typename T,typename evT,typename... evTs> void __cb(T& r){
+            if(_cb<evT,T>(r)){return;};
+            else if constexpr (sizeof...(evTs)){__cb<T,evTs...>(r);}
+        };
+
+
+    template <typename evT& e>
+    void cb(e::dtype& v){__cb<e::dtype,events...>(v);};
 
 
         void close()final{std::get<curPar>(parent)->erase_child(this);};
 
-        
-        bool is_pt_of(glm::ivec2 pt ){return 
-            (pt.x > data.x) and (pt.y<data.y) and (pt.x<data.z) and (pt.y>data.w)  ;}
-
-        virtual void drawCmd();
+        virtual void draw();
         virtual void update();
        
- 
-       
-        SGUI_DECL void calc_self(){
-
-        }; 
+        SGUI_DECL void calc_self(glm::vec4 bound){}; 
      
+        sgui_attribute sattr;
 
-        SGUI_DECL void draw_childs(){
-            if(childs_calced ){this->calc_childs();};
-            for(int i=0 ; i<this->childs_length;i++){
-                this->childs[i]->draw();
-            };
-        };
-
-        virtual SGUI_DELC void draw(){
-            this->draw_childs();
-        };
         // virtual SGUI_DECL void moveto(widget* parent){
         //     this->parent->move_child(this,parent);
         // };
 
-    
+    ~widget() {}
     widget() = default ;
     void attributes(sgui_attribute at,sgui_attribute... ats){
         switch(at.t){
@@ -223,8 +232,14 @@ template <bool _scroll,bool draggable,bool docking, class... events>
 
     };
 
-template <typename event,typename ev,typename... evs>
-event& get_event(widget<ev,evs...>& w){
+
+template <class wT,typename evT>
+void evcb(evT::dtype& dt ,wT& ws);
+
+template <class wT>void evcb<wT,click>(click::dtype& dt,wT& ws){if (ws.is_pt_of(dt)){ws.cb<click>(dt);}};
+
+template <typename event,uint8_t attr,typename ev,typename... evs>
+event& get_event(widget<attr,ev,evs...>& w){
     static_assert(pri::is_one_of<event,ev,evs...>::value,"event is not part of widget event contribution");
     return pri::get<event>(w.unique_events);
 };
@@ -257,18 +272,16 @@ void events_proc(event::argtup args, widg w,widgets... ws){
 
 
 
-template <typename widT>
-struct less {
-    virtual int cmp(widT& lhs,widT& rhs){return 0;};
-};
+template <typename widT,typename widB=widT>
+bool less(widT& lhs,widB& rhs) {return 0;}
+
+
 template <typename widgetT,class _cmp = less<widgetT> >
-class widlist : public list<widgetT*> {
+class widlist : public NSC list<widgetT*> {
     int (*cmp)(widgetT& ,widgetT& );
 
     using iterator = list<widgetT>::iterator;
-    void insert(iterator& s,widgetT* ptr){
-        insert(s,ptr);
-    };
+    void insert(iterator& s,widgetT* ptr){insert(s,ptr);};
     void insert(widgetT* w) {
          widlist<widgetT>::iter it= this->begin();
         for( ;it;++it ){
@@ -285,34 +298,62 @@ class widlist : public list<widgetT*> {
     widlist() cmp(_cmp::cmp() ) { };
 };
 
-template <typename cA,typename cB>
-    void move_child(cA from,cB to);
 
-    template <bool scroll,bool draggable,bool docking,  class... widgetsTs>
-    class container : widget<scroll,draggable,docking>< {
-        
-        using evtup =typename pri::utupConcats<widgets::evtup...>::type; 
-        evtup unique_events;
-        
+
+
+template <typename cA,typename cB>
+void move_child(cA from,cB to);
+
+template <uint16_t ats,typename inherEvs, class... widgets>
+class compound : widget<ats,inherEvents> {
+    using inher_events_type = inherEvs;
+    using widgetTY =  widget<ats,inherInhEvent<widgetTs::inher_event_type...> ;
+    NSC tuple<widgets> ws;
+
+    template <size_t s>
+    void _update()  {if constexpr (s<sizeof...(widgets)) {NSC get<s>(ws).update();_update<s+1>();};};
+    void update() override {_update<0>()};  
+    void _calc()  {if constexpr (s<sizeof...(widgets)) {NSC get<s>(ws).calc();_calc<s+1>();};};
+    void calc() override {_update<0>();};  
+    
+};
+
+
+    template <uint16_t ats ,typename inherEvs,class... widgetsTs >
+    class container : widget<ats>,  inherInhEvent<widgetTs::inher_event_type...>  {
+        using inher_event_type = typename inherEvs;
+
         pri::tuple<widlist<widgetsTs*> ...> childs;
 
-    auto& front(){
-        return *pri::get<0>(childs).front();
-    }
-    auto& back(){
-        return *pri::get<pri::tuple_size(childs) -1>(childs).back();}
+        
+        template <typename Event,typename Widget> 
+        void callEv(Event::ty v , Widget& w){
+
+            if constexpr (pri::has_type<Event,>(w.event_tup)) {pri::get<Event>(w.event_tup);}
+        };
+        template <typename Event> 
+        void callEv(Event::ty v,int ind) {
+
+        };
+        
+        template <widget W, template <typename Wt> Func>
+        void callEvList(widlist<W>& wl){for(W& i : wl){Func(i);}};
+        
+        void applyCallEv(){pri::applyAll(childs,callEvList)} ;
 
 
-        template <class... widgetTs>
-        class iterator_ {
+
+
+    auto& front(){return *pri::get<0>(childs).front();};
+    auto& back(){return *pri::get<pri::tuple_size(childs) -1>(childs).back();}
+
+        template 
+        class iterator{
             public:
             using varty = pri::variantvalue<widlist<widgetTs*>::iterator ...>;
             varty iter;
-
-            
-            auto& operator*(){
-                return *(pri::get(iter.cur,iter));
-            };  
+           
+            auto& operator*(){return *(pri::get(iter.cur,iter));};  
             inline decltype(*this) incr(){
                 ++pri::get(iter.cur,iter);
                 if(pri::get(iter.cur,iter) == pri::get(iter.cur,childs).end())  {cur++;pri::get(iter.cur,iter) =pri::get<cur>(childs).begin() ; } 
@@ -356,7 +397,7 @@ template <typename cA,typename cB>
         decltype(*this) operator--(int){return incr();}
     } ;
     using reverse_iterator = reverse_iterator_<WidgetsTs...> ;
-    using rconst_iterator = reverse_iterator_<(const WidgetsTs)...> ;
+    using const_reverse_iterator = reverse_iterator_<(const WidgetsTs)...> ;
     
 
 
@@ -370,10 +411,10 @@ template <typename cA,typename cB>
     
 
 
-    rconst_iterator rbegin(){rconst_iterator::varty it; pri::get<pri::variant_size<rconst_iterator::varty>()-1>(it.iter) = pri::get<rconst_iterator::varty()-1>(childs).rbegin(); 
+    const_reverse_iterator crbegin(){rconst_iterator::varty it; pri::get<pri::variant_size<rconst_iterator::varty>()-1>(it.iter) = pri::get<rconst_iterator::varty()-1>(childs).rbegin(); 
             return iterator(pri::variant_size<rconst_iterator::varty>()-1, it );
         }
-        rconst_iterator rend(){
+        const_reverse_iterator crend(){
            rconst_iterator::varty it; pri::get<0>(it.iter) = pri::get<0>(childs).rend(); 
             return rconst_iterator(0, it );}
     
@@ -384,8 +425,13 @@ template <typename cA,typename cB>
     void addPrevToSelected(){iterator it = selected.front();--it;selected.push_front(it);}
     void clearSelected(){selected.clear();}
 
-        void prevActive(){active--;}
-        void nextActive(){active++;}
+        void left(){active--;}
+        void right(){active++;}
+        void up(){active-=()};
+        void down(){};
+
+        
+
         void drawCmd()final{
             for(const auto& t : *this){
                 t->drawCmd();
@@ -418,6 +464,7 @@ template <typename cA,typename cB>
           
         template <class widgetT>
         void insert_child(iterator it,widgetT* ptr){
+            static_assert(pri::one_of<widgetT , widgetTs...>::value,"Widget not compatible with container");
             auto& r = pri::get(it.iter.cur,childs)
             decltype(std::remove_reference<decltype(r)>::type)::iterator iter =  pri::get(it.iter.cur,it.iter)  ;
             r.insert(iter,ptr);  
@@ -434,62 +481,53 @@ template <typename cA,typename cB>
             auto ret = *it;
             erase_child(it);
         };
+        template <typename T>
+        auto move_here(T* child){insert_child<decltype(child)>(child);};
+     
         
-        auto move_here(auto* child){
-            insert_child<decltype(child)>(child);
-        };
-        using widget<draggable,docking>::widget ;
-    };
-    template <typename cA,typename cB>
-    void move_child(cA from,cB to){
-        to.move_here(from.move_from(from.active));
     };
 
+    template <typename cA,typename cB, typename widT>
+    void move_child(cA from,cB to,widT& w){to.move_here(from.move_from(from.active));};
 
-
-    template <bool scroll,bool draggable,bool docking,typename... widgetTs> 
-    struct hlist :  container<scroll,draggable,docking,widgetTs...> { // Th
+    template <uint16_t ats,typename... widgetTs> 
+    struct hlist : container<ats,widgetTs...> { 
+        
+    };
+    template <uint16_t ats,typename... widgetTs> 
+    struct vlist : container<ats,widgetTs...> { // Th
                 
     };
-    template <bool scroll,bool draggable,bool docking,typename... widgetTs> 
-    struct vlist :  container<scroll,draggable,docking,widgetTs...> { // Th
-                
-    };
-    template <bool scroll,bool draggable,bool docking,typename... widgetTs> 
-    struct table :  container<scroll,draggable,docking,widgetTs...> { // Th
+    template <uint16_t ats,typename... widgetTs> 
+    struct table : container<ats,widgetTs...> { // Th
                 
     };
 
-    template <bool scroll,bool draggable,bool docking,typename... widgetTs> 
-    struct tree :  container<scroll,draggable,docking,widgetTs...> { // Th
-         
-    };
-
-    template <bool scroll,bool draggable,bool docking,typename... widgetTs> 
-    struct vtree : public tree<scroll,draggable, docking,widgetTs...> {
-
-    };
-
-    template <bool scroll,bool draggable,bool docking,typename... widgetTs> 
-    struct htree : public tree<scroll,draggable, docking,widgetTs...> {}
-
-
-
-
-template <typename lineCon,bool scroll=false,bool draggable=false,bool docking=false,class... events>
-class Widget : widget<scroll,draggable,docking,events...> {
-    lineCon d; 
-    pipelineContrib* pipeContrib;
 
     
+
+    template <typename T,uint16_t ats,typename... widgetTs> 
+    struct tree : container<ats,widgetTs...> { // Th Vertical
+        
+    };
+
+template <typename lineCon,uint16_t,class... events>
+class Widget : widget<ats,events...> {
+    lineCon SMcont; 
+    pipelineContrib* pipeContrib;    
+
+    void update();
+    void draw();
 } ;
 
-    template <typename lineCon,bool scroll=false,bool draggable=false,bool docking=false>
-    class button : Widget<lineCon,scroll,draggable,docking,ev_mousedown> {
-
-        void (*press)(decltype(this));
+    template <typename lineCon,uint16_t=0,class... events>
+    class button : Widget<lineCon,ats,mousedown,keypress> {
+        
     };
-    
+    template <typename lineCon,uint16_t=0,class... events>
+    class toggle_button : button<lineCon,ats, toggle,events...> {
+
+    };
   
     template <typename charT>
     struct textD {
@@ -497,10 +535,11 @@ class Widget : widget<scroll,draggable,docking,events...> {
         bool kerning;
         bool multiLine;
         uint16_t lineWidth;
+        textD(std::basic_string<charT> str) : fprim(str);
     };
     
-    tempate <typename charT,bool scroll=false,bool draggable=false,bool docking=false,class... events>
-    class text : Widget<textD<charT>,scroll,draggable, docking,events...>{
+    tempate <typename charT,uint16_t = 0,class... events>
+    class text : Widget<textD<charT>,scroll|draggable| docking,events...>{
         
         size_t getInputPos(glm::vec2 pos){
             
@@ -508,31 +547,68 @@ class Widget : widget<scroll,draggable,docking,events...> {
 
     } ;
 
-    tempate <typename charT,bool draggable=false,bool docking=false>
-    using scrolltext = text<charT,true,draggable, docking,ev_scroll,ev_mousewheel> ;
+    tempate <typename charT,uint16_t,class... events>
+    struct scrolltext = text<charT,_scroll|ats,scroll,mousewheel,events...> ;
 
 
-    tempate <typename charT,bool scroll=false,bool draggable=false,bool docking=false,class... events>
-    struct textinput : text<charT,scroll,draggable, docking,ev_mousedown,ev_keydown,events...> ;
+    tempate <typename charT,uint16_t = 0,class... events>
+    struct textinput : text<charT,ats,mousedown,keydown,input,events...> ;
     
-    tempate <typename charT,bool scroll=false,bool draggable=false,bool docking=false,class... events>    
-    struct code : textinput<charT,scroll,draggable,docking,ev_mousedown,ev_keydown,events...> { 
+    tempate <typename charT,uint16_t = 0,class... events>
+    struct code : textinput<charT,ats,mousedown,keydown,events...> { 
         size_t ln;size_t col;
+        struct pos {uint ln,col;} p;
+        
+       
+    };
+    template <uint16_t,class... events>
+    struct 2Dgraph : widget<ats,events...> {
+        std::vector<float> pts;
+        glm::vec2 maxc;
+        float gridSize ; 
+        void setPt(glm::vec2& coords) {};
+        void set(glm::vec2& coords, glm::vec2 pts)
+
+    };
+    template <typename T>
+    struct inputType : input<T> {T& t;    
+    
+    };
+
+    template <typename T>
+    struct vecList {
+        using type = T::value_type;
+        static constexpr size_t size = T::length(); 
+        std::array<>
+    };
+    template <typename T>
+    struct matList  {
+        using type = T::value_type;
+        static constexpr size_t cols = T::length(); 
+        static constexpr size_t rows = T::col_type::length(); 
+    
+    
+    };
+
+
+    tempate <uint16_t ats,class... events>    
+    struct image : widget<image2D,ats,events...> {
         
     };
-    
-    tempate <bool scroll=false,bool draggable=false,bool docking=false,class... events>    
-    struct image : Widget<image2D,scroll, draggable, docking,events...> {
-    
-    };
+    template <uint16_t ats,class... events>
+    struct Widget<image2D,ats,events> : image<ats,events>{}
+
+    // template <uint16_t = 0 , class ... events>
+    // struct svgImage : Widget<image2D,ats,events> {
+            
+    //     constexpr svgImage(std::string& svgImage)
+    // }
 
 
-
-
-    tempate <typename charT,bool scroll=false,bool draggable=false,bool docking=false,class... events>    
-    struct textIco :Widget<textIcoD,scroll,draggable,docking,events...>  {
-        text<charT,false,false,false,events...> Text;
-        image<false,false,draggable,,
+    tempate <typename charT,uint16_t = 0,class... events>    
+    struct textIco :Widget<textIcoD,ats,events...>  {
+        text<charT,ats,events...> Text;
+        image<ats,events...> image;
         
     }
     struct fileD {
@@ -548,41 +624,64 @@ class Widget : widget<scroll,draggable,docking,events...> {
         
     } ;
 
-    struct hori_bar : public  widget {
-        public:
-        using widget_node::widget_node ;
-        bool align_top;
-        uint  height ;
-        uint  text_size ;
-         uint  height ; 
-        uint  text_size ;
-        SGUI_DECL void draw_with_children(uint  height, uint  text_size);
-        SGUI_DECL void draw();
-    };
-    struct verti_bar : public widget {
-       using widget::widget;
-        bool align_left;
-        SGUI_DECL void to_other(){
-            side_bar_right n(this);
-            this = n; 
-        };
 
+    template <typename charT>
+    struct tooltip : text<charT,0,_activate,_close>  {
+        tooltip(std::string name)
+    };
+    
+
+    template <typename charT , >
+    struct image_tooltip : image<0,_mouseover> {
+                
+        tooltip toolTip ;
+        void update
+        void mouseover(impl::mouse_over& r){toolTip.activate();};//
+        void mouseout(){toolTip.close();};
+        image_tooltip(std::string name,image2D im ) : image(im) ,  toolTip(name,) {}
+
+    };
+
+    using tool = image_tooltip ;
+    struct tooltab : vert_bar<align_left|resize,,image_tooltip> {
+
+    }; 
+
+
+
+    template <typename T,pri::Str s>
+    struct factorWidget {
+
+    };
+
+    template <typename... T>
+    struct factorTab {
+
+    };
+
+
+    template <uint16_t ats , class... events>
+    struct windowBar : hori_bar<ats,events>{
+        
     };
    
-
+    template <charT>
     struct text : widget {
-        static const char[] name = "text_widget";
+        std::basic_string<charT> text= "text_widget";
         canvas* _canvas
         std::string name ;
-        
-
     };
     struct drag_quad : public widget {
         void calc(vec2 mouse_pos, vec2 mouse_move){
 
         }
     };
-    struct input_text : widget {
+    
+    struct input_text : widget<_scroll ,input,mousedown,mouseover> {
+
+        void mouseover(){}
+        void mousedown(){}
+        void 
         bool widget() override {
 
         };
@@ -593,32 +692,45 @@ class Widget : widget<scroll,draggable,docking,events...> {
     struct toggle_button : widget{
 
     };
-    
     template <typename no>
     struct slider_no : widget {
         public:
         no val ;
         no min;
         no max;
-    };
-    using slider_int = slider_no<int>;
-    using slider_uint  = slider_no<uint >;
-    using slider_float = slider_no<float>;
-    using slider_ufloat = slider_float<unsigned float>;
-
-
-    struct gizmo : public widget_leaf{
-        bool active ;
         
     };
+using slider_int = slider_no<int>;
+using slider_uint  = slider_no<uint >;
+using slider_float = slider_no<float>;
+using slider_ufloat = slider_float<unsigned float>;
+struct gizmo {
+    
+};
 
-    struct view : private widget{ // Gizmos
-        gizmos* gs; 
+struct view : private widget{ // Gizmos
+    gizmos* gs; 
+};
+struct combo_box : widget {
+};
+struct container {
+    enum t {List,Grid,Row};
+    std::vector<wsys>  widgets; 
+    void render(); 
+}
+template <clsss gizmo>
+class gizmoContext {
+    template <class viewEntity> 
+
+    };
+    template <class inherEvent  , ,  class... gizmoContext>
+    struct viewPort : widget<ats,events...>{
+
     };
 
-    struct combo_box : widget {
 
-    }
+
+
 };
 // How is usage : Widget(args);
                 //   Widget(args);

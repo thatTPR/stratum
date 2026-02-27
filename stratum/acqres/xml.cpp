@@ -1,20 +1,3 @@
-#ifndef ACQXML_CPP
-#define ACQXML_CPP
-// #define MACROSP
-#ifdef MACROSP
-#define PRINT(s) std::cout<< s ;
-#define PRINTQ(S) print(S);
-#else
-#define PRINT(s) 
-#define PRINTQ(S) 
-#endif
-#define MACROSE
-#ifdef MACROSE
-#define PRINTE(S) print(S);
-#else
-#define PRINTE(S)
-#define PRINTT(E) printTree(E);
-#endif
 #include <algorithm>
 #include <string>
 #include <sstream>
@@ -56,23 +39,21 @@ class elTree {
 };
 class xmlParser {
     public:
-      const std::string start = "<" ;
-      const std::string end = "/>" ;
-      const std::string estart = "</";
-      const std::string close  = ">" ;
-      const std::string equot = "&quot";
-      const std::string eapos = "&apos";
-      const std::string elt = "&lt";
-      const std::string egt = "&gt";
-      const std::string eamp = "&amp";
-      const std::string eq = "=";
-      const std::string quot = "\"";
-      const std::string apos = "\'";
- //   const std::string lt = "<";
- //   const std::string gt = ">";
-      const std::string amp = "&";
+    const std::string start = "<" ;
+    const std::string end = "/>" ;
+    const std::string estart = "</";
+    const std::string close  = ">" ;
+    const std::string equot = "&quot";
+    const std::string eapos = "&apos";
+    const std::string elt = "&lt";
+    const std::string egt = "&gt";
+    const std::string eamp = "&amp";
+    const std::string eq = "=";
+    const std::string quot = "\"";
+    const std::string apos = "\'";
+    const std::string amp = "&";
 
-     typedef std::pair<std::string ,std::string > attribute;
+    typedef std::pair<std::string ,std::string > attribute;
 
 
 
@@ -258,6 +239,9 @@ class xmlParser {
     };
     bool Strb = false;
    
+    
+   
+
     void feed(std::string& line){
         PRINT(std::endl<<"feed: "<<line<<std::endl)
         PRINT("LS:"<<lexq.size()<<std::endl)
@@ -699,73 +683,261 @@ class xmlParser {
 };
 
 
-template <typename... Tags>
-struct xmlLib : xmlParser {
-    template <typename T>
-    struct tag {
-        T data;
-        std::string name ;
-        virtual void parse(xmlParser::eltree& tree);
-        virtual void write(xmlParser::eltree& tree);
+#include <type_traits>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+
+// Primary template → false
+template<typename T>
+struct is_glm_type : std::false_type {};
+
+// Match all glm::vec types
+template<glm::length_t L, typename T, glm::qualifier Q>
+struct is_glm_type<glm::vec<L, T, Q>> : std::true_type {};
+
+// Match all glm::mat types
+template<glm::length_t C, glm::length_t R, typename T, glm::qualifier Q>
+struct is_glm_type<glm::mat<C, R, T, Q>> : std::true_type {};
+
+// Match all glm::qua (quaternion) types
+template<typename T, glm::qualifier Q>
+struct is_glm_type<glm::qua<T, Q>> : std::true_type {};
+
+// Helper variable (C++17)
+template<typename T>
+constexpr bool is_glm_type_v =
+    is_glm_type<std::remove_cv_t<std::remove_reference_t<T>>>::value;
+template<typename T>
+struct glm_dimensions;
+
+// ------------------
+// VECTORS
+// ------------------
+
+template<glm::length_t L, typename T, glm::qualifier Q>
+struct glm_dimensions<glm::vec<L, T, Q>> {
+    static constexpr glm::length_t rows = L;
+    static constexpr glm::length_t cols = 1;
+};
+
+// ------------------
+// MATRICES
+// ------------------
+
+template<glm::length_t C, glm::length_t R, typename T, glm::qualifier Q>
+struct glm_dimensions<glm::mat<C, R, T, Q>> {
+    static constexpr glm::length_t rows = R;
+    static constexpr glm::length_t cols = C;
+};
+
+// ------------------
+// QUATERNIONS
+// ------------------
+
+template<typename T, glm::qualifier Q>
+struct glm_dimensions<glm::qua<T, Q>> {
+    static constexpr glm::length_t rows = 4;
+    static constexpr glm::length_t cols = 1;
+};
+
+// Helper alias
+template<typename T>
+using glm_dim = glm_dimensions<std::remove_cv_t<std::remove_reference_t<T>>>;
+std::vector<std::string> split(const std::string& input, char delimiter)
+{
+    std::vector<std::string> result;
+    std::stringstream ss(input);
+    std::string item;
+
+    while (std::getline(ss, item, delimiter))
+        result.push_back(item);
+
+    return result;
+};
+template <typename T>
+struct is_vector : std::false_type {}
+
+template <typename T> struct is_vector<std::vector<T>> : std::true_type {}
+
+template <typename T>
+T fromStr(std::string& str){
+    if constexpr (is_vector<T>){
+        T res;size_t si=0;
+        std::vector<std::string> strs = split(str,' ');
+        for(auto& i : val){res[si]=fromStr(i);++si;}
+        return res;
+    } 
+    else if constexpr (std::is_integral_v<T>){
+        return (T)std::stoi(str);
     };
+    else if constexpr (is_glm_type<T>){
+        size_t row = glm_dim<T>::rows;
+        size_t cols = glm_dim<T>::cols;        
+            std::vector<std::string strss = split(si,',');
+            T a;size_t h  =0;
+            for(size_t i=0;i<rows;i++){
+                for(size_t j=0;j<cols;j++){a[i][j] = strss[h];h++;}
+            };
+            return a;
 
-    template <typename ... Args>
-    using elems = tuple<tag<Args>...> ;
-
-    elems<Tags...> tags;
-
-    void parse();
-    void updateTree(){
-
-    };
-    void write(std::ofstream& file){
-        write(&tree,file)
-    };
-
-
-    // Tuple of tags;
-}
-/*
-class xmlVariant {
-    enum class var {
-        number, 
-        str, 
-        reference,
-        array
-    };
+    }
+    return T(str);
+} ;
+template <typename T>
+std::string toStr(T& val) {
+    if constexpr (is_vector<T>){
+        std::string res ;for(auto& i : val){res+=toStr(i);}
+        return res;
+    } 
+    else if constexpr (std::is_integral_v<T>){return std::to_string(val);};
+    else if constexpr (is_glm_type<T>){
+        std::string v;
+         size_t row = glm_dim<T>::rows;
+        size_t cols = glm_dim<T>::cols;
+        std::vector<std::string> strs=split(str,' ');
+        
+        for(size_t i=0;i<rows;i++){
+            for(size_t j=0;j<cols;j++){v+= std::to_string(val[i][j]) ;v++" ";}
+        }
+        return v;
+    }
+    return std::to_string(val);
 
 };
 
-class xmlLibrary {
-
-
-    class value {
-        public:
-        static auto v;
-        auto (*set)(std::string );
-        auto (*get)(value*);
-
-        auto getter() final {get(this);};
+template <class Tag,class... Tags>
+class SubTags : pri::tuple<std::vector<Tag::type>,std::vector<Tags::type>...> {
+    using typetup= pri::tuple<std::vector<Tag::type>,std::vector<Tags::type>...>;
+    std::vector<std::pair<size_t,size_t>> inds;
+    template <size_t s>
+    void _write(xmlParser& prs,std::pair<size_t,size_t>& in){
+        if(s==in.first){prs.cur->attributes.emplace_back(pri::get<s>(*this)[in[second]].str(), toStr(pri::get<s>(*this)[in.second]));}
+        else if constexpr (pri::tuple_size<typetup>() > s){_write<s+1>(prs,in);}        
     };
-    class attribute {
-        std::string name ; 
+    void write(xmlParser& prs,std::ofstream& ofs){
+        for(std::pair<size_t,size_t> in: inds) {_write<0>(prs,ofs,in);}
+        
+        prs.write(&prs.tree,ofs);
+    };
+
+    template <size_t s>
+    void _read(xmlParser& prs){
+        if (s<=sizeof...(Tags) ) {pri::get<s>(*this).read(prs); _read<s+1>(prs,ofs)};
+    };
+
+    void read(xmlParser& prs){_read(prs,ifs);    };
+
+    template <size_t Si,template <typename T> Func>
+    void _apply(std::pair<size_t,size_t> s){
+        if(s.first==Si){Func(pri::get<Si>(*this)[s.second])};
+        else if constexpr (sizeof...(pri::size(*this)) > Si){ _apply<Si+1,Func>(s);}
+    };
+
+    template <template <typename T> Func>
+    void apply(){for(std::pair<size_t,size_t>& i : inds) {apply<0,Func>(i);};};
+
+    template <size_t s , class ts,class... ts>
+    bool _OneOf(xmlParser::element& el){
+        if(ts.str()==el.child->name){pri::get<s>(*this).emplace_back(el); inds.push_back(std::pair<size_t,size_t>(s,pri::get<s>(*this).size));
+            return true;}
+        if constexpr (s<= sizeof...(Tags)){return _OneOfAts<s+1,ts>(el);}
+    }
+    bool OneOf(xmlParser::element& el){return _OneOfAts<0,Tag,Tags...>(el);}
+};
+
+
+
+template <class Tag,class... Tags>
+class Attrs : public pri::tuple<<Tag::type>,<Tags::type>...> {
+    std::vector<size_t> inds;
+    using inhtupty =pri::tuple<<Tag::type>,<Tags::type>...>  ;
+    template <typename TagT>
+    void tag_atWrite(TagT& d;std::ofstream& ofs){
+        ofs<<TagT::str()<<"="<<'\"'<<d.get()<<'\"'; 
+    };
+    template <size_t s>
+    void _get(std::vector<xmlParser::attribute>& attrs){
+        attrs.emplace_back(pri::get<s>(*this).str());writeStr(pri::get<s>(*this).data);
+    };
+    std::vector<xmlParser::attribute> get(){std::vector<xmlParser::attribute> ats;}; 
+    template <typename tTag,typename... tTags>
+    void _write(std::ofstream& ofs){
+        ofs<<toString(pri::get<0>(*this));
+        if constexpr (sizeof...(tTags)>0){_write<tTags>(ofs)};
+    };
+    void write(std::ofstream& ofs){_write<Tag,Tags...>(ofs);}
+
+    template <size_t s , class ts,class... ts>
+    bool _OneOfAts(xmlParser::attribute& at){
+        if(ts.str()==at.first){pri::get<s>(*this).read(at.second);return true;}
+        if constexpr (s<= sizeof...(Tags)){return _OneOfAts<s+1,ts>(at);}
+    };
+
+    bool OneOfAts(xmlParser::attribute& at){return _OneOfAts<0,Tag,Tags...>(at);}
+};
+
+#include <petri/templates.hpp>
+template <pri::Str s,typename T, class SubT, class Ats> 
+struct Tag {
+    using type=T;
+    T data; 
+    Ats ats;
+    SubT subs;
+     std::string get(); 
+     void write(xmlParser& prs,std::ofstream& file){
         
     };
-    class element {
-        std::string name ;
-        std::vector<attributes> values;
+
+    void read(eltree* el){
+        for(xmlParser::attribute& atit : el->attributes ){if(Ats.OneOf(atit)){continue;}};
+        
+        bool str=true;
+        for( xmlParser::element& elit  :  el->value){if(!str  ){subs.OneOf(elit);}str!=str;}
+    };
+    xmlParser::attribute atr(){return xmlParser::attribute(str(),toStr(data));}
+
+    void write(eltree* el){
+        for(xmlParser::attribute& atit : el->attributes ){if(Ats.OneOf(atit)){continue;}};
     };
 
-    virtual void parse(xmlParser::eltree& element){
+    void write(std::ofstream& ofs){
 
+        eltree* el; 
+        xmlParser prs;
+        el = prs.tree;
+        write(el);
+        for()
+        prs.write(el,ofs);
     };
-    void parse(xmlParser* p)final{
-        parse(p->cur);
+    void parse(xmlParser& prs){
+        eltree* el = prs.cur;
+        eltree* par= prs.cur->parent;
+        while(par->value.back().child != el){if(!prs.feed()){break;};}
+        read(el);
     };
-    void feed()final {
-        xmlParser p ; 
-        p.funcFeed(&parse);
-    };
+    Tag(xmlParser::element& el){}
+    Tag(xmlParser& prs) {parse(prs);}
 };
-*/
+
+template <typename... Tag>
+void parseTags(xmlParser& prs) {
+
+};
+
+
+
+
+ template <typename TagT>
+ Tag bread(std::ifstream& ifs) {
+    auto lam = <typename tagt>[&ifs]() {}
+     
+ };
+ 
+ template <typename TagT>
+ void bwrite(TagT& tt,std::ofstream& ifs) {
+    
+ };
+
+
+
 #endif

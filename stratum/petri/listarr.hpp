@@ -5,42 +5,12 @@
 template <typename T>
     class listarr {
         
+        using value_type=T;
+        using pointer  = T*;
+        using referecne
         public:
 
-        struct node {
-            
-            node* prev;
-            node* next;
-            T* cur; 
-            node(){};
-            node(node* n)  {
-                *this = *n ;
-            };
-            node(node* l, node* r){
-                prev = new node(l);
-                next = new node(r);
-            };
-
-            node(node* l, T& data, node* r){
-                node(l,r) ;
-                cur = new T(data);
-            };
-
-            node(T& data, node* pr) {
-                prev = new node(*pr);
-                prev->next = new node(this);
-                cur=new T(data);};
-            node(const T& data, node* pr) {
-                node(const_cast<T&>(data), pr);};
-           
-            ~node(){
-                prev->next = new node(next) ;
-                next->prev = new node(prev);
-                delete cur;
-                delete prev;
-                delete next;
-            };
-        };  
+        struct iter 
 
         // int Size ;
         node* first;

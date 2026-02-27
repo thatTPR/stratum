@@ -11,6 +11,23 @@
 #endif
 
 #define GET_VK_FORMAT(image_form) 
+
+
+
+
+class vk_impl : public glimpl  {
+    public:
+using shader_type  = VkShaderStageFlagBits; 
+using image_format  = VkFormat; 
+using topology  = VkPrimitiveTopology; 
+using trasnform_image  = VkSurfaceTransformFlagBitsKHR; 
+using descriptor_type  = VkDescriptorType; 
+using usage_flag  = VkBufferUsageFlagBits; 
+using image_usage  = VkImageUsageFlagBits; 
+using share_mode  = VkSharingMode; 
+using pipeline ; 
+
+
 constexpr VkShaderStageFlagBits getShaderType(mod::shader_type STAGE){
     switch(STAGE){
         shader_type::all :{return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;}
@@ -118,24 +135,28 @@ case mod::transform_image::mirror_rotate180:  {return VkSurfaceTransformFlagBits
 case mod::transform_image::mirror_roate270:  {return VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR;};};};
 
 
-constexpr VkDescriptorType getBindingType(modules::BindingType bt){
+
+
+constexpr VkDescriptorType getDescriptor(mod::BindingType bt){
     switch constexpr (bt){
-        case mod::BindingType::SAMPLER                  : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLER;}     
-        case mod::BindingType::COMBINED_IMAGE_SAMPLER   : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;}                    
-        case mod::BindingType::SAMPLED_IMAGE            : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;}           
-        case mod::BindingType::STORAGE_IMAGE            : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;}           
-        case mod::BindingType::UNIFORM_TEXEL_BUFFER     : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;}                  
-        case mod::BindingType::STORAGE_TEXEL_BUFFER     : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;}                  
-        case mod::BindingType::UNIFORM_BUFFER           : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;}            
-        case mod::BindingType::STORAGE_BUFFER           : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;}            
-        case mod::BindingType::UNIFORM_BUFFER_DYNAMIC   : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;}                    
-        case mod::BindingType::STORAGE_BUFFER_DYNAMIC   : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;}                    
-        case mod::BindingType::INPUT_ATTACHMENT         : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;}              
-        case mod::BindingType::INLINE_UNIFORM_BLOCK     : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK;}                  
-        case mod::BindingType::ACCELERATION_STRUCTURE   : {return VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE;}                    
-    };
+        case mod::BindingType::SAMPLER :{return VK_DESCRIPTOR_TYPE_SAMPLER;}
+        case mod::BindingType::COMBINED_IMAGE_SAMPLER :{return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;}
+        case mod::BindingType::SAMPLED_IMAGE :{return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;}
+        case mod::BindingType::STORAGE_IMAGE :{return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;}
+        case mod::BindingType::UNIFORM_TEXEL_BUFFER :{return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;}
+        case mod::BindingType::STORAGE_TEXEL_BUFFER :{return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;}
+        case mod::BindingType::UNIFORM_BUFFER :{return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;}
+        case mod::BindingType::STORAGE_BUFFER :{return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;}
+        case mod::BindingType::UNIFORM_BUFFER_DYNAMIC :{return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;}
+        case mod::BindingType::STORAGE_BUFFER_DYNAMIC :{return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;}
+        case mod::BindingType::INPUT_ATTACHMENT :{return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;}
+        case mod::BindingType::INLINE_UNIFORM_BLOCK :{return VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK;}
+        case mod::BindingType::ACCELERATION_STRUCTURE :{return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;}
+    }
 }
-constexpr VkBufferUsageFlagBits get_buffer_usage(modules::BindingType bt){
+
+
+constexpr VkBufferUsageFlagBits get_buffer_usage(mod::BindingType bt){
     switch constexpr (bt){
         // case mod::BindingType::SAMPLER                  : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_SAMPLER_BIT;}     
         // case mod::BindingType::COMBINED_IMAGE_SAMPLER   : {return VkBufferUsageFlagBits::VK_BUFFER_USAGE_COMBINED_IMAGE_SAMPLER_BIT;}                    
@@ -172,39 +193,21 @@ switch constexpr(iu)
 }
 };
 
-constexpr VkDescriptorType getDescriptor(mod::BindingType bt){
-    switch constexpr (bt){
-        case mod::BindingType::SAMPLER :{return VK_DESCRIPTOR_TYPE_SAMPLER;}
-        case mod::BindingType::COMBINED_IMAGE_SAMPLER :{return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;}
-        case mod::BindingType::SAMPLED_IMAGE :{return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;}
-        case mod::BindingType::STORAGE_IMAGE :{return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;}
-        case mod::BindingType::UNIFORM_TEXEL_BUFFER :{return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;}
-        case mod::BindingType::STORAGE_TEXEL_BUFFER :{return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;}
-        case mod::BindingType::UNIFORM_BUFFER :{return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;}
-        case mod::BindingType::STORAGE_BUFFER :{return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;}
-        case mod::BindingType::UNIFORM_BUFFER_DYNAMIC :{return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;}
-        case mod::BindingType::STORAGE_BUFFER_DYNAMIC :{return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;}
-        case mod::BindingType::INPUT_ATTACHMENT :{return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;}
-        case mod::BindingType::INLINE_UNIFORM_BLOCK :{return VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK;}
-        case mod::BindingType::ACCELERATION_STRUCTURE :{return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;}
-    }
-}
-
 constexpr VkSharingMode getShareMode(mod::shareMode sm){
     switch constexpr (sm){
         case shareMode::EXCLUSIVE :{return VK_SHARING_MODE_EXCLUSIVE;}
         case shareMode::CONCURRENT :{return VK_SHARING_MODE_CONCURRENT;}
     };
-}
-template <>
+};
+
+
 class mod::Pipeline<VkPipeline> {
     pri::list<VkPipeline> pipelines;
 };
 
 
-template <typename... shadMods>
-class vk_impl : public glimpl<shadMods...>  {
-    public:
+
+
     using Pipelinety = VkPipeline;
     using instty = VkInstance;
 
@@ -424,9 +427,9 @@ vkBindBufferMemory(this->device[device_index], unibuffer, ssboMemory, 0);
 };
 
 template <typename bindT>
-int buffer(bindT::iterator& bufferi,mod::shareMode sm){
+int buffer(bindT& bufferi,mod::shareMode sm){
 // Buffer size
-const VkDeviceSize bufferSize = sizeof(*bufferi); 
+const VkDeviceSize bufferSize = sizeof(bufferi); 
 
 // Create the buffer
 VkBufferCreateInfo bufferInfo{};
@@ -473,7 +476,7 @@ vkUnmapMemory(this->device_index[index_dev],this->ssbo_mem_index[index_ssbomem])
 
 using shaderStageBits = VkShaderStageFlagBits; 
 pri::list<VkShaderModule> shadMods;
-template <modules::shader_type sty,typename buf,mod::BindType bt>
+template <mod::shader_type sty,typename buf,mod::BindType bt>
 pri::list<VkShaderModule>::iter shaderModule(shaderModule<sty,buf,bt>* module,VkShaderStageFlagBits STAGE){
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -487,7 +490,7 @@ if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCC
     return shadMods.rbegin();
 }
 
-template <modules::shader_type sty,typename bindingT, typename... bindingTs>
+template <mod::shader_type sty,typename bindingT, typename... bindingTs>
 void shaderStage(mod::shaderModule<sty,bindingT,bindingTs...>* module,pri::list<VkShaderModule>::iter it,size_t entryPt=0){
     VkPipelineShaderStageCreateInfo crinfo{};
     crinfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -504,7 +507,7 @@ void updateBinding(mod::binding<T,bt>& binding){
 
 }
 
-template <modules::shader_type sty,typename buf,mod::BindingType bt>
+template <mod::shader_type sty,typename buf,mod::BindingType bt>
 bool shaderModule(mod::shaderModule<sty,buf,bt>* module, shader_type STAGE){
     shaderModule<sty,buf,bt>(module,getShaderType(STAGE));
 };
@@ -565,3 +568,4 @@ void descriptors( ){
 
 
 };
+using gl_SYS =typename vk_impl;

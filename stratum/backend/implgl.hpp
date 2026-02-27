@@ -1,20 +1,20 @@
 #include <petri/list>
 #include <stratum/modules.hpp>
 
-#include <stratum/petri/list.hpp> 
+#include <stratum/petri/list> 
 
 #ifndef SHADMODS 
 struct gpu_info {
 
     bool robustBufferAccess       ,  //Ensures bounds-checking for buffer accesses.
-    bool fullDrawIndexUint32      ,  //Allows 32-bit indices for drawing.
-    bool geometryShader           ,  //Supports geometry shaders.
-    bool tessellationShader       ,  //Supports tessellation shaders.
-    bool multiDrawIndirect        ,  //Allows multiple draw calls in a single command.
-    bool wideLines                ,  //Enables rendering wide lines.
-    bool largePoints              ,  //Enables rendering large points.
-    bool textureCompressionETC2   ,  //ETC2 texture compression support.
-    bool sparseBinding            ,  //Supports sparse resources (like sparse textures).
+     fullDrawIndexUint32      ,  //Allows 32-bit indices for drawing.
+     geometryShader           ,  //Supports geometry shaders.
+     tessellationShader       ,  //Supports tessellation shaders.
+     multiDrawIndirect        ,  //Allows multiple draw calls in a single command.
+     wideLines                ,  //Enables rendering wide lines.
+     largePoints              ,  //Enables rendering large points.
+     textureCompressionETC2   ,  //ETC2 texture compression support.
+     sparseBinding            ,  //Supports sparse resources (like sparse textures).
 
 
     bool ray_tracing_pipeline; /*
@@ -40,17 +40,28 @@ Features structure: VkPhysicalDeviceMultiviewFeatures.
 #define Buffer
 #define Size
 
-template <modules::shader_types sty, typename shmod,typename... shadMods>
+template <mod::shader_types sty, typename shmod,typename... shadMods>
 struct get_tys {
     using type = std::conditional<shmod::sty == sty, ,get_tys<sty,shadMods>;
 }; 
-template <modules::shader_types sty, typename shmod>
+template <mod::shader_types sty, typename shmod>
 struct get_tys {
     using type = std::conditional<shmod::sty == sty, shmod,emptyShmod>;
 }; 
 
-template <typename... shadMods>
+
 struct glimpl {
+
+
+    using shader_type = mod::shader_type;
+    using image_format = mod::image_formats;
+    using topology = mod::TopologyPrimitive;
+    using trasnform_image = mod::transform_image;
+    using descriptor_type = mod::BindingType ; 
+    using usage_flag = mod::BindingType;
+    using image_usage = mod::image_usage;
+    using share_mode = mod::shareMode;
+
     using Pipeline = void ;
     using wsurfaces = void;
     
@@ -67,13 +78,13 @@ struct glimpl {
     
 
 
-virtual void get_format(modules::image_format imf);
-virtual void bindImage(modules::image2D& im) ;
+virtual image_foramt get_format(mod::image_format imf){return imf};
+virtual void bindImage(mod::image2D& im) ;
 
 using imagety = void;
 pri::list<imagety> imagePool ;
 
-virtual void create_image2d( modules::image2D& im,mod::imageOpts opts= imageOpts());
+virtual void create_image2d( mod::image2D& im,mod::imageOpts opts= imageOpts());
 using shaderStageBits = void;
 virtual void getShaderType(shader_type STAGE);
 
@@ -85,40 +96,40 @@ virtual void create_fullscreen();
 virtual void get_gpu_info(gpu_info gpinfo);
 virtual _shader load_shader(const uint32_t shader[] );
 
-template <modules::shader_type sty,typename buf,mod::BindingType bt>
-virtual bool shaderModule(modules::shaderModule<sty,buf,bt>* module);
+template <mod::shader_type sty,typename buf,mod::BindingType bt>
+virtual bool shaderModule(mod::shaderModule<sty,buf,bt>* module);
 template <typename buf,mod::BindingType bt>
-virtual int grModule(modules::grModule<buf,bt>* module);
+virtual int grModule(mod::grModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt>
-virtual int allModule(modules::allModule<buf,bt>* module);
+virtual int allModule(mod::allModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int vertModule(modules::vertModule<buf,bt>* module);
+virtual int vertModule(mod::vertModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int fragModule(modules::fragModule<buf,bt>* module);
+virtual int fragModule(mod::fragModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int geomModule(modules::geomModule<buf,bt>* module);
+virtual int geomModule(mod::geomModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int tescModule(modules::tescModule<buf,bt>* module);
+virtual int tescModule(mod::tescModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int teseModule(modules::teseModule<buf,bt>* module);
+virtual int teseModule(mod::teseModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int compModule(modules::compModule<buf,bt>* module);
+virtual int compModule(mod::compModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int taskModule(modules::taskModule<buf,bt>* module);
+virtual int taskModule(mod::taskModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int meshModule(modules::meshModule<buf,bt>* module);
+virtual int meshModule(mod::meshModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int rgenModule(modules::rgenModule<buf,bt>* module);
+virtual int rgenModule(mod::rgenModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int rintModule(modules::rintModule<buf,bt>* module);
+virtual int rintModule(mod::rintModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int rahitModule(modules::rahitModule<buf,bt>* module);
+virtual int rahitModule(mod::rahitModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int rchitModule(modules::rchitModule<buf,bt>* module);
+virtual int rchitModule(mod::rchitModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int rmissModule(modules::rmissModule<buf,bt>* module);
+virtual int rmissModule(mod::rmissModule<buf,bt>* module);
 template <typename buf,mod::BindingType bt> 
-virtual int rcallModule(modules::rcallModule<buf,bt>* module);
+virtual int rcallModule(mod::rcallModule<buf,bt>* module);
 
 
 void updateUniform(device* dev, shaderModule* m );

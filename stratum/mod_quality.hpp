@@ -1,5 +1,6 @@
 #ifndef MOD_QUALITY_HPP
 #define MOD_QUALITY_HPP
+#include <glm/glm.hpp>
 namespace mod {
 
     enum DIM {
@@ -7,7 +8,11 @@ namespace mod {
         Tri=3,
     };
     template <DIM d>
-    struct dim_t {constexpr DIM dimty = d;}
+    struct dim_t {
+        using alvert = typename std::conditional<S==DIM::Tri,glm::vec4,glm::vec3>::type;
+        using vert = typename std::conditional<S==DIM::Tri,glm::vec3,glm::vec2>::type;
+
+        constexpr DIM dimty(){return d;};}
 
     template <DIM d>
     using dim_pos = typename <std::conditional<d == DIM.Bi , glm::vec2 , 

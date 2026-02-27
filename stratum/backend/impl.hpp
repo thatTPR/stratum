@@ -18,9 +18,8 @@ SYS_COMBO
 #include <glm/vec4.hpp>
 #include "impl.hpp"
 #include "implmain.hpp"
-#include <stratum/petri/vects.hpp>
-#include <stratum/petri/queue.hpp>
-#include <stratum/petri/list.hpp>
+#include <stratum/petri/queue>
+#include <stratum/petri/list>
 #include <vector>
 #include <memory>
 #include <string>
@@ -32,17 +31,60 @@ using namespace std;
 #define VEC_MAX 1000
 
 
-#include <strata/backend/implgl.hpp>
-#ifdef STRATA_IMPL_WIN
-#include <strata/backend/impl_win.hpp>
 
+#ifdef STRATA_CAP_MOUSE 
+constexpr bool CAPMOUSE = true ;
+#else 
+constexpr bool CAPMOUSE = false ;
+#endif    
+#ifdef STRATA_CAP_KEY
+constexpr bool CAPMOUSE = true ;
+#else 
+constexpr bool CAPMOUSE = false ;
+#endif
+#ifdef STRATA_CAP_JOY
+constexpr bool CAPJOY =true;
+#else
+constexpr bool CAPJOY = false ;
+#endif
+#ifdef STRATA_CAP_CONT
+constexpr bool CAPCONT =true;
+#else
+constexpr bool CAPCONT = false ;
+#endif
+#ifdef STRATA_CAP_TOUCH
+constexpr bool CAPTOUCH =true;
+#else
+constexpr bool CAPTOUCH = false ;
+#endif
+#ifdef STRATA_CAP_DISPLAY
+constexpr bool CAPDISPLAY =true;
+#else
+constexpr bool CAPDISPLAY = false ;
+#endif
+#ifdef STRATA_CAP_AUDIO
+constexpr bool CAPAUDIO =true;
+#else
+constexpr bool CAPAUDIO = false ;
+#endif
+#ifdef STRATA_CAP_SENSOR
+constexpr bool CAPSENSOR =true;
+#else
+constexpr bool CAPSENSOR = false ;
+#endif
+
+
+
+#include "implgl.hpp"
+#ifdef STRATA_IMPL_WIN
+#include "impl_win.hpp"
 #endif
 #ifdef STRATA_IMPL_ANDROID
-#include <strata/backend/impl_android.hpp>
+#include "impl_android.hpp"
 #ifdef STRATA_IMPL_LINUX
-#include <strata/backend/impl_linux.hpp>
+#include "impl_linux.hpp"
 #define STRATA_IMPL_WASM
-#include <strata/backend/impl_wasm.hpp>
+#include "impl_wasm.hpp"
 #endif
 
 
@@ -120,12 +162,19 @@ namespace impl {
 template<typename T , size_t size>
 struct eventq  {
     T d[size];
-    int i[size] ;
+    int i[size];
     size_t pos=0;
+    size_t ps;
+
+    void (*cb_root)(T);
+    void (*cb_rooti)(T,int);
+
     T& operator[](int s){return this->d[s>=0?(size_t)s:sizes+s];}
     T& operator[](size_t s){return this->d[s];}
     void clear(){pos = 0;}
+    void erase(){for(int i=0;i<size;i++){d[i]=T();};pos=0;};
     int lastn(){return d[pos]};)
+    std::pair<T,i> lastEv(){return {d[pos],i[pos]};}
     void push(T&& s){if(pos==size-1){clear();} d[pos] = s;++pos  ;}
     void push(T&& s,int ind){if(sizes==size-1){clear();return;} d[pos] = s;i[sizes]=ind;++pos  ;}
 
@@ -133,8 +182,19 @@ struct eventq  {
     void operator+=(T&& s){push(s);};
     bool operator==(T s){for(const T& it  : d){if(it == s){return true;};} return false;};
 
+    void cb(T v,int index){push(v,index); };
+    void cb(T v){push(v);};
+
+    T* begin(){return d[0];};
+    T* end(){return d[pos];};
+
+
     eventq() {d.push_back(T()); sizes= 1; pos = d.begin();}
 };
+struct SYS ;
+template <typename T>
+bool getEvent(T* res,SYS& s );
+
 
 
 
@@ -150,42 +210,41 @@ using mouse_wheel  = int        ;// _mouse_wheel
 using mouse_wheelh = int        ;// _mouse_wheelh;
 struct MOUSE {  // TODO filters for all
 const uint flag=_MOUSE;
-    mouse_move  last_location;
-    evq<click >       last_click; 
-    evq<dbclick >     last_db_click;     
-    evq<mousedown >   last_down;          
-    evq<mouseup >     last_up;        
-    evq<mouse_move>  last_move;           
-    evq<mouse_wheel> last_wheel;     
-    evq<mouse_wheelh> last_wheelh;     
-    uint getlastKey(){return this->last_down.lastn();};
-    uint getlastaxis(){mouse_move l = this->last_move.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1; };
+    evq<click >       _click; 
+    evq<dbclick >     _dbclick;     
+    evq<mousedown >   _mousedown;          
+    evq<mouseup >     _mouseup;        
+    evq<mouse_move>  _mouse_move;           
+    evq<mouse_wheel> _mouse_wheel;     
+    evq<mouse_wheelh> _mouse_wheelh;     
+    uint getlastKey(){return this->_down.lastn();};
+    uint getlastaxis(){mouse_move l = this->_move.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1; };
 
     virtual void cursorHide();
     virtual void cursorShow();
-    void clicked(click t){return this->last_click == t;};
-    void dbclicked(dbclick t){return this->last_dbclick == t;};
-    void down(mousedown t){return this->last_down == t;};
-    void up(mouseup t){return this->last_up == t;};
+    void clicked(click t){return this->_click == t;};
+    void dbclicked(dbclick t){return this->_dbclick == t;};
+    void down(mousedown t){return this->_down == t;};
+    void up(mouseup t){return this->_up == t;};
     // void moved_gt(glm::ivec2 s);
     // void move_lt(glm::ivec2 s);
     // void 
-    void clear()final{this->last_click.clear();this->last_down.clear();this->last_up.clear();this->last_press.clear();this->last_move.clear();this->last_wheel.clear();}
+    void clear()final{this->_click.clear();this->_down.clear();this->_up.clear();this->_press.clear();this->_move.clear();this->_wheel.clear();}
     bool detect_combo(int* s[2]){
         bool x=false;bool y=false;
-            for(int i = 0 ; i < this->last_down.pos();i++){
-                if(this->last_down[i]== s[j][0] ){
+            for(int i = 0 ; i < this->_down.pos();i++){
+                if(this->_down[i]== s[j][0] ){
                     bool cond=false;
-                    for(int k = 0 ; k < this->last_up.pos();k++){if(this->last_up[k]==this->last_down[i]){cond=true};break;};
+                    for(int k = 0 ; k < this->_up.pos();k++){if(this->_up[k]==this->_down[i]){cond=true};break;};
                     if(cond){continue;}
                     else {
                         if(x){y=true}
                         else x = true;
                     };
                 }; 
-                if(this->last_down[i]== s[j][1] ){
+                if(this->_down[i]== s[j][1] ){
                     bool cond=false;
-                    for(int k = 0 ; k < this->last_up.pos();k++){if(this->last_up[k]==this->last_down[i]){cond=true};break;};
+                    for(int k = 0 ; k < this->_up.pos();k++){if(this->_up[k]==this->_down[i]){cond=true};break;};
                     if(cond){continue;}
                     else {
                         if(x){y=true}
@@ -204,28 +263,10 @@ const uint flag=_MOUSE;
         return -1;
     };
     void up_check(int i){
-        for(int i = 0 ; i<this->last_down.pos() ;i++ ){
-            if(i==this->last_down.data();){this->last_down[i].data=-1; break;}
+        for(int i = 0 ; i<this->_down.pos() ;i++ ){
+            if(i==this->_down.data();){this->_down[i].data=-1; break;}
         };
     };
-    // glm::vec2 get_pos(){return this->last_move.data()};
-    // bool get_state(short int bt){return this->last_press.data==bt};
-    
-
-     void dbclick_cb(dbclick_cb ev, int index) final {last_dbclick.push(ev,index);}
-     void click_cb(click_cb click,int index) final {last_click.push(click,index);}
-     void move_cb(move_cb mv,int index) final {last_move.push(mv,index);};
-     void down_cb(down_cb down,int index) final {last_down.push(down,index);};
-     void up_cb(up_cb up,int index) final {up_check(up);last_up.push(up,index);};
-     void wheel_cb(wheel_cb wheel,int index) final {last_wheel.push(wheel,index);};
-     void wheelh_cb(wheelh_cb wheel,int index) final {last_wheelh.push(wheel,index);};
-     void dbclick_cb(dbclick ev) final {last_dbclick+=ev;}
-     void click_cb(click ev) final {last_click+=ev;}
-     void move_cb(mouse_move ev) final {last_move+=ev;};
-     void down_cb(mousedown ev) final {last_down+=ev;};
-     void up_cb(mouseup ev) final { up_check(ev.data());last_up+=ev;};
-     void wheel_cb(mouse_wheel ev) final {last_wheel+=ev;};
-     void wheelh_cb(mouse_wheel ev) final {last_wheelh+=ev;};
     
      virtual glm::vec2 Pos(int index=0);
      virtual glm::vec2 WinPos();
@@ -238,60 +279,65 @@ const uint flag=_MOUSE;
         this->_init();};
 };
    
+template <> bool getEvent<click>(click* e,SYS& s){ if (s.mouse) };
+template <> bool getEvent<dbclick>(dbclick* e,SYS& s){ if (s.mouse) };
+template <> bool getEvent<mousedown>(mousedown* e,SYS& s){ if (s.mouse) };
+template <> bool getEvent<mouseup>(mouseup* e,SYS& s){ if (s.mouse) };
+template <> bool getEvent<mouse_move>(mouse_move* e,SYS& s){ if (s.mouse) };
+template <> bool getEvent<mouse_wheel>(mouse_wheel* e,SYS& s){ if (s.mouse) };
+template <> bool getEvent<mouse_wheelh>(mouse_wheelh* e,SYS& s){ if (s.mouse) };
+
 
 #endif
 #ifdef STRATA_CAP_KEY
 using keyup = int,        ;// _keyup>; // x button, y index    
 using keydown = int,        ;// _keydown>; // x button, y index      
 using keypress = int         ;//,_keypress>; // x button, y index       
-using keycombo = glm::ivec4   ;//,_keycombo> ; //-1 is 
-enum metastate {
-    CRTL,
-    ALT,
-    LALT,
-    RALT,
-};
+using keycombo = glm::ivec4   ;//,_keycombo> ; //-1 is
+#ifndef MAX_KEYS
+#define MAX_KEYS 0xFF
+#endif  
 struct KEY   {
- public:
-    bool meta,lmeta,rmeta;
-    bool ctrl, lctrl, rctrl;
-    bool alt, lalt, ralt;
-    bool shift, lshift, rshift;
-    evq<keyup>    last_keyup;
-    evq<keydown>  last_keydown;
-    evq<keypress> last_keypress;
-        uint getlastKey(){return this->last_keydown.lastn();};
+    enum key_state {up=0,down=1,press=1};
+    evq<keyup>    _keyup;
+    evq<keydown>  _keydown;
+    evq<keypress> _keypress;
+    
 
-    bool up_cb(char key,int index) final {this->last_keyup.push(keyup(key),index);};
-    bool down_cb(char key,int index) final {this->last_keydown.push(keydown(key),index);};    
-    bool press_cb(char key,int index) final {this->last_keypress.push(keypress(key),index);};    
-    bool up_cb(up ev) final {this->last_keyup.push(ev);};
-    bool down_cb(down ev) final {this->last_keydown.push(ev);};    
-    bool press_cb(press ev) final {this->last_keypress.push(ev);};    
+    int keyState[MAX_KEYS];
+    uint getlastKey(){return this->_keydown.lastn();};
+
+    bool up_cb(char key,int index) final {this->_keyup.push(keyup(key),index);this->keyState[(int)key]=key_state::up;};
+    bool down_cb(char key,int index) final {this->_keydown.push(keydown(key),index);this->keyState[(int)key]=key_state::down;};    
+    bool press_cb(char key,int index) final {this->_keypress.push(keypress(key),index);this->keyState[(int)key]=key_state::press;};    
+    bool up_cb(up ev) final {this->_keyup.push(ev);};
+    bool down_cb(down ev) final {this->_keydown.push(ev);};    
+    bool press_cb(press ev) final {this->_keypress.push(ev);};    
     
     virtual void handlemeta();
     bool check_combo( uint32_t kc){
 
     };
+    
     virtual bool get_state(int key);
     bool resolve(void ev,evs flag){
         switch(flag){
-            case _keyup :{this->last_keyup=(keyup)ev;return true;};
-            case _keydown :{this->last_keydown=(keydown)ev;return true;};
-            case _keypress :{this->last_keypress=(keypress)ev;return true;};
+            case _keyup :{this->_keyup=(keyup)ev;return true;};
+            case _keydown :{this->_keydown=(keydown)ev;return true;};
+            case _keypress :{this->_keypress=(keypress)ev;return true;};
         };
         return false;
     };
     void clear()final{
-        this->last_keyup.clear();
-        this->last_keydown.clear();
-        this->last_keypress.clear();        
+        this->_keyup.clear();
+        this->_keydown.clear();
+        this->_keypress.clear();        
     };
 }; // index 
 #endif
 #ifdef STRATA_CAP_JOY
 using joy_hat = int ;        //,_joy_hat>;  
-using joy_axis = glm::vec2 ;        // x,y axis 
+struct  joy_axis {long val,index;}  ;        // x,y axis 
 using joy_up = int ;        //,_joy_up>;    
 using joy_down = int ;        //,_joy_down>;      
 using joy_press = int ;        //,_joy_press>;     
@@ -307,16 +353,16 @@ using joy_throt = float;
 #define JOY_RTHUMB
 struct  JOY   { // TODO handle multi input by calling multiple
 public:
-        evq<joy_hat>   last_hat;
-        evq<joy_axis>  last_axis;
+        evq<joy_hat>   _hat;
+        evq<joy_axis>  _axis;
 
-        evq<joy_up>    last_up;  
-        evq<joy_down>  last_down;    
-        evq<joy_press> last_press;   
-        evq<joy_throt> last_throt;   
-        evq<joy_rot> last_rot;   
-    uint getlastKey(){ this->last_down.lastn();};
-    uint getlastaxis(){joy_axis l = this->last_axis.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1;};
+        evq<joy_up>    _up;  
+        evq<joy_down>  _down;    
+        evq<joy_press> _press;   
+        evq<joy_throt> _throt;   
+        evq<joy_rot> _rot;   
+    uint getlastKey(){ this->_down.lastn();};
+    uint getlastaxis(){joy_axis l = this->_axis.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1;};
 
         
         uint num =1;
@@ -326,23 +372,23 @@ public:
         #define maxbtn 16
         #endif
         virtual int _numJoys();
-        void clear(){this->last_hat.clear();this->last_axis.clear();this->last_up.clear();this->last_down.clear();this->last_press.clear();};
+        void clear(){this->_hat.clear();this->_axis.clear();this->_up.clear();this->_down.clear();this->_press.clear();};
         joycap getCap(int index);
         void setperiod(uint ms) {this->period=ms;};
         int numJoys(){ this->numJoys(); return this->num;}
 
-void hat_cb(joy_hat ev) final {this->last_hat+=ev;};      //void push_up(joy_hat ev) final {this->evmain.push(ev);};
-void up_cb(joy_up ev) final {this->last_up+=ev;};         //void push_up(joy_up ev) final {this->evmain.push(ev);};
-void down_cb(joy_down ev) final {this->last_down+=ev;};   //void push_down(joy_down ev) final {this->evmain.push(ev);};
-void press_cb(joy_press ev) final {this->last_press+=ev;};//void push_press(joy_press ev) final {this->evmain.push(ev);};
-void axis_cb(joy_axis ev) final {this->last_axis+=ev;};   //void push_axis(joy_axis ev) final {this->evmain.push(ev);};
-void hat_cb(int btn,int index) final {this->last_hat+=joy_hat(btn,index);};           //void push_up(int btn,int index) final {this->evmain.push(joy_hat(btn,index));};
-void up_cb(int btn,int index) final {this->last_up+=joy_up(btn,index);};              //void push_up(int btn,int index) final {this->evmain.push(joy_up(btn,index));};
-void down_cb(int btn,int index) final {this->last_down+=joy_down(btn,index);};        //void push_docb(int btn,int index) final {this->evmain.push(joy_down(btn,index));};    
-void press_cb(int btn,int index) final {this->last_press+=joy_press(btn,index);};     //void push_pr_cb(int btn,int index) final {this->evmain.push(joy_press(btn,index));};    
-void axis_cb(int16 axis,int index) final {this->last_axis+=joy_axis(axis,index);};    //void push_axcb(int16 axis,int index) final {this->evmain.push(joy_axis(axis,index));};    
-void throt_cb(joy_throt ev){this->last_throt+=ev;};
-void rotate_cb(joy_rot  ev){this->last_rot+=ev;};
+      //void push_up(joy_hat ev) final {this->evmain.push(ev);};
+         //void push_up(joy_up ev) final {this->evmain.push(ev);};
+   //void push_down(joy_down ev) final {this->evmain.push(ev);};
+//void push_press(joy_press ev) final {this->evmain.push(ev);};
+   //void push_axis(joy_axis ev) final {this->evmain.push(ev);};
+           //void push_up(int btn,int index) final {this->evmain.push(joy_hat(btn,index));};
+              //void push_up(int btn,int index) final {this->evmain.push(joy_up(btn,index));};
+        //void push_docb(int btn,int index) final {this->evmain.push(joy_down(btn,index));};    
+     //    
+    //void push_axcb(int16 axis,int index) final {this->evmain.push(joy_axis(axis,index));};    
+
+
     virtual int get_btn_state(int btn=-1 , int index=0;);
     virtual int get_axis_state(int axis=-1 , int index=0;);
     virtual int get_state(int key=-1 , int index=0;);
@@ -366,52 +412,56 @@ void rotate_cb(joy_rot  ev){this->last_rot+=ev;};
 };
 #endif
 #ifdef STRATA_CAP_CONT
-using CONT_press= int;//        _CONT_press>;                    
-using CONT_down = int;//        _CONT_down>; 
-using CONT_up =   int;//        _CONT_up>; 
-using CONT_dpad = int;//        _CONT_dpad>;
-using CONT_axis = glm::vec2;//        _CONT_axis>;  // Axis index;
-using CONT_trig = float;
+using CONT_press= long;//        _CONT_press>;                    
+using CONT_down = long;//        _CONT_down>; 
+using CONT_up =   long;//        _CONT_up>; 
+using CONT_dpad = long;//        _CONT_dpad>;
+struct CONT_axis {long val,short index;};//        _CONT_axis>;  // Axis index;
+struct CONT_trig {long val,short index; };
 struct CONT  {
 public:
-    evq<CONT_press> last_press;      
-    evq<CONT_down>  last_down;     
-    evq<CONT_up>    last_up;   
-    evq<CONT_dpad>  last_dpad;     
-    evq<CONT_axis>  last_laxis;     
-    evq<CONT_axis>  last_raxis;
-    evq<CONT_trigger> last_ltr;
-    evq<CONT_trigger> last_rtr;
-      uint getlastKey(){ this->last_down.lastn();};
-    uint getlastaxis(){CONT_axis l ; this->last_laxis.lastn();CONT_axis r; this->last_raxis.lastn(); return (glm::abs(l)>glm::abs(r)) ? 0 : 1; };
+    evq<CONT_press> _press;      
+    evq<CONT_down>  _down;     
+    evq<CONT_up>    _up;   
+    evq<CONT_dpad>  _dpad;     
+    evq<CONT_axis>  _laxis;     
+    evq<CONT_axis>  _raxis;
+    evq<CONT_trigger> _trig;
+      uint getlastKey(){ this->_down.lastn();};
+    uint getlastaxis(){CONT_axis l ; this->_laxis.lastn();CONT_axis r; this->_raxis.lastn(); return (glm::abs(l)>glm::abs(r)) ? 0 : 1; };
 
     void clear(){
-        this->last_press.clear();
-        this->last_down.clear();
-        this->last_up.clear();
-        this->last_dpad.clear();
-        this->last_laxis.clear();
-        this->last_raxis.clear();
-        this->last_tr.clear();
+        this->_press.clear();
+        this->_down.clear();
+        this->_up.clear();
+        this->_dpad.clear();
+        this->_laxis.clear();
+        this->_raxis.clear();
+        this->_tr.clear();
     };
     int num =0 ; 
     virtual void num();
-    void clear()final{this->last_press.clear();this->last_down.clear();this->last_up.clear();this->last_dpad.clear();this->last_laxis.clear();this->last_raxis.clear();this->last_tr.clear();};
-    bool trig_cb(CONT_trig ev,int index=0) final {this->last_tr+=ev;}
-    bool up_cb(int btn,int index=0) final {this->last_up=CONT_up(btn,index);};                   //bool push_up(int btn,int index) final {this->evmain.push(CONT_up(btn,index));};
-    bool down_cb(int btn,int index=0) final {this->last_down=CONT_down(btn,index);};             //bool push_down(int btn,int index) final {this->evmain.push(CONT_down(btn,index));};    
-    bool press_cb(int btn,int index=0) final {this->last_press=CONT_press(btn,index);};          //bool push_press(int btn,int index) final {this->evmain.push(CONT_press(btn,index));};    
-    bool laxis_cb(glm::ivec2 axis,int index=0) final {this->last_laxis=CONT_axis(axis,index);};  //bool push_laxis(glm::ivec2 axis,int index) final {this->evmain.push(CONT_axis(axis,index));};    
-    bool raxis_cb(glm::ivec2 axis,int index=0) final {this->last_raxis=CONT_axis(axis,index);};  //bool push_raxis(glm::ivec2 axis,int index) final {this->evmain.push(CONT_axis(axis,index));};    
-    bool dpad_cb(int axis,int index) final {this->last_dpad=CONT_dpad(axis,index);};         //bool push_dpad(int axis,int index) final {this->evmain.push(CONT_dpad(axis,index));};    
+    void clear()final{this->_press.clear();this->_down.clear();this->_up.clear();this->_dpad.clear();this->_laxis.clear();this->_raxis.clear();this->_tr.clear();};
+ 
+ 
+    bool trig_cb(CONT_trig ev,int index=0) final {_trig.push(ev,index);}
+    bool up_cb(CONT_up btn,int index=0) final {_up.push(btn,index);};                   //bool push_up(int btn,int index) final {this->evmain.push(CONT_up(btn,index));};
+    bool down_cb(CONT_down btn,int index=0) final {_down.push(btn,index);};             //bool push_down(int btn,int index) final {this->evmain.push(CONT_down(btn,index));};    
+    bool press_cb(CONT_press btn,int index=0) final {_press.push(btn,index);};          //bool push_press(int btn,int index) final {this->evmain.push(CONT_press(btn,index));};    
+    bool laxis_cb(glm::ivec2 axis,int index=0) final {_laxis.push(axis,index);};    //bool push_laxis(glm::ivec2 axis,int index) final {this->evmain.push(CONT_axis(axis,index));};    
+    bool raxis_cb(glm::ivec2 axis,int index=0) final {_raxis.push(axis,index);};    //bool push_raxis(glm::ivec2 axis,int index) final {this->evmain.push(CONT_axis(axis,index));};    
+    bool dpad_cb(CONT_dpad,int index=0) final {_dpa.push(axis,index);};              //bool push_dpad(int axis,int index) final {this->evmain.push(CONT_dpad(axis,index));};    
     
-    bool trig_cb(CONT_trig ev) final {this->last_tr+=ev;}
-    bool up_cb(CONT_up ev) final {this->last_up+= ev;};           // bool push_up(up ev) final {this->evmain.push(ev);};             
-    bool down_cb(CONT_down ev) final {this->last_down+= ev;};     //       bool push_down(down ev) final {this->evmain.push(ev);};                 
-    bool press_cb(CONT_press ev) final {this->last_press+= ev;};  //          bool push_press(press ev) final {this->evmain.push(ev));};                
-    bool axis_cb(CONT_axis ev) final {this->last_axis+= ev;};     //       bool push_axis(axis ev) final {this->evmain.push(ev));};                
-    bool dpad_cb(dpad ev) final {this->last_dpad+= ev;};          //  bool push_dpad(dpad ev) final {this->evmain.push(ev));};                
-
+    
+    bool trig_cb(CONT_trig ev,int index=0) final {_trig.push(ev);}
+    bool up_cb(CONT_up btn,int index=0) final {_up.push(btn);};                   //bool push_up(int btn,int index) final {this->evmain.push(CONT_up(btn,index));};
+    bool down_cb(CONT_down btn,int index=0) final {_down.push(btn);};             //bool push_down(int btn,int index) final {this->evmain.push(CONT_down(btn,index));};    
+    bool press_cb(CONT_press btn,int index=0) final {_press.push(btn);};          //bool push_press(int btn,int index) final {this->evmain.push(CONT_press(btn,index));};    
+    bool laxis_cb(glm::ivec2 axis,int index=0) final {_laxis.push(axis);};    //bool push_laxis(glm::ivec2 axis,int index) final {this->evmain.push(CONT_axis(axis,index));};    
+    bool raxis_cb(glm::ivec2 axis,int index=0) final {_raxis.push(axis);};    //bool push_raxis(glm::ivec2 axis,int index) final {this->evmain.push(CONT_axis(axis,index));};    
+    bool dpad_cb(CONT_dpad,int index=0) final {_dpa.push(axis);};              //bool push_dpad(int axis,int index) final {this->evmain.push(CONT_dpad(axis,index));};    
+    
+ 
     
     virtual bool handle(int index=0);
     virtual bool mhandle();
@@ -442,43 +492,33 @@ using touch_gesture = evq<glm::vec4*>; ///,_touch_zoom>; // rotate
 
 struct TOUCH  { 
  public:
-     evq<touch_tap> last_tap;
-     evq<touch_tap> last_up;
-     evq<touch_tap> last_down;
-     evq<touch_move> last_move;
-     evq<touch_zoom> last_zoom;
-       uint getlastaxis(){touch_move l =this->last_move.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1; };
+     evq<touch_tap> _tap;
+     evq<touch_tap> _up;
+     evq<touch_tap> _down;
+     evq<touch_move> _move;
+     evq<touch_zoom> _zoom;
+       uint getlastaxis(){touch_move l =this->_move.lastn(); return (( (l.x <0) ? (-l.x) : l.x )>((l.y < 0) ? (-l.y) : l.y)) ? 0 : 1; };
 
      void clear(){
-        this->last_tap.clear();
-        this->last_up.clear();
-        this->last_down.clear();
-        this->last_move.clear();
-        this->last_zoom.clear();
+        this->_tap.clear();
+        this->_up.clear();
+        this->_down.clear();
+        this->_move.clear();
+        this->_zoom.clear();
      };
-    std::vector<touch_gesture> last_gesture;
+    std::vector<touch_gesture> _gesture;
 
     std::vector<touch_gesture> gestures ;
-    std::vector<>
     bool rec_gest;
     void clearGest()final {this->gestures.clear();};
-    void _clear()final {this->last_move.clear();this->last_tap.clear();this->last_zoom.clear();};
+    void _clear()final {this->_move.clear();this->_tap.clear();this->_zoom.clear();};
     void clear()final {this->_clear();if(!(this->rec_gest)){this->clearGest();};};
     glm::uvec2 get_pos();
     vect<glm::uvec2> get_multi_pos();
     virtual void get_touch();
     vect<touch_move> s;
-        bool move_cb(vect<glm::vec4> d,int index){this->last_move+=touch_move(d,index);}       //bool push_touch_move(vect<glm::vec4> d,int index){this->evmain.push(move_cb(d,index));}
-        bool tap_cb(vect<glm::vec2> d,int index){this->last_tap+=touc_tap(d,index);}       //bool push_touch_tap(vect<glm::vec2> d,int index){this->evmain.push(tap_cb(d,index));}
-        bool zoom_cb(mat<glm::vec2> d,int index){this->last_zoom+=touch_zoom(d,index);}       //bool push_touch_zoom(mat<glm::vec2> d,int index){this->evmain.push(zoom_cb(d,index));}
-        bool gesture_cb(vect<glm::vec4> d,int index){this->last_gesture+=touch_gesture(d,index);}       //bool push_touch_gesture(vect<glm::vec4> d,int index){this->evmain.push(gesture_cb(d,index));}
-    void move_cb(touch_move ev){this->last_move_cb+=ev;};         //  void push_move(touch_move ev){this->evmain.push(ev);};
-    void tap_cb(touch_tap ev){this->last_tap_cb+=ev;};            //  void push_tap(touch_tap ev){this->evmain.push(ev);};
-    void zoom_cb(touch_zoom ev){this->last_zoom_cb+=ev;};         //  void push_zoom(touch_zoom ev){this->evmain.push(ev);};
-    void gesture_cb(touch_gesture ev){this->last_gesture_cb+=ev;};//  void push_gesture(touch_gesture ev){this->evmain.push(ev);};
-     void down_cb(mousedown ev) final {this->last_down+=ev;};
-     void up_cb(mouseup ev) final { up_check(ev.data());this->last_up+=ev;};
 
+    
     void init(){event_sys::init();};
     void record_gesture(){this->rec_gest=true;};
     vect<touch_move> finish_gesture(){this->reg_get=false;return this->s};
@@ -522,6 +562,7 @@ typedef struct devcap{
 }devcap;
 using dcaps = devcap;
 #include <strata/acqres/wav.hpp>
+using volume_change = long;
 struct AUDIO  {
 public:
     uint num = 0;
@@ -605,23 +646,23 @@ using rotation = glm::vec3;
 using heading = glm::vec2;
 struct SENSOR   {
 public:
-gyro        last_gyro;
-loc         last_loc;
-light       last_light;
-gravity     last_gravity;
-proximity last_proximity;
-temperature last_temperature; 
-accel last_accel;
-magnet last_magnet;
+gyro        _gyro;
+loc         _loc;
+light       _light;
+gravity     _gravity;
+proximity _proximity;
+temperature _temperature; 
+accel _accel;
+magnet _magnet;
 
-baro last_baro;
-humid last_humid;
-pos last_pos;
-lidar last_lidar;
-// motion last_motion;
-// motion last_stationary;
-rotation last_rotation;
-rotation last_game_rotation;
+baro _baro;
+humid _humid;
+pos _pos;
+lidar _lidar;
+// motion _motion;
+// motion _stationary;
+rotation _rotation;
+rotation _game_rotation;
 
 virtual temp        gettemp();
 virtual gyro        getgyro();
@@ -699,8 +740,8 @@ using lidar = double**; //,_lidar>;
 using cam  =  glm::dvec4**; //,_cam>;    
 struct CAM {
     virtual pos getpos();
-    evq<cam>    last_cam;
-    evq<lidar>      last_lidar;
+    evq<cam>    _cam;
+    evq<lidar>      _lidar;
 
     uint indexFront;
     uint indexBack;
@@ -833,50 +874,85 @@ char CLASS_NAME[]=NULL ;
 char text[]=NULL;
 };
 #endif
-template <typename win>
+
+
+template <typename T>
+struct getEventT {using type = void;  };
+
+template <typename T,typename InhT>
+struct getEventInh {using type = typename getEventT<T>::type; static constexpr evq<T> getEventT<T>::type::* ptrm=getEventT<T>::ptrm; static constexpr SYS::type::* ps = getEventT<T>::ps; }
+
+tempate <typename T, typename inhSys>
+evq<T>* getEvq(inhSys& s ){s.*getEventInh<T,inhSys>::ps.*(getEventT::ptrm);};
+
+
+#ifdef STRATA_CAP_CLI 
+
+struct clisys {
+    using tyMouseCoord = struct {short X,Y};
+    virtual bool mouseMove();
+    virtual bool click();
+    virtual bool dclick();
+    virtual bool mouseEvent();
+    virtual bool keyEvent();
+    virtual bool isPressedLCTRL();
+    virtual bool isPressedRCTRL();
+    virtual bool isPressedLALT();
+    virtual bool isPressedRALT();
+    virtual bool isPressedLSHIFT();
+    virtual bool isPressedRSHIFT();
+    void event(){}
+
+    clisys() = default {GetConsoleMode(hInput, &prev_mode);SetConsoleMode(hInput, ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS);}
+};  
+#endif
 struct SYS   { 
 private:
     // event_main evmain;
     
 #ifdef STRATA_CAPABILITY_MOUSE 
-MOUSE      mouse;
+MOUSEt     mouse;
     void initMouse();
 #endif    
 #ifdef STRATA_CAPABILITY_KEY
-KEY        key;
+KEYt        key;
     void initKey();
 #endif
 #ifdef STRATA_CAPABILITY_JOY 
-JOY        joy;
+JOYt        joy;
     void initJoy();
 #endif
 #ifdef STRATA_CAPABILITY_CONT 
-CONT       cont;
+CONTt       cont;
     void initCont();
 #endif
 #ifdef STRATA_CAPABILITY_TOUCH 
-TOUCH      touch;
+TOUCHt      touch;
     void initTouch();
 #endif
 #ifdef STRATA_CAPABILITY_DISPLAY 
-DISPLAY    display;
+DISPLAYt    display;
     void initDisplay();
 #endif
 #ifdef STRATA_CAPABILITY_AUDIO 
-AUDIO      audio;
+AUDIOt      audio;
     void initAudio();
 #endif
 #ifdef STRATA_CAPABILITY_SENSOR 
-SENSOR     sensor;
+SENSORt     sensor;
     void initSensor();
 #endif
 #ifdef STRATA_CAP_CAM
-CAM cam;
+CAMt cam;
 #endif
 #ifdef STRATA_CAP_NET
-NET net;
+NETt net;
 #endif
 public:
+
+template <typename T>
+T getEvnt(){return getEvq<T>(*this)->lastn();};
+
 
 enum dev {
     Mouse=1,
@@ -892,7 +968,7 @@ enum dev {
 // virtual void handleJoy();
 // virtual void
 uint8_t main ; 
-   uint last_dev ;
+   uint _dev ;
     using keyrecord = glm::ivec2 ; // X is index impl::
     static const keyrecord idlekrec = keyrecord(-1,-1); 
     keyrecord keyrec = idlekrec; 
@@ -1008,8 +1084,64 @@ this->cont.clear();
     SYS(uint flags)=default{this->flag=flags;this->init_evsys(flags);}
 };
 
-
 }
+template <>getEventT<dbclick         > {using type = MOUSE  ;static constexpr evq<dbclick       > type::* ptrm=&type::_dbclick       ;static constexpr type SYS::* ps =&SYS::mouse;  };
+template <>getEventT<mousedown       > {using type = MOUSE  ;static constexpr evq<mousedown     > type::* ptrm=&type::_mousedown     ;static constexpr type SYS::* ps =&SYS::mouse;  };
+template <>getEventT<mouseup         > {using type = MOUSE  ;static constexpr evq<mouseup       > type::* ptrm=&type::_mouseup       ;static constexpr type SYS::* ps =&SYS::mouse;  };
+template <>getEventT<mouse_move      > {using type = MOUSE  ;static constexpr evq<mouse_move    > type::* ptrm=&type::_mouse_move    ;static constexpr type SYS::* ps =&SYS::mouse;  };
+template <>getEventT<mouse_wheel     > {using type = MOUSE  ;static constexpr evq<mouse_wheel   > type::* ptrm=&type::_mouse_wheel   ;static constexpr type SYS::* ps =&SYS::mouse;  };
+template <>getEventT<mouse_wheelh    > {using type = MOUSE  ;static constexpr evq<mouse_wheelh  > type::* ptrm=&type::_mouse_wheelh  ;static constexpr type SYS::* ps =&SYS::mouse;  };
+template <>getEventT<keyup           > {using type = KEY    ;static constexpr evq<keyup         > type::* ptrm=&type::_keyup         ;static constexpr type SYS::* ps =&SYS::key;  };
+template <>getEventT<keydown         > {using type = KEY    ;static constexpr evq<keydown       > type::* ptrm=&type::_keydown       ;static constexpr type SYS::* ps =&SYS::key;  };
+template <>getEventT<keypress        > {using type = KEY    ;static constexpr evq<keypress      > type::* ptrm=&type::_keypress      ;static constexpr type SYS::* ps =&SYS::key;  };
+template <>getEventT<keycombo        > {using type = KEY    ;static constexpr evq<keycombo      > type::* ptrm=&type::_keycombo      ;static constexpr type SYS::* ps =&SYS::key;  };
+template <>getEventT<joy_hat         > {using type = JOY    ;static constexpr evq<joy_hat       > type::* ptrm=&type::_joy_hat       ;static constexpr type SYS::* ps =&SYS::joy;  };
+template <>getEventT<joy_axis        > {using type = JOY    ;static constexpr evq<joy_axis      > type::* ptrm=&type::_joy_axis      ;static constexpr type SYS::* ps =&SYS::joy;  };
+template <>getEventT<joy_up          > {using type = JOY    ;static constexpr evq<joy_up        > type::* ptrm=&type::_joy_up        ;static constexpr type SYS::* ps =&SYS::joy;  };
+template <>getEventT<joy_down        > {using type = JOY    ;static constexpr evq<joy_down      > type::* ptrm=&type::_joy_down      ;static constexpr type SYS::* ps =&SYS::joy;  };
+template <>getEventT<joy_press       > {using type = JOY    ;static constexpr evq<joy_press     > type::* ptrm=&type::_joy_press     ;static constexpr type SYS::* ps =&SYS::joy;  };
+template <>getEventT<joy_rot         > {using type = JOY    ;static constexpr evq<joy_rot       > type::* ptrm=&type::_joy_rot       ;static constexpr type SYS::* ps =&SYS::joy;  };
+template <>getEventT<joy_throt       > {using type = JOY    ;static constexpr evq<joy_throt     > type::* ptrm=&type::_joy_throt     ;static constexpr type SYS::* ps =&SYS::joy;  };
+template <>getEventT<CONT_press      > {using type = CONT   ;static constexpr evq<CONT_press    > type::* ptrm=&type::_press         ;static constexpr type SYS::* ps =&SYS::cont;  };
+template <>getEventT<CONT_down       > {using type = CONT   ;static constexpr evq<CONT_down     > type::* ptrm=&type::_down          ;static constexpr type SYS::* ps =&SYS::cont;  };
+template <>getEventT<CONT_up         > {using type = CONT   ;static constexpr evq<CONT_up       > type::* ptrm=&type::_up            ;static constexpr type SYS::* ps =&SYS::cont;  };
+template <>getEventT<CONT_dpad       > {using type = CONT   ;static constexpr evq<CONT_dpad     > type::* ptrm=&type::_dpad          ;static constexpr type SYS::* ps =&SYS::cont;  };
+template <>getEventT<CONT_axis       > {using type = CONT   ;static constexpr evq<CONT_axis     > type::* ptrm=&type::_axis          ;static constexpr type SYS::* ps =&SYS::cont;  };
+template <>getEventT<CONT_trig       > {using type = CONT   ;static constexpr evq<CONT_trig     > type::* ptrm=&type::_trig          ;static constexpr type SYS::* ps =&SYS::cont;  };
+template <>getEventT<touch_move      > {using type = TOUCH  ;static constexpr evq<touch_move    > type::* ptrm=&type::_touch_move    ;static constexpr type SYS::* ps =&SYS::touch;  };
+template <>getEventT<touch_tap       > {using type = TOUCH  ;static constexpr evq<touch_tap     > type::* ptrm=&type::_touch_tap     ;static constexpr type SYS::* ps =&SYS::touch;  };
+template <>getEventT<touch_zoom      > {using type = TOUCH  ;static constexpr evq<touch_zoom    > type::* ptrm=&type::_touch_zoom    ;static constexpr type SYS::* ps =&SYS::touch;  };
+template <>getEventT<touch_gesture   > {using type = TOUCH  ;static constexpr evq<touch_gesture > type::* ptrm=&type::_touch_gesture ;static constexpr type SYS::* ps =&SYS::touch;  };
+template <>getEventT<gyro            > {using type = SENSOR ;static constexpr evq<gyro          > type::* ptrm=&type::_gyro          ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<loc             > {using type = SENSOR ;static constexpr evq<loc           > type::* ptrm=&type::_loc           ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<light           > {using type = SENSOR ;static constexpr evq<light         > type::* ptrm=&type::_light         ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<gravity         > {using type = SENSOR ;static constexpr evq<gravity       > type::* ptrm=&type::_gravity       ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<proximity       > {using type = SENSOR ;static constexpr evq<proximity     > type::* ptrm=&type::_proximity     ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<temp            > {using type = SENSOR ;static constexpr evq<temp          > type::* ptrm=&type::_temp          ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<accel           > {using type = SENSOR ;static constexpr evq<accel         > type::* ptrm=&type::_accel         ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<magnet          > {using type = SENSOR ;static constexpr evq<magnet        > type::* ptrm=&type::_magnet        ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<baro            > {using type = SENSOR ;static constexpr evq<baro          > type::* ptrm=&type::_baro          ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<humid           > {using type = SENSOR ;static constexpr evq<humid         > type::* ptrm=&type::_humid         ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<pos             > {using type = SENSOR ;static constexpr evq<pos           > type::* ptrm=&type::_pos           ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<motion          > {using type = SENSOR ;static constexpr evq<motion        > type::* ptrm=&type::_motion        ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<rotation        > {using type = SENSOR ;static constexpr evq<rotation      > type::* ptrm=&type::_rotation      ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<heading         > {using type = SENSOR ;static constexpr evq<heading       > type::* ptrm=&type::_heading       ;static constexpr type SYS::* ps =&SYS::sensor;  };
+template <>getEventT<wake            > {using type = DISPLAY;static constexpr evq<wake          > type::* ptrm=&type::_wake          ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<sleep           > {using type = DISPLAY;static constexpr evq<sleep         > type::* ptrm=&type::_sleep         ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<min             > {using type = DISPLAY;static constexpr evq<min           > type::* ptrm=&type::_min           ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<max             > {using type = DISPLAY;static constexpr evq<max           > type::* ptrm=&type::_max           ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<hide            > {using type = DISPLAY;static constexpr evq<hide          > type::* ptrm=&type::_hide          ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<resize          > {using type = DISPLAY;static constexpr evq<resize        > type::* ptrm=&type::_resize        ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<move            > {using type = DISPLAY;static constexpr evq<move          > type::* ptrm=&type::_move          ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<fullscreen      > {using type = DISPLAY;static constexpr evq<fullscreen    > type::* ptrm=&type::_fullscreen    ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<close           > {using type = DISPLAY;static constexpr evq<close         > type::* ptrm=&type::_close         ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<display_conn    > {using type = DISPLAY;static constexpr evq<display_conn  > type::* ptrm=&type::_display_conn  ;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<display_orient  > {using type = DISPLAY;static constexpr evq<display_orient> type::* ptrm=&type::_display_orient;static constexpr type SYS::* ps =&SYS::display;  };
+template <>getEventT<display_power   > {using type = DISPLAY;static constexpr evq<display_power > type::* ptrm=&type::_display_power ;static constexpr type SYS::* ps =&SYS::display;  };
+
+
+
+
 }
 
 

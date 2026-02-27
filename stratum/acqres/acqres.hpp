@@ -14,8 +14,9 @@
 #include <cstddef>
 #include <fstream>
 #include <vector>
+#include <petri>
 #include <functional>
-
+#define NSC std::
 template <typename T>
 size_t size(T& s){
     return sizeof(*s);
@@ -294,8 +295,19 @@ struct acqresWr : acqres_base<T>{
     void func(T& f){function(f);}
     acqresWr(std::ofstream& f){fi=f;}
 
-}
+};
+// TODO maybe
+template <typename T, std::function<void(T&)> fT= [](T& a){ } >
+struct rwT {
+	using type = T;
+	static constexpr std::function<void(T&)> func=fT;
+};
+
+template <class rwTt ,class... rwTts>
+struct strucT{
 
 
-
+NSC tuple<typename rwTt::type,typename rwTts::type...> tup;
+void write(){rwTt::func(NSC get<0>(tup));};
+};
 #endif
