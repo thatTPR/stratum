@@ -1,0 +1,2 @@
+C:/Users/Alexandru.Popp/src/strata/build/CMakeFiles/edit_cache.dir
+C:/Users/Alexandru.Popp/src/strata/build/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,8 @@
+#define STRATA_CAP_MOUSE
+#define STRATA_CAP_KEY
+#define STRATA_CAP_JOY
+#define STRATA_CAP_CONT
+#define STRATA_CAP_AUDIO
+// #define STRATA_CAP_NET
+// #define STRATA_CAP_SENSOR
+#define STRATA_CAP_

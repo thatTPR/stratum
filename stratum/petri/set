@@ -1,0 +1,502 @@
+#pragma once
+#include <initializer_list>
+#include <utility>
+#include <algorithm>
+#include <stdexcept>
+#include "tree"
+namespace pri {
+    template <class Key,
+    class Compare = std::less<Key>,
+    class Allocator = std::allocator<Key>>
+    class set {
+        public :
+using key_type=	Key;
+using value_type=	Key;
+using size_type=	std::size_t;
+using difference_type=	std::ptrdiff_t;
+using key_compare=	Compare;
+using value_compare=	Compare;
+using allocator_type=	Allocator;
+using reference=	value_type&;
+using const_reference=	const value_type&;
+
+#if __cplusplus <201103L
+using pointer=	 Allocator::pointer;
+using const_pointer=Allocator::const_pointer;
+#else 
+using pointer=	 std::allocator_traits<Allocator>::pointer;
+using const_pointer=std::allocator_traits<Allocator>::const_pointer;
+#endif 
+  
+
+struct iter ;
+    
+using iterator = iter <value_type>	Constant LegacyBidirectionalIterator and ConstexprIterator(since C++26) to value_type
+using const_iterator = 	iter<const value_type>; LegacyBidirectionalIterator and ConstexprIterator(since C++26) to const value_type
+using reverse_iterator = 	std::reverse_iterator<iterator>;
+using const_reverse_iterator = 	std::reverse_iterator<const_iterator>;
+
+using tree = xtree<Key,Compare,Allocator>;
+
+#if __cplusplus >= 201703L
+using node_type = tree::node_type;//   (since C++17)	a specialization of node handle representing a container node
+template<class Iter, class NodeType>
+struct InsertRetTy
+{
+    Iter     position;
+    bool     inserted;
+    NodeType node;
+};
+using insert_return_type = InsertRtTy<iterator,node_type>  //(since C++17)	type describing the result of inserting a node_type, a specialization of
+#endif 
+
+struct iter {
+    node_type* cur;
+    Key& operator*(){return cur->data;}
+    Key* operator->(){return &(cur->data);}
+
+    void incr(){cur = cur->next() ;};
+    void decr(){cur = cur->prev() ;};
+    node_type& operator++(){incr();return *this;}
+    node_type& operator++(int){incr();return *this;}
+    node_type& operator--(){decr();return *this;}
+    node_type& operator--(int){decr();return *this;}
+};
+
+
+Allocator all;
+Compare cmp;
+tree c;
+#if __cplusplus >=201103L
+#define NOEXC11 noexcept ;
+#else 
+#define NOEXC11
+#endif 
+
+#if __cplusplus >=202602L
+#define CEXPR26 constexpr ;
+#else 
+#define CEXPR26
+#endif 
+
+
+
+
+CEXPR26 iterator begin() NOEXC11 {return iterator(c.front());};
+CEXPR26 const_iterator cbegin()  const NOEXC11 {return const_iterator(c.front());};
+CEXPR26 reverse_iterator rbegin() NOEXC11 {return reverse_iterator(c.front());};
+CEXPR26 const_iterator crbegin()  const NOEXC11 {return const_reverse_iterator(c.front());};
+
+CEXPR26 iterator end() NOEXC11 {return ++iterator(c.front());};
+CEXPR26 const_iterator cend() NOEXC11 {return ++const_iterator(c.front());};
+CEXPR26 reverse_iterator rend() NOEXC11 {return --reverse_iterator(c.front());};
+CEXPR26 const_reverse_iterator crend()  const NOEXC11 {return --const_reverse_iterator(c.front());};
+
+
+CEXPR26 iterator tail() NOEXC11 {return iterator(c.front());};
+CEXPR26 const_iterator ctail() NOEXC11 {return const_iterator(c.front());};
+CEXPR26 reverse_iterator rtail() NOEXC11 {return reverse_iterator(c.front());};
+CEXPR26 const_reverse_iterator crtail()  const NOEXC11 {return const_reverse_iterator(c.front());};
+
+
+
+CEXPR26 void clear() NOEXC11 {c.clear();}
+
+
+CEXPR26 std::pair<iterator, bool> insert( const value_type& value ){
+    for(iterator it = begin();; it;++it){if(*it==value){return std::pair<iterator, bool>(it, true));;}}
+    std::pair<iterator, bool>(iterator(c.insert(value), true));    
+};
+#if __cplusplus >=201103L
+CEXPR26 std::pair<iterator, bool> insert( value_type&& value ){
+    
+    for(iterator it = begin();; it;++it){if(*it==value){return std::pair<iterator, bool>(it, true));;}}
+    std::pair<iterator, bool>(iterator(c.insert(value), true));    
+};
+#else 
+CEXPR26 iterator insert( iterator pos, const value_type& value ){
+    for(iterator it = begin();; it;++it){if(*it==value){return it;}}
+    return iterator(c.insert(value,pos.cur));
+};
+#endif 
+#if __cplusplus >=201103L
+CEXPR26 iterator insert( const_iterator pos, const value_type& value ){
+    for(iterator it = begin();; it;++it){if(*it==value){return it;}}
+    return iterator(c.insert(value,pos.cur));
+
+    };
+CEXPR26 iterator insert( const_iterator pos, value_type&& value ){
+    for(iterator it = begin();; it;++it){if(*it==value){return it;}}
+    return iterator(c.insert(value,pos.cur));
+};
+#endif 
+template< class InputIt >
+void insert( InputIt first, InputIt last ){
+    for(InputIt f =first ; f; ++f){insert(*f);
+        if(f==last){return;}
+    }
+};
+#if __cplusplus >=201103L
+CEXPR26 void insert( std::initializer_list<value_type> ilist ){
+    for(const auto i : ilist){insert(i);}
+};
+#endif 
+#if __cplusplus >=201703L
+CEXPR26 insert_return_type insert( node_type&& nh ){
+     insert_return_type rt ;
+     rt.position = iterator(insert(nh.data));
+     rt.inserted=true;rt.node = *rt.postion.cur ;return rt; 
+};
+CEXPR26 iterator insert( const_iterator pos, node_type&& nh ){
+         insert_return_type rt ;
+     rt.position = iterator(insert(nh.data,pos.cur));
+     rt.inserted=true;rt.node = *rt.postion.cur ;return rt; 
+};
+#endif 
+
+#if __cplusplus >= 201103L
+template< class... Args >
+std::pair<iterator, bool> emplace( Args&&... args ){return std::pair<iterator,bool>(insert(value_type(args...)) , true) ; };
+template< class... Args >
+std::pair<iterator, bool> emplace_hint(const_iterator hint, Args&&... args ){return std::pair<iterator,bool>(insert(hint, value_type(args...)) , true) ; };
+#endif 
+
+#if __cplusplus >=202302L
+
+template< class K >
+CEXPR26 std::pair<iterator, bool> insert( K&& x ){
+    return std::pair<iterator,bool>(insert(std::forward<K>(x),true));
+};
+template< class K >
+CEXPR26 iterator insert( const_iterator pos, K&& x ){
+    return iterator(insert(pos,std::forward<K>(x)));
+};
+#endif 
+#if __cplusplus >-202302L
+template<class /*container-compatible-range<value_type>*/  R >
+CEXPR26 void insert_range( R&& rg ){
+    for(auto it = rg.begin() ; it ; ++it){insert(*it);if(it==rg.end()){return;};}
+};
+#endif 
+
+#if __cplusplus < 202302L
+iterator erase( iterator pos ){c.remove(pos.cur);};
+#else 
+CEXPR26 iterator erase( iterator pos )
+    requires(!std::same_as<iterator, const_iterator>) { c.remove(pos.cur)};
+#endif 
+#if __cplusplus >=201103L
+CEXPR26 iterator erase( const_iterator pos ){c.remove(pos.cur);};
+#else 
+iterator erase( iterator first, iterator last );
+#endif 
+#if __cplusplus >= 201103L
+CEXPR26 iterator erase( const_iterator first, const_iterator last ){
+    for(const_iterator f  = first; f ; ++f){erase(f);if(f==last){break}}
+};
+#endif 
+CEXPR26 size_type erase( const Key& key ){
+    for( auto i = begin() ; i != end(); i++){ if(*i == key){erase(i);}}
+};
+#if __cplusplus >= 202303L
+template< class K >
+CEXPR26 size_type erase( K&& x ){    for( auto i = begin() ; i != end(); i++){ if(*i == x){erase(i);}}
+};
+#endif 
+
+#if __cplusplus >= 201703L
+#define NOEXC17 noexcept(std::allocator_traits<Allocator>::is_always_equal::value&& std::is_nothrow_swappable<Compare>::value)
+#else 
+NOEXC17
+#endif 
+
+CEXPR26 void swap( set<Key,Compare,Allocator>& other ){
+    set<Key,Compare,Allocator> t ;t.all = other.all;t.c=other.c;
+    other = *this;
+    *this = t;
+};
+#if __cplusplus >= 201703L
+CEPR26 node_type extract( const_iterator pos ){return *pos.cur};
+CEPR26 node_type extract( const Key& k ){for(auto it  = begin(); it ; ++it){if(*it==k){return *it.cur}}};
+#endif 
+#if __cplusplus >= 202302L
+template< class K >
+CEPR26 node_type extract( K&& x ){for(auto it  = begin(); it ; ++it){if(*it==x){return *it.cur}}};
+#endif 
+
+#if __cplusplus >= 201703L
+template< class C2 >
+CEXPR26 void merge( pri::set<Key, C2, Allocator>& source ){
+    for(auto it : source){insert(it);};
+};
+template< class C2 >
+CEXPR26 void merge( pri::set<Key, C2, Allocator>&& source ){for(auto it : source){insert(it);};};
+template< class C2 >
+CEXPR26 void merge( pri::multiset<Key, C2, Allocator>& source ){
+    Key last=front();insert(it);
+    for(auto it : source){if(it==last){continue;} insert(it);last=it; };
+};
+template< class C2 >
+CEXPR26 void merge( pri::multiset<Key, C2, Allocator>&& source ){    Key last=front();insert(it);
+    for(auto it : source){if(it==last){continue;} insert(it);last=it; };
+};
+#endif
+
+CEXPR26 size_type count( const Key& key ) const{size_type ss=0;
+    for(auto it : *this){if(it==key){++ss;}}
+    return ss;
+};
+#if __cplusplus >= 201403L
+template< class K >
+CEXPR26 size_type count( const K& x ) const{
+    size_type ss=0;
+    for(auto it : *this){if(it==x){++ss;}}
+    return ss;
+};
+#endif 
+
+
+CEXPR26 iterator find( const Key& key ){for(auto it=begin() ; it!= end() ; ++it ){if(key == *it){return it;}}};
+CEXPR26 const_iterator find( const Key& key ) const{for(auto it=cbegin() ; it != cend() ; ++it ){if(key == *it){return it;}}};
+#if __cplusplus >= 201403L
+template< class K >
+CEXPR26 iterator find( const K& x ){for(auto it=begin() ; it!= end() ; ++it ){if(x == *it){return it;}}};
+template< class K >
+CEXPR26 const_iterator find( const K& x ) const{for(auto it=cbegin() ; it!= cend() ; ++it ){if(x == *it){return it;}}};
+#endif
+#if __cplusplus >= 202003L
+CEXPR26 bool contains( const Key& key ) const{for(auto it : *this){if(it==key){return true}};return false;};
+template< class K >
+CEXPR26 bool contains( const K& x ) const{for(auto it : *this){if(it==x){return true}};return false;};
+#endif 
+
+iterator lower_bound( const Key& key ){for(auto it = begin(); it!=end();++it){if(!(*it<key)){return it;}}};
+const_iterator lower_bound( const Key& key ) const{for(auto it = cbegin(); it!=end();++it){if(!(*it<key)){return it;}}};
+iterator upper_bound( const Key& key ){for(auto it = begin(); it!=end();++it){if((*it>key)){return it;}}};
+const_iterator upper_bound( const Key& key ) const{for(auto it = cbegin(); it!=end();++it){if((*it>key)){return it;}}};
+#if __cplusplus >= 201402L
+template< class K >
+iterator lower_bound( const K& x ){for(auto it = begin(); it!=end();++it){if(!(*it<x)){return it;}}};;
+template< class K >
+const_iterator lower_bound( const K& x ) const{for(auto it = cbegin(); it!=end();++it){if(!(*it<x)){return it;}}};;
+template< class K >
+iterator upper_bound( const K& x ){for(auto it = begin(); it!=end();++it){if((*it>x)){return it;}}};;
+template< class K >
+const_iterator upper_bound( const K& x ) const{for(auto it = cbegin(); it!=end();++it){if((*it>x)){return it;}}};;
+#endif 
+
+CEXPR26 std::pair<iterator, iterator> equal_range( const Key& key ){return std::pair<iterator,iterator>(lower_bound(key),upper_bound(key));};
+CEXPR26 std::pair<const_iterator, const_iterator> equal_range( const Key& key ) const{return std::pair<const_iterator,const_iterator>(lower_bound(key),upper_bound(key));};
+#if __cplusplus >= 201402L
+template< class K >
+CEXPR26 std::pair<iterator, iterator> equal_range( const K& x ){return std::pair<iterator,iterator>(lower_bound(x),upper_bound(x));};;
+template< class K >
+CEXPR26 std::pair<const_iterator, const_iterator> equal_range( const K& x ) const{return std::pair<const_iterator,const_iterator>(lower_bound(x),upper_bound(x));};;
+#endif 
+
+CEXPR26 key_compare key_comp() const {return Compare();}
+CEXPR26 key_compare value_comp() const {return Compare();}
+
+#endif 
+#if __cplusplus >= 201703L
+#define NOEXC17 noexcept(std::allocator_traits<Allocator>::is_always_equal::value && std::is_nothrow_move_assignable<Compare>::value)
+#else
+#define NOEXC17
+#endif 
+
+CEXPR26 set& operator=( const set& other ){c = other.c;} ;
+#if __cplusplus >= 201103L 
+set& operator=( set&& other ) NOEXC17 {c = other.c;};
+#endif 
+#if __cplusplus >= 201103L 
+CEXPR26 set& operator=( std::initializer_list<value_type> ilist ){
+    for(auto i : ilist){insert(i);}
+};
+#endif 
+
+CEXPR26 allocator_type get_allocator() NOEXC11 const{return all;};
+
+
+#if __cplusplus < 201103L
+set();
+#else 
+CEXPR26 set() : set(Compare()) {}
+#endif 
+CEXPR26 explicit set( const Compare& comp,
+              const Allocator& alloc = Allocator() ) :cmp(comp), all(alloc) {};
+
+#if __cplusplus >= 201103L
+CEXPR26 explicit set( const Allocator& alloc ) : all(alloc);
+template< class InputIt >
+CEXPR26 set( InputIt first, InputIt last,
+     const Compare& comp = Compare(),
+     const Allocator& alloc = Allocator() ) :cmp(comp) all(alloc){insert(first,last);};
+#if __cplusplus >= 201402L
+template< class InputIt >
+CEXPR26 set( InputIt first, InputIt last,
+     const Allocator& alloc )
+    : set(first, last, Compare(), alloc) {}
+
+    #endif 
+CEXPR26 set( const set& other ) {*this=other;};
+
+#if __cplusplus >= 201102L
+CEXPR26 set( const set& other, const Allocator& alloc ) : all(alloc) {*this=other;};
+#endif 
+#if __cplusplus >= 201103L
+CEXPR26 set( set&& other ) {*this=other;};
+CEXPR26 set( set&& other, const Allocator& alloc ) : all(alloc){*this=other;};
+CEXPR26 set( std::initializer_list<value_type> init,
+    const Compare& comp = Compare(),
+    const Allocator& alloc = Allocator() ) : cmp(comp),all(alloc){*this=init;};
+#endif 
+
+#if __cplusplus>= 201402L
+CEXPR26    set( std::initializer_list<value_type> init,
+     const Allocator& alloc )
+    : set(init, Compare(), alloc) {}
+#endif 
+
+#if __cplusplus>= 202302L
+
+    template<class /* container-compatible-range<value_type>*/ R >
+CEXPR26 set( std::from_range_t, R&& rg,
+     const Compare& comp = Compare(),
+     const Allocator& alloc = Allocator() ) : cmp(comp),all(alloc){insert(rg);};
+#endif 
+template<class /* container-compatible-range<value_type>*/ R >
+CEXPR26 set( std::from_range_t, R&& rg,
+     const Allocator& alloc )
+    : set(std::from_range, std::forward<R>(rg), Compare(), alloc) {}
+#endif 
+
+};
+
+
+
+    template <class Key,
+    class Compare = std::less<Key>,
+    class Allocator = std::allocator<Key>>
+    class multiset : set<Key,Compare,Allocator> {
+        public:
+        
+CEXPR26 std::pair<iterator, bool> insert( const value_type& value ){std::pair<iterator,bool>(iterator(c.insert(value),true));};
+
+#if __cplusplus >=201103L
+CEXPR26 std::pair<iterator, bool> insert( value_type&& value ){
+    
+    std::pair<iterator, bool>(iterator(c.insert(value), true));    
+};
+#else 
+CEXPR26 iterator insert( iterator pos, const value_type& value ){
+    return iterator(c.insert(value));
+    ;};
+#endif 
+#if __cplusplus >=201103L
+CEXPR26 iterator insert( const_iterator pos, const value_type& value ){return iterator(c.insert(value,pos.cur));};
+CEXPR26 iterator insert( const_iterator pos, value_type&& value ){return iterator(c.insert(std::forward<value_type>(value),pos.cur));};
+#endif 
+
+
+    }
+#if __cplusplus >= 201703L
+#define SWNOEXC noexcept(noexcept(lhs.swap(rhs)))
+#else
+#define SWNOEXC
+#endif 
+
+template< class Key, class Compare, class Alloc >
+void swap( pri::multiset<Key, Compare, Alloc>& lhs,
+           pri::multiset<Key, Compare, Alloc>& rhs ) SWNOEXC {lhs.swap(rhs);};
+
+
+template< class Key, class Compare, class Alloc >
+void swap( pri::set<Key, Compare, Alloc>& lhs,
+           pri::set<Key, Compare, Alloc>& rhs ) SWNOEXC {lhs.swap(rhs);};
+
+#if __cplusplus >= 202003L
+template< class Key, class Compare, class Alloc,
+          class Pred >
+CEXPR26 pri::set<Key, Compare, Alloc>::size_type
+    erase_if( pri::set<Key, Compare, Alloc>& c,
+              Pred pred ) {for (auto it=c.begin(); it!=c.end();++it){if(pred(*it)){c.erase(it);}}};
+
+
+template< class Key, class Compare, class Alloc,
+          class Pred >
+CEXPR26 pri::set<Key, Compare, Alloc>::size_type
+    erase_if( pri::multiset<Key, Compare, Alloc>& c,
+              Pred pred ) {for (auto it=c.begin(); it!=c.end();++it){if(pred(*it)){c.erase(it);}}}
+
+#endif 
+
+template< class Key, class Compare, class Alloc >
+CEXPR26 bool operator==( const pri::set<Key, Compare, Alloc>& lhs,
+                 const pri::set<Key, Compare, Alloc>& rhs ){return std::distance(lhs.begin(), lhs.end())
+               == std::distance(rhs.begin(), rhs.end())
+           && std::equal(lhs.begin(), lhs.end(), rhs.begin());};
+
+#if __cplusplus < 202002L
+template< class Key, class Compare, class Alloc >
+bool operator!=( const pri::set<Key, Compare, Alloc>& lhs,
+                 const pri::set<Key, Compare, Alloc>& rhs ){return !(lhs==rhs);};
+template< class Key, class Compare, class Alloc >
+bool operator< ( const pri::set<Key, Compare, Alloc>& lhs,
+                 const pri::set<Key, Compare, Alloc>& rhs ){return std::lexicographical_compare(lhs.begin(), lhs.end(),
+                                    rhs.begin(), rhs.end());};
+template< class Key, class Compare, class Alloc >
+bool operator<=( const pri::set<Key, Compare, Alloc>& lhs,
+                 const pri::set<Key, Compare, Alloc>& rhs ){return lhs < rhs || (lhs==rhs)};
+template< class Key, class Compare, class Alloc >
+bool operator> ( const pri::set<Key, Compare, Alloc>& lhs,
+                 const pri::set<Key, Compare, Alloc>& rhs ){return !(lhs<=rhs);};
+template< class Key, class Compare, class Alloc >
+bool operator>=( const pri::set<Key, Compare, Alloc>& lhs,
+                 const pri::set<Key, Compare, Alloc>& rhs ){return !(lhs<rhs)};
+#else
+template< class Key, class Compare, class Alloc >
+/* see below */
+CEXPR26 auto    operator<=>( const pri::set<Key, Compare, Alloc>& lhs,
+                 const pri::set<Key, Compare, Alloc>& rhs ){return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(),
+                                              rhs.begin(), rhs.end(),std::compare_three_way ) ;};
+#endif 
+
+
+template< class Key, class Compare, class Alloc >
+CEXPR26 bool operator==( const pri::multiset<Key, Compare, Alloc>& lhs,
+                 const pri::multiset<Key, Compare, Alloc>& rhs ){return std::distance(lhs.begin(), lhs.end())
+               == std::distance(rhs.begin(), rhs.end())
+           && std::equal(lhs.begin(), lhs.end(), rhs.begin());};
+
+#if __cplusplus < 202002L
+template< class Key, class Compare, class Alloc >
+bool operator!=( const pri::multiset<Key, Compare, Alloc>& lhs,
+                 const pri::multiset<Key, Compare, Alloc>& rhs ){return !(lhs==rhs);};
+template< class Key, class Compare, class Alloc >
+bool operator< ( const pri::multiset<Key, Compare, Alloc>& lhs,
+                 const pri::multiset<Key, Compare, Alloc>& rhs ){return std::lexicographical_compare(lhs.begin(), lhs.end(),
+                                    rhs.begin(), rhs.end());};
+template< class Key, class Compare, class Alloc >
+bool operator<=( const pri::multiset<Key, Compare, Alloc>& lhs,
+                 const pri::multiset<Key, Compare, Alloc>& rhs ){return lhs < rhs || (lhs==rhs)};
+template< class Key, class Compare, class Alloc >
+bool operator> ( const pri::multiset<Key, Compare, Alloc>& lhs,
+                 const pri::multiset<Key, Compare, Alloc>& rhs ){return !(lhs<=rhs);};
+template< class Key, class Compare, class Alloc >
+bool operator>=( const pri::multiset<Key, Compare, Alloc>& lhs,
+                 const pri::multiset<Key, Compare, Alloc>& rhs ){return !(lhs<rhs)};
+#else
+template< class Key, class Compare, class Alloc >
+/* see below */
+CEXPR26 auto    operator<=>( const pri::multiset<Key, Compare, Alloc>& lhs,
+                 const pri::multiset<Key, Compare, Alloc>& rhs ){return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(),
+                                              rhs.begin(), rhs.end(),std::compare_three_way ) ;};
+#endif 
+
+
+
+    namespace pmr {
+        template <class Key, class Compare>
+        using set = set<Key,Compare,std::pmr::polymorphic_allocator<Key>> ;
+    };
+};

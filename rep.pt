@@ -1,0 +1,26 @@
+import os
+
+def replace_in_file(file_path, search_text, replace_text):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+        
+        new_content = content.replace(search_text, replace_text)
+        
+        if content != new_content:  # Only write if changes were made
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write(new_content)
+            print(f"Updated: {file_path}")
+    except Exception as e:
+        print(f"Error processing {file_path}: {e}")
+
+def replace_in_dir(root_dir, search_text, replace_text, file_ext=None):
+    for root, _, files in os.walk(root_dir):
+        for file in files:
+            if file_ext and not file.endswith(file_ext):
+                continue
+            file_path = os.path.join(root, file)
+            replace_in_file(file_path, search_text, replace_text)
+
+# Example Usage
+replace_in_dir("C:\\Users\\Alexandru.Popp\strata", "strata", "stratum")  # Change path and extension as needed

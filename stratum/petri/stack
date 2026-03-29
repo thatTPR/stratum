@@ -1,0 +1,137 @@
+#ifndef STACK_HPP
+#define STACK_HPP
+#include <stdexcept>
+#include <petri/stack>
+
+
+#include <initializer_list>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+
+namespace pri {
+
+
+  
+ 
+template <typename T,class Container= pri::deque<T>>
+class stack {
+    public:
+using container_type=	Container;
+using value_type=	Container::value_type;
+using size_type=	Container::size_type;
+using reference=	Container::reference;
+using const_reference=	Container::const_reference;
+
+
+    protected :
+    Container c = Container(); 
+    public : 
+    reference top(){return c.back();}
+    const_reference top() const {return c.back();}
+    bool empty(){return c.empty();}
+    CEXPR26 size_type size(){return c.size();};
+    void push( const value_type& value ){c.push_back(value);};
+#if __cplusplus >=201103L
+    void push( value_type&& value ){ c.push_back(std::move(value));};
+#endif 
+#if __cplusplus >=202303L
+template< typename /*container-compatible-range<value_type>*/ R >
+void push_range( R&& rg ){c.append_range(std::forward<R>(rg)) ;};
+#endif
+
+#if __cpluspluse < 201702L
+teplate <class... Args>
+void emplace(Args&& args){c.emplace_back(std::forward<Args>(args)...);}
+#else 
+decltype(auto) emplace(Args&& args){c.emplace_back(std::forward<Args>(args)...);}
+#endif 
+void pop(){return c.pop_front();}
+void swap(stack<T,Container>& other) noexcept(noexcept(swap(c,other.c))) {swap(c,other.c);}
+
+#if __cplusplus <201103L    
+#define DEF_CONTV =Container()
+#else 
+#define DEF_CONTV 
+
+
+#if __cplusplus>= 201103L
+stack() : stack(Container()) {}
+#else
+explicit stack( const Container& cont = Container() ) : c(cont){};
+#if __cplusplus>=201103L
+explicit stack( const Container& cont ) : c(cont){};
+#endif
+explicit stack( Container&& cont ) : c(cont) {};
+#endif 
+#if __cplusplus >= 202302L
+template< class InputIt >
+stack( InputIt first, InputIt last ){for(InputIt f=  first; f;++f){push(*f);if(f==last){break;}}};
+#endif
+#if __cplusplus >= 201103L
+template< class Alloc >
+explicit stack( const Alloc& alloc ) {c(alloc); };
+template< class Alloc >
+stack( const Container& cont, const Alloc& alloc ) :c(cont,alloc) {};
+template< class Alloc >
+stack( Container&& cont, const Alloc& alloc ) :c(cont,alloc){};
+template< class Alloc >
+stack( const stack& other, const Alloc& alloc ): c(alloc){c.push_range( other.c);};
+template< class Alloc >
+stack( stack&& other, const Alloc& alloc ) : c(alloc){c.push_range(other.c);};
+#endif 
+#if __cplusplus >= 202302L
+template< class InputIt, class Alloc >
+stack( InputIt first, InputIt last, const Alloc& alloc ) : c(alloc){for(InputIt f= first; f; ++f){push(*f) ;if(f==last){break}}};
+template<class /* container-compatible-range<T>*/ R>
+stack( std::from_range_t, R&& rg ) {push_range(rg);};
+template<class /* container-compatible-range<T>*/ R, class Alloc >
+stack( std::from_range_t, R&& rg, const Alloc& alloc ) c(alloc) {push_range(rg)};
+#endif
+} ;
+
+
+    template< class T, class Container >
+    bool operator==( const std::stack<T, Container>& lhs,
+    const std::stack<T, Container>& rhs ){return lhs.size()==rhs.size() and std::equal(lhs.begin(),lhs.end(),rhs.begin();};
+    template< class T, class Container >
+    bool operator!=( const std::stack<T, Container>& lhs,
+    const std::stack<T, Container>& rhs ){return !(lhs==rhs)};
+    template< class T, class Container >
+    bool operator< ( const std::stack<T, Container>& lhs,
+    const std::stack<T, Container>& rhs ){return std::lexicographically_compare(lhs.begin(),lhs.end(),rhs.begin(),rhs.end());};
+    template< class T, class Container >
+    bool operator<=( const std::stack<T, Container>& lhs,
+    const std::stack<T, Container>& rhs ){return !(rhs<lhs) };
+    template< class T, class Container >
+    bool operator> ( const std::stack<T, Container>& lhs,
+    const std::stack<T, Container>& rhs ){return (rhs<lhs);};
+    template< class T, class Container >
+    bool operator>=( const std::stack<T, Container>& lhs,
+    const std::stack<T, Container>& rhs ){return !(lhs<rhs)};
+    #if __cplusplus >= 202002L
+    template< class T, std::three_way_comparable Container >
+    std::compare_three_way_result_t<Container>
+    operator<=>( const std::stack<T, Container>& lhs,
+    const std::stack<T, Container>& rhs ){return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(),
+                                              rhs.begin(), rhs.end(),std::compare_three_way);};
+    #endif
+
+#if __cplusplus < 201703L
+#define NOEXC17 
+#else
+#define NOEXC17 noexcept(noexcept(lhs.swap(rhs)))
+#endif 
+template< class T, class Container Compare >
+void swap( std::stack<T, Conainer>& lhs,std::priority_queue<T, Container>& rhs ) NOEXC17 {lhs.swap(rhs);};
+
+
+
+}
+
+
+
+
+
+
+#endif

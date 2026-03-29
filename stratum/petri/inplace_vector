@@ -1,0 +1,159 @@
+
+#ifndef INPLACE_VECTOR_HPP
+#define INPLACE_VECTOR_HPP
+#include <iterator>
+#include <initializer_list>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <type_traits>
+#include <new>
+#include <vector>
+#if __cplusplus >= 202602L
+#define CEXPR26 constexpr
+#else 
+#define CEXPR26 
+#endif
+
+namespace pri {
+// TODO
+
+#if __cplusplus >=202602L
+
+
+
+template <class T, std::size_t N>
+struct inplace_vector{
+    using value_type=	T;
+    using size_type=	std::size_t;
+    using difference_type=	std::ptrdiff_t;
+    using reference=	value_type&;
+    using const_reference=	const value_type&;
+    using pointer=	value_type*;
+    using const_pointer=	const value_type*;
+    template <class vlt>
+    struct iter {
+        
+        vlt* p ; 
+        CEXPR26 vlt* operator->(){return p;}
+        CEXPR26 vlt& operator*(){return *p;}
+        CEXPR26 void incr(){p+=1;}
+        CEXPR26 void decr(){p-=1;}
+       CEXPR26 iter<vlt>& operator++(){}{incr();return *this;}
+       CEXPR26 iter<vlt>& operator++(int){incr();return *this;}
+       CEXPR26 iter<vlt>& operator--(int){incr();return *this;}
+       CEXPR26 iter<vlt>& operator--(){incr();return *this;}
+
+       CEXPR26 iter<vlt>& operator+(size_t s){for(size_t ss =s; s ;--ss){incr()};return *this;}
+       CEXPR26 iter<vlt>& operator-(size_t s){for(size_t ss =s; s ;--ss){decr()};return *this;}
+       CEPXR26 iter(vlt* ps) : p(ps) ;
+       CEXPR26 iter(ptrT )
+
+    };
+    using iterator=iter<value_type>	;//implementation-defined LegacyRandomAccessIterator and random_access_iterator to value_type;
+    using const_iterator=iter<const value_type>	;//implementation-defined LegacyRandomAccessIterator, ConstexprIterator(since C++26) and random_access_iterator to const value_type;
+    using reverse_iterator=	std::reverse_iterator<iterator>;
+    using const_reverse_iterator=	std::reverse_iterator<const_iterator>;
+
+    T* d;
+    size_t si;
+
+
+    void size(){}
+#if __cplusplus >= 202602L
+
+constexpr reference at(size_type pos){return *(data+pos); if(pos>=size()){throw std::out_of_range(); }};
+constexpr const_reference at(size_type pos) const {return *(data+pos); if(pos>=size()){throw std::out_of_range(); }};
+
+constexpr reference operator[](size_type pos){return  at(pos);};
+constexpr const_reference operator[](size_type pos) const {return  at(pos);};
+
+constexpr reference front(){return at(0);};
+constexpr const_reference front() const{return at(0);}
+
+constexpr reference back(){return  at(si-1);};
+constexpr const_reference back() const{return  at(si-1) ;}
+
+constexpr iterator begin() noexcept{return iterator(data);};
+constexpr const_iterator begin() const noexcept{return iterator(data);};
+constexpr const_iterator cbegin() const noexcept{return const_iterator(data);};
+
+constexpr iterator end() noexcept { return iterator(data+si);};
+constexpr const_iterator end() const noexcept {  return const_iterator(data+si);};
+constexpr const_iterator cend() const noexcept { return const_iterator(data+si);};
+
+constexpr reverse_iterator rbegin() noexcept{ return reverse_iterator(data) ;};
+constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(data) ;};
+constexpr const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(data) ;};
+
+constexpr reverse_iterator rend() noexcept{return reverse_iterator(data+si)       };
+constexpr const_reverse_iterator rend() const  noexcept{return const_reverse_iterator(data+si)      };
+constexpr const_reverse_iterator crend() const  noexcept{return const_reverse_iterator(data+si)      };
+
+
+constexpr iterator tail() noexcept{return iterator(data+si-1); };
+constexpr const_iterator tail() const noexcept{return const_iterator(data+si-1); };
+constexpr const_iterator ctail() const noexcept{return const_iterator(data+si-1); };
+
+constexpr reverse_iterator rtail() noexcept{return reverse_iterator(data+si-1); };
+constexpr const_reverse_iterator rtail() const noexcept{return const_reverse_iterator(data+si-1); };
+constexpr const_reverse_iterator rctail() const noexcept{return const_reverse_iterator(data+si-1); };
+
+
+constexpr T* data()noexcept {return d;}; 
+constexpr const T* data()noexcept {return d;};
+static constexpr size_type max_size(){return N;}
+static constexpr size_type capcity() noexcept {return N;}
+
+size_type return size(){return si;}
+static constexpr void reserve(size_type new_cap){
+    if(new_cap > capacity()){throw std::bad_alloc();}
+    if(new_cap > si){
+        T* h= new T[new_cap];
+        size_t i=0;
+    for(T& i : *this){}        
+
+    };   
+};
+
+
+
+
+    constexpr inplace_vector& operator=( const inplace_vector& other ){*this = other;};
+constexpr inplace_vector& operator=( inplace_vector&& other ){*this = other;}
+    noexcept(/* see below */);
+constexpr inplace_vector& operator=( std::initializer_list<T> init ){clear(); for(T& i:init ){this->push_back(i) ;};};
+
+
+constexpr void assign( size_type count, const T& value ){size_t cc=count;
+    for( iterator it(data) ; cc;--cc ){*it=  value;++it;};
+};
+template< class InputIt >
+constexpr void assign( InputIt first, InputIt last ){iterator it(data);
+    for(InputIt f = first; f!=last;++f){*it=*f ;++it;}
+};
+constexpr void assign( std::initializer_list<T> ilist ){this->resize(ilist.size());
+    iterator it(data);for(T& i : ilist){*it = i;++it;};};
+
+
+template<typename  /*container-compatible-range<T>*/ R >
+constexpr void assign_range( R&& rg ){this->resize(std::distance(rg.begin,rg.end()));
+    auto it  = begin();for(T& i : rg) {*it = i ; ++it;}
+}
+
+
+#endif
+
+
+
+
+};
+#endif 
+
+
+}
+
+
+
+#include "reverse_iterator.hpp"
+#endif

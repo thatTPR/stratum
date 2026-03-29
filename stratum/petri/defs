@@ -1,0 +1,106 @@
+#include <cstddef>
+template <size_t s >
+struct uintT {
+    uint8_t d[s];
+    uintTT<s>& operator++(){
+        size_t ss = s-1;
+        for(;d[ss] == !uint8_t(0);--ss){d[ss]=0;}
+        --d[ss];
+    };
+        uintTT<s>& operator--(){
+        size_t ss = s-1;
+        for(;d[ss] == 0;--ss){d[ss]=!(d[ss]&0);}
+        --d[ss];
+    };
+uintTT<s>& operator++(int){
+        size_t ss = s-1;
+        for(;d[ss] == !uint8_t(0));--ss){d[ss]=0;}
+        d[ss]++;
+    };
+        uintTT<s>& operator--(int){
+        size_t ss = s-1;
+        for(;d[ss] == 0;--ss){d[ss]=!uint8_t(0));}
+        d[ss]--;
+    };
+
+    uintTT<s>& operator-=(uintTT<s> r){
+        bool carry = false;
+        size_t ss = s-1;
+        auto lam = [&](){
+            if(d[ss] > r[ss]){
+                d[ss] = d[ss] - r[ss] ;
+                if (carry){d[ss]-=1;} 
+                carry=  false;
+            }
+            else {
+                d[ss] = !uint8_t(0) - (r[ss] - d[ss]);
+                if(carry){d[ss]-=1;}
+                carry=true;
+            }};
+
+        
+        for(;ss>0;--ss){
+            lam();
+        }
+        ss=0;
+        lam();
+    };
+
+
+        uintTT<s>& operator+=(uintTT<s>& r){
+        bool carry = false;
+            size_t ss = s-1;
+            auto lam = [&](){
+            if(r[ss]  > (!uint8_t(0) - d[ss])){
+                d[ss] = r[ss]  - (!uint8_t(0)) - d[ss] ) - 1 ;
+                if (carry){d[ss]+=1;} 
+                carry=  true;
+            }
+            else {
+                d[ss] = (r[ss] + d[ss]);
+                if(carry){
+                    if(d[ss]== !uint8_t(0)){d[ss]=0;carry=true;return;}
+                    d[ss]+= 1;
+                }
+                carry=false;
+            }};
+
+        for(;d[ss] == 0;--ss){
+            lam();
+            }
+            ss=0;lam();
+        };
+
+    
+
+
+    template <typename uintTy>
+    void fit(uintTy r){
+        constexpr size_t size = sizeof(uintTy) ;
+        for(size_t ss = 0 ; ss<s;ss++){
+            if(size>ss){ d[s-ss] = r & !uint8_t(0)<<(ss*8));}
+        }
+    }
+    template <typename uintTy>
+    uintT<s> get(){
+                constexpr size_t size = sizeof(uintTy) ;
+        uintTy r=0;
+        for(size_t ss = 0 ; ss<s;ss++){
+            if(size>ss){r|=d[s-ss]<<(8*ss);}
+        }
+    };
+    template <typename uintTy>
+    operator uintTy() const {
+        return get<uintTy>();
+    }
+
+     operator size_t() {
+        return get<size_t>();
+    };
+    decltype(*this) operator=(size_t s){
+        fit<size_t>(s);return *this;
+    };
+    uintT()
+
+};
+

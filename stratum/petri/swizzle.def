@@ -1,0 +1,423 @@
+
+
+    namespace empty {
+        const int* nul = nullptr ;
+    };
+    arr(T a, T b ){
+        this=new arr<T,2>;
+        this[0]=a;
+        this[1]=b;
+    };
+    arr(T a ){this=new arr<T,1>;this[0]=a;    };
+    
+    
+    using z:: ;
+    
+   #define x 0
+   #define y 1
+   #define z 2
+   #define w 3 
+
+
+namespace two {
+
+#define macro2(a,b) arr<T,2> ##a##b(){arr<T,2> s;s[0]=this->get(a);s[1]=this->get(b);return s;}; 
+ 
+#define swizarf2(a,b,c,d) \
+macro2(a,a) \
+macro2(b,b) \ 
+macro2(c,c) \ 
+macro2(d,d) \ 
+macro2(a,b) \ 
+macro2(a,c) \ 
+macro2(a,d) \ 
+macro2(b,a) \ 
+macro2(b,c) \ 
+macro2(b,d) \ 
+macro2(c,a) \ 
+macro2(c,b) \ 
+macro2(c,d) \ 
+macro2(d,a) \ 
+macro2(d,b) \ 
+macro2(d,c) \ 
+
+swizarf2(x,y,z,w)
+};
+template<bool cond>
+struct twos {
+
+} ;
+template<>
+struct twos<true> {
+    using ns = two ;
+};
+template <>
+struct twos<false> {
+    using ns = empty; 
+};
+using z=twos<dim>=4>::ns
+using z:: ;
+using z ;
+
+namespace three {
+#define macro3(a,b,c) arr<T,3> ##a##b##c(){arr<T,3> s;s[0]=this->get(a);s[1]=this->get(b);s[2]=this->get(c);return s;};
+
+#define swizarf3(a,b,c,d) \                                                                             
+macro3(aaa) \ 
+macro3(abb) \
+macro3(acc) \
+macro3(add) \
+macro3(aba) \ 
+macro3(abb) \
+macro3(abc) \
+macro3(abd) \
+macro3(aca) \
+macro3(acc) \ 
+macro3(acb) \ 
+macro3(acd) \ 
+macro3(ada) \
+macro3(adc) \ 
+macro3(adb) \ 
+macro3(add) \ 
+macro3(baa) \
+macro3(bbb) \ 
+macro3(bcc) \
+macro3(bdd) \
+macro3(bba) \
+macro3(bbc) \
+macro3(bbd) \
+macro3(bca) \
+macro3(bcc) \
+macro3(bcb) \
+macro3(bcd) \
+macro3(bda) \
+macro3(bdc) \
+macro3(bdb) \
+macro3(cbb) \
+macro3(caa) \ 
+macro3(ccc) \ 
+macro3(cdd) \
+macro3(cba) \
+macro3(cbc) \
+macro3(cbd) \
+macro3(cca) \
+macro3(ccb) \
+macro3(ccd) \
+macro3(cda) \
+macro3(cdc) \
+macro3(cdb) \
+macro3(cdd) \
+macro3(daa) \ 
+macro3(dbb) \ 
+macro3(dcc) \
+macro3(ddd) \ 
+macro3(dba) \
+macro3(dbb) \
+macro3(dbc) \
+macro3(dbd) \
+macro3(dca) \
+macro3(dcb) \
+macro3(dcd) \
+macro3(dda) \
+macro3(ddc) \
+macro3(ddb) \
+
+swizarf3(x,y,z,w)
+};
+
+template<bool cond>
+struct threes {
+
+} ;
+template<>
+struct threes<true> {
+    using ns = four ;
+};
+template <>
+struct threes<false> {
+    using ns = empty; 
+};
+using z=threes<dim>=4>::ns
+using z:: ;
+using z ;
+namespace four {
+
+ #define macro4 (a,b,c,d) arr<T,4> ##a##b##c##d(){arr<T,4> s;s[0]=this->get(a);s[1]=this->get(b);s[2]=this->get(c);s[3] = this->get(d)return s;}}
+
+#define swizarf(a,b,c,d) \
+macro4(d,d,d,d) \ 
+macro4(c,c,c,c) \
+macro4(b,b,b,b) \
+macro4(a,a,a,a) \
+macro4(a,a,a,b) \ 
+macro4(a,a,a,c) \ 
+macro4(a,a,a,d) \ 
+macro4(a,a,b,a) \ 
+macro4(a,a,c,a) \ 
+macro4(a,a,d,a) \ 
+macro4(a,a,b,b) \ 
+macro4(a,a,c,b) \ 
+macro4(a,a,d,b) \ 
+macro4(a,a,b,c) \ 
+macro4(a,a,c,c) \ 
+macro4(a,a,d,c) \ 
+macro4(a,a,b,d) \ 
+macro4(a,a,c,d) \ 
+macro4(a,a,d,d) \
+macro4(a,b,a,a) \ 
+macro4(a,b,a,b) \ 
+macro4(a,b,a,c) \ 
+macro4(a,b,a,d) \ 
+macro4(a,b,b,a) \ 
+macro4(a,b,b,b) \ 
+macro4(a,b,b,c) \ 
+macro4(a,b,b,d) \ 
+macro4(a,b,c,a) \ 
+macro4(a,b,c,b) \ 
+macro4(a,b,c,c) \ 
+macro4(a,b,c,d) \ 
+macro4(a,b,d,a) \ 
+macro4(a,b,d,b) \ 
+macro4(a,b,d,c) \ 
+macro4(a,b,d,d) \ 
+macro4(a,c,a,a) \ 
+macro4(a,c,a,b) \ 
+macro4(a,c,a,c) \ 
+macro4(a,c,a,d) \ 
+macro4(a,c,b,a) \ 
+macro4(a,c,b,b) \ 
+macro4(a,c,b,c) \ 
+macro4(a,c,b,d) \ 
+macro4(a,c,c,a) \ 
+macro4(a,c,c,b) \ 
+macro4(a,c,c,c) \ 
+macro4(a,c,c,d) \ 
+macro4(a,c,d,a) \ 
+macro4(a,c,d,b) \ 
+macro4(a,c,d,c) \ 
+macro4(a,c,d,d) \ 
+macro4(a,d,a,a) \ 
+macro4(a,d,a,b) \ 
+macro4(a,d,a,c) \ 
+macro4(a,d,a,d) \ 
+macro4(a,d,b,a) \ 
+macro4(a,d,b,b) \ 
+macro4(a,d,b,c) \ 
+macro4(a,d,b,d) \ 
+macro4(a,d,c,a) \ 
+macro4(a,d,c,b) \ 
+macro4(a,d,c,c) \ 
+macro4(a,d,c,d) \ 
+macro4(a,d,d,a) \ 
+macro4(a,d,d,b) \ 
+macro4(a,d,d,c) \ 
+macro4(a,d,d,d) \ 
+macro4(b,a,a,b) \
+macro4(b,a,a,c) \
+macro4(b,a,a,d) \
+macro4(b,a,b,a) \
+macro4(b,a,c,a) \
+macro4(b,a,d,a) \
+macro4(b,a,b,b) \
+macro4(b,a,c,b) \
+macro4(b,a,d,b) \
+macro4(b,a,b,c) \
+macro4(b,a,c,c) \
+macro4(b,a,d,c) \
+macro4(b,a,b,d) \
+macro4(b,a,c,d) \
+macro4(b,a,d,d) \
+macro4(b,b,a,a) \
+macro4(b,b,a,b) \
+macro4(b,b,a,c) \
+macro4(b,b,a,d) \
+macro4(b,b,b,a) \
+macro4(b,b,b,b) \
+macro4(b,b,b,c) \
+macro4(b,b,b,d) \
+macro4(b,b,c,a) \
+macro4(b,b,c,b) \
+macro4(b,b,c,c) \
+macro4(b,b,c,d) \
+macro4(b,b,d,a) \
+macro4(b,b,d,b) \
+macro4(b,b,d,c) \
+macro4(b,b,d,d) \
+macro4(b,c,a,a) \
+macro4(b,c,a,b) \
+macro4(b,c,a,c) \
+macro4(b,c,a,d) \
+macro4(b,c,b,a) \
+macro4(b,c,b,b) \
+macro4(b,c,b,c) \
+macro4(b,c,b,d) \
+macro4(b,c,c,a) \
+macro4(b,c,c,b) \
+macro4(b,c,c,c) \
+macro4(b,c,c,d) \
+macro4(b,c,d,a) \
+macro4(b,c,d,b) \
+macro4(b,c,d,c) \
+macro4(b,c,d,d) \
+macro4(b,d,a,a) \
+macro4(b,d,a,b) \
+macro4(b,d,a,c) \
+macro4(b,d,a,d) \
+macro4(b,d,b,a) \
+macro4(b,d,b,b) \
+macro4(b,d,b,c) \
+macro4(b,d,b,d) \
+macro4(b,d,c,a) \
+macro4(b,d,c,b) \
+macro4(b,d,c,c) \
+macro4(b,d,c,d) \
+macro4(b,d,d,a) \
+macro4(b,d,d,b) \
+macro4(b,d,d,c) \
+macro4(b,d,d,d) \
+macro4(c,a,a,b) \
+macro4(c,a,a,c) \
+macro4(c,a,a,d) \
+macro4(c,a,b,a) \
+macro4(c,a,c,a) \
+macro4(c,a,d,a) \
+macro4(c,a,b,b) \
+macro4(c,a,c,b) \
+macro4(c,a,d,b) \
+macro4(c,a,b,c) \
+macro4(c,a,c,c) \
+macro4(c,a,d,c) \
+macro4(c,a,b,d) \
+macro4(c,a,c,d) \
+macro4(c,a,d,d) \
+macro4(c,b,a,a) \
+macro4(c,b,a,b) \
+macro4(c,b,a,c) \
+macro4(c,b,a,d) \
+macro4(c,b,b,a) \
+macro4(c,b,b,b) \
+macro4(c,b,b,c) \
+macro4(c,b,b,d) \
+macro4(c,b,c,a) \
+macro4(c,b,c,b) \
+macro4(c,b,c,c) \
+macro4(c,b,c,d) \
+macro4(c,b,d,a) \
+macro4(c,b,d,b) \
+macro4(c,b,d,c) \
+macro4(c,b,d,d) \
+macro4(c,c,a,a) \
+macro4(c,c,a,b) \
+macro4(c,c,a,c) \
+macro4(c,c,a,d) \
+macro4(c,c,b,a) \
+macro4(c,c,b,b) \
+macro4(c,c,b,c) \
+macro4(c,c,b,d) \
+macro4(c,c,c,a) \
+macro4(c,c,c,b) \
+macro4(c,c,c,c) \
+macro4(c,c,c,d) \
+macro4(c,c,d,a) \
+macro4(c,c,d,b) \
+macro4(c,c,d,c) \
+macro4(c,c,d,d) \
+macro4(c,d,a,a) \
+macro4(c,d,a,b) \
+macro4(c,d,a,c) \
+macro4(c,d,a,d) \
+macro4(c,d,b,a) \
+macro4(c,d,b,b) \
+macro4(c,d,b,c) \
+macro4(c,d,b,d) \
+macro4(c,d,c,a) \
+macro4(c,d,c,b) \
+macro4(c,d,c,c) \
+macro4(c,d,c,d) \
+macro4(c,d,d,a) \
+macro4(c,d,d,b) \
+macro4(c,d,d,c) \
+macro4(c,d,d,d) \
+macro4(d,a,a,b) \
+macro4(d,a,a,c) \
+macro4(d,a,a,d) \
+macro4(d,a,b,a) \
+macro4(d,a,c,a) \
+macro4(d,a,d,a) \
+macro4(d,a,b,b) \
+macro4(d,a,c,b) \
+macro4(d,a,d,b) \
+macro4(d,a,b,c) \
+macro4(d,a,c,c) \
+macro4(d,a,d,c) \
+macro4(d,a,b,d) \
+macro4(d,a,c,d) \
+macro4(d,a,d,d) \
+macro4(d,b,a,a) \
+macro4(d,b,a,b) \
+macro4(d,b,a,c) \
+macro4(d,b,a,d) \
+macro4(d,b,b,a) \
+macro4(d,b,b,b) \
+macro4(d,b,b,c) \
+macro4(d,b,b,d) \
+macro4(d,b,c,a) \
+macro4(d,b,c,b) \
+macro4(d,b,c,c) \
+macro4(d,b,c,d) \
+macro4(d,b,d,a) \
+macro4(d,b,d,b) \
+macro4(d,b,d,c) \
+macro4(d,b,d,d) \
+macro4(d,c,a,a) \
+macro4(d,c,a,b) \
+macro4(d,c,a,c) \
+macro4(d,c,a,d) \
+macro4(d,c,b,a) \
+macro4(d,c,b,b) \
+macro4(d,c,b,c) \
+macro4(d,c,b,d) \
+macro4(d,c,c,a) \
+macro4(d,c,c,b) \
+macro4(d,c,c,c) \
+macro4(d,c,c,d) \
+macro4(d,c,d,a) \
+macro4(d,c,d,b) \
+macro4(d,c,d,c) \
+macro4(d,c,d,d) \
+macro4(d,d,a,a) \
+macro4(d,d,a,b) \
+macro4(d,d,a,c) \
+macro4(d,d,a,d) \
+macro4(d,d,b,a) \
+macro4(d,d,b,b) \
+macro4(d,d,b,c) \
+macro4(d,d,b,d) \
+macro4(d,d,c,a) \
+macro4(d,d,c,b) \
+macro4(d,d,c,c) \
+macro4(d,d,c,d) \
+macro4(d,d,d,a) \
+macro4(d,d,d,b) \
+macro4(d,d,d,c) \
+macro4(d,d,d,d) \
+
+swizarf(x,y,z,w) 
+};
+
+template<bool cond>
+struct fours {
+
+} ;
+template<>
+struct four<true> {
+    using ns = four ;
+};
+template <>
+struct three<false> {
+    using ns = empty; 
+};
+using w=fours<dim>=4>::ns
+using w:: ;
+using w ;
+

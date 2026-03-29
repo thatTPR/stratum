@@ -1,0 +1,48 @@
+#include "map"
+
+namespace pri {
+    template <typename Key ,typename Value,class CompareK = std::less<Key>,class CompareV=std::less<Value>,class Allocator=  std::allocator<std::pair<const Key,T>>
+    class bimap  : map<Key,Value,CompareK,Allocator> {
+
+        
+struct vtype {
+    Key k ;
+    bool operator==(std::pair<Key,T>& l){return l.second==k;}
+    bool operator==(std::pair<Key,T>&& l){return l.second==k;}
+    constexpr bool operator==(std::pair<Key,T>&& l)const {return l.second==k;}
+    ktype(Value&& _k) : k(_k){};
+    template <class V>
+    ktype(V&& x) : k(x){};
+};
+
+Value& at( const Value& key ){if(contains(vtype(key))){return find(vtype(key)).second}else {throw std::out_of_range();} };
+const T& at( const Key& key ) const{{if(contains(vtype(key))){return find(vtype(key)).second}else {throw std::out_of_range();} };};
+
+#if __cplusplus >= 202602L
+template< class K >
+Value& at( const K& x ){if(contains(vtype(x))){return find(vtype(key)).second}else {throw std::out_of_range();} };
+template< class K >
+const T& at( const K& x ) const {if(contains(vtype(x))){return find(vtype(key)).second}else {throw std::out_of_range();} };
+#endif
+
+Value& operator/( const Value& v ){ try{return at(v);}
+//catch (const std::out_of_range& e);
+};
+#if __cplusplus >= 201103L
+Value& operator[]( Value&& v ){ try{return at(std::forward<Value>(key)){}}
+// catch (const std::out_of_range& e){return };
+ };
+#endif 
+#if __cplusplus >= 202602L
+template< class K >
+Value& operator/( K&& x ){try{return at<k>(std::forward<T>(x));}
+// catch (const std::out_of_range& e){;};
+};
+#endif
+    Value& operator/(Value& vl){
+       for (auto it=begin();it!=end();++it){
+            if((*it).second=vl){return (*it).first;}
+        };
+    };
+};
+};

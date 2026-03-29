@@ -1,0 +1,15 @@
+{
+    "name":"yamlitems",
+    "author":"thattpr",
+    "dependencies":[
+        "strata@fastyaml"
+    ],
+    "contributions":[
+        "entity","physics"
+    ],
+    "engineContributions":[
+        "acqres"
+    ],
+
+
+}

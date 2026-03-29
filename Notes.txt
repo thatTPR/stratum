@@ -1,0 +1,81 @@
+[[[]]] VK_PRIMITIVE_TOPOLOGY_POINT_LIST
+Each vertex is treated as a single point.
+No connection between vertices.
+Example: For rendering particles, point clouds, or vertex markers.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_LINE_LIST
+Each pair of vertices represents an independent line segment.
+Two vertices make up one line, with no continuity between consecutive lines.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_LINE_STRIP
+Vertices form a connected line strip.
+Each vertex connects to the previous one to form a line segment.
+Example: Used to draw continuous lines or polylines.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
+Every group of three vertices forms an independent triangle.
+No shared edges between triangles.
+Example: Most commonly used for rendering 3D meshes.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
+Vertices form a connected strip of triangles.
+Each new vertex after the first two creates a new triangle connected to the previous two vertices.
+Example: Efficiently used for terrain, mesh surfaces.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN
+Vertices form a fan of triangles around the first vertex.
+All triangles share the first vertex, and each consecutive pair of vertices forms a triangle.
+Example: Often used for circles, cones, and disks.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY
+Similar to LINE_LIST, but each line segment is specified with two extra adjacent vertices.
+Example: Useful for advanced rendering techniques like shadow volume extrusion.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY
+Similar to LINE_STRIP, but each line segment is specified with two adjacent vertices on each end.
+Example: Used for more sophisticated edge detection in shaders.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY
+Each triangle has adjacent vertices associated with its edges for additional information.
+Example: Useful for advanced geometry processing, like geometry shaders.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY
+Similar to TRIANGLE_STRIP, but extra adjacent vertices are used.
+Example: Typically used in geometry shaders for operations that depend on triangle neighbors.
+
+[[[]]] VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
+Only usable in tesselation 
+
+ VK_PRIMITIVE_TOPOLOGY_POINT_LIST = 0,
+    VK_PRIMITIVE_TOPOLOGY_LINE_LIST = 1,
+    VK_PRIMITIVE_TOPOLOGY_LINE_STRIP = 2, // Connected lines
+    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST = 3,
+    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP = 4,
+    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN = 5,
+    VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY = 6,
+    VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY = 7, 
+    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY = 8,
+    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY = 9,
+    VK_PRIMITIVE_TOPOLOGY_PATCH_LIST = 10,
+
+
+LINE_LIST_WITH_ADJACENCY
+
+    struct Vertex {
+    float x, y;  // Position of the point in 2D space
+};
+
+// Example: Defining vertices for 2 lines with adjacency in 2D
+Vertex vertices[] = {
+    // Line 1 with adjacency
+    { -1.0f, -0.5f },  // Adjacent vertex 1 (before line start)
+    { -0.5f, -0.5f },  // Line start (v1)
+    {  0.5f, -0.5f },  // Line end (v2)
+    {  1.0f, -0.5f },  // Adjacent vertex 2 (after line end)
+    
+    // Line 2 with adjacency
+    { -1.0f,  0.5f },  // Adjacent vertex 1 (before line start)
+    { -0.5f,  0.5f },  // Line start (v1)
+    {  0.5f,  0.5f },  // Line end (v2)
+    {  1.0f,  0.5f }   // Adjacent vertex 2 (after line end)
+};

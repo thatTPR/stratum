@@ -1,0 +1,4 @@
+namespace wg {
+    void(*cb)()  ;
+    
+} ;

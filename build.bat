@@ -1,0 +1,1 @@
+clang++ -flto -O3 -I C:\libs\imgui -I C:\src\StrataEngine\lib\ -I C:\src\StrataEngine\lib\vk\ -I C:\src\StrataEngine\lib\SDL2 -I C:\src\StrataEngine\lib\OpenAl -L C:\src\StrataEngine\lib\ -L C:\src\StrataEngine\lib\vk\ -L C:\src\StrataEngine\lib\SDL2 -L C:\src\StrataEngine\lib\OpenAl  -l "SDL2.lib" -l "vulkan.lib" -l "OpenAl32.lib" main.cpp -v
